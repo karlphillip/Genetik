@@ -33,17 +33,22 @@ int main() {
         RandomContext random(seed);
         const auto start = std::chrono::steady_clock::now();
         try {
-            auto result = symbolicRegression(training, config, random);
+            const auto objective = std::make_shared<TrainingObjective>(training, config.maxTrainingLossAttempts);
+            auto result = symbolicRegression(training, config, random, objective);
             const auto seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
             RegressionMetrics metrics;
-            if (result.best) metrics = training->measure(result.best->expression());
+            if (result.best) metrics = objective->measure(result.best->expression());
             const auto s = result.variation;
             std::cout << "seed=" << seed << " initial_mse=" << result.initialBestMSE.value_or(-1)
                       << " final_mse=" << (result.best ? result.best->fitness() : -1)
                       << " training_max_abs=" << metrics.maxAbsoluteError.value_or(-1)
                       << " best_generation=" << result.bestGeneration.value_or(0)
                       << " attempts=" << result.attemptedGenerations << " published=" << result.publishedGenerations
-                      << " evaluations=" << result.candidateEvaluations << " seconds=" << seconds
+                      << " evaluations=" << result.candidateEvaluations
+                      << " search_loss_attempts=" << result.trainingWork.lossAttempts
+                      << " global_training_loss_attempts=" << objective->work().lossAttempts
+                      << " postsearch_training_loss_attempts=" << (result.best ? 1 : 0)
+                      << " seconds=" << seconds
                       << " stop=" << searchStopName(result.stoppingReason)
                       << " init_proposals=" << s.initializations << " mutation_proposals=" << s.mutationProposals
                       << " crossover_proposals=" << s.crossoverProposals << " rejected=" << s.structuralRejections

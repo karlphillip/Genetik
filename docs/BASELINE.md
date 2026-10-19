@@ -316,3 +316,105 @@ Remaining campaign choices were declared in docs/POLYNOMIAL_CAMPAIGN.md before e
 All five actual exports, size/depth/discovery counts, attempted/published generations, candidate calls, variation rejection/fallback/change counters, runtimes and recovery flags are retained in [POLYNOMIAL_CAMPAIGN.md](POLYNOMIAL_CAMPAIGN.md) and its unedited raw log. Total search work was 1,920 candidate calls; post-run metrics separately used 15 candidate/dataset metric calls over 185 samples. Each seed stayed below its 32,128 cap. These numerical results on declared sample sets are not a proof of algebraic equivalence or a general search-success guarantee.
 
 Engineering acceptance is satisfied: expressions evolve through the shared engine with the required ownership, validity, ordering, checked loss, bounded variation/budget and failure/publication contracts. The bounded search evidence supports proceeding to continuous constant fitting, with training-only optimization, rollback on invalid/failure/worsening and charged fitting work. Keep diagnostics for more difficult structure-search problems. No concrete blocker remains for this milestone. Division/log domain semantics, prime index/value data and frozen prefix/extrapolation reporting, complexity archives, package/platform qualification and CPU profiling before GPU work remain future roadmap requirements.
+
+## Bounded continuous constant fitting — 2026-10-19
+
+Started clean at `758651440f4d7a982f47bde944ecc5f9572a73de`; no unrelated
+local changes. Reused Jetson GCC/libstdc++13, C++20, strict FP interface flags,
+workspace CMake 4.4.4 and existing Release/Debug/ASan+UBSan directories. No build
+requirements/dependencies changed. Inspected the candidate/variation extension,
+immutable problem, publication and candidate-call budget paths before integration.
+
+Implemented public `ConstantFitting.hpp`: deterministic bounded coordinate search
+on independent postfix constant occurrences, fresh checked baseline, finite bounds,
+strict improvement acceptance, retained local improvements on later invalid/worse
+trials, explicit start/stop outcomes and separate improvement flag. Fixed expression
+topology/limits and input value are preserved. No RNG, algebraic replacement,
+reparse, target template or additional solver. Coupled all-zero parameters can
+stall, as the regression test honestly demonstrates.
+
+Added a default protected preparation hook to the existing final fitness wrapper;
+ordinary const evaluate overrides and scalar behavior remain supported. An optional
+trusted expression preparation service returns an exact expression/score pair,
+installed by validated replacement and controlled cache installation. Driver and
+manual users share the existing Population/GA publication transaction unchanged.
+All initialization/offspring/elite/clone slots get fresh baselines and optional fits;
+parents and archive values own their expressions. Mathematical invalidity remains
+Invalid fitness. Operational exceptions retain original nested causes and attempt
+context, discard private work and preserve committed state; consumed RNG/work
+remain consumed. No retry, regeneration or second transaction loop was added.
+
+New run-owned TrainingObjective exposes read-only counters for actual training-loss
+and row attempts. Local loss/sweep/proposal limits are independent of global loss
+and existing outer candidate-call limits. A local stop returns its best accepted
+value. Global exhaustion inside a generation propagates the explicit budget type
+through the transaction; only the high-level driver translates this type into
+EvaluationBudget and returns committed state (or no initial best). No partially
+refined/unpublished best leaks into the archive. TrainingLossThreshold is distinct
+from ExactTrainingFit; old zero-stop and discrete defaults remain unchanged.
+
+Continuous terminal sampling is optional, uses the existing run engine, and retains
+the old discrete-only RNG sequence by default. Added fields at the end of grammar
+configuration preserve prior positional aggregate initialization. The optional
+preparation argument defaults empty. Existing maxEvaluations still means outer
+candidate requests; maxTrainingLossAttempts controls actual loss calls including
+fitting. P*(1+G) is no longer a total-loss bound in enabled mode.
+
+API, numerical/ownership/failure/counter contracts and usage are in
+[CONSTANT_FITTING.md](CONSTANT_FITTING.md). Complete frozen settings, all ten paired
+results/expressions and raw traces are in
+[CONSTANT_FITTING_CAMPAIGN.md](CONSTANT_FITTING_CAMPAIGN.md). No search setting
+adjustment was needed. A final qualification rerun matched the first campaign's
+expressions, metrics, work/traces/variation counts exactly (elapsed time excluded;
+positive-threshold reporting label clarified). Fixed-structure dyadic/non-dyadic
+fits used 44/324 loss calls (<=1,024), max errors on all declared ranges 0 and
+<=7.92e-10. Enabled evolution recovered all five seeds on all three ranges at
+1e-6; disabled recovered none, consuming more actual loss calls. These are sample
+results, separate from correctness and not algebraic/global-optimum claims.
+
+Exact verification commands from repository root (existing configurations):
+
+```sh
+../.tools/bin/cmake --build ../build-release -j2
+../.tools/bin/ctest --test-dir ../build-release --output-on-failure
+../.tools/bin/cmake --build ../build-debug -j2
+../.tools/bin/ctest --test-dir ../build-debug --output-on-failure
+../.tools/bin/cmake --build ../build-sanitize -j2
+../.tools/bin/ctest --test-dir ../build-sanitize --output-on-failure
+../build-release/tests/genetik_fitting_tests
+timeout 600s ../build-release/genetik_constant_campaign
+timeout 60s ../build-release/genetik_polynomial_regression
+timeout 10s ../build-release/genetik_demo 42 1000
+g++ -std=c++20 -fno-fast-math -ffp-contract=off -Wall -Wextra -Wpedantic -Igenetik -fsyntax-only tests/constant_fitting.cpp constant_fitting_campaign.cpp tests/symbolic_regression.cpp tests/expressions.cpp tests/generation.cpp tests/tests.cpp demo.cpp polynomial_regression.cpp expression_demo.cpp
+git -c core.whitespace=cr-at-eol diff --check
+```
+
+Final outcomes: **11/11 CTest cases passed in Release, Debug and ASan+UBSan**,
+with no sanitizer diagnostics. All fifteen standalone public-header targets built.
+The independent downstream Release consumer invokes the fitter and a short fitting-
+enabled search through public CMake targets/headers (it is not parent-sanitizer
+instrumented). Fitting contracts include the two independent quadratic fixtures,
+known single-constant optimum, irrelevant/independent constants, invalid/threshold
+starts, bounds, strict acceptance, all local stops, duplicates/unrepresentable/
+nonfinite probes, retained matching loss/topology/limits/inputs, deterministic
+repetition, continuous sampling, fitted inheritance/cache safety, all-invalid
+initial/successor states and global/operational failures after partial work. A
+caller-retained objective keeps detailed counters observable after high-level
+exceptions; stale/mismatched run objectives are rejected.
+
+Warning review and whitespace check passed without diagnostics. The retained
+20,001-depth ASan expression stress remains within its 60-second test cap; the
+new fitter suite takes about 20 seconds instrumented, including the independent
+fixtures and short bounded integrated searches. Full paired campaigns are Release
+only, outside CTest. The earlier discrete polynomial campaign still recovers all
+five seeds exactly on all three sample ranges; its post-search training verification
+now uses the accounted objective and reports search/global totals separately. The
+character demo retains fitness .892 at generation_limit=1,000 with 100,100 outer
+calls. No hidden random_device/srand/rand source was found in genetik.
+
+Engineering acceptance is complete with no blocker. Coordinate coupling/stalling
+and unoptimized repeated baseline/probe work are documented limitations, not a
+promise of unique/global coefficient recovery. Recommended next scope: strict
+ordinary division/logarithm nodes, domain handling, faithful export and configurable
+variation/tests/downstream support; preserve the later prime protocol and profile
+CPU workloads before proposing acceleration.

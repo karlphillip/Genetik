@@ -18,6 +18,15 @@ int main() {
     RandomContext symbolic(17);
     const auto result = symbolicRegression(problem, config, symbolic);
     if (!result.best || result.candidateEvaluations > 8 || result.publishedGenerations != 1) return 1;
+    const auto continuousProblem = RegressionProblem::create({{{0}, 2.5}, {{1}, 2.5}}, {31,6,8});
+    TrainingObjective objective(continuousProblem);
+    const auto fitted = fitConstants(Expression::constant(1,1), objective);
+    if (fitted.loss.score() != 0 || fitted.expression.nodes()[0].constantValue() != 2.5) return 1;
+    config.fitting = ConstantFitConfig{};
+    config.maxTrainingLossAttempts = 64; config.fitting->maxLossAttempts = 4;
+    RandomContext continuous(9);
+    const auto refined = symbolicRegression(continuousProblem, config, continuous);
+    if (!refined.best || refined.trainingWork.fittingInvocations == 0 || refined.trainingWork.lossAttempts > 64) return 1;
     RandomContext run(9);
     Population<Creature<char>> population(3, run);
     GeneticAlgorithm<decltype(population), Creature<char>> ga(0.5f, 0.9f, run);

@@ -2,6 +2,7 @@
 #include "EvaluatedCandidate.hpp"
 #include "Expression.hpp"
 #include <memory>
+#include <cstdint>
 
 struct RegressionRow { std::vector<double> inputs; double target; };
 enum class RegressionLoss { MeanSquaredError };
@@ -31,12 +32,17 @@ public:
         if (expression.variableCount() != dimensions_) throw std::invalid_argument("expression/problem dimensions differ");
         return Expression(expression.nodes(), dimensions_, limits_);
     }
-    RegressionMetrics measure(const Expression& expression) const {
+    RegressionMetrics measure(const Expression& expression, std::uint64_t* rowAttempts = nullptr) const {
         if (expression.variableCount() != dimensions_) throw std::invalid_argument("expression/problem dimensions differ");
         double sum = 0, maximum = 0;
         std::size_t attempted = 0;
         for (const auto& row : rows_) {
             ++attempted;
+            if (rowAttempts) {
+                if (*rowAttempts == std::numeric_limits<std::uint64_t>::max())
+                    throw std::overflow_error("row counter exhausted");
+                ++*rowAttempts;
+            }
             const auto prediction = expression.evaluate(row.inputs);
             if (!prediction.valid()) return {Fitness::invalid(), {}, attempted};
             volatile double residual = prediction.value() - row.target;
@@ -70,16 +76,26 @@ private:
     const ExpressionLimits limits_;
 };
 
+struct PreparedExpression { Expression expression; Fitness loss; };
+// Trusted preparation extension, analogous to the evaluator: must return the exact value scored
+// against this immutable problem. Implementations must not modify the input expression.
+class RegressionPreparation {
+public:
+    virtual ~RegressionPreparation() = default;
+    virtual PreparedExpression prepare(const Expression&, const RegressionProblem&) = 0;
+};
+
 class ExpressionCandidate : public EvaluatedCandidate {
 public:
-    ExpressionCandidate(const Expression& expression, std::shared_ptr<const RegressionProblem> problem)
+    ExpressionCandidate(const Expression& expression, std::shared_ptr<const RegressionProblem> problem,
+                        std::shared_ptr<RegressionPreparation> preparation = {})
         : problem_(requireProblem(std::move(problem))), expression_(problem_->checkedExpression(expression)),
-          text_(expression_.toString()) {}
+          text_(expression_.toString()), preparation_(std::move(preparation)) {}
     ExpressionCandidate(const ExpressionCandidate&) = default;
     ExpressionCandidate(ExpressionCandidate&&) noexcept = default;
     ExpressionCandidate& operator=(ExpressionCandidate other) noexcept { swap(other); return *this; }
     void swap(ExpressionCandidate& other) noexcept {
-        swapEvaluation(other); problem_.swap(other.problem_); expression_.swap(other.expression_); text_.swap(other.text_);
+        swapEvaluation(other); problem_.swap(other.problem_); expression_.swap(other.expression_); text_.swap(other.text_); preparation_.swap(other.preparation_);
     }
     // All throwing work precedes installation/invalidation, preserving old genome/cache on failure.
     void replaceExpression(const Expression& expression) {
@@ -94,6 +110,14 @@ public:
     std::shared_ptr<const void> problemIdentity() const noexcept final { return problem_; }
     std::string stats() override { return text_; }
 protected:
+    Fitness prepareEvaluation() override {
+        if (!preparation_) return evaluate(); // preserve numerical/custom evaluator API
+        auto ready = preparation_->prepare(expression_, *problem_);
+        if (ready.loss.state() == FitnessState::Unevaluated)
+            throw std::logic_error("preparation returned unevaluated fitness");
+        replaceExpression(ready.expression); // validate and detach before installation
+        return ready.loss;
+    }
     Fitness evaluate() const override {
         if (!problem_) throw std::logic_error("moved-from expression candidate");
         return problem_->measure(expression_).loss;
@@ -106,6 +130,7 @@ private:
     std::shared_ptr<const RegressionProblem> problem_;
     Expression expression_;
     std::string text_;
+    std::shared_ptr<RegressionPreparation> preparation_;
 };
 
 // Exact objective comparison, then hard complexity, then deterministic representation order.

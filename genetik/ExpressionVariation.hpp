@@ -10,6 +10,9 @@ struct ExpressionGrammar {
     std::size_t mutationMaxDepth = 3;
     double growBinaryProbability = .65;
     std::size_t proposalLimit = 8;
+    // Default preserves the original discrete-only draw sequence. With a positive continuous
+    // probability, choose uniform [lower,upper) instead of a discrete terminal at that frequency.
+    double continuousProbability = 0, continuousLower = -8, continuousUpper = 8;
 };
 struct VariationStatistics {
     std::uint64_t initializations = 0, mutationProposals = 0, crossoverProposals = 0;
@@ -64,12 +67,20 @@ inline std::optional<Expression> replaceExpressionSubtree(const Expression& pare
 
 class ExpressionVariation {
 public:
-    ExpressionVariation(std::shared_ptr<const RegressionProblem> problem, ExpressionGrammar grammar = {})
-        : problem_(std::move(problem)), grammar_(std::move(grammar)) {
-        if (!problem_ || (grammar_.constants.empty() && problem_->dimensions() == 0) || grammar_.initialMaxDepth == 0 ||
+    ExpressionVariation(std::shared_ptr<const RegressionProblem> problem, ExpressionGrammar grammar = {},
+                        std::shared_ptr<RegressionPreparation> preparation = {})
+        : problem_(std::move(problem)), grammar_(std::move(grammar)), preparation_(std::move(preparation)) {
+        if (!problem_ || (grammar_.constants.empty() && grammar_.continuousProbability == 0 && problem_->dimensions() == 0) || grammar_.initialMaxDepth == 0 ||
             grammar_.mutationMaxDepth == 0 || grammar_.proposalLimit == 0 ||
             !std::isfinite(grammar_.growBinaryProbability) || grammar_.growBinaryProbability < 0 || grammar_.growBinaryProbability > 1)
             throw std::invalid_argument("invalid expression grammar");
+        if (!std::isfinite(grammar_.continuousProbability) || grammar_.continuousProbability < 0 || grammar_.continuousProbability > 1 ||
+            (grammar_.continuousProbability > 0 && (!std::isfinite(grammar_.continuousLower) || !std::isfinite(grammar_.continuousUpper) ||
+             grammar_.continuousLower > grammar_.continuousUpper || std::abs(grammar_.continuousLower) > problem_->limits().maxAbsConstant ||
+             std::abs(grammar_.continuousUpper) > problem_->limits().maxAbsConstant ||
+             !std::isfinite(grammar_.continuousUpper - grammar_.continuousLower))) ||
+            (grammar_.constants.empty() && grammar_.continuousProbability > 0 && grammar_.continuousProbability < 1))
+            throw std::invalid_argument("invalid continuous constant source");
         for (auto kind : grammar_.operators) (void)ExpressionNode::binary(kind);
         for (double value : grammar_.constants)
             if (!std::isfinite(value) || std::abs(value) > problem_->limits().maxAbsConstant)
@@ -78,7 +89,7 @@ public:
     VariationStatistics statistics() const noexcept { return statistics_; }
     ExpressionCandidate initialize(std::mt19937& rng) {
         count(statistics_.initializations);
-        return ExpressionCandidate(randomExpression(rng, grammar_.initialMaxDepth), problem_);
+        return ExpressionCandidate(randomExpression(rng, grammar_.initialMaxDepth), problem_, preparation_);
     }
     ExpressionCandidate mutation(const ExpressionCandidate& parent, float rate, std::mt19937& rng) {
         requireProblem(parent);
@@ -152,13 +163,19 @@ private:
                 tasks.push_back({0, 0, true, kind});
                 tasks.push_back({task.budget - 1 - left, task.depth - 1, false, kind});
                 tasks.push_back({left, task.depth - 1, false, kind});
-            } else if (problem_->dimensions() && (grammar_.constants.empty() || std::bernoulli_distribution(.5)(rng)))
+            } else if (problem_->dimensions() && ((grammar_.constants.empty() && grammar_.continuousProbability == 0) || std::bernoulli_distribution(.5)(rng)))
                 nodes.push_back(ExpressionNode::variable(index(problem_->dimensions(), rng)));
-            else nodes.push_back(ExpressionNode::constant(grammar_.constants[index(grammar_.constants.size(), rng)]));
+            else {
+                const bool continuous = grammar_.continuousProbability > 0 && std::bernoulli_distribution(grammar_.continuousProbability)(rng);
+                const double value = continuous ? std::uniform_real_distribution<double>(grammar_.continuousLower, grammar_.continuousUpper)(rng)
+                                                : grammar_.constants[index(grammar_.constants.size(), rng)];
+                nodes.push_back(ExpressionNode::constant(value));
+            }
         }
         return Expression(nodes, problem_->dimensions(), limits);
     }
     std::shared_ptr<const RegressionProblem> problem_;
     const ExpressionGrammar grammar_;
     VariationStatistics statistics_;
+    std::shared_ptr<RegressionPreparation> preparation_;
 };

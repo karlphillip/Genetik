@@ -23,7 +23,7 @@ public:
     }
     virtual void calculateFitness() final {
         invalidateFitness();
-        const Fitness result = evaluate();
+        const Fitness result = prepareEvaluation();
         if (result.state() == FitnessState::Unevaluated)
             throw std::logic_error("evaluator returned Unevaluated instead of Valid or Invalid");
         fitness_ = result;
@@ -38,6 +38,8 @@ public:
     virtual std::shared_ptr<const void> problemIdentity() const noexcept { return {}; }
     virtual std::string stats() = 0;
 protected:
+    // Runs only on the private staged value during population publication.
+    virtual Fitness prepareEvaluation() { return evaluate(); }
     virtual Fitness evaluate() const = 0;
     void swapEvaluation(EvaluatedCandidate& other) noexcept {
         std::swap(fitness_, other.fitness_); std::swap(percent_, other.percent_);

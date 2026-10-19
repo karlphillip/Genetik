@@ -1,6 +1,6 @@
 # Bounded symbolic regression through the shared engine
 
-The public API accepts ordinary input/target rows. The only polynomial-specific code is the public example and tests; neither candidate initialization nor variation has a target template.
+The public API accepts ordinary input/target rows. Optional continuous refinement and its additional budgets are documented in [CONSTANT_FITTING.md](CONSTANT_FITTING.md); the candidate-call bound below describes the original no-fitting configuration. The only polynomial-specific code is the public example and tests; neither candidate initialization nor variation has a target template.
 
 ```cpp
 #include <SymbolicRegression.hpp>
@@ -78,7 +78,7 @@ Before initialization, require space for all slots; otherwise return EvaluationB
 
 GenerationOutcome, no-throw committed-state ownership replacement, archive, problem identity and nested-error behavior remain shared. Variation/construction/evaluation failures leave committed expressions, caches, ranking, generation and archive untouched. RNG draws and attempted candidate calls remain consumed. `ga.attempts()` advances for ready attempts, including failures; `ga.evolutions()` only advances after publication. An all-invalid initialization has no committed generation/best and stops with NoViableCandidates after the finite initial calls. An all-invalid successor preserves the last committed state and returns NoViableCandidates, without regeneration or restart. Unexpected operational failures propagate; manual engine callers retain the population and diagnostics, and high-level callers retain their run context/call count. External evaluator side effects are outside this guarantee. There is still no threading/cancellation/observer subsystem or promise to interrupt blocking callbacks.
 
-SymbolicRegressionResult includes optional committed best/initial MSE/discovery generation, attempts/published generations, managed candidate calls, variation counters and stopping reason. Elapsed time is measured externally by the example and excluded from repeatability checks. Per-sample/node search work is bounded by rows*nodes per candidate but is not a separate aggregate search counter yet; measure reports sample attempts for post-run accounting. Future continuous constant fitting must add its attempted work to explicit budgets rather than obtaining free local optimization.
+SymbolicRegressionResult includes optional committed best/initial MSE/discovery generation, attempts/published generations, managed candidate calls, variation counters and stopping reason. Elapsed time is measured externally by the example and excluded from repeatability checks. Per-sample/node search work is bounded by rows*nodes per candidate but is not a separate aggregate search counter yet; measure reports sample attempts for post-run accounting. Optional continuous fitting now adds explicit training-loss/row accounting and global loss-budget handling through the same publication path; see CONSTANT_FITTING.md.
 
 ## Qualification and remaining work
 
@@ -86,4 +86,4 @@ Focused tests independently establish zero target loss and f(x)=x MSE 3; dataset
 
 See BASELINE.md for exact Release, Debug, ASan+UBSan, warning, header and downstream qualification. The five-seed campaign is evidence about this fixed discrete grammar and polynomial, not a correctness test or a guarantee on arbitrary targets.
 
-Next implement bounded continuous constant fitting using training data only, preserving the old candidate on invalidity/failure/worsening and charging its work. Keep configurable division/natural-log semantics, complexity archives, indexed-prime regression with distinct frozen fitting/validation/extrapolation reports, and CPU profiling before any GPU work in the roadmap.
+Bounded training-only coordinate fitting is implemented and verified, preserving accepted local improvements and committed state on operational failure; the optional protected preparation hook leaves existing evaluate overrides unchanged. Keep configurable division/natural-log semantics, complexity archives, indexed-prime regression with distinct frozen fitting/validation/extrapolation reports, and CPU profiling before any GPU work in the roadmap.

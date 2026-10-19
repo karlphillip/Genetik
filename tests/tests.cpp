@@ -22,24 +22,18 @@ using P = Population<C>;
 using GA = GeneticAlgorithm<P, C>;
 
 // Deterministic, real-valued fitness fixture, independent of the character target.
-struct Score {
-    std::vector<double> genes;
-    float fp = 0, start = 0, end = 0;
-    explicit Score(std::mt19937& rng) : genes{std::uniform_real_distribution<double>(0, 1)(rng)} {}
-    explicit Score(double value) : genes{value} {}
-    std::vector<double> chromosome() const { return genes; }
-    double gene(unsigned int i) const { return genes.at(i); }
-    void setGene(unsigned int i, double x) { genes.at(i) = x; }
-    void mutateGene(unsigned int i, std::mt19937& rng) {
-        genes.at(i) = std::uniform_real_distribution<double>(0, 1)(rng);
+struct Score : Creature_i<double> {
+    explicit Score(std::mt19937& rng)
+        : Creature_i<double>({std::uniform_real_distribution<double>(0, 1)(rng)}) {}
+    explicit Score(double value) : Creature_i<double>({value}) {}
+    std::string stats() override {
+        return fitnessState() == FitnessState::Valid ? std::to_string(fitness()) : "no-score";
     }
-    void calculateFitness() {}
-    float fitness() const { return static_cast<float>(genes[0]); }
-    void setFitnessPercent(float x) { fp = x; }
-    float fitnessPercent() const { return fp; }
-    void setRouletteRange(float a, float b) { start = a; end = b; }
-    void rouletteRange(float& a, float& b) const { a = start; b = end; }
-    std::string stats() { return std::to_string(genes[0]); }
+protected:
+    Fitness evaluate() const override { return Fitness::fromScore(gene(0)); }
+    double mutatedGene(unsigned int, std::mt19937& rng) const override {
+        return std::uniform_real_distribution<double>(0, 1)(rng);
+    }
 };
 using SP = Population<Score>;
 using SG = GeneticAlgorithm<SP, Score>;
@@ -56,16 +50,18 @@ static void ownershipAndFitness() {
     C copy = c;
     copy.setGene(0, '?');
     check(c.gene(0) == target[0], "copy must own its genome");
-    check(copy.fitness() == 0, "gene write must invalidate fitness");
+    check(copy.fitnessState() == FitnessState::Unevaluated, "gene write invalidates fitness");
+    throws<std::logic_error>([&] { copy.fitness(); });
     copy.calculateFitness();
     check(std::abs(copy.fitness() - 73.f / 74.f) < 1e-6, "fitness recalculation");
     C moved = std::move(copy);
     check(moved.chromosome().size() == target.size(), "move expression preserves genome");
     RandomContext random(91);
     moved.mutateGene(0, random.engine());
-    check(moved.fitness() == 0, "mutation must invalidate fitness");
+    check(moved.fitnessState() == FitnessState::Unevaluated, "mutation invalidates fitness");
     C wrong(std::vector<char>{'x'});
-    throws<std::invalid_argument>([&] { wrong.calculateFitness(); });
+    wrong.calculateFitness();
+    check(wrong.fitnessState() == FitnessState::Invalid, "wrong target shape is candidate invalidity");
     P one(1, random);
     check(one.bestCreature().chromosome() == one.creatures()->front().chromosome(), "singleton best");
     auto snapshot = one.creatures();
@@ -83,23 +79,25 @@ static void selectionContracts() {
     p.setCreature(1, Score(.003));
     p.updateValues();
     auto members = p.creatures();
-    check(std::abs(members->front().fp - 25) < 1e-4, "fractional fitness normalization");
-    check(std::abs(members->front().end - 25) < 1e-4, "roulette percentage units");
-    check(members->back().end == 100, "roulette covers full interval");
+    check(std::abs(members->front().fitnessPercent() - 100.f / 3) < 1e-4, "fractional fitness normalization");
+    check(std::abs(members->front().fitnessPercent() - 100.f / 3) < 1e-4, "roulette percentage units");
+    check(members->back().fitnessPercent() > 66, "roulette covers full interval");
     SG ga(1, 1, random);
     int low = 0;
     for (int i = 0; i < 4000; ++i) low += ga.roulette(p).fitness() < .002;
-    check(low > 800 && low < 1200, "seeded roulette samples both weighted ranges");
+    check(low > 1150 && low < 1500, "seeded roulette samples both weighted ranges");
     // Equal zero scores use uniform weights, never an accidental final-member monopoly.
     p.setCreature(0, Score(0.0)); p.setCreature(1, Score(0.0)); p.updateValues();
     members = p.creatures();
-    check(members->front().fp == 50 && members->front().end == 50, "zero score fallback");
+    check(members->front().fitnessPercent() == 50, "zero score fallback");
     p.setCreature(0, Score(2.0)); p.setCreature(1, Score(2.0)); p.updateValues();
-    check(p.creatures()->front().fp == 50, "equal positive scores");
-    for (const auto invalid : {-1.f, std::numeric_limits<float>::infinity(),
+    check(p.creatures()->front().fitnessPercent() == 50, "equal positive scores");
+    for (const auto invalid : {std::numeric_limits<float>::infinity(),
                                std::numeric_limits<float>::quiet_NaN()}) {
         p.setCreature(0, Score(invalid));
-        throws<std::domain_error>([&] { p.updateValues(); });
+        check(p.updateValues() == GenerationOutcome::Committed, "invalid member allows viable generation");
+        check(p.creatures()->front().fitnessState() == FitnessState::Invalid, "invalid member ranked first");
+        check(p.creatures()->front().fitnessPercent() == 0, "invalid member has no selection weight");
     }
 }
 
@@ -122,7 +120,7 @@ static void operatorContracts() {
     throws<std::invalid_argument>([&] { ga.mutation(empty); });
     throws<std::invalid_argument>([&] { ga.crossover(empty, empty, a, b); });
     P mismatch(2, other);
-    throws<std::invalid_argument>([&] { ga.evolve(mismatch); });
+    throws<std::runtime_error>([&] { ga.evolve(mismatch); });
     throws<std::invalid_argument>([&] { ga.roulette(mismatch); });
     for (const float rate : {-0.1f, 1.1f, std::numeric_limits<float>::quiet_NaN(),
                               std::numeric_limits<float>::infinity()}) {

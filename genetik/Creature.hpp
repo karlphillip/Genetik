@@ -1,249 +1,48 @@
-/*
- *
- */
-/* how to force the compiler to instantiate a template: https://stackoverflow.com/a/8752879/176769
- * and not have to explicitely instantiate the template at the end of the .cpp file: template class Creature<char>;
- */
 #pragma once
 #include "Creature_i.hpp"
-
 #include <iomanip>
-#include <random>
 #include <sstream>
-#include <stdexcept>
 
+#define TARGET "'Never underestimate a droid' - General Leia Organa, The Rise of Skywalker"
+#define CHROMOSOME_SZ 74
 
-// global defines
-#define TARGET          "'Never underestimate a droid' - General Leia Organa, The Rise of Skywalker"
-#define CHROMOSOME_SZ   74
-//#define TARGET          "FFFFFFFFFF"
-//#define CHROMOSOME_SZ   10
-
-// Random state is supplied by the caller; no process or translation-unit RNG.
-
-/*
- * Creates a string representation of a float value with N decimal places
- * @return the floating-point number as a string object.
- */
-inline std::string round(float num, unsigned int decimal_places)
-{
-    std::stringstream stream;
-    stream << std::fixed << std::setprecision(decimal_places) << num;
-    return stream.str();
-}
-
-
+// Concrete character-search example, separate from the reusable scalar-genome contract.
 template <typename T>
-class Creature : public Creature_i<T>
-{
+class Creature : public Creature_i<T> {
 public:
-
-    /*
-     * Initialize the demonstration genome using the caller's engine.
-     */
-    explicit Creature(std::mt19937& rng)
-    : Creature_i<T>()
-    {
-        //std::cout << "Creature::Creature()" << std::endl;
-
-        std::uniform_int_distribution<unsigned int> asciiRange(32, 126);
-        // initialize chromosome with random genes
-        for (unsigned int x = 0; x < CHROMOSOME_SZ; ++x)
-        {
-            /*
-            if (x == 0)
-            {
-                this->_chromosome.push_back(65);
-                continue;
-            }
-            */
-
-            //unsigned char gene = (unsigned char) asciiRange(rng);
-            unsigned char gene = (unsigned char) asciiRange(rng);
-            this->_chromosome.push_back(gene);
+    explicit Creature(std::mt19937& rng) {
+        std::vector<T> genes(CHROMOSOME_SZ);
+        for (auto& gene : genes) gene = std::uniform_int_distribution<int>(32, 126)(rng);
+        this->replaceChromosome(std::move(genes));
+    }
+    explicit Creature(const std::vector<T>& genes) : Creature_i<T>(genes) {}
+    std::string getString() const {
+        const auto genes = this->chromosome();
+        return std::string(genes.begin(), genes.end());
+    }
+    std::string stats() override {
+        std::ostringstream out;
+        out << std::fixed << std::setprecision(3) << "str=[ " << getString() << " ] f=";
+        switch (this->fitnessState()) {
+        case FitnessState::Valid: out << this->fitness(); break;
+        case FitnessState::Invalid: out << "invalid"; break;
+        case FitnessState::Unevaluated: out << "unevaluated"; break;
         }
-
-        //this->_fitness = 88;
-        //std::cout << "Creature::Creature() fitness=" << this->_fitness << std::endl;
+        float start, end;
+        this->rouletteRange(start, end);
+        out << " fP=" << this->fitnessPercent() << " rouletteRange=(" << start << ", " << end << ")";
+        return out.str();
     }
-
-    /*
-     * Parameterized constructor
-     * @param chromosome initializes the creature's chromosome from existing data
-     */
-    Creature(const std::vector<T>& chromosome)
-    : Creature_i<T>(chromosome)
-    {        
-        //this->_fitness = 99;
-        //std::cout << "Creature::Creature(chromosome) fitness=" << this->_fitness << std::endl;
+protected:
+    Fitness evaluate() const override {
+        const std::string target = TARGET;
+        const auto genes = this->chromosome();
+        if (genes.size() != target.size()) return Fitness::invalid();
+        unsigned int matched = 0;
+        for (std::size_t i = 0; i < target.size(); ++i) matched += genes[i] == target[i];
+        return Fitness::valid(static_cast<double>(matched) / target.size());
     }
-
-    /*
-     * Copy constructor
-     * @param other indicates the Creature to copy from
-     */
-    Creature(const Creature<T>& other)
-    : Creature_i<T>(other)
-    {
-        //std::cout << "Creature::Creature(other) other.fitness=" << other._fitness << " this.fitness=" << this->_fitness <<std::endl;
-    }
-
-    /*
-     * Copy assignment operator
-     * @param other indicates the Creature to copy from
-     */
-    Creature& operator=(const Creature<T>& other)
-    {
-       //std::cout << "Creature::operator= (copy assignment)" << std::endl;
-       this->_chromosome = other._chromosome;
-       this->_fitness = other._fitness;
-       this->_fitnessPercent = other._fitnessPercent;
-       this->_rouletteRangeStart = other._rouletteRangeStart;
-       this->_rouletteRangeEnd = other._rouletteRangeEnd;
-
-       //std::cout << "Creature::operator= (copy assignment) this.fitness=" << this->_fitness << std::endl;
-       return *this;
-    }
-
-    /*
-     * Returns the Creature chromosome.
-     * @return a vector with the genes.
-     */
-    std::vector<T> chromosome() const
-    {
-        return this->_chromosome;
-    }
-
-    /*
-     *
-     */
-    void mutateGene(const unsigned int& pos, std::mt19937& rng)
-    {
-        if (pos >= this->_chromosome.size())
-            return;
-
-        std::uniform_int_distribution<unsigned int> asciiRange(32, 126);
-        T gene = asciiRange(rng);
-        this->_chromosome[pos] = gene;
-        this->_fitness = 0;
-    }
-
-    /*
-     *
-     */
-    void setGene(const unsigned int& pos, const T& value)
-    {
-        if (pos >= this->_chromosome.size())
-            return;
-
-        this->_chromosome[pos] = value;
-        this->_fitness = 0;
-    }
-
-    /*
-     *
-     */
-    T gene(const unsigned int& pos) const
-    {
-        if (pos < this->_chromosome.size())
-            return this->_chromosome[pos];
-
-        return 0;
-    }
-
-    void calculateFitness()
-    {
-        static std::string target = TARGET;
-        //static std::string target = "FFFFFFFF";
-
-        // TODO: maybe we shouldnt compute this everytime the function is called
-        //static bool once = false;
-        //if (once == true) return;
-        //once = true;
-
-        if (this->_chromosome.size() != target.size())
-        {
-            throw std::invalid_argument("chromosome length differs from demonstration target");
-        }
-
-        unsigned int matchedChars = 0;
-        for (unsigned int i = 0; i < target.size(); ++i)
-        {
-            if (target[i] == this->_chromosome[i])
-                matchedChars++;
-        }
-
-        // update fitness level
-        this->_fitness = matchedChars / (float) target.size();
-    }
-
-    /*
-     *
-     */
-    float fitness() const
-    { 
-        return this->_fitness;
-    }
-
-    /*
-     *
-     */
-    void setFitnessPercent(const float& fp)
-    {
-        this->_fitnessPercent = fp;
-    }
-
-    /*
-     *
-     */
-    float fitnessPercent() const
-    {
-        return this->_fitnessPercent;
-    }
-
-    /*
-     *
-     */
-    void setRouletteRange(const float& start, const float& end)
-    {
-        this->_rouletteRangeStart = start;
-        this->_rouletteRangeEnd = end;
-    }
-
-    /*
-     *
-     */
-    void rouletteRange(float& start, float& end) const
-    {
-        start = this->_rouletteRangeStart;
-        end = this->_rouletteRangeEnd;
-    }
-
-    std::string getString()
-    {
-        std::string output;
-
-        for (unsigned int i = 0; i < this->_chromosome.size(); ++i)
-            output += (T)this->_chromosome[i];
-
-        return output;
-    }
-
-    /*
-     *
-     */
-    std::string stats()
-    {
-        //std::cout << "Creature::stats fitness=" << fitness() << " fitnessPercent=" << fitnessPercent() << std::endl;
-
-        std::string output = "str=[ " + getString() + " ] ";
-        output += " f=" + round(fitness(), 3);
-        output += " fP=" + round(fitnessPercent(), 3);
-
-        float rRangeStart = 0, rRangeEnd = 0;
-        rouletteRange(rRangeStart, rRangeEnd);
-        output += " rouletteRange=(" + round(rRangeStart, 3) + ", " + round(rRangeEnd, 3) + ")";
-
-        return output;
+    T mutatedGene(unsigned int, std::mt19937& rng) const override {
+        return std::uniform_int_distribution<int>(32, 126)(rng);
     }
 };

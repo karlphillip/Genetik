@@ -14,6 +14,9 @@
 - Tests must check outcomes with runtime failures, including with `NDEBUG`; never require stochastic target discovery. Set CTest timeouts and bound examples.
 - One explicit, caller-owned `RandomContext(seed)` per serial run. Population and algorithm borrow the same context; it must outlive them. No hidden engines/reseeding. Custom creatures accept `std::mt19937&` for initialization and mutation.
 - `genetik_lib` is a header-only CMake interface target and propagates C++20 to consumers. Each public header must compile alone; verify the downstream consumer fixture.
-- Current fitness maximizes finite nonnegative floats. Call `updateValues()` after replacing members. Do not feed raw minimization losses as fitness.
+- Fitness has Unevaluated/Valid/Invalid states; only Valid has a finite double score (zero and negatives are valid). Set objective direction independently. Evaluators return `Fitness`; expected mathematical errors return Invalid, operational exceptions propagate with nested context. Objective and input data remain fixed during a run.
+- Scalar candidates derive from `Creature_i`; genome/cache storage is private and final editing methods invalidate cached fitness. No writable references/views; copy input buffers even for rvalues. Do not restore protected genome/cache access.
+- `setCreature()` stages edits; `updateValues()` or `publishGeneration()` evaluates and publishes a whole viable population. Invalid candidates cannot be parents. Check `GenerationOutcome`; no implicit retries.
+- Publish population/generation/best-seen state only after all preparation succeeds, via no-throw ownership replacement. Failed attempts preserve committed state, but consume RNG draws and evaluation-attempt accounting. No evaluation budget/cancellation/observer framework exists yet.
 - Preserve user changes. Record evidence and compatibility changes in docs/BASELINE.md; track staged extensions in docs/ROADMAP.md.
 - Evolve expression structures as well as constants in future work. Keep generic sequence handling separate from prime reference generation and diagnostics. Do not add target lookups to candidate evaluation.

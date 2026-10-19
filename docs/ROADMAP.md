@@ -1,28 +1,30 @@
 # Genetik roadmap
 
-The first milestone is implemented and verified; later milestones describe acceptance criteria, not existing functionality. See [BASELINE.md](BASELINE.md) for evidence and API migration.
+The baseline and fitness/publication contracts are implemented and verified. The expression evaluator is the next application milestone; fitting and later experiments remain planned capabilities. See [BASELINE.md](BASELINE.md) for evidence and API migration.
 
 ## 1. Baseline, C++20 and first hardening — complete
 
 Acceptance: clean starting-state/environment inventory; unchanged build and bounded example exercised; transitive C++20; tests that fail in Release and integrate with CTest; explicit run-owned seed/state across initialization, selection, crossover and mutation; regression tests; supported local sanitizer run; public-header/downstream consumer checks; documented compatibility. All satisfied on the current Jetson/GCC 13 platform. Wider platform qualification remains milestone 6.
 
-## 2. Evolutionary contracts and real-valued fitting — next
+## 2. Evolutionary contracts — fitness/publication complete; parameter fitting pending
 
-Explicit randomness is complete for the default serial pipeline. Next implement explicit fitness validity and refresh/commit semantics: genome writes invalidate evaluation; summaries and selection cannot silently consume stale fitness; invalid evaluations have a declared policy; a failed generation leaves a usable prior population and reports consumed work. Add meaningful tests with a throwing/invalid deterministic evaluator, and verify copies/moves and run-context lifetime expectations.
+Implemented: explicit run-owned randomness; private scalar genomes and enforced invalidation; Unevaluated/Valid/Invalid results with finite double scores; independent objective direction; rank selection excluding invalids; staged evaluation, ranking and committed-best preparation; no-throw publication of a viable population; nested operational errors; accurate attempted-evaluation accounting without refunding failed work. Fixed objective/data are assumed for each run. Deterministic fault-injection tests verify committed state preservation and consumed RNG state. See BASELINE.md for the exact scope and compatibility changes.
 
-Then provide a reusable real-valued creature/variation policy independent of ASCII and target macros. Define maximization/minimization explicitly, distinguish objective from selection weights, and use double objectives. Add validated bounds, configurable initialization and mutation, equality and invalid-score behavior, and explicit selection/replacement policies. Preserve ordinary fixed-genome GA usage.
+The next application work is milestone 3, followed by the polynomial demonstration. Reusable bounded real-valued variation and parameter/constant fitting remain pending: support validated initialization/mutation bounds and bounded numerical optimization independent of ASCII. Raw MSE can now be minimized using the explicit direction; do not confuse score validity with optimization direction.
 
-Acceptance: deterministic bounded real-parameter optimization test, fitness/cache/error contracts, clear value ownership, execution budget and cancellation semantics, and a result object containing effective seed, configuration, work, elapsed time, best seen and stopping reason. Avoid relying on stochastic target discovery for correctness tests. Count evaluation failures and all attempted work. Preserve run-owned randomness; custom operators receive the same engine.
+Future execution work still needs an evaluation/time budget, cancellation semantics and a complete result object (seed/configuration/work/time/stopping reason). No such subsystem was added to this focused milestone. Any future evaluation budget must charge attempted calls, including Invalid and throwing evaluations, without refunding discarded generations. Preserve the serial publication boundary and no-implicit-retry policy. Constant fitting must additionally account for its own attempted work as specified below.
 
-## 3. Bounded mathematical expressions — pending
+## 3. Bounded mathematical expressions — next
 
-Represent validated variable-size expressions (value-owned tree or indexed node arena; choose after the lifecycle contract is established). Start with variable x, finite bounded double constants, addition, subtraction, multiplication. Validate arity, indices, acyclicity where applicable, node count, depth, number/range of constants. Mutation/crossover must produce valid structures within configured limits; use bounded retries and a documented unchanged-parent fallback. Structure changes are required; this is not only coefficient search over a fixed formula.
+Represent validated variable-size expressions (value-owned tree or indexed node arena). First implement the independent representation and strict CPU evaluator; do not force expression nodes into the arithmetic-only scalar genome base. Select a value-owned expression candidate/operator integration after representation and evaluator tests pass. Start with variable x, finite bounded double constants, addition, subtraction, multiplication. Validate arity, indices, acyclicity where applicable, node count, depth, number/range of constants. Mutation/crossover must produce valid structures within configured limits; use bounded retries and a documented unchanged-parent fallback. Structure changes are required; this is not only coefficient search over a fixed formula.
 
 Implement double evaluation with an explicit value/error result. Add ordinary division and natural logarithms before milestone 5. Reject zero divisors, nonpositive logarithm arguments, overflow and all non-finite intermediates/results. Invalid samples invalidate the candidate or receive a declared worst objective; never drop difficult samples or reward invalid evaluations. Keep an operator registry/vocabulary in configuration for later experiments. Reject unsupported configurations rather than silently changing semantics.
 
 Formatter/export must preserve exactly the evaluator's operations, parentheses, round-trip constants and transformations. Tests cover known trees, boundary domains, arithmetic errors, constant bounds, structural validity after operators, and exported evaluation equivalence. No hidden protected division or altered logarithm semantics. If a special operator is later introduced, give it a distinct declared name/definition and faithfully export it.
 
-Acceptance: deterministic evaluator and formatter tests, bounded structural-operator invariants, standalone expressions with no reference-data access, runtime and evaluation work limits, and a verified CPU path before performance work.
+Immediate evaluator acceptance: deterministic tests of x, finite constants and +, -, *; validated arity/indices/acyclic structure, finite constant limits, node/depth bounds; explicit invalid outcomes for inadmissible/non-finite arithmetic; value-owned copies with no mutable aliases; round-trip constants and equivalent parenthesized export; bounded evaluation work proportional to validated node count; Release/sanitizer and downstream checks. No search convergence is required to qualify the evaluator.
+
+Then add bounded structural mutation/crossover with invariant tests, standalone expressions with no reference-data access, and the polynomial integration in milestone 4. Ordinary division/logarithms, constant fitting, and the full prime protocol remain required before milestone 5. Keep the verified CPU path before performance work.
 
 ## 4. Polynomial symbolic regression — pending
 

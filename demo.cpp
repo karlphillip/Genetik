@@ -20,6 +20,12 @@ static std::uint32_t number(const char* arg) {
         throw std::invalid_argument("arguments must be unsigned 32-bit integers");
     return value;
 }
+static void printError(const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    try { std::rethrow_if_nested(error); }
+    catch (const std::exception& nested) { printError(nested); }
+    catch (...) { std::cerr << "non-standard underlying exception\n"; }
+}
 int main(int argc, char** argv) {
     try {
         if (argc > 3) throw std::invalid_argument("usage: genetik_demo [seed [max_generations]]");
@@ -31,20 +37,24 @@ int main(int argc, char** argv) {
         GeneticAlgorithm<PopulationType, CreatureType> ga(0.5f, 0.9f, random);
         std::cout << std::fixed << std::setprecision(3)
                   << "seed=" << random.seed() << " population=100 crossover=0.5 mutation=0.9"
-                  << " max_generations=" << limit << " mode=serial\n";
-        auto best = population.bestCreature();
+                  << " selection=linear_rank objective=maximize max_generations=" << limit << " mode=serial\n";
+        auto best = population.bestSeen().value();
+        bool noViable = false;
         while (ga.evolutions() < limit && best.fitness() < 1.0f) {
-            ga.evolve(population);
-            if (population.bestCreature().fitness() > best.fitness()) best = population.bestCreature();
+            if (ga.evolve(population) != GenerationOutcome::Committed) {
+                noViable = true;
+                break;
+            }
+            best = population.bestSeen().value();
             std::cout << "* Generation #" << ga.evolutions() << " avg fitness: " << population.mean()
                       << " best fitness: " << population.bestCreature().fitness() << '\n';
         }
         std::cout << "best_seen: " << best.stats() << '\n'
-                  << "stopping_reason=" << (best.fitness() == 1 ? "target_reached" : "generation_limit")
-                  << " generations=" << ga.evolutions() << " elapsed_seconds="
+                  << "stopping_reason=" << (noViable ? "no_viable_candidates" : best.fitness() == 1 ? "target_reached" : "generation_limit")
+                  << " generations=" << ga.evolutions() << " evaluation_attempts=" << random.evaluationAttempts() << " elapsed_seconds="
                   << std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count() << '\n';
     } catch (const std::exception& error) {
-        std::cerr << error.what() << '\n';
+        printError(error);
         return 1;
     }
 }

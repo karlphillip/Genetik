@@ -1,173 +1,85 @@
 #pragma once
-#include <vector>
-#include <string>
-#include <iostream>
+#include "Fitness.hpp"
 #include <random>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
-
+// Value-owned scalar genomes only. No writable views/references escape this base.
+// Custom evaluators/variation read genes by value; editing methods cannot be overridden.
 template <typename T>
-class Creature_i
-{
+class Creature_i {
+    static_assert(std::is_arithmetic_v<T>, "scalar genomes require arithmetic genes");
 public:
-    /*
-     * Default constructor
-     */
-    Creature_i()
-    {
-        //std::cout << "Creature_i::Creature_i" << std::endl;
-        _fitness = _fitnessPercent = _rouletteRangeStart = _rouletteRangeEnd = 0;
+    using gene_type = T;
+    Creature_i() = default;
+    explicit Creature_i(const std::vector<T>& chromosome) : chromosome_(chromosome) {}
+    Creature_i(const Creature_i&) = default;
+    Creature_i& operator=(const Creature_i& other) {
+        if (this != &other) {
+            auto copy = other.chromosome_; // allocate before changing either genome or cache
+            chromosome_.swap(copy);
+            fitness_ = other.fitness_;
+            percent_ = other.percent_; start_ = other.start_; end_ = other.end_;
+        }
+        return *this;
     }
-
-    /*
-     * Parameterized constructor
-     *
-     * @param chromosome initializes the creature's chromosome from existing data
-     */
-    Creature_i(const std::vector<T>& chromosome)
-    {
-        //std::cout << "Creature_i::Creature_i(chromosome)" << std::endl;
-        _fitness = _fitnessPercent = _rouletteRangeStart = _rouletteRangeEnd = 0;
-        _chromosome = chromosome;
+    Creature_i(Creature_i&& other) noexcept
+        : chromosome_(std::move(other.chromosome_)), fitness_(other.fitness_),
+          percent_(other.percent_), start_(other.start_), end_(other.end_) { other.invalidateFitness(); }
+    Creature_i& operator=(Creature_i&& other) noexcept {
+        if (this != &other) {
+            chromosome_ = std::move(other.chromosome_);
+            fitness_ = other.fitness_;
+            percent_ = other.percent_; start_ = other.start_; end_ = other.end_;
+            other.invalidateFitness();
+        }
+        return *this;
     }
-
-    /*
-     * Copy constructor
-     *
-     * @param other indicates the object that needs to be copied
-     */
-    Creature_i(const Creature_i<T>& other)
-    {        
-        //std::cout << "Creature_i::Creature_i(other)" << std::endl;
-        _chromosome = other._chromosome;
-        _fitness = other._fitness;
-        _fitnessPercent = other._fitnessPercent;
-        _rouletteRangeStart = other._rouletteRangeStart;
-        _rouletteRangeEnd = other._rouletteRangeEnd;
-        //std::cout << "Creature_i::Creature_i(other) other._fitness=" << other._fitness << " fitness=" << _fitness << std::endl;
-    }
-
-    /*
-     * Copy assignment operator
-     * @param other indicates the rhs object that needs to be copied
-     */
-    Creature_i& operator=(const Creature_i<T>& other)
-    {
-       //std::cout << "Creature_i::operator= (copy assignment)" << std::endl;
-       _chromosome = other._chromosome;
-       _fitness = other._fitness;
-       _fitnessPercent = other._fitnessPercent;
-       _rouletteRangeStart = other._rouletteRangeStart;
-       _rouletteRangeEnd = other._rouletteRangeEnd;
-       return *this;
-    }
-
-    /*
-     * Virtual destructor
-     */
     virtual ~Creature_i() = default;
-
-    /*
-     * The genetic code of the Creature.
-     *
-     * @return a vector with the chromosome (genes).
-     */
-    virtual std::vector<T> chromosome() const
-    {
-        return _chromosome;
+    virtual std::vector<T> chromosome() const final { return chromosome_; }
+    virtual T gene(const unsigned int& pos) const final { return chromosome_.at(pos); }
+    virtual void setGene(const unsigned int& pos, const T& value) final {
+        chromosome_.at(pos); // a rejected edit does not change genome or validity
+        invalidateFitness();
+        chromosome_[pos] = value;
     }
-
-    /*
-     * Randomly changes a specific gene of the chromosome.
-     *
-     * @pos the index of the gene that needs to be mutated.
-     * @rng the run-owned engine; implementations must use it for all mutation draws.
-     */
-    virtual void mutateGene(const unsigned int& pos, std::mt19937& rng) = 0;
-
-    /* Change a specific gene given an index position in the chromosome.
-     *
-     * @param pos the index of the gene that needs to be changed.
-     * @param value the new value of the gene.
-     */
-    virtual void setGene(const unsigned int& pos, const T& value) = 0;
-
-    /*
-     * The value stored by a gene at a specific position of the chromosome.
-     *
-     * @param pos the index of the gene.
-     * @return the value of the gene at that specific position.
-     */
-    virtual T gene(const unsigned int& pos) const = 0;
-
-    /*
-     * The fitness function used to compute the fitness level of the creature.
-     */
-    virtual void calculateFitness() = 0;
-
-    /*
-     * The fitness level is usually a value between 0.0 and 1.0 and its an indicator
-     * of performance.
-     *
-     * @return the fitness level of the creature
-     */
-    virtual float fitness() const = 0;
-
-    /*
-     * Updates the fitness percent of the creature.
-     *
-     * @param fp the new floating-point value for fitness percent.
-     */
-    virtual void setFitnessPercent(const float& fp) = 0;
-
-    /*
-     * A metric used to assess how well a creature performed when compared to the rest
-     * of the population.
-     *
-     * @return a floating-point value that indicates how well the creature performed
-     */
-    virtual float fitnessPercent() const = 0;
-
-    /*
-     * Defines the limits of the slice this creature has.
-     *
-     * @param start
-     * @param end
-     */
-    virtual void setRouletteRange(const float& start, const float& end) = 0;
-
-    /* The roulette range defines the starting and endings positions of the slice of pie for a creature.
-     * The range varies from 0.f to 100.f.
-     *
-     * @param start (out) returns the initial position of its slice on a pie.
-     * @param end (out) returns the end position of its slice on a pie.
-     */
-    virtual void rouletteRange(float& start, float& end) const = 0;
-
-    /*
-     * A string that contains the chromosome data along with fitness values.
-     *
-     * @return a std::string object that contains info about the creature.
-     */
+    virtual void mutateGene(const unsigned int& pos, std::mt19937& rng) final {
+        chromosome_.at(pos);
+        const T value = mutatedGene(pos, rng);
+        setGene(pos, value);
+    }
+    virtual void replaceChromosome(const std::vector<T>& chromosome) final {
+        // Copy even rvalues: a caller may retain writable references into their buffer.
+        auto copy = chromosome;
+        invalidateFitness();
+        chromosome_.swap(copy);
+    }
+    virtual void invalidateFitness() noexcept final {
+        fitness_ = Fitness{};
+        percent_ = start_ = end_ = 0;
+    }
+    virtual void calculateFitness() final {
+        invalidateFitness();
+        const Fitness result = evaluate();
+        if (result.state() == FitnessState::Unevaluated)
+            throw std::logic_error("evaluator returned Unevaluated instead of Valid or Invalid");
+        fitness_ = result;
+    }
+    virtual Fitness evaluation() const noexcept final { return fitness_; }
+    virtual FitnessState fitnessState() const noexcept final { return fitness_.state(); }
+    virtual double fitness() const final { return fitness_.score(); }
+    virtual void setFitnessPercent(const float& value) final { percent_ = value; }
+    virtual float fitnessPercent() const final { return percent_; }
+    virtual void setRouletteRange(const float& start, const float& end) final { start_ = start; end_ = end; }
+    virtual void rouletteRange(float& start, float& end) const final { start = start_; end = end_; }
     virtual std::string stats() = 0;
-
 protected:
-    /*
-     * A vector that holds the genetic information of the creature.
-     */
-    std::vector<T> _chromosome;
-
-    /*
-     * A floating-point value that indicates the fitness level of the creature.
-     */
-    float _fitness;
-
-    /*
-     * A floating-point statistic that is used to determine how fit the creature is to be able to have children.
-     */
-    float _fitnessPercent;
-
-    /*
-     * Data that is used to define the start and end positions of the slice a creature occupies in the roulette-pie.
-     */
-    float _rouletteRangeStart, _rouletteRangeEnd;
+    virtual Fitness evaluate() const = 0;
+    virtual T mutatedGene(unsigned int pos, std::mt19937& rng) const = 0;
+private:
+    std::vector<T> chromosome_;
+    Fitness fitness_;
+    float percent_ = 0, start_ = 0, end_ = 0;
 };

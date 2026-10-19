@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <random>
+#include <limits>
+#include <stdexcept>
 
 // Own one per serial run. It must outlive every population and algorithm using it.
 // Deliberately not copyable/movable: consumers borrow its engine.
@@ -13,7 +15,15 @@ public:
     RandomContext& operator=(RandomContext&&) = delete;
     std::uint32_t seed() const noexcept { return seed_; }
     std::mt19937& engine() noexcept { return engine_; }
+    std::uint64_t evaluationAttempts() const noexcept { return evaluationAttempts_; }
+    // Called immediately before each population-driven evaluator invocation.
+    void recordEvaluationAttempt() {
+        if (evaluationAttempts_ == std::numeric_limits<std::uint64_t>::max())
+            throw std::overflow_error("evaluation attempt counter exhausted");
+        ++evaluationAttempts_;
+    }
 private:
+    std::uint64_t evaluationAttempts_ = 0;
     const std::uint32_t seed_;
     std::mt19937 engine_;
 };

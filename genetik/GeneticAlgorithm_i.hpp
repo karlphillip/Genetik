@@ -39,13 +39,14 @@ public:
      * create a new generation of individuals.
      *
      * @param population the population that needs to be evolved.
+     * @return Committed or NoViableCandidates; operational failures propagate.
      */
-    virtual void evolve(P& population) = 0;
+    virtual GenerationOutcome evolve(P& population) = 0;
 
     /*
      * How many times the evolucionary process took place during the genetic algorithm execution.
      *
-     * @return the number of times evolve() has been called.
+     * @return the number of successor generations successfully committed by this algorithm.
      */
     virtual unsigned int evolutions() = 0;
 

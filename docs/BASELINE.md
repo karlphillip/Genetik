@@ -1,6 +1,6 @@
 # Baseline and first hardening milestone
 
-Verified 2026-10-19 on the supplied NVIDIA Jetson. All changes are local and uncommitted.
+Verified 2026-10-19 on the supplied NVIDIA Jetson. Sections through the checkpoint reconciliation describe the original hardening baseline; the final section records the subsequent fitness/publication milestone and supersedes historical limitations it explicitly resolves.
 
 ## Starting state
 
@@ -125,3 +125,85 @@ Milestone acceptance: starting-state inventory and unchanged build exercised; C+
 ## Checkpoint reconciliation before the fitness-state milestone
 
 The next assignment rechecked the uncommitted tree against this report. All modified/untracked repository files belonged to this baseline (including the reproduction fixture and downstream consumer); no unrelated edits were found. Existing Debug and sanitizer LastTest.log evidence was present. Rebuilding Release required no recompilation and its five CTest tests passed again (including the final stopping-reason assertions). This baseline is committed separately before fitness-state/publication work; the following milestone records the checkpoint identifier.
+
+## Fitness-validity and generation-publication milestone
+
+### Checkpoint and scope
+
+Baseline checkpoint: **99907b03a50e48cb638fa26a9b973b91a2d63754** (`Establish C++20 baseline and explicit run-owned randomness`). It includes all reviewed baseline files and no unrelated edits. The working tree was clean immediately after that commit. Existing toolchain, build directories, runtime-check test harness and CTest conventions were reused. No dependencies, threading, general transaction system or new cancellation framework were introduced.
+
+### Fitness and mutation contract
+
+[Fitness.hpp](../genetik/Fitness.hpp) separates `FitnessState::{Unevaluated,Valid,Invalid}` from a numerical score. `Fitness::valid(double)` admits all finite scores, including zero and negatives, and rejects NaN/infinity. `Fitness::invalid()` is an ordinary expected mathematical outcome. `Fitness::fromScore(double)` adapts numerical evaluators, mapping non-finite output to Invalid. It never catches exceptions. Reading a score from Unevaluated or Invalid throws `logic_error`; these states cannot enter ordinary score comparisons. Objective direction is a separate population setting, default Maximize, optionally Minimize.
+
+[Creature_i.hpp](../genetik/Creature_i.hpp) now owns private scalar-genome and fitness storage. Candidates derive from it and implement `Fitness evaluate() const` and `T mutatedGene(unsigned int, std::mt19937&) const`, not cache setters. The base's final `calculateFitness()` clears old fitness, invokes the evaluator, and requires Valid or Invalid. Returning Unevaluated is a programming/operational failure. An exception leaves a standalone candidate Unevaluated, never carrying an old score.
+
+Supported scalar genes are arithmetic values; pointers and compound/shared mutable gene objects are deliberately rejected at compile time. The default population requires a candidate derived from this base. This is a source compatibility restriction that makes the current ownership guarantee enforceable. Expression trees will have a separately validated owned representation, not shared mutable nodes smuggled into this scalar base. Custom evaluator metadata must not mutate candidate genomes/cache or change the objective behind the const evaluator contract; external diagnostics/side effects are outside the preservation guarantee.
+
+Every supported edit (`setGene`, `mutateGene`, `replaceChromosome`) clears fitness to Unevaluated and clears selection metadata. Reads return gene values or a chromosome copy. No mutable/const reference to internal genome storage escapes. Genome inputs are copied even when passed with `std::move`, preventing retained writable input references from changing the owned genome. The concrete character constructor follows the same rule. Out-of-range reads/writes now throw rather than silently return/ignore; rejected edits leave the original genome/cache unchanged. Copies transfer a value-owned matching genome/evaluation pair; moves also invalidate the moved-from cache. Whole-candidate copying is not a new evaluation. The objective and all its input data must remain fixed during a run; changing them requires a fresh run. No evaluator-versioning system is promised.
+
+The character evaluator returns Invalid for a wrong target length. Other mathematical domain failures must similarly be returned explicitly by custom evaluators; arbitrary exceptions, including `domain_error`, are never automatically interpreted as mathematical invalidity. A numerical evaluator can migrate from `score = compute()` to `return Fitness::fromScore(compute())`; zero/negative results remain valid.
+
+### Publication and best-candidate contract
+
+[Population.hpp](../genetik/Population.hpp) privately owns a state containing members, committed generation number and best seen over committed generations. Generation zero is the first viable initial publication. Every later successful publication increments its number. `bestCreature()` is the best valid member of the current generation; `bestSeen()` returns an optional copy of the best valid candidate from any committed generation, keeping the previous archive entry on equal scores. A worse viable generation can commit without lowering that archive. Invalid members never become best.
+
+Initialization, resizing, explicit replacement and evolution use the same staging path. It detaches all supplied candidate objects (even rvalue vectors with retained element references), evaluates **every** candidate, validates states, ranks members, computes roulette metadata and prepares the archive/state allocation before the commit point. Parent genomes and cached evaluations are never evaluated or edited in place. `unique_ptr::swap` publishes the entire prepared state without throwing. Candidate destructors must be nonthrowing. No potentially throwing allocation/copying runs between that swap and incrementing the algorithm's successful-evolution counter; disposing the old state requires nonthrowing candidate destructors. This is a serial, non-reentrant API boundary, not a concurrent snapshot/atomicity guarantee; user hooks must not reenter the same run.
+
+`setCreature()` now queues an independently owned edit batch and invalidates the replacement. `updateValues()` evaluates/publishes the batch; without edits it explicitly reevaluates a detached copy of the current population. Pending edits make current-best, mean and parent-selection/evolution queries fail rather than use stale scores. `creatures()` always returns a detached snapshot of the **committed** population, and `bestSeen()` always reports committed history, including while edits are pending. An exception during edit preparation discards the pending batch; an attempted publication also consumes/discards that batch on failure. Public population input containers are copied to prevent retained candidate references from mutating committed state.
+
+Population copying/moving is disabled to keep ownership/publication identity unambiguous. Custom population implementations used with the default GA must now supply `requireReady`, `generation` and `publishGeneration` with the same guarantees, in addition to the shared run context and snapshot methods. The old protected Population_i vector/fitness helper hooks and protected Creature_i genome/cache fields are removed; the interfaces describe the new state boundary.
+
+### Invalidity and failure policies
+
+| Situation | Behavior |
+| --- | --- |
+| Mixed Valid/Invalid members | Commit if at least one is Valid. Invalid members are kept for diagnostics, ranked before valid members and given zero selection weight. Mean uses valid members only; population size is preserved. |
+| One valid member, including score zero | It is the only selectable parent and can fill an entire successor. Singleton populations and odd population sizes remain supported. |
+| All-invalid initial candidates | Evaluate the finite supplied population once; return `lastOutcome()==NoViableCandidates`, with no committed population, generation or best. `bestSeen()` is empty and `creatures()` is empty; score/selection queries throw. `evolve()` returns NoViableCandidates without retry/draws/work. Explicit `setSize()` or `publishGeneration()` may attempt initialization again. |
+| All-invalid successor | Evaluate the requested finite successor once; return NoViableCandidates. Preserve the prior committed population, fitness/selection metadata, generation, archive and GA evolution count. No regeneration loop. |
+| Unevaluated at an evaluation/selection boundary | Reject. The final evaluation wrapper detects a custom evaluator returning Unevaluated; pending edit boundaries reject stale selection/best queries. Never treat an uninitialized score as zero. |
+| Unexpected evaluator exception | Stop evaluating immediately, discard offspring and preserve committed state. Propagate with nested candidate index and attempted-call number; evolution adds completed-evolution context. Preserve the original exception object/type, including non-standard exceptions. Set lastOutcome to OperationalFailure where the attempt was handled. |
+| Variation/copy/allocation/preparation failure | No state publication. Propagate actual error, with generation context from evolve. A failure before entering population evaluation is recorded by the algorithm, not falsely as a completed population attempt. |
+
+`GeneticAlgorithm_i::evolve()` now returns `GenerationOutcome` rather than void. Expected outcomes are Committed or NoViableCandidates; operational failures propagate as exceptions and set the algorithm's lastOutcome. `evolutions()` counts only successor generations committed by that algorithm instance. Population `generation()` counts publications, including explicit edits/resizes, independently of the algorithm instance. No state has generation zero until viable initialization commits.
+
+Roulette changed from magnitude weighting to **linear-rank weighting**, independent of numerical sign/scale and objective direction: valid candidates sorted worst to best receive ranks 1..N; equal-score groups receive their average rank. Weights normalize to percentages, and ranges cover [0,100) with the final endpoint fixed at 100. All valid candidates have positive mathematical weights; all-equal scores select uniformly. Invalids receive zero. This avoids subtracting extreme double scores and avoids sign-dependent validity. It intentionally changes trajectories from the baseline. Fitness/percentage/range accessors are final to prevent custom candidates overriding score-state guarantees. The standard library's floating distributions/rounding still limit cross-platform reproducibility; supported conditions remain the same build/toolchain, fixed input/objective/configuration/seed/call order and deterministic serial evaluation.
+
+### RNG, attempted work, stopping and callbacks
+
+The guarantee preserves **committed population state**, not the whole run. Consumed RNG draws stay consumed on any failed attempt. `RandomContext::evaluationAttempts()` is a monotonically increasing uint64 counter, incremented immediately before each population-driven `calculateFitness()` call. Valid, Invalid and throwing evaluations all count; discarded generations do not refund work. Counter overflow is rejected before another evaluator is invoked. The context outlives construction failures, so attempted initialization work remains inspectable even if a Population constructor throws. Standalone manual `candidate.calculateFitness()` calls outside a population are not run-managed work and are not included in that counter.
+
+There is no evaluator-call budget in the existing implementation. Future evaluation budgets must check/charge attempts at this same boundary, counting invalid and throwing calls and never refunding discarded work. The demo's existing generation limit remains checked between completed evolve calls; failed attempts return a no-viable outcome or throw, with no implicit retry. Evaluation hooks and variation hooks run before publication. External evaluator side effects are not rolled back.
+
+Source inspection confirmed no cancellation token, progress observer or library stop callback exists. No new framework was added. Callers can cooperatively stop between evolve calls; there is no promise to interrupt a blocking evaluator. Demo progress printing occurs after publication; a caller's own reporting/callback failure after evolve returns cannot undo the generation that already committed. The demo now checks no-viable outcomes, reads committed best seen, prints linear-rank/objective configuration and attempted calls, and prints nested operational error causes.
+
+### Focused verification
+
+The new runtime-check `genetik_fitness_publication` suite covers valid zero/negative and explicit invalid/unevaluated states; all supported edits and retained references; scalar/candidate-buffer detachment; copying/moving; non-finite adapters; both objective directions and extreme finite scores; mixed validity; one viable parent; all-invalid initialization/successor; pending-edit rejection; exact preservation of genomes, Fitness objects, roulette metadata, generation and committed archive; injected evaluator, copy and archive-preparation failures; preserved standard/non-standard nested errors; and exact consumed-RNG/attempt-count behavior. A mirrored successful attempt constructs identical offspring to verify RNG consumption after an aborted evaluator attempt. An improved first offspring followed by a throwing second proves partial-generation improvements never enter the archive. Existing contract tests are adapted to states/rank weighting; Release checks remain runtime failures, independent of NDEBUG.
+
+Exact commands from repository root, reusing the verified cached Release/Debug and Debug+GENETIK_SANITIZERS=ON configurations:
+
+```sh
+../.tools/bin/cmake --build ../build-release -j2
+../.tools/bin/ctest --test-dir ../build-release --output-on-failure
+../.tools/bin/cmake --build ../build-debug -j2
+../.tools/bin/ctest --test-dir ../build-debug --output-on-failure
+../.tools/bin/cmake --build ../build-sanitize -j2
+../.tools/bin/ctest --test-dir ../build-sanitize --output-on-failure
+../build-release/tests/genetik_tests
+../build-release/tests/genetik_generation_tests
+timeout 10s ../build-release/genetik_demo 42 1000 > ../fitness-demo.log
+```
+
+For a fresh build workspace, use the configure commands in the earlier verification section; CMake automatically regenerates the reused directories for the added test/header. Final outcomes follow. No stochastic convergence assertion is part of any correctness test.
+
+Final qualification: **6/6 CTest cases passed in Release, Debug and GCC ASan+UBSan Debug**, with no sanitizer diagnostics. Both runtime-check executables run in Release: **259 existing contract checks and 270 fitness/publication checks**. All eight public-header compilation targets passed. The downstream consumer configures/builds/runs separately and now checks successful publication, valid committed best, generation counters and evaluation accounting; it remains an ordinary Release consumer even when the parent is instrumented.
+
+The additional syntax/warning review `g++ -std=c++20 -Wall -Wextra -Wpedantic -Igenetik -fsyntax-only tests/tests.cpp tests/generation.cpp demo.cpp` passed without warnings. `git -c core.whitespace=cr-at-eol diff --check` passed (preserving the existing interface header's CRLF convention). One routine development compile failed on a mixed-type multi-declarator `auto` in a test; separating the declarations fixed it before qualification. Retained-reference tests were extended during review to cover both gene buffers and whole-candidate vectors, and all affected configurations were rebuilt after the fix.
+
+The bounded seed-42 Release example returned 0 at generation 1,000 with `generation_limit`, **100,100 attempted evaluations** (100 initialization + 100 × 1,000 offspring), best-seen fitness 0.892 and final-generation best 0.865 (three decimals). It did not find the target. This is an observation, not a convergence assertion or a search-quality comparison with the previous selection policy.
+
+Milestone acceptance is satisfied: explicit enforceable cache states; ordinary invalid outcomes separate from unexpected nested exceptions; detached staging and no-throw publication of genomes/fitness/generation/archive; defined mixed/all-invalid/single-valid behavior; exact attempted-work and consumed-RNG failure policy; no stale best/selection through supported edit paths; deterministic failure/alias tests; relevant platform verification; durable migration/roadmap updates. No concrete blocker remains for this milestone. General budgets, cancellation, observer callbacks, parameter fitting and expression candidates are still future work.
+
+Recommended next scope: a value-owned bounded expression representation and strict double CPU evaluator for variables, finite constants, +, -, *. Acceptance is deterministic structural/limit and arithmetic-error tests, equivalent exported semantics, bounded evaluation work, no target-data access, no mutable aliases, and Release/sanitizer/downstream qualification. Integrate structure evolution afterward, using y = x*x + x + 1 as the first symbolic-regression demonstration. Preserve ordinary division/logarithms, bounded constant fitting and the full indexed-prime fitting/extrapolation protocol in the roadmap.

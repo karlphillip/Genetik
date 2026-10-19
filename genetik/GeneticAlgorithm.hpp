@@ -1,6 +1,7 @@
 #pragma once
 #include "GeneticAlgorithm_i.hpp"
 #include <algorithm>
+#include <exception>
 #include <limits>
 #include <stdexcept>
 #include <vector>
@@ -12,26 +13,35 @@ public:
     GeneticAlgorithm(const float& crossoverRate, const float& mutationRate, RandomContext& random)
         : GeneticAlgorithm_i<P, C>(crossoverRate, mutationRate, random) {}
 
-    void evolve(P& population) override {
-        if (&population.randomContext() != &this->_random)
-            throw std::invalid_argument("population and algorithm must share a run context");
-        if (this->_evolutions == std::numeric_limits<unsigned int>::max())
-            throw std::overflow_error("generation counter exhausted");
-        const auto snapshot = population.creatures();
-        if (snapshot->empty()) throw std::invalid_argument("population must be nonempty");
-        std::vector<C> next;
-        next.reserve(snapshot->size());
-        while (next.size() < snapshot->size()) {
-            const C father = select(*snapshot);
-            const C mother = select(*snapshot);
-            C a = father, b = mother;
-            crossover(father, mother, a, b);
-            next.push_back(mutation(a));
-            if (next.size() < snapshot->size()) next.push_back(mutation(b));
+    GenerationOutcome lastOutcome() const noexcept { return outcome_; }
+    GenerationOutcome evolve(P& population) override {
+        try {
+            if (&population.randomContext() != &this->_random)
+                throw std::invalid_argument("population and algorithm must share a run context");
+            if (this->_evolutions == std::numeric_limits<unsigned int>::max())
+                throw std::overflow_error("generation counter exhausted");
+            if (!population.generation())
+                return outcome_ = GenerationOutcome::NoViableCandidates;
+            population.requireReady();
+            const auto snapshot = population.creatures();
+            std::vector<C> next;
+            next.reserve(snapshot->size());
+            while (next.size() < snapshot->size()) {
+                const C father = select(*snapshot);
+                const C mother = select(*snapshot);
+                C a = father, b = mother;
+                crossover(father, mother, a, b);
+                next.push_back(mutation(a));
+                if (next.size() < snapshot->size()) next.push_back(mutation(b));
+            }
+            outcome_ = population.publishGeneration(std::move(next));
+            if (outcome_ == GenerationOutcome::Committed) ++this->_evolutions;
+            return outcome_;
+        } catch (...) {
+            outcome_ = GenerationOutcome::OperationalFailure;
+            std::throw_with_nested(std::runtime_error("generation attempt after " +
+                std::to_string(this->_evolutions) + " completed evolutions failed"));
         }
-        for (unsigned int i = 0; i < next.size(); ++i) population.setCreature(i, next[i]);
-        population.updateValues();
-        ++this->_evolutions;
     }
     unsigned int evolutions() override { return this->_evolutions; }
 
@@ -68,16 +78,21 @@ public:
     C roulette(const P& population) override {
         if (&population.randomContext() != &this->_random)
             throw std::invalid_argument("population and algorithm must share a run context");
+        population.requireReady();
         return select(*population.creatures());
     }
 private:
+    GenerationOutcome outcome_ = GenerationOutcome::NoViableCandidates;
     C select(const std::vector<C>& creatures) {
         if (creatures.empty()) throw std::invalid_argument("population must be nonempty");
+        for (const auto& c : creatures)
+            if (c.fitnessState() == FitnessState::Unevaluated)
+                throw std::logic_error("unevaluated parent candidate");
         const float draw = std::uniform_real_distribution<float>(0, 100)(this->_rng);
         for (const auto& c : creatures) {
             float start, end;
             c.rouletteRange(start, end);
-            if (draw >= start && draw < end) return c;
+            if (c.fitnessState() == FitnessState::Valid && draw >= start && draw < end) return c;
         }
         throw std::domain_error("selection ranges do not cover draw; call updateValues()");
     }

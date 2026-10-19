@@ -71,4 +71,25 @@ Initialization, resizing, selection, crossover and mutation consume this run's e
 
 `setCreature()` stages edits; `updateValues()` evaluates and publishes them. A generation publishes genomes, fitness, generation number and best seen together only after evaluation and preparation succeed. All-invalid attempts return `NoViableCandidates`. Unexpected exceptions abort the attempt and retain their original cause as a nested exception. Consumed random draws and attempted evaluations remain consumed; `run.evaluationAttempts()` includes invalid and throwing evaluations. Objective/data must remain fixed during a run. See the [current fitness/publication contract](docs/BASELINE.md#fitness-validity-and-generation-publication-milestone) for migration and edge cases. Repeatability is supported with the same build/toolchain, input, configuration, seed, call order and deterministic serial evaluation.
 
-See [baseline and audit](docs/BASELINE.md) for verified commands, corrected defects, compatibility details and remaining limitations. The [roadmap](docs/ROADMAP.md) defines the later real-valued, expression, polynomial and prime-sequence milestones. Symbolic regression and prime regression are not implemented yet.
+See [baseline and audit](docs/BASELINE.md) for verified commands, corrected defects, compatibility details and remaining limitations. The [roadmap](docs/ROADMAP.md) defines the later real-valued, expression, polynomial and prime-sequence milestones. Manually constructed expression evaluation is available below. Structure evolution, symbolic-regression fitting and prime regression are not implemented yet.
+
+
+## Mathematical expression evaluation
+
+```cpp
+#include <Expression.hpp>
+#include <array>
+
+const auto x = Expression::variable(0);
+const auto square = Expression::binary(ExpressionKind::Multiply, x, x);
+const auto f = Expression::binary(ExpressionKind::Add,
+    Expression::binary(ExpressionKind::Add, square, x), Expression::constant(1, 1));
+const auto result = f.evaluate(std::array{2.});
+// f.toString() == "(((x0 * x0) + x0) + 1.0)"; result.value() == 7
+```
+
+Run `../build-release/genetik_expression_demo` for the manually constructed polynomial, its node count/depth, the five supplied input/output examples and explicit handling of arithmetic overflow. This demonstrates representation/evaluation; it performs no evolution or fitting.
+
+Expressions own typed postfix nodes, enforce a single complete tree and configurable node/depth/constant bounds, and expose no mutable internal storage. Mathematical non-finite arithmetic returns an invalid `ExpressionResult`; malformed construction, wrong/non-finite bindings and allocation failures are exceptions. Text export preserves grouping and stored constant values independently of locale. Default limits are 1,023 nodes, depth 64 (leaf depth 1), and any finite constant.
+
+The public CMake target propagates `-fno-fast-math -ffp-contract=off` on GCC/Clang because evaluation is in a public header. Consumers must retain strict binary64 semantics, default rounding and gradual underflow, including when building without CMake. See [expression contracts and integration plan](docs/EXPRESSIONS.md) for the full API, floating-point assumptions, work bounds, faithful export and the concrete bridge needed for later structure evolution.

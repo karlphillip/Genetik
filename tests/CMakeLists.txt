@@ -1,3 +1,8 @@
+add_executable(genetik_expression_tests expressions.cpp)
+target_link_libraries(genetik_expression_tests PRIVATE genetik_lib)
+add_test(NAME genetik_expression_contracts COMMAND genetik_expression_tests)
+# Includes 20,001-level skew-tree stress; GCC ASan on this Jetson needs ~41 seconds.
+set_tests_properties(genetik_expression_contracts PROPERTIES TIMEOUT 60)
 add_executable(genetik_generation_tests generation.cpp)
 target_link_libraries(genetik_generation_tests PRIVATE genetik_lib)
 add_test(NAME genetik_fitness_publication COMMAND genetik_generation_tests)
@@ -7,6 +12,9 @@ target_link_libraries(genetik_tests PRIVATE genetik_lib)
 add_test(NAME genetik_contracts COMMAND genetik_tests)
 set_tests_properties(genetik_contracts PROPERTIES TIMEOUT 30)
 if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_expression_example COMMAND genetik_expression_demo)
+    set_tests_properties(genetik_expression_example PROPERTIES TIMEOUT 30
+        PASS_REGULAR_EXPRESSION "Arithmetic invalidity at postfix node 3")
     add_test(NAME genetik_demo_bounded COMMAND genetik_demo 42 20)
     add_test(NAME genetik_demo_zero_budget COMMAND genetik_demo 42 0)
     set_tests_properties(genetik_demo_bounded PROPERTIES
@@ -19,7 +27,7 @@ if(GENETIK_BUILD_EXAMPLES)
                         genetik_demo_invalid_argument PROPERTIES TIMEOUT 30)
 endif()
 # Each public header must compile as the first and only include.
-foreach(header Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness)
+foreach(header Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp "#include <${header}.hpp>\n")
     add_library(header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp)
     target_link_libraries(header_${header} PRIVATE genetik_lib)
@@ -30,3 +38,10 @@ add_test(NAME genetik_downstream COMMAND ${CMAKE_COMMAND}
     -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
     -P ${CMAKE_CURRENT_SOURCE_DIR}/downstream.cmake)
 set_tests_properties(genetik_downstream PROPERTIES TIMEOUT 60)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_test(NAME genetik_expression_fp_policy COMMAND ${CMAKE_COMMAND}
+        -DCXX_COMPILER=${CMAKE_CXX_COMPILER} -DGENETIK_SOURCE=${PROJECT_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/fp_policy.cmake)
+    set_tests_properties(genetik_expression_fp_policy PROPERTIES TIMEOUT 30)
+endif()

@@ -1,6 +1,6 @@
 # Baseline and first hardening milestone
 
-Verified 2026-10-19 on the supplied NVIDIA Jetson. Sections through the checkpoint reconciliation describe the original hardening baseline; the final section records the subsequent fitness/publication milestone and supersedes historical limitations it explicitly resolves.
+Verified 2026-10-19 on the supplied NVIDIA Jetson. Sections through the checkpoint reconciliation describe the original hardening baseline; later sections record the subsequent fitness/publication and expression milestones and supersede historical limitations they explicitly resolve.
 
 ## Starting state
 
@@ -207,3 +207,52 @@ The bounded seed-42 Release example returned 0 at generation 1,000 with `generat
 Milestone acceptance is satisfied: explicit enforceable cache states; ordinary invalid outcomes separate from unexpected nested exceptions; detached staging and no-throw publication of genomes/fitness/generation/archive; defined mixed/all-invalid/single-valid behavior; exact attempted-work and consumed-RNG failure policy; no stale best/selection through supported edit paths; deterministic failure/alias tests; relevant platform verification; durable migration/roadmap updates. No concrete blocker remains for this milestone. General budgets, cancellation, observer callbacks, parameter fitting and expression candidates are still future work.
 
 Recommended next scope: a value-owned bounded expression representation and strict double CPU evaluator for variables, finite constants, +, -, *. Acceptance is deterministic structural/limit and arithmetic-error tests, equivalent exported semantics, bounded evaluation work, no target-data access, no mutable aliases, and Release/sanitizer/downstream qualification. Integrate structure evolution afterward, using y = x*x + x + 1 as the first symbolic-regression demonstration. Preserve ordinary division/logarithms, bounded constant fitting and the full indexed-prime fitting/extrapolation protocol in the roadmap.
+
+## Bounded expression value and strict CPU evaluator milestone
+
+### Starting point and integration review
+
+Started from clean **be3e7f62f9882d646fda1d79c045a31ff014fcdc**, with baseline checkpoint **99907b03a50e48cb638fa26a9b973b91a2d63754** present. Read the repository guidance, milestone evidence/roadmap and current public scalar/fitness/population/GA APIs. Reused GCC/libstdc++ 13, C++20, workspace CMake 4.4.4 and the existing three out-of-source build directories. No unrelated edits were present. No dependency or evolutionary-core API changes were needed for expression values.
+
+Actual integration findings: Creature_i has private/final arithmetic-scalar genome operations and Population statically requires that base. Its virtual size-based initializer also instantiates T(engine). GA's scalar virtual crossover/mutation definitions require chromosome/gene operations and equal lengths. A typed variable-size tree cannot legitimately enter that pipeline through a dummy scalar chromosome. The smallest concrete next bridge—common evaluated-candidate base, conditional initialization, defaulted variation policy and an owned expression candidate using the same publication path—is specified in [EXPRESSIONS.md](EXPRESSIONS.md#concrete-next-integration-change). It is documented, not implemented in this milestone.
+
+### Delivered contracts
+
+[Expression.hpp](../genetik/Expression.hpp) provides typed postfix nodes, validated value-owned Expression construction/factories, constant-derived replacements, detached node inspection, structural counts/limits, explicit ExpressionResult evaluation and deterministic text export. The initial grammar is variables, finite double constants, +, -, *. Construction enforces exactly one complete tree, arity and variable schema with no reference edges/cycles/fragments, inclusive node/depth bounds, and an optional finite absolute-constant bound. Defaults are 1,023 nodes, depth 64 with leaf depth 1, and largest finite absolute constant. Checks avoid wrapping count/depth arithmetic even with SIZE_MAX configured.
+
+Public inputs are copied even when supplied as rvalues, to prevent retained token references from bypassing validation. No mutable internal access is exposed. Copies/derived values are independent; failed construction/replacement preserves existing valid values. Moved-from values are for assignment/swap/destruction, with execution/inspection rejecting the empty state. All traversals and destruction are iterative/flat. Evaluation is bounded by O(bindings + nodes) time and O(nodes) temporary storage; export is O(nodes + output length) with O(depth + output length) temporary storage. See EXPRESSIONS.md for construction/copy details and the cost of repeatedly composing a growing tree.
+
+Successful evaluation returns a finite double, including negative/signed-zero/subnormal values. Non-finite intermediate arithmetic returns MathematicalInvalidity with the first failing postfix index; accessing its numerical value throws. Malformed construction/configuration, wrong/non-finite bindings and operational/allocation failures are exceptions, not poor scores. Evaluators have no RNG or dataset access. Postfix ascending order preserves left/right grouping and operand order; each arithmetic node rounds/stores/checks its own result. Overflow under multiplication by zero stays invalid. Under default non-trapping round-to-nearest/gradual-underflow settings, finite underflow to signed zero succeeds. No floating-point environment manager or alternate rounding-mode qualification is provided.
+
+Faithful export is fully parenthesized infix with indexed variable names x0,x1,..., locale-independent max_digits10 decimal constants, explicit negative-constant parentheses and signed-zero preservation. It describes the same mathematical tree/constant values; a general parser/JIT/serialization layer or cross-language execution guarantee is not provided. The prime experiment's input n remains a later one-based data index bound to the single variable x0, not a change to schema indexing.
+
+Compatibility/build implications: genetik_lib remains header-only, with existing scalar/core APIs unchanged. Because evaluation is public-header code, GCC/Clang consumers now inherit `-fno-fast-math -ffp-contract=off`; MSVC gets `/fp:strict` but is not qualified here. Other compilers require equivalent options and qualification. The header rejects known fast/finite-only configurations and statically requires native IEEE binary64/FLT_EVAL_METHOD==0; it cannot detect every unsafe individual flag. All using translation units must retain the documented settings. Tests inspect actual reference behavior, including a product/addition rounding counterexample that would differ under FMA. Alternate FP control modes, compilers, architectures and bitwise cross-platform reproducibility remain unqualified.
+
+The new public [expression_demo.cpp](../expression_demo.cpp) explicitly demonstrates a **manually constructed** x*x+x+1 candidate, 7 nodes and depth 4. Outputs are 3,1,1,3,7 at -2,-1,0,1,2. It handles an explicit invalid outcome for zero times an overflowing inner product. It does not perform fitting or structure evolution.
+
+### Verification and routine repair
+
+Focused public-API tests exercise valid constants/variables, exact known arithmetic and subtraction grouping/order, binding count/schema/finite errors (including unused bindings), constant/configuration errors, per-node overflow/first-failure order, zero-masked overflow, separate-node rounding/no FMA, signed zero, subnormals and underflow, exact/exceeded node/depth/constant limits, malformed postfix fragments/arity, SIZE_MAX arithmetic, copy/alias safety, derived/replacement failure preservation, moved-from recovery, faithful groupings, bit-exact constant spellings and a custom decimal locale. Left/right skew trees at depth 20,001 (40,001 nodes) exercise iterative construction, evaluation, export, copy and destruction. Nine public headers compile independently; the downstream consumer constructs, evaluates, inspects and prints the polynomial through the public CMake target.
+
+The first Release and Debug suites passed. The initial sanitizer expression test exceeded its 30-second timeout. A temporary instrumented copy in the build workspace localized the time to the deliberate deep-tree stress cases: left validation ~4.4 s, evaluation ~2.7 s, export ~10.3 s; right construction/evaluation/export and copy completed the entire test in ~41.1 s with no diagnostic. This was a bounded workload/time allowance issue on this Jetson, not a mathematical/ownership failure. Increased only that test's finite timeout to 60 seconds and reran the final tree, retaining both deep tests. A warning check also found and fixed an unnecessary copied vector in a test range loop; an independent-returned-limits check and a fail-closed unsupported-kind guard were added during review. All affected builds were repeated after those changes.
+
+Exact final commands from repository root:
+
+```sh
+../.tools/bin/cmake --build ../build-release -j2
+../.tools/bin/ctest --test-dir ../build-release --output-on-failure
+../.tools/bin/cmake --build ../build-debug -j2
+../.tools/bin/ctest --test-dir ../build-debug --output-on-failure
+../.tools/bin/cmake --build ../build-sanitize -j2
+../.tools/bin/ctest --test-dir ../build-sanitize --output-on-failure
+g++ -std=c++20 -fno-fast-math -ffp-contract=off -Wall -Wextra -Wpedantic -Igenetik -fsyntax-only tests/tests.cpp tests/generation.cpp tests/expressions.cpp demo.cpp expression_demo.cpp
+../build-release/genetik_expression_demo
+timeout 10s ../build-release/genetik_demo 42 1000 > ../expression-milestone-character.log
+git -c core.whitespace=cr-at-eol diff --check
+```
+
+Cached configurations remain Release, Debug, and Debug+GENETIK_SANITIZERS=ON respectively; CMake regenerates the existing directories for added targets. Fresh-workspace configure commands remain those in the baseline section. Generated Release and downstream consumer compile flags include C++20 and both strict FP options. The downstream fixture remains an ordinary separate Release build even when run from the parent sanitizer suite. The unsafe-mode CTest compiles the public expression header under -ffast-math and -ffinite-math-only and requires the intended rejection diagnostic, rather than treating arbitrary compiler failures as success.
+
+Final outcomes: **9/9 CTest cases passed in Release, Debug and ASan+UBSan Debug**. The final sanitizer deep-tree contract completed in 40.72 seconds under its 60-second cap; no sanitizer diagnostics were reported. The existing fitness/publication and scalar suites passed unchanged. Nine standalone-header targets and the separate downstream C++20 Release consumer passed. The complete warning command above passed without warnings after the range-loop fix. Public expression-example output matched every requested table value and reported invalidity at postfix node 3. The bounded character example returned 0 at generation 1,000 with `generation_limit` and 100,100 attempted evaluations, preserving its prior behavior. No correctness test relies on stochastic discovery.
+
+Acceptance is satisfied for a downstream consumer constructing, evaluating, inspecting and faithfully printing bounded expressions, with ownership, invalid-result, numerical/build and export contracts verified. Limits remain: no expression search/candidate bridge, parser, division/logarithms, constant fitting, dataset loss, alternate platform/FP-environment qualification or allocation-fault injection. No concrete blocker remains for this evaluator milestone. The documented next task is the small representation-independent candidate/variation bridge and bounded polynomial structure evolution; all later prime fitting/validation/extrapolation, complexity, constant fitting and CPU-first profiling requirements remain in the roadmap.

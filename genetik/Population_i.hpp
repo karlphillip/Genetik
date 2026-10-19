@@ -33,7 +33,7 @@ public:
     /*
      * The vector of creatures.
      *
-     * @return a shared pointer to the vector of creatures.
+     * @return an independently owned snapshot in the default implementation.
      */
     virtual std::shared_ptr<std::vector<T>> creatures() const = 0;
 
@@ -93,7 +93,7 @@ protected:
     virtual void _computeRouletteRange() = 0;
 
     /*
-     * A sorting operation that places the fittest creatures at the beginning of the vector.
+     * Sort ascending by fitness; the default bestCreature() reads the final element.
      */
     virtual void _sort() = 0;
 

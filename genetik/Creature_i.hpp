@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <random>
 
 
 template <typename T>
@@ -79,8 +80,9 @@ public:
      * Randomly changes a specific gene of the chromosome.
      *
      * @pos the index of the gene that needs to be mutated.
+     * @rng the run-owned engine; implementations must use it for all mutation draws.
      */
-    virtual void mutateGene(const unsigned int& pos) = 0;
+    virtual void mutateGene(const unsigned int& pos, std::mt19937& rng) = 0;
 
     /* Change a specific gene given an index position in the chromosome.
      *

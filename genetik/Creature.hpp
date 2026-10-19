@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <random>
 #include <sstream>
+#include <stdexcept>
 
 
 // global defines
@@ -18,9 +19,7 @@
 //#define TARGET          "FFFFFFFFFF"
 //#define CHROMOSOME_SZ   10
 
-// global variables
-static std::mt19937 rng = std::mt19937(std::random_device()());
-static std::uniform_int_distribution<unsigned int> asciiRange(32, 126);
+// Random state is supplied by the caller; no process or translation-unit RNG.
 
 /*
  * Creates a string representation of a float value with N decimal places
@@ -40,13 +39,14 @@ class Creature : public Creature_i<T>
 public:
 
     /*
-     * Default constructor
+     * Initialize the demonstration genome using the caller's engine.
      */
-    Creature()
+    explicit Creature(std::mt19937& rng)
     : Creature_i<T>()
     {
         //std::cout << "Creature::Creature()" << std::endl;
 
+        std::uniform_int_distribution<unsigned int> asciiRange(32, 126);
         // initialize chromosome with random genes
         for (unsigned int x = 0; x < CHROMOSOME_SZ; ++x)
         {
@@ -117,13 +117,15 @@ public:
     /*
      *
      */
-    void mutateGene(const unsigned int& pos)
+    void mutateGene(const unsigned int& pos, std::mt19937& rng)
     {
         if (pos >= this->_chromosome.size())
             return;
 
+        std::uniform_int_distribution<unsigned int> asciiRange(32, 126);
         T gene = asciiRange(rng);
         this->_chromosome[pos] = gene;
+        this->_fitness = 0;
     }
 
     /*
@@ -135,6 +137,7 @@ public:
             return;
 
         this->_chromosome[pos] = value;
+        this->_fitness = 0;
     }
 
     /*
@@ -160,10 +163,7 @@ public:
 
         if (this->_chromosome.size() != target.size())
         {
-            std::cout << "Creature::fitness !!! chromosome and target have different sizes" << std::endl;
-            std::cout << "Creature::fitness !!! chromosome sz=" << this->_chromosome.size() << std::endl;
-            std::cout << "Creature::fitness !!!     target sz=" << target.size() << std::endl;
-            return;
+            throw std::invalid_argument("chromosome length differs from demonstration target");
         }
 
         unsigned int matchedChars = 0;

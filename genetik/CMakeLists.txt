@@ -1,8 +1,10 @@
-set(HEADER_FILES Creature.hpp Creature_i.hpp Population.hpp Population_i.hpp GeneticAlgorithm.hpp GeneticAlgorithm_i.hpp)
-set(SOURCE_FILES "")
-#set(SOURCE_FILES Creature.cpp Population.cpp GeneticAlgorithm.cpp)
-
-add_library(genetik_lib STATIC ${SOURCE_FILES} ${HEADER_FILES})
-
-target_include_directories(genetik_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-set_target_properties(genetik_lib PROPERTIES LINKER_LANGUAGE CXX)
+add_library(genetik_lib INTERFACE)
+target_include_directories(genetik_lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_features(genetik_lib INTERFACE cxx_std_20)
+if(GENETIK_SANITIZERS)
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(FATAL_ERROR "GENETIK_SANITIZERS requires GCC or Clang")
+    endif()
+    target_compile_options(genetik_lib INTERFACE -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(genetik_lib INTERFACE -fsanitize=address,undefined)
+endif()

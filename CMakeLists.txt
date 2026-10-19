@@ -1,14 +1,14 @@
-cmake_minimum_required(VERSION 3.5)
-project(GENETIK LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/genetik)
-
-# create demo application
-add_executable(genetik_demo ${CMAKE_CURRENT_SOURCE_DIR}/demo.cpp)
-target_link_libraries(genetik_demo genetik_lib)
-
-# create test application
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+cmake_minimum_required(VERSION 3.16)
+project(GENETIK VERSION 0.1.0 LANGUAGES CXX)
+set(CMAKE_CXX_EXTENSIONS OFF)
+option(GENETIK_BUILD_EXAMPLES "Build bounded character search demo" ON)
+option(GENETIK_SANITIZERS "Enable address and undefined behavior sanitizers" OFF)
+add_subdirectory(genetik)
+if(GENETIK_BUILD_EXAMPLES)
+    add_executable(genetik_demo demo.cpp)
+    target_link_libraries(genetik_demo PRIVATE genetik_lib)
+endif()
+include(CTest)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

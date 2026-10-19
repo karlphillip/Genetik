@@ -1,59 +1,50 @@
-#include "genetik/GeneticAlgorithm.hpp"
-#include "genetik/Population.hpp"
-#include "genetik/Creature.hpp"
-
+#include "GeneticAlgorithm.hpp"
+#include "Population.hpp"
+#include "Creature.hpp"
+#include <charconv>
+#include <chrono>
+#include <cstdint>
+#include <iomanip>
 #include <iostream>
-#include <memory>
+#include <stdexcept>
+#include <string_view>
 
-// global template aliases
-typedef Creature<char> CreatureType;
-typedef Population<CreatureType> PopulationType;
+using CreatureType = Creature<char>;
+using PopulationType = Population<CreatureType>;
 
-
-int main()
-{
-    // set the number of decimal places to a fixed value for improved aesthetics
-    std::cout << std::fixed << std::setprecision(3);
-
-    // initialize the population of N creatures
-    unsigned int populationSize = 100;
-    PopulationType population(populationSize);
-
-    // track the fittest creature that appeared during the evolutionary process
-    //CreatureType bestCreatureEver = population.bestCreature();
-
-    // create the GeneticAlgorithm itself
-    float crossoverRate = 0.5f;
-    float mutationRate = 0.9f;
-    GeneticAlgorithm<PopulationType, CreatureType> ga(crossoverRate, mutationRate);
-
-    while (true)
-    {        
-        // perform one evolution step
-        ga.evolve(population);               
-
-        // print info to monitor progress        
-        std::cout << "* Generation #" << ga.evolutions() <<
-                     " avg fitness: " << population.mean() <<
-                     " best fitness: " << population.bestCreature().fitness() << std::endl;
-
-        // print fittest creature of the current generation
-        std::cout << "  " << population.bestCreature().stats() << std::endl;
-        //std::cout << std::endl;
-
-        /*
-        // track the best candidate found so far
-        if (population.bestCreature().fitness() > bestCreatureEver.fitness())
-        {
-            bestCreatureEver = population.bestCreature();
-            //std::cout << "  " << bestCreatureEver.stats() << std::endl;
+static std::uint32_t number(const char* arg) {
+    const std::string_view text(arg);
+    std::uint32_t value;
+    const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+    if (error != std::errc{} || end != text.data() + text.size())
+        throw std::invalid_argument("arguments must be unsigned 32-bit integers");
+    return value;
+}
+int main(int argc, char** argv) {
+    try {
+        if (argc > 3) throw std::invalid_argument("usage: genetik_demo [seed [max_generations]]");
+        const auto seed = argc > 1 ? number(argv[1]) : 42u;
+        const auto limit = argc > 2 ? number(argv[2]) : 1000u;
+        const auto start = std::chrono::steady_clock::now();
+        RandomContext random(seed);
+        PopulationType population(100, random);
+        GeneticAlgorithm<PopulationType, CreatureType> ga(0.5f, 0.9f, random);
+        std::cout << std::fixed << std::setprecision(3)
+                  << "seed=" << random.seed() << " population=100 crossover=0.5 mutation=0.9"
+                  << " max_generations=" << limit << " mode=serial\n";
+        auto best = population.bestCreature();
+        while (ga.evolutions() < limit && best.fitness() < 1.0f) {
+            ga.evolve(population);
+            if (population.bestCreature().fitness() > best.fitness()) best = population.bestCreature();
+            std::cout << "* Generation #" << ga.evolutions() << " avg fitness: " << population.mean()
+                      << " best fitness: " << population.bestCreature().fitness() << '\n';
         }
-        */
-
-        // check if one creature achieved maximum fitness and stop the evolution
-        if (population.bestCreature().fitness() == 1.0f)
-            break;
+        std::cout << "best_seen: " << best.stats() << '\n'
+                  << "stopping_reason=" << (best.fitness() == 1 ? "target_reached" : "generation_limit")
+                  << " generations=" << ga.evolutions() << " elapsed_seconds="
+                  << std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count() << '\n';
+    } catch (const std::exception& error) {
+        std::cerr << error.what() << '\n';
+        return 1;
     }
-
-    return 0;
 }

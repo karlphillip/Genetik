@@ -1,263 +1,178 @@
-#include "../genetik/GeneticAlgorithm.hpp"
-#include "../genetik/Population.hpp"
-#include "../genetik/Creature.hpp"
-
+#include "Creature.hpp"
+#include "GeneticAlgorithm.hpp"
+#include "Population.hpp"
+#include <cmath>
 #include <iostream>
-#include <memory>
+#include <limits>
+#include <stdexcept>
+#include <type_traits>
 
-// global template aliases
-typedef Creature<char> CreatureType;
-typedef Population<CreatureType> PopulationType;
+static int checks = 0;
+static void check(bool ok, const char* message) {
+    ++checks;
+    if (!ok) throw std::runtime_error(message);
+}
+template<class E, class F> void throws(F action) {
+    bool caught = false;
+    try { action(); } catch (const E&) { caught = true; }
+    check(caught, "expected exception was not thrown");
+}
+using C = Creature<char>;
+using P = Population<C>;
+using GA = GeneticAlgorithm<P, C>;
 
+// Deterministic, real-valued fitness fixture, independent of the character target.
+struct Score {
+    std::vector<double> genes;
+    float fp = 0, start = 0, end = 0;
+    explicit Score(std::mt19937& rng) : genes{std::uniform_real_distribution<double>(0, 1)(rng)} {}
+    explicit Score(double value) : genes{value} {}
+    std::vector<double> chromosome() const { return genes; }
+    double gene(unsigned int i) const { return genes.at(i); }
+    void setGene(unsigned int i, double x) { genes.at(i) = x; }
+    void mutateGene(unsigned int i, std::mt19937& rng) {
+        genes.at(i) = std::uniform_real_distribution<double>(0, 1)(rng);
+    }
+    void calculateFitness() {}
+    float fitness() const { return static_cast<float>(genes[0]); }
+    void setFitnessPercent(float x) { fp = x; }
+    float fitnessPercent() const { return fp; }
+    void setRouletteRange(float a, float b) { start = a; end = b; }
+    void rouletteRange(float& a, float& b) const { a = start; b = end; }
+    std::string stats() { return std::to_string(genes[0]); }
+};
+using SP = Population<Score>;
+using SG = GeneticAlgorithm<SP, Score>;
 
-// check creature initialization (parameterized constructor)
-void test1()
-{
-    char message[] = "This is a chromosome!";
-    std::vector<char> chromosome;
-    for (char &c : message)
-        chromosome.push_back(c);
-
-    CreatureType c(chromosome);
-
-    float rangeStart, rangeEnd;
-    c.rouletteRange(rangeStart, rangeEnd);
-
-    std::cout << "test1: chromosome=" << c.getString() << " f=" << c.fitness() << " fp=" << c.fitnessPercent() <<
-                 " rouletteRange=(" << rangeStart << "," << rangeEnd << ")" << std::endl;
+static void ownershipAndFitness() {
+    static_assert(std::has_virtual_destructor_v<Creature_i<char>>);
+    static_assert(std::has_virtual_destructor_v<Population_i<C>>);
+    static_assert(std::has_virtual_destructor_v<GeneticAlgorithm_i<P,C>>);
+    static_assert(!std::is_copy_constructible_v<RandomContext>);
+    const std::string target = TARGET;
+    C c(std::vector<char>(target.begin(), target.end()));
+    c.calculateFitness();
+    check(c.fitness() == 1, "target fitness");
+    C copy = c;
+    copy.setGene(0, '?');
+    check(c.gene(0) == target[0], "copy must own its genome");
+    check(copy.fitness() == 0, "gene write must invalidate fitness");
+    copy.calculateFitness();
+    check(std::abs(copy.fitness() - 73.f / 74.f) < 1e-6, "fitness recalculation");
+    C moved = std::move(copy);
+    check(moved.chromosome().size() == target.size(), "move expression preserves genome");
+    RandomContext random(91);
+    moved.mutateGene(0, random.engine());
+    check(moved.fitness() == 0, "mutation must invalidate fitness");
+    C wrong(std::vector<char>{'x'});
+    throws<std::invalid_argument>([&] { wrong.calculateFitness(); });
+    P one(1, random);
+    check(one.bestCreature().chromosome() == one.creatures()->front().chromosome(), "singleton best");
+    auto snapshot = one.creatures();
+    snapshot->clear();
+    check(one.creatures()->size() == 1, "creatures is an independent snapshot");
+    throws<std::invalid_argument>([&] { one.setSize(0); });
+    check(one.creatures()->size() == 1, "rejected resize preserves population");
+    throws<std::out_of_range>([&] { one.setCreature(1, c); });
 }
 
-// check creature initialization (copy constructor)
-void test2()
-{
-    char message[] = "This is a chromosome!";
-    std::vector<char> chromosome;
-    for (char &c : message)
-        chromosome.push_back(c);
-
-    CreatureType c1(chromosome);
-    float rangeStart, rangeEnd;
-    c1.rouletteRange(rangeStart, rangeEnd);
-
-    std::cout << "test2: c1 chromosome=" << c1.getString() << " f=" << c1.fitness() << " fp=" << c1.fitnessPercent() <<
-                 " rouletteRange=(" << rangeStart << "," << rangeEnd << ")" << std::endl;
-
-    // invoke copy constructor
-    CreatureType c2(c1);
-    c2.rouletteRange(rangeStart, rangeEnd);
-
-    std::cout << "test2: c2 chromosome=" << c2.getString() << " f=" << c2.fitness() << " fp=" << c2.fitnessPercent() <<
-                 " rouletteRange=(" << rangeStart << "," << rangeEnd << ")" << std::endl;
+static void selectionContracts() {
+    RandomContext random(123);
+    SP p(2, random);
+    p.setCreature(0, Score(.001));
+    p.setCreature(1, Score(.003));
+    p.updateValues();
+    auto members = p.creatures();
+    check(std::abs(members->front().fp - 25) < 1e-4, "fractional fitness normalization");
+    check(std::abs(members->front().end - 25) < 1e-4, "roulette percentage units");
+    check(members->back().end == 100, "roulette covers full interval");
+    SG ga(1, 1, random);
+    int low = 0;
+    for (int i = 0; i < 4000; ++i) low += ga.roulette(p).fitness() < .002;
+    check(low > 800 && low < 1200, "seeded roulette samples both weighted ranges");
+    // Equal zero scores use uniform weights, never an accidental final-member monopoly.
+    p.setCreature(0, Score(0.0)); p.setCreature(1, Score(0.0)); p.updateValues();
+    members = p.creatures();
+    check(members->front().fp == 50 && members->front().end == 50, "zero score fallback");
+    p.setCreature(0, Score(2.0)); p.setCreature(1, Score(2.0)); p.updateValues();
+    check(p.creatures()->front().fp == 50, "equal positive scores");
+    for (const auto invalid : {-1.f, std::numeric_limits<float>::infinity(),
+                               std::numeric_limits<float>::quiet_NaN()}) {
+        p.setCreature(0, Score(invalid));
+        throws<std::domain_error>([&] { p.updateValues(); });
+    }
 }
 
-// check creature initialization (copy assignment operator)
-void test3()
-{
-    char message[] = "This is a chromosome!";
-    std::vector<char> chromosome;
-    for (char &c : message)
-        chromosome.push_back(c);
-
-    CreatureType c1(chromosome);
-    float rangeStart, rangeEnd;
-    c1.rouletteRange(rangeStart, rangeEnd);
-
-    std::cout << "test3: c1 chromosome=" << c1.getString() << " f=" << c1.fitness() << " fp=" << c1.fitnessPercent() <<
-                 " rouletteRange=(" << rangeStart << "," << rangeEnd << ")" << std::endl;
-
-    // invoke copy assignment operator
-    CreatureType c2;
-    c2 = c1;
-    c2.rouletteRange(rangeStart, rangeEnd);
-
-    std::cout << "test3: c2 chromosome=" << c2.getString() << " f=" << c2.fitness() << " fp=" << c2.fitnessPercent() <<
-                 " rouletteRange=(" << rangeStart << "," << rangeEnd << ")" << std::endl;
+static void operatorContracts() {
+    RandomContext random(5), other(5);
+    GA ga(1, 1, random);
+    C father(std::vector<char>(8, 'A')), mother(std::vector<char>(8, 'B'));
+    C a = father, b = mother;
+    ga.crossover(father, mother, a, b);
+    check(a.chromosome().size() == 8 && b.chromosome().size() == 8, "parent sized crossover");
+    for (unsigned int i = 0; i < 8; ++i)
+        check((a.gene(i) == 'A' && b.gene(i) == 'B') ||
+              (a.gene(i) == 'B' && b.gene(i) == 'A'), "complementary crossover");
+    // Same template, different length: regresses old static 74-gene size.
+    C shortC(std::vector<char>{'C'});
+    ga.crossover(shortC, shortC, a, b);
+    check(a.chromosome().size() == 1, "crossover must not cache chromosome size");
+    throws<std::invalid_argument>([&] { ga.crossover(father, shortC, a, b); });
+    C empty(std::vector<char>{});
+    throws<std::invalid_argument>([&] { ga.mutation(empty); });
+    throws<std::invalid_argument>([&] { ga.crossover(empty, empty, a, b); });
+    P mismatch(2, other);
+    throws<std::invalid_argument>([&] { ga.evolve(mismatch); });
+    throws<std::invalid_argument>([&] { ga.roulette(mismatch); });
+    for (const float rate : {-0.1f, 1.1f, std::numeric_limits<float>::quiet_NaN(),
+                              std::numeric_limits<float>::infinity()}) {
+        throws<std::invalid_argument>([&] { GA bad(rate, 0, random); });
+        throws<std::invalid_argument>([&] { GA bad(0, rate, random); });
+    }
+    throws<std::invalid_argument>([&] { P zero(0, random); });
+    GA disabled(0, 0, random);
+    check(disabled.mutation(father).chromosome() == father.chromosome(), "disabled mutation");
+    disabled.crossover(father, mother, a, b);
+    check(a.chromosome() == father.chromosome() && b.chromosome() == mother.chromosome(), "disabled crossover");
 }
 
-// change genes to specific values
-void test4()
-{
-    CreatureType c;
-    c.setGene(0, 65); // letter A
-    c.setGene(1, 66); // letter B
-    c.setGene(2, 67); // letter C
-
-    std::cout << "test4: chromosome=" << c.getString() << std::endl;
+static void repeatability() {
+    RandomContext r1(2026), r2(2026), noise(7), different(2027);
+    check(r1.seed() == 2026, "effective seed retained");
+    SP p1(7, r1), p2(7, r2), interferer(7, noise), p3(7, different);
+    SG g1(1, 1, r1), g2(1, 1, r2), gn(1, 1, noise);
+    check(p1.stats() == p2.stats(), "repeatable initialization");
+    check(p1.stats() != p3.stats(), "seed affects initialization");
+    for (int generation = 0; generation < 25; ++generation) {
+        g1.evolve(p1);
+        gn.evolve(interferer); // Independent runs cannot perturb r1 or r2.
+        g2.evolve(p2);
+        const auto a = p1.creatures(), b = p2.creatures();
+        check(a->size() == 7 && b->size() == 7, "odd population size preserved");
+        for (std::size_t i = 0; i < a->size(); ++i)
+            check(a->at(i).chromosome() == b->at(i).chromosome(), "repeatable full generation");
+    }
+    check(g1.evolutions() == 25, "generation count");
+    SP single(1, r1);
+    g1.evolve(single);
+    check(single.creatures()->size() == 1, "singleton evolution");
+    single.setSize(3);
+    check(single.creatures()->size() == 3, "explicit RNG used by resize");
+    // Concrete character genome uses the supplied engine for initialization and gene mutation.
+    RandomContext ca(44), cb(44);
+    C a(ca.engine()), b(cb.engine());
+    check(a.chromosome() == b.chromosome(), "character initialization repeatability");
+    for (unsigned int i = 0; i < 74; ++i) {
+        a.mutateGene(i, ca.engine()); b.mutateGene(i, cb.engine());
+    }
+    check(a.chromosome() == b.chromosome(), "character mutation repeatability");
 }
-
-// check gene mutation
-void test5()
-{
-    CreatureType c;
-    std::cout << "test5: chromosome=" << c.getString() << std::endl;
-    std::cout << "test5: gene[0]=" << c.gene(0) << std::endl;
-
-    c.mutateGene(0);
-    std::cout << "test5: gene[0]=" << c.gene(0) << " (mutated)" << std::endl;
-    std::cout << "test5: chromosome=" << c.getString() << std::endl;
-}
-
-// check other creature setters
-void test6()
-{
-    CreatureType c;
-    std::cout << "test6: chromosome=" << c.getString() << std::endl;
-
-    c.setFitnessPercent(0.5f);
-    c.setRouletteRange(1.5f, 3.0f);
-    std::cout << "test6: " << c.stats() << std::endl;
-}
-
-// validate creature copy
-void test7()
-{
-    CreatureType orig;
-    std::cout << "test7: Orig   : " << orig.stats() << std::endl;
-
-    CreatureType copy = orig;
-    copy.mutateGene(0);
-
-    std::cout << "test7: Orig   : " << orig.stats() << std::endl;
-    std::cout << "test7: Mutated: " << copy.stats() << std::endl;
-}
-
-// validate fitness for predefined chromosome
-void test8()
-{
-    char message[] = "'Never underestimate a droid' - General Leia Organa, The Roar of Skywalker";
-    std::vector<char> chromosome;
-    for (char &c : message)
-        if (c != '\0')
-            chromosome.push_back(c);
-
-    CreatureType c(chromosome);
-    std::cout << "test8: chromosome=" << c.getString() << std::endl;
-
-    float fitness = c.fitness();
-    std::cout << "test8: fitness=" << fitness << std::endl; // expected: 0.9605
-}
-
-// validate GA crossover
-void test9()
-{
-    char message1[] = "ABCDEFGH";
-    std::vector<char> chromosome1;
-    for (char &c : message1)
-        if (c != '\0')
-            chromosome1.push_back(c);
-
-    CreatureType father(chromosome1);
-    std::cout << "test9: Father: " << father.stats() << std::endl;
-
-    char message2[] = "KLMNOPQR";
-    std::vector<char> chromosome2;
-    for (char &c : message2)
-        if (c != '\0')
-            chromosome2.push_back(c);
-
-    CreatureType mother(chromosome2);
-    std::cout << "test9: Mother: " << mother.stats() << std::endl;
-
-    CreatureType childA, childB;
-
-    GeneticAlgorithm<PopulationType, CreatureType> ga(0.8f, 0.1f);
-    ga.crossover(father, mother, childA, childB);
-
-    std::cout << "test9: ChildA: " << childA.stats() << std::endl;
-    std::cout << "test9: ChildB: " << childB.stats() << std::endl;
-}
-
-// calculate fitness for random genes
-void test10()
-{
-    CreatureType c;
-    std::cout << "test10: chromosome=" << c.getString() << std::endl;
-
-    float fitness =  c.fitness();
-    std::cout << "test10: fitness=" << fitness << std::endl;
-}
-
-// fitness calculation must return different results for different chromosome combinations
-void test11()
-{
-    CreatureType c1;
-    c1.setGene(0, 50);
-    c1.setGene(1, 0);
-    c1.setGene(2, 150);
-    float fitness1 = c1.fitness();
-
-    CreatureType c2;
-    c2.setGene(0, 0);
-    c2.setGene(1, 0);
-    c2.setGene(2, 0);
-    float fitness2 = c2.fitness();
-
-    std::cout << "test11: chromosome1=" << c1.getString() << " \tfitness1=" << fitness1 << std::endl;
-    std::cout << "test11: chromosome2=" << c2.getString() << " \tfitness2=" << fitness2 << std::endl;
-}
-
-// population initialization
-void test12()
-{
-    PopulationType pop = PopulationType(5);
-    std::cout << "test12: pop.stats()\n" << pop.stats() << std::endl;
-}
-
-// genetic algorithm evolves one generation
-void test13()
-{
-    PopulationType pop(2);
-    std::cout << "test13: pop.stats()\n" << pop.stats() << std::endl;
-    std::cout << "test13: population mean: " << pop.mean() << std::endl;
-
-    GeneticAlgorithm<PopulationType, CreatureType> ga(0.8f, 0.5f);
-    ga.evolve(pop);
-
-    std::cout << "\ntest13: pop.stats():\n" << pop.stats() << std::endl;
-    std::cout << "test13: population mean: " << pop.mean() << std::endl;
-}
-
-int main()
-{
-    std::cout << std::fixed << std::setprecision(3);
-
-    test1();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test2();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test3();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test4();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test5();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test6();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test7();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test8();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test9();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test10();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test11();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test12();
-    std::cout << "\n----------------------------------------\n" << std::endl;
-
-    test13();
-
-    return 0;
+int main() {
+    try {
+        ownershipAndFitness(); selectionContracts(); operatorContracts(); repeatability();
+        std::cout << checks << " contract checks passed\n";
+    } catch (const std::exception& e) {
+        std::cerr << "FAILED after " << checks << " checks: " << e.what() << '\n';
+        return 1;
+    }
 }

@@ -39,12 +39,34 @@ A sample application `demo.cpp` is available and demonstrates how to instantiate
 
 ---
 
-## Todo
+## Build and verification
 
-- Add more interesting examples;
-- Add timing info for measuring runtime;
-- Move to Google Test/Mock for Unit Testing;
-- Add support to concurrency: divide the Population into smaller groups of Creatures so they can be processed by threads;
-- Add support to persistence: it should be possible to resume an evolutionary process interrupted by CTRL+C;
-- Define the `GeneticOperator` interface so that crossover, mutation and other operators can be added more easily;
+C++20 and CMake 3.16 or later are required. The library uses only the C++ standard library and is MIT licensed. Link the header-only `genetik_lib` CMake target to inherit includes and the language requirement.
 
+```sh
+cmake -S . -B ../build-release -DCMAKE_BUILD_TYPE=Release
+cmake --build ../build-release -j2
+ctest --test-dir ../build-release --output-on-failure
+../build-release/genetik_demo 42 1000
+```
+
+The example accepts `[seed [max_generations]]`, defaulting to 42 and 1,000. It reports configuration, best seen candidate, elapsed time and stopping reason; reaching the generation limit is a normal result. The historical output above illustrates the original implementation, not a current search-quality guarantee. On the supplied Jetson, CMake is installed locally as `../.tools/bin/cmake` (and `../.tools/bin/ctest`).
+
+For AddressSanitizer and UndefinedBehaviorSanitizer, configure a separate Debug directory with `-DGENETIK_SANITIZERS=ON`. Tests contain runtime checks that remain active in Release; no test requires eventual stochastic target discovery.
+
+## Explicit randomness and migration
+
+```cpp
+#include <Creature.hpp>
+#include <Population.hpp>
+#include <GeneticAlgorithm.hpp>
+
+RandomContext run(42); // must outlive the population and algorithm
+Population<Creature<char>> population(100, run);
+GeneticAlgorithm<decltype(population), Creature<char>> ga(0.5f, 0.9f, run);
+ga.evolve(population); // one generation; the caller owns termination
+```
+
+Initialization, resizing, selection, crossover and mutation consume this run's engine. There is no implicit random-device seed. Custom creatures accept `std::mt19937&` for initialization and mutation; direct character-creature construction/mutation also needs an engine. This is a source compatibility change from the original API. Fitness maximizes finite nonnegative scores; refresh population values after replacing members. Repeatability is supported with the same build/toolchain, input, configuration, seed, call order and deterministic serial evaluation.
+
+See [baseline and audit](docs/BASELINE.md) for verified commands, corrected defects, compatibility details and remaining limitations. The [roadmap](docs/ROADMAP.md) defines the later real-valued, expression, polynomial and prime-sequence milestones. Symbolic regression and prime regression are not implemented yet.

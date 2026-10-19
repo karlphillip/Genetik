@@ -1,7 +1,9 @@
 #pragma once
 #include "Population_i.hpp"
 
-#include <random>
+#include "RandomContext.hpp"
+#include <cmath>
+#include <stdexcept>
 
 
 template <typename P, typename C>
@@ -15,13 +17,16 @@ public:
      * @param crossoverRate a value that indicates the rate of crossover (0.0 to 1.0)
      * @param mutationRate a value that indicates the rate of mutation (0.0 to 1.0)
      */
-    GeneticAlgorithm_i(const float& crossoverRate, const float& mutationRate)
+    GeneticAlgorithm_i(const float& crossoverRate, const float& mutationRate, RandomContext& random)
+    : _random(random), _rng(random.engine())
     {
         _crossoverRate = crossoverRate;
         _mutationRate = mutationRate;
 
         _evolutions = 0;        
-        _rng = std::mt19937(std::random_device()());
+        if (!std::isfinite(crossoverRate) || crossoverRate < 0 || crossoverRate > 1 ||
+            !std::isfinite(mutationRate) || mutationRate < 0 || mutationRate > 1)
+            throw std::invalid_argument("rates must be finite and in [0,1]");
     }
 
     /*
@@ -89,5 +94,6 @@ protected:
     /*
      * A pseudo random number generator.
      */
-    std::mt19937 _rng;
+    RandomContext& _random;
+    std::mt19937& _rng;
 };

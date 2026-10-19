@@ -1,6 +1,6 @@
 # Baseline and first hardening milestone
 
-Verified 2026-10-19 on the supplied NVIDIA Jetson. Sections through the checkpoint reconciliation describe the original hardening baseline; later sections record the subsequent fitness/publication and expression milestones and supersede historical limitations they explicitly resolve.
+Verified 2026-10-19 on the supplied NVIDIA Jetson. Sections through the checkpoint reconciliation describe the original hardening baseline; later sections record the subsequent fitness/publication, expression and polynomial structure-search milestones and supersede historical limitations they explicitly resolve.
 
 ## Starting state
 
@@ -256,3 +256,63 @@ Cached configurations remain Release, Debug, and Debug+GENETIK_SANITIZERS=ON res
 Final outcomes: **9/9 CTest cases passed in Release, Debug and ASan+UBSan Debug**. The final sanitizer deep-tree contract completed in 40.72 seconds under its 60-second cap; no sanitizer diagnostics were reported. The existing fitness/publication and scalar suites passed unchanged. Nine standalone-header targets and the separate downstream C++20 Release consumer passed. The complete warning command above passed without warnings after the range-loop fix. Public expression-example output matched every requested table value and reported invalidity at postfix node 3. The bounded character example returned 0 at generation 1,000 with `generation_limit` and 100,100 attempted evaluations, preserving its prior behavior. No correctness test relies on stochastic discovery.
 
 Acceptance is satisfied for a downstream consumer constructing, evaluating, inspecting and faithfully printing bounded expressions, with ownership, invalid-result, numerical/build and export contracts verified. Limits remain: no expression search/candidate bridge, parser, division/logarithms, constant fitting, dataset loss, alternate platform/FP-environment qualification or allocation-fault injection. No concrete blocker remains for this evaluator milestone. The documented next task is the small representation-independent candidate/variation bridge and bounded polynomial structure evolution; all later prime fitting/validation/extrapolation, complexity, constant fitting and CPU-first profiling requirements remain in the roadmap.
+
+## Polynomial symbolic-regression milestone
+
+### Starting state, design and public compatibility
+
+Started clean at **5028904382ad5b88263d5675c6497701c686138d**. Reviewed applicable AGENTS, baseline, expression guide/bridge and roadmap plus actual scalar/evaluation/selection/publication code. No unrelated changes were present. Reused the existing Jetson/GCC 13 C++20 toolchain, strict FP settings, workspace-local CMake, dependency-free runtime-check tests and build directories.
+
+The integration is implemented without a second evolution transaction: `EvaluatedCandidate` extracts representation-independent private Fitness/roulette state and final evaluation/invalidation operations; scalar Creature_i retains its private arithmetic vector/final edit methods. New ExpressionCandidate owns a validated Expression and faithful text plus a shared immutable, deeply copied RegressionProblem. Base cache copying/assignment is protected to prevent forging a matching fitness through a public sliced base assignment. All expression installation work validates/copies first and uses no-throw swaps before clearing fitness; copies/offspring/elites/archive own independent genomes.
+
+Population now admits the common base and optionally a stateless Ordering; default scalar ordering/API remains available. A fixed shared problem identity (including after all-invalid initialization) prevents mixing/change of expression evaluation problems. Size-based initialization conditionally requires C(engine); expression users use a configured factory/vector initialization, and an unavailable setSize is an explicit API error. The existing ranking/staging/validation/archive/ownership swap is reused. Its state adds bestGeneration, committed together with the archive. GA adds a defaulted Variation policy (old scalar bodies extracted to ScalarVariation), optional bounded elitism (default zero for compatibility), and attempt count. Existing character construction/two-template-argument usage remains unchanged.
+
+The generic symbolicRegression function only supplies initialization and boundary stopping/budgets around this shared GA. Dataset rows, loss and hard expression limits belong to an immutable problem; changes require a new run. RegressionOrdering requires Minimize, comparing exact finite MSE, then node count, then faithful text. This complete ordering drives rank weights, elite selection and archive updates; numerical recovery tolerance never enters a sort. Every slot including elites/unchanged copies is reevaluated. Returned best is exclusively from committed generations, including generation zero if random initialization already fits.
+
+Regression loss validates data before search and checks every prediction, residual, square, sequential double sum and final full-count mean. Invalid arithmetic yields Fitness::invalid with no partial metric/score, including sum overflow even when a scaled mathematical mean could be finite. API errors and unexpected exceptions are propagated with existing nested context; no catch-all turns them into invalid scores. Candidate-call accounting charges initialization, invalid results and throwing calls. No whole-run rollback is claimed: draws/proposals/evaluator calls remain consumed after a discarded generation.
+
+Typed postfix initialization and subtree mutation/crossover are iterative, seeded entirely by RandomContext, support leaves/root/internal replacement and unequal sizes, and enforce full-tree destination depth/node/constant limits. Generation uses finite child budgets directly; variation has a finite proposal cap and unchanged-parent fallback on structural infeasibility. Operational failures remain exceptions. Statistics distinguish proposals, structural rejection, fallback and actual changes; counts are not refunded on failure. The high-level driver checks a full slot set fits before initialization/each generation, so no budget-driven partial population is published. With 128 slots and <=250 attempts the maximum is 128*(1+250)=32,128 candidate calls.
+
+Full API/ownership/numerical/budget semantics and minimal public usage are in [SYMBOLIC_REGRESSION.md](SYMBOLIC_REGRESSION.md). Existing public strict expression/evaluator semantics and the later prime protocol are preserved. No cancellation, threading, general observer framework, continuous fitter, division/logarithm or prime regression is implemented here.
+
+### Deterministic qualification
+
+Added focused tests for independently understood zero target MSE and f(x)=x MSE 3; malformed/non-finite datasets/configuration/schema; invalid prediction/residual/square/sum and no favorable partial-data score; data/input alias detachment; fixed problem identity; controlled replacement/cache preservation; root/internal unequal-size subtree operations/subtraction order; destination depth and node boundaries; bounded fallback/rejection and actual node-count changes; parent/archive preservation; injected variation and post-work evaluator exceptions with retained cause/context, RNG/call/attempt accounting and committed-state preservation; all-invalid initialization/successors; one viable elite; complexity/text ordering across selection/archive; singleton Minimize validation; budget refusal before incomplete initialization/generation; generation-zero fit; and independent identical-seed short searches matching expression/fitness/discovery/stop/counters/engine state. The fractional-target short fixture cannot fit exactly with integer terminals at x=0,1, and must complete its three configured generations; no test depends on stochastic recovery.
+
+A preliminary operator test failed because its chosen terminal-only donor could not violate the recipient limits; corrected the fixture to use nonterminal parents of different sizes, then observed bounded rejection/fallback. This was a test-fixture defect, not an ineffective operator or campaign configuration adjustment. Later review added variable-only grammar support and early singleton direction validation, both outside the default campaign's unchanged random stream/settings. The final test-only stop-reason repeatability assertion was rebuilt and rerun in all configurations after full-suite qualification. No scalar regression or production search defect was exposed by the checks.
+
+Exact commands from repository root (reuse the recorded cached configurations):
+
+```sh
+../.tools/bin/cmake --build ../build-release -j2
+../.tools/bin/ctest --test-dir ../build-release --output-on-failure
+../.tools/bin/cmake --build ../build-debug -j2
+../.tools/bin/ctest --test-dir ../build-debug --output-on-failure
+../.tools/bin/cmake --build ../build-sanitize -j2
+../.tools/bin/ctest --test-dir ../build-sanitize --output-on-failure
+g++ -std=c++20 -fno-fast-math -ffp-contract=off -Wall -Wextra -Wpedantic -Igenetik -fsyntax-only tests/tests.cpp tests/generation.cpp tests/expressions.cpp tests/symbolic_regression.cpp demo.cpp expression_demo.cpp polynomial_regression.cpp
+timeout 10s ../build-release/genetik_demo 42 1000 > ../polynomial-milestone-character.log
+timeout 180s ../build-release/genetik_polynomial_regression > docs/polynomial-campaign-initial.txt
+git -c core.whitespace=cr-at-eol diff --check
+```
+
+Final assertion-only qualification used these commands for each of build-release, build-debug and build-sanitize (no library source changed after the full-suite pass):
+
+```sh
+../.tools/bin/cmake --build ../build-release --target genetik_symbolic_tests -j2
+../.tools/bin/ctest --test-dir ../build-release -R '^genetik_symbolic_contracts$' --output-on-failure
+../.tools/bin/cmake --build ../build-debug --target genetik_symbolic_tests -j2
+../.tools/bin/ctest --test-dir ../build-debug -R '^genetik_symbolic_contracts$' --output-on-failure
+../.tools/bin/cmake --build ../build-sanitize --target genetik_symbolic_tests -j2
+../.tools/bin/ctest --test-dir ../build-sanitize -R '^genetik_symbolic_contracts$' --output-on-failure
+```
+
+Full suites: **10/10 passed in Release, Debug and ASan+UBSan**, with no sanitizer diagnostics. Short symbolic sanitizer test ~1.4 s; the retained deep-expression stress test ~40.7 s under its existing 60-second cap. Fourteen standalone-header targets passed. The separate downstream C++20 Release consumer now runs actual expression evolution with a bounded one-generation problem, then checks the existing expression/GA interfaces. The full five-seed campaign runs only in Release, outside CTest. Warning review passed without diagnostics. The bounded character example retained best-seen 0.892, generation_limit at 1,000 and 100,100 candidate calls; no target-discovery assertion was used. A no-hidden-RNG source search found no random_device/srand/rand in the library (rg exit 1 denotes no matches).
+
+### Search evidence, independent of engineering acceptance
+
+Remaining campaign choices were declared in docs/POLYNOMIAL_CAMPAIGN.md before execution. The initial campaign achieved zero training MSE and zero training/interior/exterior maximum absolute error for **all five seeds**. Seeds 0,1,3 improved from initial MSE 1 after 3,3,4 published generations; seeds 2,42 naturally fit during initialization and correctly report discovery generation zero. No configuration adjustment/restart/second search campaign was used. The training-based no-adjustment decision and representative selection preceded evaluation-only metrics. Representative seed 42 exports `((x0 * x0) + (x0 + 1.0))`.
+
+All five actual exports, size/depth/discovery counts, attempted/published generations, candidate calls, variation rejection/fallback/change counters, runtimes and recovery flags are retained in [POLYNOMIAL_CAMPAIGN.md](POLYNOMIAL_CAMPAIGN.md) and its unedited raw log. Total search work was 1,920 candidate calls; post-run metrics separately used 15 candidate/dataset metric calls over 185 samples. Each seed stayed below its 32,128 cap. These numerical results on declared sample sets are not a proof of algebraic equivalence or a general search-success guarantee.
+
+Engineering acceptance is satisfied: expressions evolve through the shared engine with the required ownership, validity, ordering, checked loss, bounded variation/budget and failure/publication contracts. The bounded search evidence supports proceeding to continuous constant fitting, with training-only optimization, rollback on invalid/failure/worsening and charged fitting work. Keep diagnostics for more difficult structure-search problems. No concrete blocker remains for this milestone. Division/log domain semantics, prime index/value data and frozen prefix/extrapolation reporting, complexity archives, package/platform qualification and CPU profiling before GPU work remain future roadmap requirements.

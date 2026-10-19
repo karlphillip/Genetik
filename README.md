@@ -71,7 +71,7 @@ Initialization, resizing, selection, crossover and mutation consume this run's e
 
 `setCreature()` stages edits; `updateValues()` evaluates and publishes them. A generation publishes genomes, fitness, generation number and best seen together only after evaluation and preparation succeed. All-invalid attempts return `NoViableCandidates`. Unexpected exceptions abort the attempt and retain their original cause as a nested exception. Consumed random draws and attempted evaluations remain consumed; `run.evaluationAttempts()` includes invalid and throwing evaluations. Objective/data must remain fixed during a run. See the [current fitness/publication contract](docs/BASELINE.md#fitness-validity-and-generation-publication-milestone) for migration and edge cases. Repeatability is supported with the same build/toolchain, input, configuration, seed, call order and deterministic serial evaluation.
 
-See [baseline and audit](docs/BASELINE.md) for verified commands, corrected defects, compatibility details and remaining limitations. The [roadmap](docs/ROADMAP.md) defines the later real-valued, expression, polynomial and prime-sequence milestones. Manually constructed expression evaluation is available below. Structure evolution, symbolic-regression fitting and prime regression are not implemented yet.
+See [baseline and audit](docs/BASELINE.md) for verified commands, corrected defects, compatibility details and remaining limitations. The [roadmap](docs/ROADMAP.md) defines the later real-valued, expression, polynomial and prime-sequence milestones. Manually constructed expression evaluation is available below. Bounded expression structure evolution is available below; continuous constant fitting and prime regression remain future work.
 
 
 ## Mathematical expression evaluation
@@ -92,4 +92,23 @@ Run `../build-release/genetik_expression_demo` for the manually constructed poly
 
 Expressions own typed postfix nodes, enforce a single complete tree and configurable node/depth/constant bounds, and expose no mutable internal storage. Mathematical non-finite arithmetic returns an invalid `ExpressionResult`; malformed construction, wrong/non-finite bindings and allocation failures are exceptions. Text export preserves grouping and stored constant values independently of locale. Default limits are 1,023 nodes, depth 64 (leaf depth 1), and any finite constant.
 
-The public CMake target propagates `-fno-fast-math -ffp-contract=off` on GCC/Clang because evaluation is in a public header. Consumers must retain strict binary64 semantics, default rounding and gradual underflow, including when building without CMake. See [expression contracts and integration plan](docs/EXPRESSIONS.md) for the full API, floating-point assumptions, work bounds, faithful export and the concrete bridge needed for later structure evolution.
+The public CMake target propagates `-fno-fast-math -ffp-contract=off` on GCC/Clang because evaluation is in a public header. Consumers must retain strict binary64 semantics, default rounding and gradual underflow, including when building without CMake. See [expression contracts and integration plan](docs/EXPRESSIONS.md) for the full API, floating-point assumptions, work bounds, faithful export and the bridge now used by structure evolution.
+
+
+## Polynomial symbolic regression
+
+```cpp
+#include <SymbolicRegression.hpp>
+
+const auto problem = RegressionProblem::create({
+    {{-1.0}, 1.0}, {{0.0}, 1.0}, {{1.0}, 3.0}
+});
+RandomContext run(0);
+SymbolicRegressionConfig config;
+const auto result = symbolicRegression(problem, config, run);
+// result.best (if present) owns the discovered expression and its training fitness.
+```
+
+Run `../build-release/genetik_polynomial_regression` for the prescribed five-seed search on 17 training rows, followed by separate frozen interior/exterior evaluations. This evolves typed expression structure through the existing engine, with checked MSE, minimization, node-count/text ties, two reevaluated elites, finite subtree proposals and generation-boundary evaluation budgets. All five initial campaign seeds had zero maximum error on the three specified sample sets; two discovered fits during random initialization. These measured fits are separate from deterministic engineering tests and do not claim algebraic equivalence or recovery on arbitrary problems.
+
+See [symbolic-regression API and contracts](docs/SYMBOLIC_REGRESSION.md) and the [complete campaign report](docs/POLYNOMIAL_CAMPAIGN.md), including actual expressions, discovery generations, counters, errors and runtimes. All supplied rows are copied into an immutable problem; changing it requires a new run. The scalar/character example remains supported.

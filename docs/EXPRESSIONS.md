@@ -1,6 +1,6 @@
 # Bounded expression values and strict CPU evaluation
 
-This milestone represents and executes manually constructed mathematical candidates. It does not evolve structures, fit constants, or evaluate a dataset-dependent loss. The public API is in [Expression.hpp](../genetik/Expression.hpp); link the existing `genetik_lib` CMake target to receive its include path, C++20 and floating-point options.
+This guide describes the expression value/evaluator, which represents and executes mathematical candidates without dataset or RNG access. The later shared-engine structure search and dataset loss are documented in [SYMBOLIC_REGRESSION.md](SYMBOLIC_REGRESSION.md); continuous constant fitting is still pending. The public API is in [Expression.hpp](../genetik/Expression.hpp); link the existing `genetik_lib` CMake target to receive its include path, C++20 and floating-point options.
 
 ## Construction and inspection
 
@@ -96,11 +96,11 @@ The dependency-free runtime-check suite covers leaves, multiple variables, unuse
 
 Exact commands and qualified outcomes are recorded in the expression milestone section of [BASELINE.md](BASELINE.md). Only the existing public build target's strict FP options affect current GA consumers; no evolutionary-core API or ownership contract changed in this milestone.
 
-## Concrete next integration change
+## Candidate integration bridge (implemented in the following milestone)
 
-The present code has two actual coupling points: `Population<T>` requires `Creature_i<T::gene_type>` and instantiates `T(std::mt19937&)` in its virtual setSize; `GeneticAlgorithm<P,C>` has virtual scalar crossover/mutation bodies that call chromosome/gene setters. Overriding them in a derived class alone may still instantiate those unsuitable base bodies. Merely encoding operation tags as doubles or adding an expression field beside a dummy scalar genome would bypass the established validity contract.
+At this evaluator checkpoint the code had two coupling points: `Population<T>` requires `Creature_i<T::gene_type>` and instantiates `T(std::mt19937&)` in its virtual setSize; `GeneticAlgorithm<P,C>` has virtual scalar crossover/mutation bodies that call chromosome/gene setters. Overriding them in a derived class alone may still instantiate those unsuitable base bodies. Merely encoding operation tags as doubles or adding an expression field beside a dummy scalar genome would bypass the established validity contract.
 
-Use the following focused bridge in the next structure-evolution milestone:
+The following design guided the now-implemented bridge; see [SYMBOLIC_REGRESSION.md](SYMBOLIC_REGRESSION.md) for current APIs and [POLYNOMIAL_CAMPAIGN.md](POLYNOMIAL_CAMPAIGN.md) for measured search results. The evaluator-only example above remains manually constructed.
 
 1. Extract the existing representation-independent Fitness/roulette cache and final calculateFitness/invalidation methods into an `EvaluatedCandidate` base. Keep scalar Creature_i's private arithmetic vector/final edits in its derived class, preserving ordinary GA behavior. Add an ExpressionCandidate that privately owns an Expression and replaces it only with a successfully validated value, clearing fitness before publication. Preserve deep copies and no writable aliases.
 2. Change Population's static restriction to that common evaluated-candidate contract; retain its staging/ranking/archive/swap code. For expressions, initialize a vector with a configured external bounded factory using `RandomContext::engine()`, then use the existing vector constructor. Make the size-based initialization path conditional with `if constexpr` on T(engine) availability, rejecting unsupported setSize calls explicitly instead of failing template instantiation. Do not secretly acquire data/configuration through a default constructor.

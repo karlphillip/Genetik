@@ -8,10 +8,16 @@
 #include <stdexcept>
 
 // Serial, value-owned committed state. All potentially throwing preparation precedes swap.
-template <typename T>
+template<class T> struct FitnessOrdering {
+    bool better(const T& a, const T& b, ObjectiveDirection direction) const {
+        return direction == ObjectiveDirection::Maximize ? a.fitness() > b.fitness() : a.fitness() < b.fitness();
+    }
+};
+
+template <typename T, typename Ordering = FitnessOrdering<T>>
 class Population : public Population_i<T> {
-    static_assert(std::is_base_of_v<Creature_i<typename T::gene_type>, T>,
-                  "candidates must use the encapsulated Creature_i scalar genome");
+    static_assert(std::is_base_of_v<EvaluatedCandidate, T>,
+                  "candidates must share the EvaluatedCandidate contract");
     static_assert(std::is_nothrow_destructible_v<T>);
 public:
     Population(const unsigned int& size, RandomContext& random,
@@ -31,6 +37,9 @@ public:
     std::optional<std::uint64_t> generation() const noexcept {
         return committed_ ? std::optional(committed_->generation) : std::nullopt;
     }
+    std::optional<std::uint64_t> bestGeneration() const noexcept {
+        return committed_ ? std::optional(committed_->bestGeneration) : std::nullopt;
+    }
     // Best over committed generations only, also available while edits are pending.
     std::optional<T> bestSeen() const {
         return committed_ ? std::optional<T>(committed_->best) : std::nullopt;
@@ -41,7 +50,9 @@ public:
             if (size == 0) throw std::invalid_argument("population must be nonempty");
             std::vector<T> fresh;
             fresh.reserve(size);
-            for (unsigned int i = 0; i < size; ++i) fresh.emplace_back(random_.engine());
+            if constexpr (std::is_constructible_v<T, std::mt19937&>) {
+                for (unsigned int i = 0; i < size; ++i) fresh.emplace_back(random_.engine());
+            } else throw std::invalid_argument("candidate requires configured vector initialization");
             return publishGeneration(std::move(fresh));
         } catch (...) { outcome_ = GenerationOutcome::OperationalFailure; throw; }
     }
@@ -103,6 +114,12 @@ public:
             if (next.empty()) throw std::invalid_argument("population must be nonempty");
             if (committed_ && committed_->generation == std::numeric_limits<std::uint64_t>::max())
                 throw std::overflow_error("committed generation counter exhausted");
+            const auto identity = next.front().problemIdentity();
+            for (const auto& c : next)
+                if (c.problemIdentity() != identity) throw std::invalid_argument("mixed evaluation problems");
+            if (problemBound_ && identity != problem_)
+                throw std::invalid_argument("problem changed: create a new run");
+            if (!problemBound_) { problem_ = identity; problemBound_ = true; }
             for (std::size_t i = 0; i < next.size(); ++i) {
                 random_.recordEvaluationAttempt();
                 try { next[i].calculateFitness(); }
@@ -117,17 +134,18 @@ public:
                 return outcome_ = GenerationOutcome::NoViableCandidates;
             rank(next);
             // Prepare the archive too: copying a custom candidate may throw.
-            T best = committed_ && !better(next.back().fitness(), committed_->best.fitness())
-                ? committed_->best : next.back();
+            const bool improved = !committed_ || better(next.back(), committed_->best);
+            T best = improved ? next.back() : committed_->best;
+            const auto generation = committed_ ? committed_->generation + 1 : 0;
             auto ready = std::make_unique<State>(State{std::move(next), std::move(best),
-                committed_ ? committed_->generation + 1 : 0});
+                generation, improved ? generation : committed_->bestGeneration});
             committed_.swap(ready); // noexcept publication of population, generation and archive
             outcome_ = GenerationOutcome::Committed;
             return outcome_;
         } catch (...) { outcome_ = GenerationOutcome::OperationalFailure; throw; }
     }
 private:
-    struct State { std::vector<T> members; T best; std::uint64_t generation; };
+    struct State { std::vector<T> members; T best; std::uint64_t generation; std::uint64_t bestGeneration; };
     static bool valid(const T& c) { return c.fitnessState() == FitnessState::Valid; }
     static void requireEvaluated(const std::vector<T>& members) {
         for (const auto& c : members) {
@@ -140,15 +158,14 @@ private:
     void validateDirection() const {
         if (direction_ != ObjectiveDirection::Maximize && direction_ != ObjectiveDirection::Minimize)
             throw std::invalid_argument("unknown objective direction");
+        if constexpr (requires { ordering_.validateDirection(direction_); }) ordering_.validateDirection(direction_);
     }
-    bool better(double a, double b) const {
-        return direction_ == ObjectiveDirection::Maximize ? a > b : a < b;
-    }
+    bool better(const T& a, const T& b) const { return ordering_.better(a, b, direction_); }
     void rank(std::vector<T>& members) const {
         // Invalid first, valid from worst to best. Never compare an invalid numerical score.
         std::stable_sort(members.begin(), members.end(), [&](const T& a, const T& b) {
             if (valid(a) != valid(b)) return !valid(a);
-            return valid(a) && better(b.fitness(), a.fitness());
+            return valid(a) && better(b, a);
         });
         const auto first = std::find_if(members.begin(), members.end(), valid);
         const auto n = static_cast<std::size_t>(members.end() - first);
@@ -160,7 +177,7 @@ private:
         double cumulative = 0;
         for (std::size_t i = 0; i < n;) {
             std::size_t end = i + 1;
-            while (end < n && first[i].fitness() == first[end].fitness()) ++end;
+            while (end < n && !better(first[i], first[end]) && !better(first[end], first[i])) ++end;
             const double weight = (static_cast<double>(i + 1) + end) / 2;
             for (; i < end; ++i) {
                 const auto start = static_cast<float>(cumulative);
@@ -170,6 +187,9 @@ private:
             }
         }
     }
+    Ordering ordering_;
+    std::shared_ptr<const void> problem_;
+    bool problemBound_ = false;
     RandomContext& random_;
     const ObjectiveDirection direction_;
     std::unique_ptr<State> committed_;

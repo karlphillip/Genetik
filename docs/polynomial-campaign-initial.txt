@@ -1,0 +1,18 @@
+campaign=initial mode=serial_cpu seeds=0,1,2,3,42 population=128 max_attempts=250 max_evaluations=32128 nodes=31 depth=6 constants=-2,-1,0,1,2 selector=linear_rank elites=2 crossover=0.9 mutation=0.35 init_max_depth=4 mutation_max_depth=3 full_probability=0.5 grow_binary_probability=0.65 proposals=8 objective=training_mse success_stop=exact_zero recovery_max_abs=1e-9
+seed=0 initial_mse=1 final_mse=0 training_max_abs=0 best_generation=3 attempts=3 published=3 evaluations=512 seconds=0.0026678520000000001 stop=exact_training_fit init_proposals=128 mutation_proposals=134 crossover_proposals=166 rejected=0 mutation_fallbacks=0 crossover_fallbacks=0 mutation_changes=121 crossover_changes=234
+expression seed=0 nodes=7 depth=3 ((x0 * x0) - ((-1.0) - x0))
+seed=1 initial_mse=1 final_mse=0 training_max_abs=0 best_generation=3 attempts=3 published=3 evaluations=512 seconds=0.0024884550000000001 stop=exact_training_fit init_proposals=128 mutation_proposals=136 crossover_proposals=169 rejected=0 mutation_fallbacks=0 crossover_fallbacks=0 mutation_changes=126 crossover_changes=254
+expression seed=1 nodes=17 depth=5 (((0.0 - (-1.0)) + (x0 + x0)) - ((x0 - (-2.0)) + ((-2.0) - (x0 * x0))))
+seed=2 initial_mse=0 final_mse=0 training_max_abs=0 best_generation=0 attempts=0 published=0 evaluations=128 seconds=0.000424492 stop=exact_training_fit init_proposals=128 mutation_proposals=0 crossover_proposals=0 rejected=0 mutation_fallbacks=0 crossover_fallbacks=0 mutation_changes=0 crossover_changes=0
+expression seed=2 nodes=11 depth=4 ((x0 * 1.0) + ((2.0 + (-1.0)) + (x0 * x0)))
+seed=3 initial_mse=1 final_mse=0 training_max_abs=0 best_generation=4 attempts=4 published=4 evaluations=640 seconds=0.003127225 stop=exact_training_fit init_proposals=128 mutation_proposals=198 crossover_proposals=227 rejected=2 mutation_fallbacks=0 crossover_fallbacks=0 mutation_changes=173 crossover_changes=340
+expression seed=3 nodes=7 depth=4 (x0 + (1.0 + (x0 * x0)))
+seed=42 initial_mse=0 final_mse=0 training_max_abs=0 best_generation=0 attempts=0 published=0 evaluations=128 seconds=0.00040282700000000002 stop=exact_training_fit init_proposals=128 mutation_proposals=0 crossover_proposals=0 rejected=0 mutation_fallbacks=0 crossover_fallbacks=0 mutation_changes=0 crossover_changes=0
+expression seed=42 nodes=7 depth=3 ((x0 * x0) + (x0 + 1.0))
+training_adjustment_decision=not_needed representative_rule=mse_then_nodes_then_text_then_lowest_seed
+representative_seed=42 expression=((x0 * x0) + (x0 + 1.0))
+evaluation seed=0 interior_max_abs=0 exterior_max_abs=0 training_recovery=1 interior_recovery=1 exterior_recovery=1 postrun_candidate_metric_calls=3 postrun_samples=37
+evaluation seed=1 interior_max_abs=0 exterior_max_abs=0 training_recovery=1 interior_recovery=1 exterior_recovery=1 postrun_candidate_metric_calls=3 postrun_samples=37
+evaluation seed=2 interior_max_abs=0 exterior_max_abs=0 training_recovery=1 interior_recovery=1 exterior_recovery=1 postrun_candidate_metric_calls=3 postrun_samples=37
+evaluation seed=3 interior_max_abs=0 exterior_max_abs=0 training_recovery=1 interior_recovery=1 exterior_recovery=1 postrun_candidate_metric_calls=3 postrun_samples=37
+evaluation seed=42 interior_max_abs=0 exterior_max_abs=0 training_recovery=1 interior_recovery=1 exterior_recovery=1 postrun_candidate_metric_calls=3 postrun_samples=37

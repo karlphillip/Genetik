@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
 project(Consumer LANGUAGES CXX)
-set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-set(GENETIK_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(${GENETIK_SOURCE} genetik)
 add_executable(consumer main.cpp)
-target_link_libraries(consumer PRIVATE genetik_lib)
+target_link_libraries(consumer PRIVATE Genetik::Genetik)

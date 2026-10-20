@@ -1,0 +1,11 @@
+starting_revision=d7b6352ee30f6283cd07cba25847b4e8f49511aa
+Linux-6.8.12-1021-tegra-aarch64-with-glibc2.39
+g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+ldd (Ubuntu GLIBC 2.39-0ubuntu8.8) 2.39
+cmake version 4.4.4
+cmake version 3.16.0
+clang++ None
+clang++-18 None
+g++-13 /usr/bin/g++-13
+local_tags=
+hosted_ci_runs=none (configured only; no push/publication)

@@ -99,7 +99,7 @@ add_executable(genetik_workspace_tests evaluation_workspace.cpp)
 target_link_libraries(genetik_workspace_tests PRIVATE genetik_lib)
 add_test(NAME genetik_workspace_contracts COMMAND genetik_workspace_tests)
 set_tests_properties(genetik_workspace_contracts PROPERTIES TIMEOUT 30)
-if(GENETIK_BUILD_EXAMPLES)
+if(GENETIK_BUILD_EXAMPLES AND GENETIK_RECORDED_REFERENCE)
     add_test(NAME genetik_evaluation_reference COMMAND ${CMAKE_COMMAND}
         -DEVIDENCE=$<TARGET_FILE:genetik_evaluation_workspace>
         -DACTUAL=${CMAKE_CURRENT_BINARY_DIR}/evaluation-reference.txt
@@ -112,3 +112,17 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_EvaluationCorpus.cpp "#inc
 add_library(example_header_EvaluationCorpus OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_EvaluationCorpus.cpp)
 target_include_directories(example_header_EvaluationCorpus PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(example_header_EvaluationCorpus PRIVATE genetik_lib)
+
+# Python is development integration tooling only, never an installed dependency.
+find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
+add_test(NAME genetik_installed_package COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/package_integration.py
+    --source ${PROJECT_SOURCE_DIR}
+    --workspace ${CMAKE_CURRENT_BINARY_DIR}/genetik-delivery-fixture
+    --cmake ${CMAKE_COMMAND} --cxx ${CMAKE_CXX_COMPILER})
+set_tests_properties(genetik_installed_package PROPERTIES TIMEOUT 300)
+if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_scalar_quickstart COMMAND genetik_scalar_quickstart)
+    add_test(NAME genetik_symbolic_quickstart COMMAND genetik_symbolic_quickstart)
+    set_tests_properties(genetik_scalar_quickstart genetik_symbolic_quickstart PROPERTIES TIMEOUT 30)
+endif()

@@ -1,0 +1,2 @@
+ordinary + relocated multi-TU consumers, installed quickstarts, metadata/flags, versions/components, C++23 (when available), and source inclusion passed
+evidence=/home/karlphillip/workspaces/primeResearcher/delivery-min-check/genetik-delivery-fixture

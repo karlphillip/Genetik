@@ -1,0 +1,7 @@
+Test project /home/karlphillip/workspaces/primeResearcher/build-sanitize
+    Start 19: genetik_installed_package
+1/1 Test #19: genetik_installed_package ........   Passed   95.43 sec
+
+100% tests passed out of 1
+
+Total Test time (real) =  95.44 sec

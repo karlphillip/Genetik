@@ -853,3 +853,56 @@ and arithmetic .17614 → .15982 s; these are not repeated speedup estimates. Al
 work/result/RNG counters match, so no extra search generations or quality gain
 is claimed. Production APIs and supported numerical environment are unchanged.
 Exact commands and raw evidence: docs/EVALUATION_WORKSPACE.md and evaluation-results.
+
+## Installable package and delivery policy milestone (2026-10-20)
+
+Started clean at d7b6352ee30f6283cd07cba25847b4e8f49511aa. Inspected all public and
+transitive headers, target/options, version history and MIT attribution. The library
+is header-only, standard-library-only; no install/export rules or local release tags
+existed. Root project version 0.1.0 remains the single authority and unreleased.
+
+Implemented Genetik config package / Genetik::Genetik canonical source/installed
+INTERFACE target, retaining genetik_lib for source compatibility. Relative
+GNUInstallDirs includes preserve <Expression.hpp>/<SymbolicRegression.hpp> spelling;
+all 15 public headers plus detail/ScopedTiming.hpp and MIT license install. Target
+export/config/version metadata is relocatable, SameMinorVersion/ARCH_INDEPENDENT,
+with clear required-component rejection. Config exposes version metadata even with
+no requested version. No test/example/campaign/data artifacts install.
+
+Required C++20 and strict FP settings propagate to consuming C++ translation units;
+consumer-frontend selection is performed when loading the installed package, never
+baked from the producing compiler. C compilation is unaffected. Sanitizers, warnings
+and Werror are now private development settings, not public usage requirements.
+Parent compiler/standard/extensions/build type and CTest ownership are preserved;
+embedded tests/examples/install default OFF. Existing explicit choices remain effective.
+No public C++ API, arithmetic, RNG, loss, fitting or search logic changed.
+
+Disposable current-source producer installation passes before and after relocation
+to prefix B with spaces; temporary producer source/build are then removed and a
+fresh external consumer compiles/runs with only installed headers. Registries are
+disabled and package resolution pinned/checked. Overlapping multi-TU C++ usage,
+a C source, actual installed quickstarts, C++20 propagation/C++23 opt-in, metadata/
+compile-command/runtime dependency inspections, source parent and unrelated C++14
+sibling all pass. Source/installed version requests 0.1 and exact 0.1.0 succeed;
+0.0.9/0.2.0/newer 0.1.1/1.0 and unknown required component reject as specified.
+
+Qualified Jetson GCC/libstdc++13.3.0/glibc-libm2.39: 21/21 Release, 21/21 Debug,
+21/21 ASan+UBSan with workspace CMake4.4.4, and 21/21 Release with exact CMake3.16.0.
+The minimum tool was built from checksum-verified official source without patches.
+All builds use warnings-as-errors; standalone headers, strict FP negative tests,
+qualified captured bits, old workflows and new installed quickstarts pass. New
+metadata/no-version checks were rerun as focused package tests in all four builds.
+An optimized warning in the test-only replacement allocator was repaired by keeping
+deallocation entry points out of line; no warning was suppressed and ASan passes.
+Character seed42/1000 remains best .892, 100100 evaluations. No historical campaigns
+were rerun or altered. See DELIVERY.md and delivery-results for exact commands/logs.
+
+README now presents generic GA and symbolic-regression quickstarts using the actual
+compiled/installed files; API.md indexes the established contracts. SUPPORT.md defines
+0.x source compatibility, numerical/trajectory release notes, reproducibility scope,
+no stable ABI, exact qualification status and release preparation. CHANGELOG records
+important modernization/migration changes. A pinned/read-only three-job GitHub
+Actions workflow configures GCC13/x86 minimum CMake, Clang18/x86 sanitizers and native
+ARM64/GCC13. No hosted job has executed; local GCC13 is the only available compiler.
+Windows/MSVC, AppleClang and libc++ remain unqualified. No push/tag/publication was
+performed. Next: execute/review hosted qualification and the release checklist.

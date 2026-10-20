@@ -1,0 +1,101 @@
+name: C++ contracts and installed package
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc13-x64-minimum
+            runner: ubuntu-24.04
+            arch: x86_64
+            cc: gcc-13
+            cxx: g++-13
+            build_type: Release
+            sanitizers: 'OFF'
+            minimum: true
+          - name: clang18-x64-sanitizers
+            runner: ubuntu-24.04
+            arch: x86_64
+            cc: clang-18
+            cxx: clang++-18
+            build_type: Debug
+            sanitizers: 'ON'
+            minimum: false
+          - name: gcc13-arm64
+            runner: ubuntu-24.04-arm
+            arch: aarch64
+            cc: gcc-13
+            cxx: g++-13
+            build_type: Release
+            sanitizers: 'OFF'
+            minimum: false
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+    steps:
+      # Official tag refs verified during authoring; update pins deliberately.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Select the declared minimum CMake
+        if: matrix.minimum
+        run: |
+          "$CXX" --version
+          curl -fsSL --retry 2 https://cmake.org/files/v3.16/cmake-3.16.0.tar.gz -o "$RUNNER_TEMP/cmake-3.16.0.tar.gz"
+          printf '%s  %s\n' '6da56556c63cab6e9a3e1656e8763ed4a841ac9859fefb63cbe79472e67e8c5f' "$RUNNER_TEMP/cmake-3.16.0.tar.gz" | sha256sum -c -
+          tar -xf "$RUNNER_TEMP/cmake-3.16.0.tar.gz" -C "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/cmake-min-build"
+          cd "$RUNNER_TEMP/cmake-min-build"
+          "$RUNNER_TEMP/cmake-3.16.0/bootstrap" --prefix="$RUNNER_TEMP/cmake-min" --parallel=2 -- -DCMAKE_USE_OPENSSL=OFF -DBUILD_TESTING=OFF
+          make -j2
+          make install
+          echo "$RUNNER_TEMP/cmake-min/bin" >> "$GITHUB_PATH"
+      - name: Record qualified environment and verify compiler choice
+        run: |
+          uname -a
+          test "$(uname -m)" = '${{ matrix.arch }}'
+          "$CC" --version
+          "$CXX" --version
+          "$CXX" -dumpmachine
+          cmake --version
+          ctest --version
+          ldd --version
+          printf '#include <version>\n' | "$CXX" -std=c++20 -dM -E -x c++ - | grep -E '^#define (__cplusplus|__GLIBCXX__|_GLIBCXX_RELEASE|_LIBCPP_VERSION|__GNUC__|__clang_major__|__SIZEOF_POINTER__) ' | sort
+          if [[ '${{ matrix.cxx }}' == 'g++-13' ]]; then
+            test "$("$CXX" -dumpversion)" = 13
+          else
+            "$CXX" --version | head -1 | grep -E 'version 18\.'
+          fi
+          if [[ '${{ matrix.minimum }}' == 'true' ]]; then
+            test "$(cmake --version | head -1)" = 'cmake version 3.16.0'
+          fi
+      - name: Configure
+        run: >-
+          cmake -S . -B ../build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_SANITIZERS=${{ matrix.sanitizers }}
+          -DGENETIK_RECORDED_REFERENCE=OFF
+      - name: Compile contracts, standalone headers, and quickstarts
+        run: cmake --build ../build -j2
+      - name: Run bounded contracts, installed relocation, and public workflows
+        # -E chdir works with CTest 3.16, which predates --test-dir.
+        run: cmake -E chdir ../build ctest --output-on-failure
+      - name: Retain failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: logs-${{ matrix.name }}
+          retention-days: 14
+          path: |
+            ../build/CMakeCache.txt
+            ../build/CMakeFiles/CMake*.log
+            ../build/Testing/Temporary/*.log
+            ../build/tests/genetik-delivery-fixture/commands.log
+            ../build/tests/genetik-delivery-fixture/*-files.txt

@@ -1,18 +1,15 @@
 add_library(genetik_lib INTERFACE)
-target_include_directories(genetik_lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(Genetik::Genetik ALIAS genetik_lib)
+set_target_properties(genetik_lib PROPERTIES EXPORT_NAME Genetik)
+target_include_directories(genetik_lib INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Genetik>)
 target_compile_features(genetik_lib INTERFACE cxx_std_20)
-# Public header evaluator: preserve finite checks, signed zero and node boundaries.
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(genetik_lib INTERFACE -fno-fast-math -ffp-contract=off)
-elseif(MSVC)
-    target_compile_options(genetik_lib INTERFACE /fp:strict)
-else()
-    message(WARNING "Expression evaluator requires equivalent strict floating-point options on this compiler")
-endif()
-if(GENETIK_SANITIZERS)
-    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        message(FATAL_ERROR "GENETIK_SANITIZERS requires GCC or Clang")
-    endif()
-    target_compile_options(genetik_lib INTERFACE -fsanitize=address,undefined -fno-omit-frame-pointer)
-    target_link_options(genetik_lib INTERFACE -fsanitize=address,undefined)
+include(${PROJECT_SOURCE_DIR}/cmake/GenetikFloatingPoint.cmake)
+# Export strips producer-selected flags; GenetikConfig selects the consumer frontend.
+genetik_require_floating_point(genetik_lib TRUE)
+if(GENETIK_INSTALL)
+    install(TARGETS genetik_lib EXPORT GenetikTargets)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Genetik FILES_MATCHING PATTERN "*.hpp")
 endif()

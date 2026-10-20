@@ -1,0 +1,435 @@
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/producer source' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/producer build' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DCMAKE_INSTALL_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A' -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DGENETIK_INSTALL=ON -DGENETIK_SANITIZERS=ON -DGENETIK_WARNINGS_AS_ERRORS=ON
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (0.3s)
+-- Generating done (0.0s)
+CMake Warning (unused-cli):
+  Manually-specified variables were not used by the project:
+
+    CMAKE_C_COMPILER
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+    CMAKE_FIND_USE_PACKAGE_REGISTRY
+    CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/producer build
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake --build '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/producer build' -j2
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake --install '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/producer build'
+-- Install configuration: "Release"
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/ScalarVariation.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/Population.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/Expression.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/GeneticAlgorithm_i.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/Population_i.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/Creature_i.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/ExpressionVariation.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/detail
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/detail/ScopedTiming.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/EvaluatedCandidate.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/Fitness.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/SymbolicRegression.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/RandomContext.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/Regression.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/GeneticAlgorithm.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/Creature.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/include/Genetik/ConstantFitting.hpp
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/lib/cmake/Genetik/GenetikTargets.cmake
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/lib/cmake/Genetik/GenetikConfig.cmake
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/lib/cmake/Genetik/GenetikConfigVersion.cmake
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/lib/cmake/Genetik/GenetikFloatingPoint.cmake
+-- Installing: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A/share/licenses/Genetik/LICENSE
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/ordinary consumer build' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/prefix A' -DCMAKE_BUILD_TYPE=Release
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (0.6s)
+-- Generating done (0.0s)
+CMake Warning (unused-cli):
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/ordinary consumer build
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake --build '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/ordinary consumer build' -j2
+[ 12%] Building CXX object CMakeFiles/installed_consumer.dir/main.cpp.o
+[ 25%] Building CXX object quickstarts/CMakeFiles/scalar_quickstart.dir/scalar.cpp.o
+[ 37%] Linking CXX executable scalar_quickstart
+[ 37%] Built target scalar_quickstart
+[ 50%] Building CXX object quickstarts/CMakeFiles/symbolic_quickstart.dir/symbolic.cpp.o
+[ 62%] Building CXX object CMakeFiles/installed_consumer.dir/other.cpp.o
+[ 75%] Linking CXX executable symbolic_quickstart
+[ 75%] Built target symbolic_quickstart
+[ 87%] Building C object CMakeFiles/installed_consumer.dir/mixed.c.o
+[100%] Linking CXX executable installed_consumer
+[100%] Built target installed_consumer
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/ordinary consumer build/installed_consumer'
+ldd '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/ordinary consumer build/installed_consumer'
+	linux-vdso.so.1 (0x0000ffff92af0000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff927a0000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff926f0000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff926b0000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff924f0000)
+	/lib/ld-linux-aarch64.so.1 (0x0000ffff92aa0000)
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/scalar_quickstart'
+seed=42 x=0.236772 loss=0.000174979 generations=10 evaluations=176 stopping_reason=generation_limit
+ldd '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/scalar_quickstart'
+	linux-vdso.so.1 (0x0000ffff8cb76000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff8c840000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff8c800000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff8c640000)
+	/lib/ld-linux-aarch64.so.1 (0x0000ffff8cb30000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff8c590000)
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/symbolic_quickstart'
+seed=42 binding=x0:first_input_column stop=exact_training_fit loss_calls=253 budget=256
+expression=(((x0 * x0) + 1.0) + (x0 - (2.0 - 2.0))) mse=0 nodes=11
+ldd '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/symbolic_quickstart'
+	linux-vdso.so.1 (0x0000ffffbca0e000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffffbc6d0000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffffbc620000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffffbc5e0000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffffbc420000)
+	/lib/ld-linux-aarch64.so.1 (0x0000ffffbc9c0000)
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (1.2s)
+-- Generating done (0.0s)
+CMake Warning (unused-cli):
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake --build '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build' -j2
+[ 12%] Building CXX object CMakeFiles/installed_consumer.dir/main.cpp.o
+[ 25%] Building CXX object quickstarts/CMakeFiles/scalar_quickstart.dir/scalar.cpp.o
+[ 37%] Linking CXX executable scalar_quickstart
+[ 37%] Built target scalar_quickstart
+[ 50%] Building CXX object quickstarts/CMakeFiles/symbolic_quickstart.dir/symbolic.cpp.o
+[ 62%] Building CXX object CMakeFiles/installed_consumer.dir/other.cpp.o
+[ 75%] Linking CXX executable symbolic_quickstart
+[ 75%] Built target symbolic_quickstart
+[ 87%] Building C object CMakeFiles/installed_consumer.dir/mixed.c.o
+[100%] Linking CXX executable installed_consumer
+[100%] Built target installed_consumer
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build/installed_consumer'
+ldd '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build/installed_consumer'
+	linux-vdso.so.1 (0x0000ffff84d28000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff849e0000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff84930000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff848f0000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff84730000)
+	/lib/ld-linux-aarch64.so.1 (0x0000ffff84ce0000)
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/scalar_quickstart'
+seed=42 x=0.236772 loss=0.000174979 generations=10 evaluations=176 stopping_reason=generation_limit
+ldd '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/scalar_quickstart'
+	linux-vdso.so.1 (0x0000ffff977cd000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff97490000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff97450000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff97290000)
+	/lib/ld-linux-aarch64.so.1 (0x0000ffff97780000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff971e0000)
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/symbolic_quickstart'
+seed=42 binding=x0:first_input_column stop=exact_training_fit loss_calls=253 budget=256
+expression=(((x0 * x0) + 1.0) + (x0 - (2.0 - 2.0))) mse=0 nodes=11
+ldd '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/symbolic_quickstart'
+	linux-vdso.so.1 (0x0000ffff96f8d000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff96c60000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff96bb0000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff96b70000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff969b0000)
+	/lib/ld-linux-aarch64.so.1 (0x0000ffff96f50000)
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/no version' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_NO_VERSION=ON
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (1.3s)
+-- Generating done (0.0s)
+CMake Warning (unused-cli):
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/no version
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/exact version' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=0.1.0 -DREQUEST_EXACT=ON
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (0.9s)
+-- Generating done (0.0s)
+CMake Warning (unused-cli):
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/exact version
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/rejected 0.0.9' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=0.0.9
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Could not find a configuration file for package "Genetik" that is
+  compatible with requested version "0.0.9".
+
+  The following configuration files were considered but not accepted:
+
+    /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake, version: 0.1.0
+      The version found is not compatible with the version requested.
+
+
+
+-- Configuring incomplete, errors occurred!
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/rejected 0.2.0' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=0.2.0
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Could not find a configuration file for package "Genetik" that is
+  compatible with requested version "0.2.0".
+
+  The following configuration files were considered but not accepted:
+
+    /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake, version: 0.1.0
+      The version found is not compatible with the version requested.
+
+
+
+-- Configuring incomplete, errors occurred!
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/rejected 0.1.1' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=0.1.1
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Could not find a configuration file for package "Genetik" that is
+  compatible with requested version "0.1.1".
+
+  The following configuration files were considered but not accepted:
+
+    /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake, version: 0.1.0
+      The version found is not compatible with the version requested.
+
+
+
+-- Configuring incomplete, errors occurred!
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/rejected 1.0' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=1.0
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Could not find a configuration file for package "Genetik" that is
+  compatible with requested version "1.0".
+
+  The following configuration files were considered but not accepted:
+
+    /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake, version: 0.1.0
+      The version found is not compatible with the version requested.
+
+
+
+-- Configuring incomplete, errors occurred!
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/required component' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_COMPONENT=imaginary
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Found package configuration file:
+
+    /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake
+
+  but it set Genetik_FOUND to FALSE so package "Genetik" is considered to be
+  NOT FOUND.  Reason given by package:
+
+  Genetik provides one header-only target and no package components
+
+
+
+-- Configuring incomplete, errors occurred!
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake --version
+cmake version 4.4.4
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer' -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/CXX23 consumer' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=23
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (0.7s)
+-- Generating done (0.0s)
+CMake Warning (unused-cli):
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/CXX23 consumer
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake --build '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/CXX23 consumer' -j2
+[ 12%] Building CXX object CMakeFiles/installed_consumer.dir/main.cpp.o
+[ 25%] Building CXX object quickstarts/CMakeFiles/scalar_quickstart.dir/scalar.cpp.o
+[ 37%] Linking CXX executable scalar_quickstart
+[ 37%] Built target scalar_quickstart
+[ 50%] Building CXX object quickstarts/CMakeFiles/symbolic_quickstart.dir/symbolic.cpp.o
+[ 62%] Building CXX object CMakeFiles/installed_consumer.dir/other.cpp.o
+[ 75%] Building C object CMakeFiles/installed_consumer.dir/mixed.c.o
+[ 87%] Linking CXX executable installed_consumer
+[100%] Linking CXX executable symbolic_quickstart
+[100%] Built target installed_consumer
+[100%] Built target symbolic_quickstart
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/CXX23 consumer/installed_consumer'
+ldd '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/CXX23 consumer/installed_consumer'
+	linux-vdso.so.1 (0x0000ffff9b2c4000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff9af80000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff9aed0000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff9ae90000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff9acd0000)
+	/lib/ld-linux-aarch64.so.1 (0x0000ffff9b280000)
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/CXX23 consumer/quickstarts/scalar_quickstart'
+seed=42 x=0.236772 loss=0.000174979 generations=10 evaluations=176 stopping_reason=generation_limit
+ldd '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/CXX23 consumer/quickstarts/scalar_quickstart'
+	linux-vdso.so.1 (0x0000ffffab924000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffffab5f0000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffffab5b0000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffffab3f0000)
+	/lib/ld-linux-aarch64.so.1 (0x0000ffffab8e0000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffffab340000)
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/CXX23 consumer/quickstarts/symbolic_quickstart'
+seed=42 binding=x0:first_input_column stop=exact_training_fit loss_calls=253 budget=256
+expression=(((x0 * x0) + 1.0) + (x0 - (2.0 - 2.0))) mse=0 nodes=11
+ldd '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/CXX23 consumer/quickstarts/symbolic_quickstart'
+	linux-vdso.so.1 (0x0000ffff9aefd000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff9abd0000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff9ab20000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff9aae0000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff9a920000)
+	/lib/ld-linux-aarch64.so.1 (0x0000ffff9aec0000)
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -S /home/karlphillip/workspaces/primeResearcher/Genetik/tests/embedding -B '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/parent build' -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_C_COMPILER=cc -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON -DGENETIK_SOURCE=/home/karlphillip/workspaces/primeResearcher/Genetik -DGENETIK_SANITIZERS=ON -DGENETIK_WARNINGS_AS_ERRORS=ON
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (1.0s)
+-- Generating done (0.0s)
+CMake Warning (unused-cli):
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+    CMAKE_FIND_USE_PACKAGE_REGISTRY
+    CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/parent build
+/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake --build '/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/parent build' -j2
+[ 25%] Building CXX object CMakeFiles/parent_app.dir/main.cpp.o
+[ 50%] Building CXX object CMakeFiles/unrelated.dir/unrelated.cpp.o
+[ 75%] Linking CXX executable unrelated
+[ 75%] Built target unrelated
+[100%] Linking CXX executable parent_app
+[100%] Built target parent_app
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/parent build/parent_app'
+'/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/parent build/unrelated'

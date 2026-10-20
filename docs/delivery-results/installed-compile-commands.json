@@ -1,0 +1,32 @@
+[
+{
+  "directory": "/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build",
+  "command": "/usr/bin/c++  -isystem \"/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/include/Genetik\" -O3 -DNDEBUG -std=gnu++20 -fno-fast-math -ffp-contract=off -o CMakeFiles/installed_consumer.dir/main.cpp.o -c \"/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer/main.cpp\"",
+  "file": "/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer/main.cpp",
+  "output": "CMakeFiles/installed_consumer.dir/main.cpp.o"
+},
+{
+  "directory": "/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build",
+  "command": "/usr/bin/c++  -isystem \"/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/include/Genetik\" -O3 -DNDEBUG -std=gnu++20 -fno-fast-math -ffp-contract=off -o CMakeFiles/installed_consumer.dir/other.cpp.o -c \"/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer/other.cpp\"",
+  "file": "/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer/other.cpp",
+  "output": "CMakeFiles/installed_consumer.dir/other.cpp.o"
+},
+{
+  "directory": "/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build",
+  "command": "/usr/bin/cc  -isystem \"/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/include/Genetik\" -O3 -DNDEBUG -o CMakeFiles/installed_consumer.dir/mixed.c.o -c \"/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer/mixed.c\"",
+  "file": "/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer/mixed.c",
+  "output": "CMakeFiles/installed_consumer.dir/mixed.c.o"
+},
+{
+  "directory": "/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build/quickstarts",
+  "command": "/usr/bin/c++  -isystem \"/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/include/Genetik\" -O3 -DNDEBUG -std=gnu++20 -fno-fast-math -ffp-contract=off -o CMakeFiles/scalar_quickstart.dir/scalar.cpp.o -c \"/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer/quickstarts/scalar.cpp\"",
+  "file": "/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer/quickstarts/scalar.cpp",
+  "output": "quickstarts/CMakeFiles/scalar_quickstart.dir/scalar.cpp.o"
+},
+{
+  "directory": "/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated consumer build/quickstarts",
+  "command": "/usr/bin/c++  -isystem \"/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/include/Genetik\" -O3 -DNDEBUG -std=gnu++20 -fno-fast-math -ffp-contract=off -o CMakeFiles/symbolic_quickstart.dir/symbolic.cpp.o -c \"/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer/quickstarts/symbolic.cpp\"",
+  "file": "/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/external consumer/quickstarts/symbolic.cpp",
+  "output": "quickstarts/CMakeFiles/symbolic_quickstart.dir/symbolic.cpp.o"
+}
+]

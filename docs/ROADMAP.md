@@ -7,7 +7,8 @@ Current delivery order:
 1. Generic multivariate/data-input milestone — complete; public row API, strict application loader, 2/3-input contracts and all five campaign seeds reported.
 2. Strict ordinary division/natural logarithm throughout typed construction, evaluation, variation, limits, export and domain tests — complete; the first prime regression campaign is also complete.
 3. Prime regression as an example of generic indexed-sequence regression — first campaign complete, including all weak results and baselines.
-4. Refinement profiling and optional cadence — complete; keep interval 1 default, preserve mixed twenty-run results. Checked evaluator workspace profiling/reuse is complete; next deliver installation/exported CMake packages, clean downstream consumption, compiler/platform coverage, CI, API documentation and release/versioning policy. Checkpoint/resume and acceleration remain separately scoped.
+4. Refinement profiling and optional cadence — complete; keep interval 1 default, preserve mixed twenty-run results. Checked evaluator workspace profiling/reuse is complete.
+5. Local install/export/relocation, compiled quickstarts and version/support policy are complete. A three-job CI matrix is configured; hosted execution/qualification is pending. Checkpoint/resume and acceleration remain separately scoped.
 
 ## 1. Baseline, C++20 and first hardening — complete
 
@@ -101,9 +102,9 @@ invalidity or rejected structure. Reserve a new later range for future informed
 extrapolation assessment. Keep production delivery below on the roadmap; no GPU work
 before representative CPU profiling.
 
-## 6. Library delivery — next
+## 6. Library delivery — implemented locally; hosted qualification pending
 
-Install/export targets and headers; version/package config; clean installed downstream consumption; API and migration documentation; declared supported toolchains/platforms and CI build matrix; release/versioning policy; license/dependency notices.
+Implemented the header-only Genetik package and canonical Genetik::Genetik source/installed target, retained source genetik_lib, GNUInstallDirs metadata, relative install includes, consumer frontend/language strict-FP requirements and private development flags. Ordinary and relocated multi-TU consumers/quickstarts pass after disposable producer removal. Version 0.1.0 remains unreleased; SameMinorVersion/ARCH_INDEPENDENT behavior and required-component rejection are tested. Exact minimum CMake 3.16.0 and current 4.4.4 pass locally with GCC13. API/support/release guides and a pinned three-job workflow are present. No hosted CI has run; do not label Clang/x86 or hosted ARM jobs verified. See DELIVERY.md, PACKAGING.md and SUPPORT.md.
 
 Checkpoint/resume remains a separate subsequent task. Specify serialization of engine state (not only original seed), population, objective/cache state, work counters, configuration and archive. Test interrupted/resumed equivalence under declared supported conditions. Add useful cancellation and result persistence before promising resumability.
 
@@ -151,7 +152,7 @@ prime seed-2 and arithmetic seed-42 control replays and a short cadence-4 check.
 Five paired fixed-work batches show useful multirow gains; noisy/slower single-row
 cases are retained. See EVALUATION_WORKSPACE.md and evaluation-results.
 
-The next bounded milestone is library delivery: install headers and exported
+The delivery scope below is now locally implemented (DELIVERY.md): install headers and exported
 CMake targets/package configuration; verify a clean separately configured consumer
 against an installed prefix; declare supported compiler/platform versions and add
 CI coverage; publish API/ownership/numerical documentation and a release/versioning
@@ -159,3 +160,19 @@ policy with license notices. Start from the qualified C++20/strict-FP CPU behavi
 Checkpoint/resume needs its own state/equivalence design rather than being implied
 by packaging. Exact-result caching, cross-loss storage, stronger solvers, expression
 compilation, algebraic rewrites and GPU execution remain separate decisions.
+
+
+## Delivery completion and next release-readiness task
+
+Install/export, isolated relocated consumption, compiled scalar/symbolic quickstarts,
+source-parent behavior, minimum CMake, public API index and coherent 0.x source/
+numerical compatibility policies are complete locally. Historical campaign evidence
+and exact reference files are preserved. Captured Jetson bits remain opt-in outside
+that qualified environment; portable contracts and within-build determinism run in CI.
+
+Next: execute and review the configured GCC13/x86 minimum-CMake, Clang18/x86 sanitizer
+and native ARM64 jobs, investigate actual differences, then apply the documented
+release checklist before any explicitly authorized push/tag/publication. Broader
+platform/stdlib qualification remains pending. Packaging does not imply checkpoint/
+resume, ABI stability, new solvers, cross-call caches, compiled expressions or GPU
+execution; keep those as separately measured/designed future decisions.

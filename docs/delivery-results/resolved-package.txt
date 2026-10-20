@@ -1,0 +1,2 @@
+/home/karlphillip/workspaces/primeResearcher/build-release/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik
+0.1.0

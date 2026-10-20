@@ -15,7 +15,15 @@ void* operator new(std::size_t n) {
     if(void* p=std::malloc(n?n:1))return p;
     throw std::bad_alloc();
 }
+// Keep replacement deallocation opaque to GCC's optimized mismatched-new/delete
+// heuristic; this test intentionally implements the matching new/delete via malloc/free.
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((noinline))
+#endif
 void operator delete(void* p) noexcept {std::free(p);}
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((noinline))
+#endif
 void operator delete(void* p,std::size_t) noexcept {std::free(p);}
 void* operator new[](std::size_t n){return ::operator new(n);}
 void operator delete[](void* p) noexcept {::operator delete(p);}

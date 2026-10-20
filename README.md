@@ -1,199 +1,108 @@
 # Genetik
-*Genetik* is an open-source framework that facilitates the implementation and testing of Genetic Algorithms in C++. 
 
----
+Genetik is a header-only C++20 genetic algorithm library with a reusable symbolic
+regression module. Use ordinary scalar genomes or evolve bounded mathematical
+expression trees against your own multi-input, single-output numerical rows.
 
-## Introduction
+The library uses only the C++ standard library and is [MIT licensed](LICENSE),
+copyright Karl Phillip (2021). Version **0.1.0 is an unreleased development version**.
+CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
+and the required strict floating-point options. Newer C++ standards are allowed.
 
-The core of the framework are abstract classes that define the API that needs to be implemented in order to extend and incorporate new behavior or add completely new types of creatures and fitness functions. This guarantees compatibility with the rest of the framework and speed-up development because of code reuse. 
+## Two compiled quickstarts
 
-The names of the abstracts classes always end with an `_i`, as in: `GeneticAlgorithm_i`, `Population_i` and `Creature_i`. The framework also provides default implementations for each of them.
+- [Complete scalar-genome program](quickstarts/scalar.cpp): a custom real-valued
+  candidate minimizes squared error, shares an explicit `RandomContext(42)` with
+  its population/algorithm, and stops after ten generations.
+- [Complete symbolic-regression program](quickstarts/symbolic.cpp): caller-provided
+  rows bind `x0` to the first input column. Optional constant fitting, a 256 actual
+  loss-call budget and four-generation ceiling bound the search. It prints the
+  stopping outcome and faithful expression. Exact discovery is not required for
+  either program to finish successfully.
 
----
-
-## Example
-
-A sample application `demo.cpp` is available and demonstrates how to instantiate and configure those objects in order to set up and run a genetic algorithm pipeline to solves a simple character-based search problem:
-
-```
-* Generation #1 avg fitness: 0.040 best fitness: 0.041
-  str=[ aw*xv^pBk&ZKeQW\|-'%]hGP[X>BEp\.9"3L}Ff tTHgh9AQ';.?IDVaw(Sg_YzWVs<?l 1bek ]  f=0.041 fP=0.000 rouletteRange=(0.010, 100.000)
-...
-...
-
-* Generation #100 avg fitness: 0.641 best fitness: 0.649
-  str=[ 'NeveBSu!dZrestiS(,eHUudroid'I- Gen[ral>)e!W drga:a, jhePRkQe 4f +7yYalker ]  f=0.649 fP=0.000 rouletteRange=(0.010, 100.000)
-...
-...
-
-* Generation #200 avg fitness: 0.881 best fitness: 0.892
-  str=[ 'Never+uoderestim.te a|droid' - General }eiW Organa, The Rize af Skywalker ]  f=0.892 fP=0.000 rouletteRange=(0.010, 100.000)
-...
-...
-
-* Generation #327 avg fitness: 0.974 best fitness: 1.000
-  str=[ 'Never underestimate a droid' - General Leia Organa, The Rise of Skywalker ]  f=1.000 fP=0.000 rouletteRange=(0.010, 100.000)
-...
-...
-```
-
----
-
-## Build and verification
-
-C++20 and CMake 3.16 or later are required. The library uses only the C++ standard library and is MIT licensed. Link the header-only `genetik_lib` CMake target to inherit includes and the language requirement.
+Build and run these exact files through an installed package:
 
 ```sh
-cmake -S . -B ../build-release -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B ../genetik-library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/../genetik-prefix"
+cmake --build ../genetik-library
+cmake --install ../genetik-library
+cmake -S quickstarts -B ../genetik-quickstarts -DCMAKE_PREFIX_PATH="$PWD/../genetik-prefix"
+cmake --build ../genetik-quickstarts -j2
+../genetik-quickstarts/scalar_quickstart
+../genetik-quickstarts/symbolic_quickstart
+```
+
+The quickstarts' [CMakeLists.txt](quickstarts/CMakeLists.txt) is a complete external
+consumer. In your application, enable CXX and use:
+
+```cmake
+find_package(Genetik 0.1 CONFIG REQUIRED)
+add_executable(application main.cpp)
+target_link_libraries(application PRIVATE Genetik::Genetik)
+```
+
+Headers retain their spelling: `#include <SymbolicRegression.hpp>`,
+`#include <Creature_i.hpp>`, etc. They install beneath `include/Genetik`; use the
+target's include root. No Python, test framework, GPU, BLAS or file-format library
+is required to install or consume the library.
+
+Alternatively, include the source in a parent project:
+
+```cmake
+add_subdirectory(external/Genetik)
+add_executable(application main.cpp)
+target_link_libraries(application PRIVATE Genetik::Genetik)
+```
+
+Embedded builds default tests, examples/campaign tools and install rules to OFF;
+explicit `GENETIK_…` choices are respected. The source-only `genetik_lib` target is
+retained for compatibility. Genetik does not select the parent's compiler, build
+type, optimization level or C++ standard. See [package details](docs/PACKAGING.md).
+
+## Develop and verify
+
+```sh
+cmake -S . -B ../build-release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
 cmake --build ../build-release -j2
-ctest --test-dir ../build-release --output-on-failure
+cmake -E chdir ../build-release ctest --output-on-failure
 ../build-release/genetik_demo 42 1000
 ```
 
-The example accepts `[seed [max_generations]]`, defaulting to 42 and 1,000. It reports configuration, best seen candidate, elapsed time and stopping reason; reaching the generation limit is a normal result. The historical output above illustrates the original implementation, not a current search-quality guarantee. On the supplied Jetson, CMake is installed locally as `../.tools/bin/cmake` (and `../.tools/bin/ctest`).
+Top-level tests/examples default ON; development integration checks additionally
+require Python 3.9+. For sanitizers, use a separate Debug build with
+`-DGENETIK_SANITIZERS=ON`. Development flags are private to Genetik's own targets.
+On the supplied Jetson, tooling is workspace-local: `../.tools/bin/cmake` and
+`../.tools/bin/ctest`; this is not a dependency of an installed package.
 
-For AddressSanitizer and UndefinedBehaviorSanitizer, configure a separate Debug directory with `-DGENETIK_SANITIZERS=ON`. Tests contain runtime checks that remain active in Release; no test requires eventual stochastic target discovery.
+The header-only target's **required floating-point options affect consuming C++
+translation units**, not just expressions inside headers. GCC/GNU-style Clang get
+`-fno-fast-math -ffp-contract=off`; MSVC-style frontends select `/fp:strict` but
+remain unqualified. C sources do not receive these C++ options. Do not override
+with unsafe math flags. Default IEEE rounding, gradual underflow, nontrapping
+arithmetic and the qualified runtime math library are part of the numerical
+contract. [Support and repeatability policy](docs/SUPPORT.md).
 
-## Explicit randomness and migration
+## API and examples
 
-```cpp
-#include <Creature.hpp>
-#include <Population.hpp>
-#include <GeneticAlgorithm.hpp>
+Start at the [public API guide](docs/API.md). Detailed contracts cover explicit
+randomness, fitness validity, immutable datasets, work accounting, failed-generation
+publication, strict arithmetic, faithful export, fitting and fitting cadence.
 
-RandomContext run(42); // must outlive the population and algorithm
-Population<Creature<char>> population(100, run);
-GeneticAlgorithm<decltype(population), Creature<char>> ga(0.5f, 0.9f, run);
-const auto outcome = ga.evolve(population); // check Committed vs NoViableCandidates; caller owns termination
-```
+Applications use the same public search path:
 
-Initialization, resizing, selection, crossover and mutation consume this run's engine. There is no implicit random-device seed. Custom creatures accept `std::mt19937&` for initialization and mutation; direct character-creature construction/mutation also needs an engine. This is a source compatibility change from the original API. Fitness has explicit unevaluated, valid and invalid states. Valid scores are finite doubles, including zero and negatives. Maximization is the default; pass `ObjectiveDirection::Minimize` to the population for minimization. Roulette uses linear ranks with averaged ties and excludes invalid candidates. Custom scalar candidates now derive from `Creature_i` and implement `Fitness evaluate() const` and `mutatedGene(...) const`; final edit methods enforce cache invalidation.
+- [Polynomial regression](docs/POLYNOMIAL_CAMPAIGN.md).
+- [Multivariate regression and numerical CSV input](docs/MULTIVARIATE.md).
+- [Strict division/natural logarithm](docs/STRICT_ARITHMETIC.md).
+- [Prime-sequence regression](docs/PRIME_REGRESSION.md), an indexed-sequence example
+  with application-level reference generation/scaling/baselines, not a prime oracle.
+- [Evaluation workspace measurements](docs/EVALUATION_WORKSPACE.md).
 
-`setCreature()` stages edits; `updateValues()` evaluates and publishes them. A generation publishes genomes, fitness, generation number and best seen together only after evaluation and preparation succeed. All-invalid attempts return `NoViableCandidates`. Unexpected exceptions abort the attempt and retain their original cause as a nested exception. Consumed random draws and attempted evaluations remain consumed; `run.evaluationAttempts()` includes invalid and throwing evaluations. Objective/data must remain fixed during a run. See the [current fitness/publication contract](docs/BASELINE.md#fitness-validity-and-generation-publication-milestone) for migration and edge cases. Repeatability is supported with the same build/toolchain, input, configuration, seed, call order and deterministic serial evaluation.
-
-See [baseline and audit](docs/BASELINE.md) for verified commands, corrected defects, compatibility details and remaining limitations. The [roadmap](docs/ROADMAP.md) defines the later real-valued, expression, polynomial and prime-sequence milestones. Manually constructed expression evaluation is available below. Bounded expression structure evolution is available below; optional bounded continuous constant fitting is also available; prime regression remains future work.
-
-
-## Mathematical expression evaluation
-
-```cpp
-#include <Expression.hpp>
-#include <array>
-
-const auto x = Expression::variable(0);
-const auto square = Expression::binary(ExpressionKind::Multiply, x, x);
-const auto f = Expression::binary(ExpressionKind::Add,
-    Expression::binary(ExpressionKind::Add, square, x), Expression::constant(1, 1));
-const auto result = f.evaluate(std::array{2.});
-// f.toString() == "(((x0 * x0) + x0) + 1.0)"; result.value() == 7
-```
-
-Run `../build-release/genetik_expression_demo` for the manually constructed polynomial, its node count/depth, the five supplied input/output examples and explicit handling of arithmetic overflow. This demonstrates representation/evaluation; it performs no evolution or fitting.
-
-Expressions own typed postfix nodes, enforce a single complete tree and configurable node/depth/constant bounds, and expose no mutable internal storage. Mathematical non-finite arithmetic returns an invalid `ExpressionResult`; malformed construction, wrong/non-finite bindings and allocation failures are exceptions. Text export preserves grouping and stored constant values independently of locale. Default limits are 1,023 nodes, depth 64 (leaf depth 1), and any finite constant.
-
-The public CMake target propagates `-fno-fast-math -ffp-contract=off` on GCC/Clang because evaluation is in a public header. Consumers must retain strict binary64 semantics, default rounding and gradual underflow, including when building without CMake. See [expression contracts and integration plan](docs/EXPRESSIONS.md) for the full API, floating-point assumptions, work bounds, faithful export and the bridge now used by structure evolution.
-
-
-## Polynomial symbolic regression
-
-```cpp
-#include <SymbolicRegression.hpp>
-
-const auto problem = RegressionProblem::create({
-    {{-1.0}, 1.0}, {{0.0}, 1.0}, {{1.0}, 3.0}
-});
-RandomContext run(0);
-SymbolicRegressionConfig config;
-const auto result = symbolicRegression(problem, config, run);
-// result.best (if present) owns the discovered expression and its training fitness.
-```
-
-Run `../build-release/genetik_polynomial_regression` for the prescribed five-seed search on 17 training rows, followed by separate frozen interior/exterior evaluations. This evolves typed expression structure through the existing engine, with checked MSE, minimization, node-count/text ties, two reevaluated elites, finite subtree proposals and generation-boundary evaluation budgets. All five initial campaign seeds had zero maximum error on the three specified sample sets; two discovered fits during random initialization. These measured fits are separate from deterministic engineering tests and do not claim algebraic equivalence or recovery on arbitrary problems.
-
-See [symbolic-regression API and contracts](docs/SYMBOLIC_REGRESSION.md) and the [complete campaign report](docs/POLYNOMIAL_CAMPAIGN.md), including actual expressions, discovery generations, counters, errors and runtimes. All supplied rows are copied into an immutable problem; changing it requires a new run. The scalar/character example remains supported.
-
-## Continuous constant fitting
-
-Include `ConstantFitting.hpp` to refine a fixed expression with `fitConstants(expression,
-TrainingObjective&, ConstantFitConfig)`. Enable it in the shared search with
-`config.fitting = ConstantFitConfig{};` and set `config.maxTrainingLossAttempts` for
-the aggregate training-loss budget. The fitter makes no random draws, changes only
-constant occurrences, and returns its accepted expression with matching fitness.
-See [API and failure/budget contracts](docs/CONSTANT_FITTING.md) and the
-[paired five-seed comparison](docs/CONSTANT_FITTING_CAMPAIGN.md).
-Run `../build-release/genetik_constant_campaign` for that bounded comparison;
-`genetik_polynomial_regression` retains the earlier discrete-constant example.
-
-## Search an equation from numerical data
-
-The public regression API supports ordered multi-input rows and one scalar target.
-The small file example accepts an unquoted comma-delimited numerical table:
+For example, after generating ordinary numerical files as described in the guides:
 
 ```sh
-../build-release/genetik_multivariate_demo --generate ../multivariate-data
-../build-release/genetik_regression_search ../multivariate-data/training.csv \
-  --inputs first,second --target target --seed 42 --loss-budget 100000 \
-  --evaluate ../multivariate-data/interior.csv --evaluate ../multivariate-data/exterior.csv
+../build-release/genetik_regression_search training.csv --inputs first,second --target target --seed 42 --loss-budget 4096 --operators add,sub,mul,div,log --fit-every 1
 ```
 
-Input order defines x0,x1,... independently of file column positions. Constant
-fitting is optional (`--no-fit`). Only training data enter search; evaluation
-files are scored after selecting the final expression. See the [generic API,
-file format and complete workflow](docs/MULTIVARIATE.md), and the [five-seed
-multivariate campaign](docs/MULTIVARIATE_CAMPAIGN.md). Prime regression remains the next example of the general module; strict division/logarithm support is now available.
-
-## Strict division and natural logarithm
-
-Opt in with `config.grammar.operators = {ExpressionKind::Add, ExpressionKind::Subtract,
-ExpressionKind::Multiply, ExpressionKind::Divide, ExpressionKind::Log};`.
-`Expression::unary(ExpressionKind::Log, child)` constructs a natural logarithm;
-`Expression::binary(ExpressionKind::Divide, left, right)` constructs division.
-Zero denominators and nonpositive log arguments are mathematical invalidity;
-there are no protected fallback values. Defaults remain +,-,*.
-
-```sh
-../build-release/genetik_multivariate_demo --arithmetic --generate ../arithmetic-data
-../build-release/genetik_regression_search ../arithmetic-data/training.csv \
-  --inputs first,second --target target --seed 42 --loss-budget 100000 \
-  --operators add,sub,mul,div,log \
-  --evaluate ../arithmetic-data/interior.csv --evaluate ../arithmetic-data/exterior.csv
-```
-
-See [strict semantics, mixed arity and numerical environment](docs/STRICT_ARITHMETIC.md)
-and the [complete five-seed discovery results](docs/STRICT_ARITHMETIC_CAMPAIGN.md).
-Three seeds recovered all declared sample ranges; two budget-limited misses are
-reported too. Run `genetik_multivariate_demo --arithmetic` for the full campaign.
-
-## Prime-prefix regression example
-
-The generic symbolic-regression API can evolve structure and constants against the
-first 1,000 indexed primes. The example handles offline reference generation,
-validated user lists, explicit scaling, stable fitted baselines, safe rounded-match
-diagnostics and frozen extrapolation reporting outside the library.
-See [the runnable workflow](docs/PRIME_REGRESSION.md) and
-[all five measured results and prediction tables](docs/PRIME_CAMPAIGN.md).
-Approximation results are empirical; this does not establish a general prime formula.
-
-## Optional fitting cadence
-
-Fitting remains optional. Set `config.fitEveryGenerations = 4` in C++ or append
-`--fit-every 4` to the numerical-file executable to refine generation 0 and then
-generations 4,8,12,...; intervening generations obtain fresh ordinary fitness.
-The default stays 1. Example:
-
-```sh
-../build-release/genetik_multivariate_demo --arithmetic --generate ../arithmetic-data
-../build-release/genetik_regression_search ../arithmetic-data/training.csv --inputs first,second --target target --seed 2 --loss-budget 100000 --operators add,sub,mul,div,log --fit-every 4
-```
-
-[Contracts and profiling](docs/FITTING_CADENCE.md) and
-[the fixed twenty-run comparison](docs/FITTING_CADENCE_RESULTS.md) report more
-structure generations, mixed accuracy, reduced strict-arithmetic recovery and no
-general speedup. The library does not cache fitting results or mark values as
-already optimized.
-
-Checked CPU loss evaluation reuses one internal operand workspace across dataset
-rows. Public usage and arithmetic/search results are unchanged; see
-[workspace measurements and reproduction commands](docs/EVALUATION_WORKSPACE.md)
-for independent exact-output checks, bounded benchmarks and search replays.
+Tests and examples use deterministic execution bounds; stochastic recovery is
+reported separately and is never a required CI campaign. See [delivery evidence](docs/DELIVERY.md),
+[version/release policy](docs/SUPPORT.md), [changelog](CHANGELOG.md) and [roadmap](docs/ROADMAP.md).

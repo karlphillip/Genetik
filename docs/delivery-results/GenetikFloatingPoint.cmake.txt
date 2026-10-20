@@ -1,0 +1,23 @@
+include_guard(GLOBAL)
+# Called in the consuming project, both for add_subdirectory and find_package.
+# Frontend inspection deliberately happens here, not on the package producer.
+function(genetik_require_floating_point target build_only)
+    set(flags) # do not inherit an unrelated parent variable on an unknown compiler
+    if(NOT CMAKE_CXX_COMPILER_LOADED)
+        message(FATAL_ERROR "Genetik requires CXX enabled in project(... LANGUAGES CXX)")
+    endif()
+    if(MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC" OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+        set(flags /fp:strict)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
+        set(flags -fno-fast-math -ffp-contract=off)
+    else()
+        message(WARNING "Genetik: unqualified C++ compiler; provide equivalent strict floating-point settings and qualify numerical behavior")
+    endif()
+    foreach(flag IN LISTS flags)
+        set(requirement "$<$<COMPILE_LANGUAGE:CXX>:${flag}>")
+        if(build_only)
+            set(requirement "$<BUILD_INTERFACE:${requirement}>")
+        endif()
+        target_compile_options(${target} INTERFACE "${requirement}")
+    endforeach()
+endfunction()

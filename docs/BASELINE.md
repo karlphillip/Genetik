@@ -944,3 +944,16 @@ generations match at N=2/3/4. Release/Debug/ASan+UBSan/exact CMake 3.16.0 each p
 25/25; separate TSan forced-overlap and OOP cases pass ten times each. New fixed-work
 measurements and selected evidence are separate in CONCURRENCY_RESULTS.md; all 127
 historical evidence checksums remain unchanged. No hosted or remote delivery claim.
+
+
+## Phase 2: additive typed mathematical values and evaluator
+
+From cleanup e906cbd, implementation d63f06c adds owned TypedValue/TypedExpression
+without modifying any pre-existing genetik file. Scalar/vector/matrix identities,
+ordered schemas, checked shape inference, strict ordered reductions, local arithmetic
+and payload caps, explicit invalid/resource outcomes and owned results are qualified.
+There is no scalar-caller migration, typed dataset, aggregate loss, fitting/search
+integration or global attempt-counter change. Existing GA/OOP/concurrency and scalar
+contracts remain intact. See TYPED_EXPRESSIONS.md and TYPED_EVALUATION_QUALIFICATION.md
+for API, independent fixtures, full/focused/sanitizer/package checks and limitations.
+All 127 historical evidence hashes and published assets remain unchanged.

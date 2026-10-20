@@ -250,3 +250,15 @@ For manual installation use `out/install/` and `out/consumers/`. Historical comm
 and evidence retain their original paths; see [CLEANUP.md](CLEANUP.md). The local
 CMake tool locations are deliberately unchanged. Source copies for future independent
 work should be managed worktrees, not untracked checkout duplicates.
+
+
+## Additive typed-expression delivery
+
+Phase 2 installs TypedValue.hpp/TypedExpression.hpp through the existing header-only
+package, with no new public dependency or binary. The actual typed quickstart and
+overlapping typed-header use across both installed translation units pass ordinary
+and relocated source-free consumption, including exact CMake 3.16.0. Generic OOP
+consumption remains independent of these mathematical headers. See
+[TYPED_EVALUATION_QUALIFICATION.md](TYPED_EVALUATION_QUALIFICATION.md) for local gates,
+commands, final test-only refinement, and the unexecuted hosted scope. No remote
+release/delivery action occurred in this milestone.

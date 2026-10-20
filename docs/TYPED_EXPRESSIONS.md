@@ -185,3 +185,6 @@ construction; an expression independently revalidates schema and constant shapes
 under its own limits. There is no retained objective identity, dataset or fitness.
 A resource outcome must not later be mistaken for mathematical invalidity in a
 future typed regression adapter; that adapter and its accounting are not implemented.
+
+Executed local checks and remaining platform scope are recorded in
+[TYPED_EVALUATION_QUALIFICATION.md](TYPED_EVALUATION_QUALIFICATION.md).

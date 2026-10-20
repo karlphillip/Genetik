@@ -134,8 +134,21 @@ unreleased 2021 interfaces; consult MIGRATION.md. No stable binary ABI is promis
 
 ## Phase 1 location/hygiene update
 
-The current suite adds one repository-hygiene case: 25 portable cases, or 26 with
+The Phase 1 suite added one repository-hygiene case: 25 portable cases, or 26 with
 the qualified Jetson snapshot enabled. Separate TSan still selects only its two
 forced-overlap/OOP cases. The previously executed hosted 24-case results remain
 historical evidence for their recorded SHAs. The changed workflow uses out/build/
 and the updated manifest; no hosted job for this local cleanup is claimed.
+
+
+## Additive typed evaluation (Phase 2)
+
+The new TypedValue/TypedExpression API is locally qualified on the Jetson/GCC13
+configuration in [TYPED_EVALUATION_QUALIFICATION.md](TYPED_EVALUATION_QUALIFICATION.md):
+29/29 with the captured snapshot in Release/Debug/ASan/minimum-CMake and three
+separate TSan selections including gated typed overlap. The current portable
+manifest has 28 cases; its separate TSan manifest has three. Modified hosted jobs
+are configured, not executed for this local feature. Previously verified hosted
+support applies to the recorded older revisions, not an automatic qualification
+of these new headers on every compiler/stdlib. No existing source API or numerical
+implementation changed, and the published v0.1.0 assets remain fixed.

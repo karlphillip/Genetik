@@ -5,13 +5,17 @@ Delivery and hosted qualification below are completed history. Phase 1 starts fr
 that current clean checkpoint; no typed-math work was present to checkpoint.
 Existing `ExpressionNode` operator tags are not a completed general typed-value API.
 
-1. **Workspace/repository cleanup** — this milestone: inventory before action,
+1. **Workspace/repository cleanup** — complete: inventory before action,
    indexed compact archives, stable tools, fresh canonical builds, output hygiene,
    unchanged frozen evidence and public interfaces. See [CLEANUP.md](CLEANUP.md).
-2. **Typed values and evaluation** — design and qualify explicit value/type and
-   evaluation semantics while preserving scalar GA and current strict expressions;
-   define errors, ownership, conversion and faithful output before integration.
-3. **Typed evolution** — type-correct initialization/variation and bounded search
+2. **Typed values and evaluation** — implemented: additive owned scalars/vectors/
+   matrices, fixed ordered schemas, inferred shapes, strict checked CPU arithmetic,
+   explicit local limits and faithful inspection/export. See TYPED_EXPRESSIONS.md
+   and TYPED_EVALUATION_QUALIFICATION.md for executed local gates. Existing scalar/GA
+   contracts remain intact.
+3. **Typed evolution** — next: first define immutable typed datasets, aggregate
+   checked regression loss and objective/resource invalidity mapping; then add
+   type-correct initialization/variation and bounded search
    through the same generic engine, fitness, budgets and publication contracts.
 4. **Scientific functions** — individually specified domains, numerical semantics,
    export, structural typing and portable deterministic tests for each addition.
@@ -24,7 +28,7 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
 8. **Additional model families** — individually scoped proposals and acceptance
    criteria, not a single open-ended rewrite.
 
-None of phases 2–8 is implemented by cleanup. Further delivery/platform qualification,
+Cleanup implemented none of phases 2–8; Phase 2 now adds evaluation only. Phases 3–8 remain future work. Further delivery/platform qualification,
 profiling, checkpoint/resume, cache policy and GPU work remain separately scoped.
 The remaining sections preserve the historical engineering and experiment record;
 old “next”/“unreleased” statements describe those checkpoints, not current status.

@@ -418,3 +418,92 @@ promise of unique/global coefficient recovery. Recommended next scope: strict
 ordinary division/logarithm nodes, domain handling, faithful export and configurable
 variation/tests/downstream support; preserve the later prime protocol and profile
 CPU workloads before proposing acceleration.
+
+## Generic multivariate regression and numerical-file workflow — 2026-10-20
+
+Started clean at accepted constant-fitting commit
+`bff0f3e1c2a9f327efb8d787b76cf17d7b0cdb14`. No unrelated changes were present.
+Reused the existing Jetson/GCC 13.3.0/libstdc++13, strict C++20 interface flags,
+workspace CMake/CTest and Release/Debug/ASan+UBSan build directories. Inspected
+AGENTS, regression/fitting documentation, roadmap, immutable row validation,
+dimension schemas, initialization/mutation index sampling, typed subtree copying,
+constant refinement, fitness/problem identity and the shared publication driver.
+
+Confirmed the public library already supports positive arbitrary input dimensions
+and one scalar target. Initialization/mutation sample all permitted variable indices;
+loss/fitting iterate supplied rows and bind the whole input span without univariate
+or polynomial assumptions. No core defect or restriction required a library change.
+Zero-input constant-only problems remain supported for compatibility. Separate
+immutable problems require separate candidate fitness/run identities even when
+numerically equal; fresh expression measurement is allowed on matching dimensions.
+
+Added application-layer table loading, a generic public-API file-search executable
+and a two-input in-memory demonstration/reproducible data generator. No format or
+file-system dependency was added to genetik_lib. The loader validates entire files,
+including unused numerical columns, under inclusive byte/line/row/column/field
+limits; it handles trimmed spaces/tabs, blank lines, CRLF and locale-independent
+complete decimal/scientific parsing, with useful filename/physical-row/column
+errors. Unsupported quoting, malformed headers/selections/widths/numbers and
+unrepresentable/nonfinite values are rejected before search starts. Evaluation
+files may be supplied upfront and validated, but are scored only after training
+selection is frozen. No target generator/template reaches the library search.
+
+Two/three-input tests cover independent binding changes, x2 export/generation by
+initialization and mutation, subtree identity preservation, dimensions/finite data,
+three-input constant fitting, separate-problem caches and preserved committed
+state. Parsed/generated/reordered rows match in-memory binary64 values; bounded
+same-seed searches match expressions, scores, counters, trace and RNG state.
+CLI smoke tests prove malformed training/evaluation files fail before search_start
+and evaluation paths do not change the selected expression. Downstream public-only
+code now runs three-input search as well as previous fitting/scalar checks.
+
+The frozen five-seed affine campaign recovered all five seeds on training/interior/
+exterior at max error <=1e-6, with training-only selection and no configuration
+adjustment. All reported candidates were discovered after initialization. Initial
+raw/refined losses, all faithful expressions, work, times, stops and errors are in
+[MULTIVARIATE_CAMPAIGN.md](MULTIVARIATE_CAMPAIGN.md) and its complete raw log. A
+qualification rerun matched all existing non-time observables. The actual file
+workflow with seed 42 matched its in-memory expression, score and 39,323 loss calls.
+Correctness and this sample recovery evidence are separate conclusions.
+
+Exact commands from repository root, using the established configurations:
+
+```sh
+../.tools/bin/cmake --build ../build-release -j2
+../.tools/bin/ctest --test-dir ../build-release --output-on-failure
+../.tools/bin/cmake --build ../build-debug -j2
+../.tools/bin/ctest --test-dir ../build-debug --output-on-failure
+../.tools/bin/cmake --build ../build-sanitize -j2
+../.tools/bin/ctest --test-dir ../build-sanitize --output-on-failure
+timeout 600s ../build-release/genetik_multivariate_demo
+../build-release/genetik_multivariate_demo --generate ../multivariate-data
+timeout 60s ../build-release/genetik_regression_search ../multivariate-data/training.csv --inputs first,second --target target --seed 42 --loss-budget 100000 --evaluate ../multivariate-data/interior.csv --evaluate ../multivariate-data/exterior.csv
+timeout 10s ../build-release/genetik_demo 42 1000
+g++ -std=c++20 -fno-fast-math -ffp-contract=off -Wall -Wextra -Wpedantic -Igenetik -fsyntax-only regression_search.cpp multivariate_regression.cpp tests/multivariate.cpp tests/downstream/main.cpp tests/constant_fitting.cpp constant_fitting_campaign.cpp tests/symbolic_regression.cpp tests/expressions.cpp tests/generation.cpp tests/tests.cpp demo.cpp polynomial_regression.cpp expression_demo.cpp
+git -c core.whitespace=cr-at-eol diff --check
+```
+
+Final qualification: **13/13 CTest cases passed in Release, Debug and ASan+UBSan**
+(no sanitizer diagnostics). All fifteen public headers and all three new application
+support headers compile standalone. The new sanitizer contract/smoke paths use
+short bounded searches; the full five-seed campaign is Release only. The separate
+downstream Release consumer uses only public headers/target, now including three-
+input evolution; it remains uninstrumented by the parent sanitizer option.
+Warning review and whitespace check passed without diagnostics. Character demo
+retains best .892, generation_limit at 1,000 and 100,100 outer calls. No longer
+previous campaigns were repeated because production library code is unchanged;
+the existing deterministic fitting, discrete/scalar and publication suites all pass.
+
+Generic API/data-input acceptance and measured multivariate recovery both pass.
+No public API migration or compatibility break is required. The deliberately small
+application format has finite resource limits, requires the same selected column
+names across files, and rejects quoting/missing/categorical values. Library data
+remain ordinary vectors and are not subject to file limits. General restrictions
+remain fixed immutable problem/order per run, one scalar output, strict binary64,
+heuristic structure/coordinate search and the current +,-,* grammar; there is no
+serialization or exported-expression parser. No unresolved implementation blocker.
+
+Next: strict ordinary division and natural logarithm across representation,
+evaluation, variation, limits/export and domain tests. Then implement prime
+regression as a generic-module example using the preserved protocol, and profile
+representative CPU workloads alongside production delivery work.

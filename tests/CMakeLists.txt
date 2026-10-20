@@ -1,3 +1,7 @@
+add_executable(genetik_multivariate_tests multivariate.cpp)
+target_link_libraries(genetik_multivariate_tests PRIVATE genetik_lib)
+add_test(NAME genetik_multivariate_contracts COMMAND genetik_multivariate_tests ${CMAKE_CURRENT_BINARY_DIR}/multivariate-data)
+set_tests_properties(genetik_multivariate_contracts PROPERTIES TIMEOUT 60)
 add_executable(genetik_fitting_tests constant_fitting.cpp)
 target_link_libraries(genetik_fitting_tests PRIVATE genetik_lib)
 add_test(NAME genetik_fitting_contracts COMMAND genetik_fitting_tests)
@@ -20,6 +24,12 @@ target_link_libraries(genetik_tests PRIVATE genetik_lib)
 add_test(NAME genetik_contracts COMMAND genetik_tests)
 set_tests_properties(genetik_contracts PROPERTIES TIMEOUT 30)
 if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_regression_cli COMMAND ${CMAKE_COMMAND}
+        -DGENERATOR=$<TARGET_FILE:genetik_multivariate_demo>
+        -DSEARCH=$<TARGET_FILE:genetik_regression_search>
+        -DWORKSPACE=${CMAKE_CURRENT_BINARY_DIR}/regression-cli
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/regression_cli.cmake)
+    set_tests_properties(genetik_regression_cli PROPERTIES TIMEOUT 60)
     add_test(NAME genetik_expression_example COMMAND genetik_expression_demo)
     set_tests_properties(genetik_expression_example PROPERTIES TIMEOUT 30
         PASS_REGULAR_EXPRESSION "Arithmetic invalidity at postfix node 3")
@@ -53,3 +63,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -P ${CMAKE_CURRENT_SOURCE_DIR}/fp_policy.cmake)
     set_tests_properties(genetik_expression_fp_policy PROPERTIES TIMEOUT 30)
 endif()
+
+# Application support headers also compile without accidental preceding includes.
+foreach(header RegressionData RegressionWorkflow MultivariateData)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp "#include <${PROJECT_SOURCE_DIR}/examples/${header}.hpp>\n")
+    add_library(example_header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp)
+    target_link_libraries(example_header_${header} PRIVATE genetik_lib)
+endforeach()

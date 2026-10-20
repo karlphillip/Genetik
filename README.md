@@ -124,3 +124,22 @@ See [API and failure/budget contracts](docs/CONSTANT_FITTING.md) and the
 [paired five-seed comparison](docs/CONSTANT_FITTING_CAMPAIGN.md).
 Run `../build-release/genetik_constant_campaign` for that bounded comparison;
 `genetik_polynomial_regression` retains the earlier discrete-constant example.
+
+## Search an equation from numerical data
+
+The public regression API supports ordered multi-input rows and one scalar target.
+The small file example accepts an unquoted comma-delimited numerical table:
+
+```sh
+../build-release/genetik_multivariate_demo --generate ../multivariate-data
+../build-release/genetik_regression_search ../multivariate-data/training.csv \
+  --inputs first,second --target target --seed 42 --loss-budget 100000 \
+  --evaluate ../multivariate-data/interior.csv --evaluate ../multivariate-data/exterior.csv
+```
+
+Input order defines x0,x1,... independently of file column positions. Constant
+fitting is optional (`--no-fit`). Only training data enter search; evaluation
+files are scored after selecting the final expression. See the [generic API,
+file format and complete workflow](docs/MULTIVARIATE.md), and the [five-seed
+multivariate campaign](docs/MULTIVARIATE_CAMPAIGN.md). Prime regression remains a
+later example of the general module, after strict division/logarithm support.

@@ -27,6 +27,14 @@ int main() {
     RandomContext continuous(9);
     const auto refined = symbolicRegression(continuousProblem, config, continuous);
     if (!refined.best || refined.trainingWork.fittingInvocations == 0 || refined.trainingWork.lossAttempts > 64) return 1;
+    // Ordinary caller-supplied three-input rows; no example/file support headers.
+    const auto multivariate = RegressionProblem::create({{{1,2,3}, -2.5}, {{2,1,0}, 1}}, {31,6,8});
+    if (Expression::variable(2,3).evaluate(std::array{1.,2.,3.}).value() != 3) return 1;
+    RandomContext multivariateRun(2);
+    const auto multivariateResult = symbolicRegression(multivariate, config, multivariateRun);
+    if (!multivariateResult.best || multivariateResult.best->expression().variableCount() != 3 ||
+        multivariateResult.trainingWork.lossAttempts > 64 ||
+        multivariate->measure(multivariateResult.best->expression()).loss != multivariateResult.best->evaluation()) return 1;
     RandomContext run(9);
     Population<Creature<char>> population(3, run);
     GeneticAlgorithm<decltype(population), Creature<char>> ga(0.5f, 0.9f, run);

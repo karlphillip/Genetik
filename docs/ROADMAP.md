@@ -1,6 +1,13 @@
 # Genetik roadmap
 
-The baseline and fitness/publication contracts are implemented and verified. The bounded expression value and strict CPU evaluator are implemented; bounded polynomial structure evolution is also implemented through the shared engine. Bounded deterministic continuous constant fitting is now implemented; division/logarithms and prime experiments remain planned capabilities. See [BASELINE.md](BASELINE.md) for evidence and API migration.
+The baseline and fitness/publication contracts are implemented and verified. The bounded expression value and strict CPU evaluator are implemented; bounded polynomial structure evolution is also implemented through the shared engine. Bounded deterministic continuous constant fitting and a verified generic multivariate/file-data workflow are implemented; division/logarithms and prime experiments remain planned capabilities. See [BASELINE.md](BASELINE.md) for evidence and API migration.
+
+Current delivery order:
+
+1. Generic multivariate/data-input milestone — complete; public row API, strict application loader, 2/3-input contracts and all five campaign seeds reported.
+2. Strict ordinary division/natural logarithm throughout typed construction, evaluation, variation, limits, export and domain tests — next.
+3. Prime regression as an example of generic indexed-sequence regression using the preserved protocol below.
+4. Profile representative CPU workloads and complete production delivery (packaging, platform qualification, documentation and checkpoint/resume); justify acceleration from measurements.
 
 ## 1. Baseline, C++20 and first hardening — complete
 
@@ -31,6 +38,8 @@ Add ordinary division and natural logarithms before milestone 5, with zero/nonpo
 Implemented a public data-driven search and polynomial example for y = x*x + x + 1. The fixed five-seed, 128-slot, 250-attempt/32,128-call campaign recovered every declared training/interior/exterior sample numerically, with three post-initialization discoveries and two generation-zero discoveries. No configuration adjustment was needed; held-out ranges were evaluated only after the training-based decision and representative selection. All seed outputs and unsuccessful initial fitness values are retained in [POLYNOMIAL_CAMPAIGN.md](POLYNOMIAL_CAMPAIGN.md) and its raw log. This is evidence for this discrete grammar and sample protocol, not an algebraic proof or universal convergence guarantee.
 
 Implemented optional deterministic coordinate fitting, fixed topology/independent postfix constant occurrences, strict improvements, finite proposal/sweep/loss limits, bounds [-8,8] in the campaign, training-only refinement and checked accounting. Local stops retain earlier improvements; invalid starts skip; operational/global-budget aborts preserve committed state. Controlled dyadic/non-dyadic quadratic fixtures pass within 1,024 calls. In the frozen paired campaign all five enabled seeds recover training/interior/exterior at max error <=1e-6, while none of the five disabled seeds do under the common 100,000-call allowance. Actual work differs and is recorded in [CONSTANT_FITTING_CAMPAIGN.md](CONSTANT_FITTING_CAMPAIGN.md); see [CONSTANT_FITTING.md](CONSTANT_FITTING.md) for API, limitations and counters.
+
+Generic multivariate/data-input extension is complete: arbitrary positive input dimensionality (zero-input constants retained), fixed input order, one scalar target, typed variable-preserving variation, dimension-independent constant fitting and exact separate-problem cache rules. No core restriction or defect required a library change. A bounded application-layer unquoted table loader and small file-search CLI accept caller-selected ordered inputs, target, seed/loss budget and separate evaluation files; in-memory and parsed paths share the public search. Two/three-input contracts, round trips, malformed files, same-seed counters/RNG and downstream consumption are qualified. The frozen affine two-input campaign recovers training/interior/exterior on every seed without adjustment; see [MULTIVARIATE.md](MULTIVARIATE.md) and [MULTIVARIATE_CAMPAIGN.md](MULTIVARIATE_CAMPAIGN.md). This is sample agreement, not a universal search guarantee.
 
 Next implement strict ordinary division and natural logarithm in the typed expression/evaluation/export and configurable variation vocabulary, with domain/overflow tests and downstream qualification before prime search. Keep stronger numerical solvers separate from this extension. Track error and complexity separately; a small bounded accuracy/complexity archive remains pending. Do not conceal a complexity penalty inside reported error.
 

@@ -1,6 +1,6 @@
 # Bounded symbolic regression through the shared engine
 
-The public API accepts ordinary input/target rows. Optional continuous refinement and its additional budgets are documented in [CONSTANT_FITTING.md](CONSTANT_FITTING.md); the candidate-call bound below describes the original no-fitting configuration. The only polynomial-specific code is the public example and tests; neither candidate initialization nor variation has a target template.
+The public API accepts ordinary ordered multi-input/single-output rows. See [MULTIVARIATE.md](MULTIVARIATE.md) for the positive-dimensional contract, caller-provided C++ data and a numerical-file workflow; these use the same engine and checked loss. Optional continuous refinement and its additional budgets are documented in [CONSTANT_FITTING.md](CONSTANT_FITTING.md); the candidate-call bound below describes the original no-fitting configuration. The only polynomial-specific code is the public example and tests; neither candidate initialization nor variation has a target template.
 
 ```cpp
 #include <SymbolicRegression.hpp>

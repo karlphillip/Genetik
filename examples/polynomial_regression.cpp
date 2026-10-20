@@ -1,3 +1,4 @@
+#include "examples/ExecutionOptions.hpp"
 #include <SymbolicRegression.hpp>
 #include <chrono>
 #include <iomanip>
@@ -14,14 +15,18 @@ static void error(const std::exception& e) {
     catch (const std::exception& cause) { error(cause); }
     catch (...) { std::cerr << "non-standard cause\n"; }
 }
-int main() {
+int main(int argc,char** argv) {
+    try {
+    const auto execution=genetik_example::executionOptions(argc,argv);
+    if(argc!=1)throw std::invalid_argument("only --threads N is supported");
+    genetik_example::printExecution(execution, 128);
     std::cout << std::setprecision(17);
     std::vector<double> trainX, interiorX;
     for (int k = 0; k <= 16; ++k) trainX.push_back(-2. + k/4.);
     for (int k = 0; k < 16; ++k) interiorX.push_back(-15./8 + k/4.);
     const auto training = RegressionProblem::create(samples(trainX));
     SymbolicRegressionConfig config;
-    std::cout << "campaign=initial mode=serial_cpu seeds=0,1,2,3,42 population=128 max_attempts=250 max_evaluations=32128"
+    std::cout << "campaign=initial mode=configured_cpu seeds=0,1,2,3,42 population=128 max_attempts=250 max_evaluations=32128"
               << " nodes=31 depth=6 constants=-2,-1,0,1,2 selector=linear_rank elites=2 crossover=0.9 mutation=0.35"
               << " init_max_depth=4 mutation_max_depth=3 full_probability=0.5 grow_binary_probability=0.65 proposals=8"
               << " objective=training_mse success_stop=exact_zero recovery_max_abs=1e-9\n";
@@ -30,7 +35,7 @@ int main() {
     bool failure = false;
     // No interior/exterior data are evaluated until all training searches and the adjustment decision finish.
     for (std::uint32_t seed : {0u, 1u, 2u, 3u, 42u}) {
-        RandomContext random(seed);
+        RandomContext random(seed,execution);
         const auto start = std::chrono::steady_clock::now();
         try {
             const auto objective = std::make_shared<TrainingObjective>(training, config.maxTrainingLossAttempts);
@@ -90,4 +95,5 @@ int main() {
                   << run.training.samplesAttempted + a.samplesAttempted + b.samplesAttempted << '\n';
     }
     return failure ? 1 : 0;
+    } catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
 }

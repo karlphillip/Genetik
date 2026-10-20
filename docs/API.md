@@ -85,5 +85,6 @@ local storage management, not cached mathematical evaluation (EVALUATION_WORKSPA
 See [architecture and external extension guide](ARCHITECTURE.md) for runtime virtual
 candidate, evaluator, preparation, selection and variation contracts and the installed
 permutation consumer. Scalar and symbolic candidates share the same engine; generic
-core includes do not require regression. [Concurrency](CONCURRENCY.md) is planned,
-not implemented.
+core includes do not require regression. [Concurrency](CONCURRENCY.md) is implemented as an opt-in library-owned CPU
+backend, defaulting to one. Use RandomContext(seed, ExecutionConfig{N}); custom
+callbacks need explicit qualification and independent mutable state.

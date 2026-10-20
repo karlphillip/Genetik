@@ -69,3 +69,13 @@ were checked against [GitHub runner documentation](https://docs.github.com/en/ac
 [Ubuntu x64 image](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md)
 and [ARM64 image](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Arm64-Readme.md).
 The checked-in workflow is configuration, not evidence of a passing hosted matrix.
+
+## CPU execution qualification update
+
+Opt-in generic worker execution and private built-in refinement are locally tested
+with GCC 13.3.0/release-13 standard headers, installed libstdc++6/libtsan2 packages
+14.2.0-4ubuntu2~24.04.1 and libc6 2.39-0ubuntu8.8 on the Jetson. Separate TSan
+forced-overlap/OOP tests pass ten repetitions each; ASan+UBSan remains a separate
+build. See CONCURRENCY_RESULTS.md for exact evidence and limitations. Hosted jobs,
+including the configured ARM64 TSan step, have not executed. Parallel safety of
+arbitrary callbacks is not inferred from constness or from this local qualification.

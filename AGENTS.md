@@ -12,12 +12,12 @@
   ```
 - Use separate Debug and sanitizer directories; sanitizer option is `-DGENETIK_SANITIZERS=ON`.
 - Tests must check outcomes with runtime failures, including with `NDEBUG`; never require stochastic target discovery. Set CTest timeouts and bound examples.
-- One explicit, caller-owned `RandomContext(seed)` per serial run. Population and algorithm borrow the same context; it must outlive them. No hidden engines/reseeding. Custom creatures accept `std::mt19937&` for initialization and mutation.
+- One explicit, caller-owned `RandomContext(seed, ExecutionConfig{N})` per run (default N=1). Population and algorithm borrow the same context; it must outlive them. No hidden engines/reseeding. Custom creatures accept `std::mt19937&` for initialization and mutation.
 - `genetik_lib` is a header-only CMake interface target and propagates C++20 to consumers. Each public header must compile alone; verify the downstream consumer fixture.
 - Fitness has Unevaluated/Valid/Invalid states; only Valid has a finite double score (zero and negatives are valid). Set objective direction independently. Evaluators return `Fitness`; expected mathematical errors return Invalid, operational exceptions propagate with nested context. Objective and input data remain fixed during a run.
 - Both representations share `EvaluatedCandidate` fitness/cache state. Scalar candidates derive from `Creature_i`; genome/cache storage is private and final editing methods invalidate cached fitness. No writable references/views; copy input buffers even for rvalues. Do not restore protected genome/cache access.
 - `setCreature()` stages edits; `updateValues()` or `publishGeneration()` evaluates and publishes a whole viable population. Invalid candidates cannot be parents. Check `GenerationOutcome`; no implicit retries.
-- Publish population/generation/best-seen state only after all preparation succeeds, via no-throw ownership replacement. Failed attempts preserve committed state, but consume RNG draws and evaluation-attempt accounting. The symbolic driver checks candidate-call and baseline allowances at generation boundaries; exhaustion of the training-loss cap inside refinement discards the private attempt; generic manual GA loops own their budget policy. No cancellation/observer framework exists yet.
+- Publish population/generation/best-seen state only after all preparation succeeds, via no-throw ownership replacement. Failed attempts preserve committed state, but consume RNG draws and evaluation-attempt accounting. The symbolic driver checks candidate-call and baseline allowances at generation boundaries; exhaustion of the training-loss cap inside refinement discards the private attempt; generic manual GA loops own their budget policy. ExecutionContext provides cooperative batch cancellation; no blocking-callback interruption or observer framework.
 - `Expression.hpp` owns validated typed postfix trees separately from scalar genomes. Keep all expression traversals iterative, preserve per-node rounding/error checks, and copy public input storage even for rvalues. The reference header evaluator requires native binary64, strict FP flags (`-fno-fast-math -ffp-contract=off`), default rounding, gradual underflow and the qualified runtime math library; never enable fast/finite-only math. See docs/EXPRESSIONS.md.
 - Preserve user changes. Record evidence and compatibility changes in docs/BASELINE.md; track staged extensions in docs/ROADMAP.md.
 - Symbolic regression uses immutable copied rows, checked full-data MSE and Minimize; exact ties prefer node count then faithful text consistently across rank selection, elites and archive. Use the shared GA with a variation policy, never a second publication loop. See docs/SYMBOLIC_REGRESSION.md.
@@ -46,5 +46,12 @@
   benchmarks/ for evaluation harness/corpus, scripts/ for campaigns/helpers.
   New run output goes to explicit out/ or build/temp directories. Preserve accepted
   docs evidence and historical source locations; do not blanket-ignore logs.
-- No runtime population concurrency exists. Implement the generic execution-layer
-  design in docs/CONCURRENCY.md before advertising thread controls or safety.
+- Generic concurrency uses an explicitly run-owned ExecutionContext (default 1,
+  no workers). Coordinator owns RNG, variation, ordering and publication; workers
+  require explicit capability and private candidate/refinement/scratch state.
+  Built-in fitting forks independent objectives sharing only synchronized loss
+  admission; merge actual work after draining, including on failure. Operational
+  worker failures outrank budget/cancellation. See docs/CONCURRENCY.md.
+- Use separate -DGENETIK_THREAD_SANITIZER=ON builds for TSan; never combine with
+  ASan. Require forced-overlap tests, not just sanitizer compilation. Do not run
+  timing measurements concurrently with development builds or qualification suites.

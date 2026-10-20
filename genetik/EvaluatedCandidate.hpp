@@ -1,5 +1,6 @@
 #pragma once
 #include "Fitness.hpp"
+#include "Execution.hpp"
 #include <memory>
 #include <string>
 #include <utility>
@@ -37,6 +38,12 @@ public:
     virtual void rouletteRange(float& start, float& end) const final { start = start_; end = end_; }
     virtual std::shared_ptr<const void> problemIdentity() const noexcept { return {}; }
     virtual std::string stats() = 0;
+    // Explicit trusted opt-in: const alone does not make callbacks concurrently safe.
+    virtual bool parallelEvaluationSafe() const noexcept {return false;}
+    // Coordinator-only hooks: detach shared mutable services, then merge work after
+    // draining (also on failure). finish must restore bindings, including on error.
+    virtual void beginParallelEvaluation(ExecutionContext&) {}
+    virtual void finishParallelEvaluation() {}
 protected:
     // Runs only on the private staged value during population publication.
     // Optional representation-owned refinement. Return fitness for precisely the

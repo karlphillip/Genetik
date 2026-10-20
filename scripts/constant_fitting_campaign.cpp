@@ -1,3 +1,4 @@
+#include "examples/ExecutionOptions.hpp"
 #include <SymbolicRegression.hpp>
 #include <chrono>
 #include <iomanip>
@@ -20,7 +21,11 @@ static double maximumError(const Expression& expression,const std::vector<Regres
     }
     return maximum;
 }
-int main() {
+int main(int argc,char** argv) {
+    try {
+    const auto execution=genetik_example::executionOptions(argc,argv);
+    if(argc!=1)throw std::invalid_argument("only --threads N is supported");
+    genetik_example::printExecution(execution, 64);
     std::cout<<std::setprecision(17)<<std::unitbuf;
     std::vector<double> xs,inside;
     for(int k=0;k<=16;++k)xs.push_back(-2.+k/4.);
@@ -32,7 +37,7 @@ int main() {
     config.maxGenerationAttempts=2000;config.trainingLossThreshold=1e-14;
     config.grammar.continuousProbability=.5;
     ConstantFitConfig fit;fit.lossThreshold=1e-14;
-    std::cout<<"campaign=initial serial_cpu seeds=0,1,2,3,42 population=64 loss_limit=100000 candidate_limit=100000 generations=2000"
+    std::cout<<"campaign=initial configured_cpu seeds=0,1,2,3,42 population=64 loss_limit=100000 candidate_limit=100000 generations=2000"
              <<" nodes=31 depth=6 constant_bound=8 continuous_probability=.5 continuous_interval=[-8,8) discrete=-2,-1,0,1,2"
              <<" crossover=.9 mutation=.35 elites=2 linear_rank init_depth=4 mutation_depth=3 full_probability=.5 grow=.65 variation_proposals=8"
              <<" fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_bounds=[-8,8]"
@@ -45,7 +50,7 @@ int main() {
         std::optional<double> baseline;
         for(bool enabled:{false,true}) {
             config.fitting=enabled?std::optional(fit):std::nullopt;
-            RandomContext random(seed);
+            RandomContext random(seed,execution);
             const auto start=std::chrono::steady_clock::now();
             auto result=symbolicRegression(problem,config,random);
             const double seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
@@ -87,4 +92,5 @@ int main() {
                  <<" training_recovery="<<(r.trainMax<=1e-6)<<" interior_recovery="<<(a<=1e-6)<<" exterior_recovery="<<(b<=1e-6)
                  <<" postsearch_prediction_rows=37 postsearch_training_loss_calls=0\n";
     }
+    } catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
 }

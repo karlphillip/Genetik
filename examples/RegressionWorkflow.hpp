@@ -37,7 +37,7 @@ inline std::vector<ExpressionKind> selectOperators(const std::vector<std::string
     return kinds;
 }
 inline void printConfig(const SymbolicRegressionConfig& config) {
-    std::cout << "execution=serial_cpu population=" << config.population << " generation_limit=" << config.maxGenerationAttempts
+    std::cout << "population=" << config.population << " generation_limit=" << config.maxGenerationAttempts
               << " training_loss_limit=" << config.maxTrainingLossAttempts << " outer_request_limit=" << config.maxEvaluations
               << " nodes_limit=31 depth_limit=6 absolute_constant_limit=8 operators=";
     for (std::size_t i=0;i<config.grammar.operators.size();++i) {

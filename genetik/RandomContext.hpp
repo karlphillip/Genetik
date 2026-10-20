@@ -1,4 +1,5 @@
 #pragma once
+#include "Execution.hpp"
 #include <cstdint>
 #include <random>
 #include <limits>
@@ -8,7 +9,12 @@
 // Deliberately not copyable/movable: consumers borrow its engine.
 class RandomContext {
 public:
-    explicit RandomContext(std::uint32_t seed) : seed_(seed), engine_(seed) {}
+    explicit RandomContext(std::uint32_t seed, ExecutionConfig execution={})
+        : seed_(seed), engine_(seed), ownedExecution_(execution), execution_(&ownedExecution_) {}
+    RandomContext(std::uint32_t seed, ExecutionContext& execution)
+        : seed_(seed), engine_(seed), execution_(&execution) {}
+    ExecutionContext& execution() noexcept {return *execution_;}
+    const ExecutionContext& execution() const noexcept {return *execution_;}
     RandomContext(const RandomContext&) = delete;
     RandomContext& operator=(const RandomContext&) = delete;
     RandomContext(RandomContext&&) = delete;
@@ -26,4 +32,6 @@ private:
     std::uint64_t evaluationAttempts_ = 0;
     const std::uint32_t seed_;
     std::mt19937 engine_;
+    ExecutionContext ownedExecution_;
+    ExecutionContext* execution_;
 };

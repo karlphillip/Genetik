@@ -1,4 +1,6 @@
+find_package(Threads REQUIRED)
 add_library(genetik_lib INTERFACE)
+target_link_libraries(genetik_lib INTERFACE Threads::Threads)
 add_library(Genetik::Genetik ALIAS genetik_lib)
 set_target_properties(genetik_lib PROPERTIES EXPORT_NAME Genetik)
 target_include_directories(genetik_lib INTERFACE

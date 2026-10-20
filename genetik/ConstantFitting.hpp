@@ -1,4 +1,5 @@
 #pragma once
+#include <typeinfo>
 #include "Regression.hpp"
 #include <exception>
 #include <set>
@@ -9,6 +10,10 @@
 inline void countTrainingWork(std::uint64_t& counter) {
     if (counter == std::numeric_limits<std::uint64_t>::max()) throw std::overflow_error("training work counter exhausted");
     ++counter;
+}
+inline void mergeTrainingCounter(std::uint64_t& destination,std::uint64_t source,bool& overflow) noexcept {
+    if(source>std::numeric_limits<std::uint64_t>::max()-destination){destination=std::numeric_limits<std::uint64_t>::max();overflow=true;}
+    else destination+=source;
 }
 struct TrainingWork {
     std::uint64_t lossAttempts = 0, rowAttempts = 0, fittingInvocations = 0, fittingLossAttempts = 0;
@@ -52,8 +57,27 @@ struct RefinementDiagnostics {
         return &expressions.emplace(key,Entry{expression}).first->second;
     }
 };
-class TrainingLossBudgetExceeded : public std::runtime_error {
-public: TrainingLossBudgetExceeded() : std::runtime_error("global training-loss allowance exhausted") {}
+class TrainingLossBudgetExceeded : public EvaluationBudgetExceeded {
+public: TrainingLossBudgetExceeded() : EvaluationBudgetExceeded("global training-loss allowance exhausted") {}
+};
+// Shared only for admission. A permit is charged as measure() begins, not when
+// a candidate is queued. No reservation survives without a corresponding attempt.
+class TrainingLossAdmission {
+public:
+    TrainingLossAdmission(std::uint64_t maximum,std::uint64_t used):maximum_(maximum),used_(used){if(used>maximum)throw std::invalid_argument("invalid loss admission state");}
+    void start(const ExecutionContext* execution) {
+        std::lock_guard lock(mutex_);
+        if(execution && execution->stopRequested())throw EvaluationCancelled();
+        if(used_==maximum_)throw TrainingLossBudgetExceeded();
+        ++used_;
+    }
+private:
+public:
+    std::uint64_t remaining() const {std::lock_guard lock(mutex_);return maximum_-used_;}
+private:
+    mutable std::mutex mutex_;
+    const std::uint64_t maximum_;
+    std::uint64_t used_;
 };
 struct ConstantFitConfig;
 struct ConstantFitResult;
@@ -74,13 +98,38 @@ public:
     TrainingObjective(TrainingObjective&&) = delete;
     TrainingObjective& operator=(TrainingObjective&&) = delete;
     virtual ~TrainingObjective() = default;
+    virtual bool parallelEvaluationSafe() const noexcept {
+        return typeid(*this)==typeid(TrainingObjective) && !diagnostics_;
+    }
+    std::shared_ptr<TrainingObjective> forkParallel(ExecutionContext& execution) {
+        if(!parallelEvaluationSafe())throw std::invalid_argument("objective requires an independent parallel factory");
+        auto local=cloneForParallel();
+        if(!local || local.get()==this || local.use_count()!=1 || local->problem_!=problem_ || local->maximum_!=maximum_ || local->work_!=TrainingWork{} || local->diagnostics_)
+            throw std::invalid_argument("invalid parallel objective factory result");
+        if(!admission_)admission_=std::make_shared<TrainingLossAdmission>(maximum_,work_.lossAttempts);
+        local->admission_=admission_;local->execution_=&execution;
+        return local;
+    }
+    void mergeParallel(const TrainingObjective& local) {
+        bool overflow=false;
+#define GENETIK_ADD_WORK(field) mergeTrainingCounter(work_.field,local.work_.field,overflow);
+        GENETIK_ADD_WORK(lossAttempts) GENETIK_ADD_WORK(rowAttempts) GENETIK_ADD_WORK(fittingInvocations)
+        GENETIK_ADD_WORK(fittingLossAttempts) GENETIK_ADD_WORK(proposals) GENETIK_ADD_WORK(accepted)
+        GENETIK_ADD_WORK(invalid) GENETIK_ADD_WORK(infeasible) GENETIK_ADD_WORK(duplicates)
+        GENETIK_ADD_WORK(invalidLosses) GENETIK_ADD_WORK(ordinaryLossAttempts)
+        GENETIK_ADD_WORK(fittingBaselineAttempts) GENETIK_ADD_WORK(fittingProbeAttempts) GENETIK_ADD_WORK(fittingImproved)
+#undef GENETIK_ADD_WORK
+        mergeWorker(local);
+        if(overflow)throw std::overflow_error("parallel training accounting exceeded uint64 range");
+    }
     RegressionMetrics measure(const Expression& expression, bool fitting = false) {
         return measure(expression,fitting ? TrainingLossKind::FittingBaseline:TrainingLossKind::Ordinary);
     }
     RegressionMetrics measure(const Expression& expression,TrainingLossKind kind) {
         if(kind!=TrainingLossKind::Ordinary && kind!=TrainingLossKind::FittingBaseline && kind!=TrainingLossKind::FittingProbe)
             throw std::invalid_argument("unknown training loss kind");
-        if (work_.lossAttempts >= maximum_) throw TrainingLossBudgetExceeded();
+        if(admission_)admission_->start(execution_);
+        else if (work_.lossAttempts >= maximum_) throw TrainingLossBudgetExceeded();
         countTrainingWork(work_.lossAttempts);
         if(kind==TrainingLossKind::Ordinary)countTrainingWork(work_.ordinaryLossAttempts);
         else {
@@ -98,15 +147,22 @@ public:
     }
     const std::shared_ptr<const RegressionProblem>& problem() const noexcept { return problem_; }
     std::uint64_t maximum() const noexcept { return maximum_; }
-    std::uint64_t remaining() const noexcept { return maximum_ - work_.lossAttempts; }
+    std::uint64_t remaining() const { return admission_ ? admission_->remaining():maximum_ - work_.lossAttempts; }
     const std::shared_ptr<RefinementDiagnostics>& diagnostics() const noexcept {return diagnostics_;}
     const TrainingWork& work() const noexcept { return work_; }
 protected:
+    virtual std::shared_ptr<TrainingObjective> cloneForParallel() const {
+        if(typeid(*this)!=typeid(TrainingObjective))throw std::invalid_argument("derived objective must override cloneForParallel");
+        return std::make_shared<TrainingObjective>(problem_,maximum_);
+    }
+    virtual void mergeWorker(const TrainingObjective&) noexcept {}
     virtual RegressionMetrics compute(const Expression& expression) {
         return problem_->measure(expression, &work_.rowAttempts);
     }
 private:
     friend ConstantFitResult fitConstants(const Expression&, TrainingObjective&, const ConstantFitConfig&);
+    std::shared_ptr<TrainingLossAdmission> admission_;
+    const ExecutionContext* execution_=nullptr; // worker-local borrow, never installed in committed candidates
     TrainingWork work_;
     std::shared_ptr<const RegressionProblem> problem_;
     std::uint64_t maximum_;
@@ -223,6 +279,31 @@ public:
             if(d->bound)throw std::invalid_argument("refinement diagnostics require a fresh run");
             d->bound=true;
         }
+    }
+    bool parallelEvaluationSafe() const noexcept override {return objective_->parallelEvaluationSafe() && !objective_->diagnostics();}
+    std::shared_ptr<RegressionPreparation> forkParallel(ExecutionContext& execution) override {
+        auto child=std::make_shared<ConstantRefinement>(objective_->forkParallel(execution),config_,interval_);
+        child->initializing=initializing;
+        return child;
+    }
+    void mergeParallel(const RegressionPreparation& base) override {
+        const auto& child=static_cast<const ConstantRefinement&>(base);
+        std::exception_ptr failure;
+        try{objective_->mergeParallel(*child.objective_);}catch(...){failure=std::current_exception();}
+        bool overflow=false;
+        const auto& b=child.statistics_;
+        for(std::size_t i=0;i<statistics_.origins.size();++i){
+            auto& a=statistics_.origins[i];const auto& c=b.origins[i];
+            mergeTrainingCounter(a.requests,c.requests,overflow);mergeTrainingCounter(a.fits,c.fits,overflow);mergeTrainingCounter(a.skipped,c.skipped,overflow);mergeTrainingCounter(a.ordinary,c.ordinary,overflow);
+            mergeTrainingCounter(a.baselines,c.baselines,overflow);mergeTrainingCounter(a.probes,c.probes,overflow);mergeTrainingCounter(a.rows,c.rows,overflow);mergeTrainingCounter(a.improved,c.improved,overflow);
+        }
+        mergeTrainingCounter(statistics_.skippedBySchedule,b.skippedBySchedule,overflow);mergeTrainingCounter(statistics_.completedImproved,b.completedImproved,overflow);
+        mergeTrainingCounter(statistics_.completedUnchanged,b.completedUnchanged,overflow);mergeTrainingCounter(statistics_.noConstants,b.noConstants,overflow);
+        mergeTrainingCounter(statistics_.invalidStarts,b.invalidStarts,overflow);mergeTrainingCounter(statistics_.abortedFits,b.abortedFits,overflow);
+        for(std::size_t i=0;i<b.terminations.size();++i)mergeTrainingCounter(statistics_.terminations[i],b.terminations[i],overflow);
+        if(child.rawInitialBest && (!rawInitialBest || *child.rawInitialBest<*rawInitialBest))rawInitialBest=child.rawInitialBest;
+        if(failure)std::rethrow_exception(failure);
+        if(overflow)throw std::overflow_error("parallel preparation accounting exceeded uint64 range");
     }
     PreparedExpression prepare(const Expression& expression,const RegressionProblem& problem) override {
         return prepare(expression,problem,{});

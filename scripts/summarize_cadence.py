@@ -8,6 +8,7 @@ from pathlib import Path
 root = Path(sys.argv[1])
 lines = (root / "campaign.txt").read_text().splitlines()
 assert "all_models_frozen=1 prime_later_range=previously_examined_1001..1200" in lines
+parallel = any(line.startswith("threads_requested=") and not line.startswith("threads_requested=1 ") for line in lines)
 records = []
 for i, line in enumerate(lines):
     if not line.startswith("problem="):
@@ -21,7 +22,7 @@ for i, line in enumerate(lines):
     records.append(r)
 assert len(records) == 20
 assert sum(line.startswith("paired_initialization=") for line in lines) == 10
-assert sum(line.startswith("profile_equivalence=") for line in lines) == 2
+assert sum(line.startswith("profile_equivalence=") for line in lines) == (0 if parallel else 2)
 records.sort(key=lambda r: (r["problem"], int(r["seed"]), int(r["interval"])))
 with (root / "summary.csv").open("w") as out:
     writer = csv.DictWriter(out, fieldnames=list(records[0]), lineterminator="\n")
@@ -30,19 +31,22 @@ with (root / "summary.csv").open("w") as out:
 
 # Compare every existing observable non-time search field against accepted controls.
 repo = Path(__file__).resolve().parents[1]
-for problem, relative in (("prime", "docs/prime-results/campaign.txt"), ("arithmetic", "docs/strict-arithmetic-campaign.txt")):
-    historical = (repo / relative).read_text().splitlines()
-    for r in (r for r in records if r["problem"] == problem and r["interval"] == "1"):
-        for i, line in enumerate(historical):
-            if line == f"seed={r['seed']}" or line.startswith(f"seed={r['seed']} raw_initial_mse="):
-                old = historical[i + 1] if line == f"seed={r['seed']}" else line.split(" ", 1)[1]
-                fields = dict(item.split("=", 1) for item in old.split() if not item.startswith("seconds="))
-                assert all(r[k] == v for k, v in fields.items()), (problem, r["seed"], "control changed")
-                assert r["expression"] == historical[i + (2 if line == f"seed={r['seed']}" else 1)].split(" expression=", 1)[1]
-                break
-        else:
-            raise AssertionError("missing historical control")
-(root / "compatibility.txt").write_text("PASS: all ten controls reproduce accepted expressions, scores, stopping reasons and every legacy non-time result counter.\nPASS: ten raw/prepared initial population, fitness and work pairs; two full profile/control result, work, preparation, RNG comparisons.\n")
+if not parallel:
+    for problem, relative in (("prime", "docs/prime-results/campaign.txt"), ("arithmetic", "docs/strict-arithmetic-campaign.txt")):
+        historical = (repo / relative).read_text().splitlines()
+        for r in (r for r in records if r["problem"] == problem and r["interval"] == "1"):
+            for i, line in enumerate(historical):
+                if line == f"seed={r['seed']}" or line.startswith(f"seed={r['seed']} raw_initial_mse="):
+                    old = historical[i + 1] if line == f"seed={r['seed']}" else line.split(" ", 1)[1]
+                    fields = dict(item.split("=", 1) for item in old.split() if not item.startswith("seconds="))
+                    assert all(r[k] == v for k, v in fields.items()), (problem, r["seed"], "control changed")
+                    assert r["expression"] == historical[i + (2 if line == f"seed={r['seed']}" else 1)].split(" expression=", 1)[1]
+                    break
+            else:
+                raise AssertionError("missing historical control")
+    (root / "compatibility.txt").write_text("PASS: all ten controls reproduce accepted expressions, scores, stopping reasons and every legacy non-time result counter.\nPASS: ten raw/prepared initial population, fitness and work pairs; two full profile/control result, work, preparation, RNG comparisons.\n")
+else:
+    (root / "compatibility.txt").write_text("Ten paired raw/prepared initializations verified by runner; historical serial counter equality and detailed profile checks do not apply to binding parallel boundaries.\n")
 
 metrics = [dict(x.split("=", 1) for x in line.split()) for line in lines if line.startswith(("model=", "dataset="))]
 def span(values):

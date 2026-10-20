@@ -933,3 +933,14 @@ checks. Final serial replays remain byte-identical; 127 historical evidence hash
 are unchanged. See OOP_QUALIFICATION.md and its separate qualification-results.
 The library still executes candidate preparation serially; CONCURRENCY.md is a
 subsequent implementation plan, not an implemented backend.
+
+## Generic CPU execution milestone
+
+Starting clean at 968e992, implemented run-owned optional candidate workers,
+explicit callback capability/private preparation factories, synchronized actual-loss
+admission, stable collection and drained failed-generation handling. Default one
+preserves recorded serial outcomes/counters/RNG. Parallel nonbinding completed
+generations match at N=2/3/4. Release/Debug/ASan+UBSan/exact CMake 3.16.0 each pass
+25/25; separate TSan forced-overlap and OOP cases pass ten times each. New fixed-work
+measurements and selected evidence are separate in CONCURRENCY_RESULTS.md; all 127
+historical evidence checksums remain unchanged. No hosted or remote delivery claim.

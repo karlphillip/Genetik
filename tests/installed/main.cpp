@@ -4,13 +4,14 @@ extern "C" int mixed_c(void);
 class Scalar final : public Creature_i<double> {
 public:
     explicit Scalar(std::mt19937& rng):Creature_i<double>({std::uniform_real_distribution<double>(-1,1)(rng)}){}
+    bool parallelEvaluationSafe() const noexcept override {return true;}
     std::string stats() override{return std::to_string(gene(0));}
 protected:
     Fitness evaluate() const override{return Fitness::valid(gene(0)*gene(0));}
     double mutatedGene(unsigned int,std::mt19937& rng) const override{return std::uniform_real_distribution<double>(-1,1)(rng);}
 };
 int main() {
-    RandomContext rng(7);
+    RandomContext rng(7,{3});
     Population<Scalar> p(8,rng,ObjectiveDirection::Minimize);
     GeneticAlgorithm<decltype(p),Scalar> ga(.9f,.3f,rng);
     for(int i=0;i<3;++i)if(ga.evolve(p)!=GenerationOutcome::Committed)return 1;

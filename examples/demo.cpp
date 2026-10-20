@@ -1,3 +1,4 @@
+#include "examples/ExecutionOptions.hpp"
 #include "GeneticAlgorithm.hpp"
 #include "Population.hpp"
 #include "Creature.hpp"
@@ -28,16 +29,18 @@ static void printError(const std::exception& error) {
 }
 int main(int argc, char** argv) {
     try {
-        if (argc > 3) throw std::invalid_argument("usage: genetik_demo [seed [max_generations]]");
+        const auto execution=genetik_example::executionOptions(argc,argv);
+        genetik_example::printExecution(execution,100);
+        if (argc > 3) throw std::invalid_argument("usage: genetik_demo [seed [max_generations]] [--threads N]");
         const auto seed = argc > 1 ? number(argv[1]) : 42u;
         const auto limit = argc > 2 ? number(argv[2]) : 1000u;
         const auto start = std::chrono::steady_clock::now();
-        RandomContext random(seed);
+        RandomContext random(seed,execution);
         PopulationType population(100, random);
         GeneticAlgorithm<PopulationType, CreatureType> ga(0.5f, 0.9f, random);
         std::cout << std::fixed << std::setprecision(3)
                   << "seed=" << random.seed() << " population=100 crossover=0.5 mutation=0.9"
-                  << " selection=linear_rank objective=maximize max_generations=" << limit << " mode=serial\n";
+                  << " selection=linear_rank objective=maximize max_generations=" << limit << " mode=" << (execution.threads==1?"serial":"parallel") << "\n";
         auto best = population.bestSeen().value();
         bool noViable = false;
         while (ga.evolutions() < limit && best.fitness() < 1.0f) {

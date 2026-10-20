@@ -127,7 +127,10 @@ public:
             if (problemBound_ && identity != problem_)
                 throw std::invalid_argument("problem changed: create a new run");
             if (!problemBound_) { problem_ = identity; problemBound_ = true; }
+            if(random_.execution().requested()==1) {
+                auto executionScope=random_.execution().serialScope();
             for (std::size_t i = 0; i < next.size(); ++i) {
+                if(random_.execution().stopRequested())throw EvaluationCancelled();
                 random_.recordEvaluationAttempt();
                 try {
                     if constexpr(requires {next[i].setPreparationGeneration(std::uint64_t{});})
@@ -139,6 +142,41 @@ public:
                         std::to_string(random_.evaluationAttempts()) + " at candidate " +
                         std::to_string(i) + " failed"));
                 }
+            }
+                if(random_.execution().stopRequested())throw EvaluationCancelled();
+            } else {
+                auto& executor=random_.execution();
+                for(const auto& candidate:next)
+                    if(!candidate.parallelEvaluationSafe())throw std::invalid_argument("candidate does not support parallel evaluation");
+                if(next.size()>std::numeric_limits<std::uint64_t>::max()-random_.evaluationAttempts())
+                    throw std::overflow_error("candidate counter cannot cover parallel batch");
+                std::vector<unsigned char> began(next.size(),0);
+                std::size_t detached=0;
+                std::exception_ptr completionFailure;
+                auto finish=[&]() noexcept {
+                    for(std::size_t i=0;i<detached;++i)try{next[i].finishParallelEvaluation();}
+                    catch(...){if(!completionFailure)completionFailure=std::current_exception();}
+                };
+                try {
+                    for(auto& candidate:next){
+                        if constexpr(requires {candidate.setPreparationGeneration(std::uint64_t{});})
+                            candidate.setPreparationGeneration(committed_ ? committed_->generation+1:0);
+                        candidate.beginParallelEvaluation(executor);++detached;
+                    }
+                }catch(...){finish();throw;}
+                std::exception_ptr failure;
+                // Count only calls that actually start. Workers never touch RandomContext.
+                try {
+                    executor.run(next.size(),[&](std::size_t i){
+                        began[i]=1;
+                        try{next[i].calculateFitness();}
+                        catch(...){std::throw_with_nested(std::runtime_error("parallel candidate slot "+std::to_string(i)+" failed"));}
+                    });
+                }catch(...){failure=std::current_exception();}
+                finish();
+                for(auto started:began)if(started)random_.recordEvaluationAttempt();
+                if(completionFailure && (!failure || isEvaluationStop(failure)))std::rethrow_exception(completionFailure);
+                if(failure)std::rethrow_exception(failure);
             }
             genetik_detail::ScopedTiming publicationTimer(profilePublication_ ? &publicationSeconds_:nullptr);
             requireEvaluated(next);

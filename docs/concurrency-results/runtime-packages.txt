@@ -1,0 +1,11 @@
+libc6:arm64	2.39-0ubuntu8.8
+libstdc++6:arm64	14.2.0-4ubuntu2~24.04.1
+libtsan2:arm64	14.2.0-4ubuntu2~24.04.1
+/usr/lib/gcc/aarch64-linux-gnu/13/libtsan.so
+	linux-vdso.so.1 (0x0000ffff9a79b000)
+	libtsan.so.2 => /lib/aarch64-linux-gnu/libtsan.so.2 (0x0000ffff99490000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff99200000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff99150000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff99110000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff98f50000)
+	/lib/ld-linux-aarch64.so.1 (0x0000ffff9a750000)

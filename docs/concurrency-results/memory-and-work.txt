@@ -1,0 +1,2 @@
+prime: loss attempts=13888, rows=13888000, fits=64. Process VmRSS snapshots 4284..4748 KiB; kernel getrusage peak samples 3840..4224 KiB.
+mixed: loss attempts=3776, rows=94400, fits=64. Process VmRSS snapshots 4748..4748 KiB; kernel getrusage peak samples 4224..4224 KiB.

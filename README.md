@@ -124,4 +124,21 @@ Demos live in examples/, numerical file search in apps/, performance harnesses i
 benchmarks/, campaigns/helpers in scripts/. Executable names and explicit output
 options are unchanged. Put new generated results under out/ or build/temp paths;
 accepted evidence remains in docs/. [Layout and historical path mapping](docs/ORGANIZATION.md).
-Runtime population execution is serial; [concurrency is the next implementation task](docs/CONCURRENCY.md).
+Population evaluation/refinement has an opt-in library-owned CPU backend. Use
+`RandomContext(42, ExecutionConfig{4})` or `--threads 4` in evolution applications;
+serial/default 1 remains supported. Candidates/callbacks require explicit parallel
+qualification; immutable regression data and independent built-in refiners are
+supported. [Ownership, budgets, cancellation and repeatability](docs/CONCURRENCY.md).
+
+```sh
+../build-release/genetik_demo 42 20 --threads 4
+../genetik-quickstarts/symbolic_quickstart --threads 4
+../oop-consumer/permutation_consumer --threads 3
+```
+
+Genetik::Genetik supplies platform threading requirements through Threads::Threads;
+installed consumers need no manual thread flags. Public engine access remains
+single-coordinator; only the documented stop controls are concurrently callable.
+
+Local concurrency [qualification and fixed-work measurements](docs/CONCURRENCY_RESULTS.md)
+include exact serial replays and separate ThreadSanitizer execution. Hosted CI is pending.

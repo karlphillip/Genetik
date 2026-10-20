@@ -1,0 +1,16 @@
+Linux 6.8.12-1021-tegra aarch64
+g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+glibc 2.39
+8
+0-7
+schedutil
+1.39 2.33 3.10 1/1065 448694
+%CPU COMMAND
+ 200 ps
+25.0 bash
+ 3.8 chrome
+ 3.7 codex
+ 2.4 Xorg
+ 2.1 gnome-shell
+Cpus_allowed_list:	0-7
+Mems_allowed_list:	0

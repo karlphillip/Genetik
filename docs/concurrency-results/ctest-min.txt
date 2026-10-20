@@ -1,0 +1,55 @@
+Test project /home/karlphillip/workspaces/primeResearcher/build-min-contracts
+      Start  1: genetik_strict_arithmetic
+ 1/25 Test  #1: genetik_strict_arithmetic ........   Passed    0.01 sec
+      Start  2: genetik_multivariate_contracts
+ 2/25 Test  #2: genetik_multivariate_contracts ...   Passed    0.01 sec
+      Start  3: genetik_fitting_contracts
+ 3/25 Test  #3: genetik_fitting_contracts ........   Passed    0.01 sec
+      Start  4: genetik_symbolic_contracts
+ 4/25 Test  #4: genetik_symbolic_contracts .......   Passed    0.00 sec
+      Start  5: genetik_expression_contracts
+ 5/25 Test  #5: genetik_expression_contracts .....   Passed    0.02 sec
+      Start  6: genetik_fitness_publication
+ 6/25 Test  #6: genetik_fitness_publication ......   Passed    0.00 sec
+      Start  7: genetik_contracts
+ 7/25 Test  #7: genetik_contracts ................   Passed    0.00 sec
+      Start  8: genetik_regression_cli
+ 8/25 Test  #8: genetik_regression_cli ...........   Passed    0.12 sec
+      Start  9: genetik_expression_example
+ 9/25 Test  #9: genetik_expression_example .......   Passed    0.00 sec
+      Start 10: genetik_demo_bounded
+10/25 Test #10: genetik_demo_bounded .............   Passed    0.01 sec
+      Start 11: genetik_demo_zero_budget
+11/25 Test #11: genetik_demo_zero_budget .........   Passed    0.00 sec
+      Start 12: genetik_demo_invalid_argument
+12/25 Test #12: genetik_demo_invalid_argument ....   Passed    0.00 sec
+      Start 13: genetik_downstream
+13/25 Test #13: genetik_downstream ...............   Passed   14.87 sec
+      Start 14: genetik_expression_fp_policy
+14/25 Test #14: genetik_expression_fp_policy .....   Passed    1.70 sec
+      Start 15: genetik_prime_contracts
+15/25 Test #15: genetik_prime_contracts ..........   Passed    0.03 sec
+      Start 16: genetik_prime_cli
+16/25 Test #16: genetik_prime_cli ................   Passed    0.05 sec
+      Start 17: genetik_workspace_contracts
+17/25 Test #17: genetik_workspace_contracts ......   Passed    0.00 sec
+      Start 18: genetik_evaluation_reference
+18/25 Test #18: genetik_evaluation_reference .....   Passed    0.02 sec
+      Start 19: genetik_installed_package
+19/25 Test #19: genetik_installed_package ........   Passed   58.24 sec
+      Start 20: genetik_scalar_quickstart
+20/25 Test #20: genetik_scalar_quickstart ........   Passed    0.00 sec
+      Start 21: genetik_symbolic_quickstart
+21/25 Test #21: genetik_symbolic_quickstart ......   Passed    0.00 sec
+      Start 22: genetik_oop_contracts
+22/25 Test #22: genetik_oop_contracts ............   Passed    0.00 sec
+      Start 23: genetik_concurrency_contracts
+23/25 Test #23: genetik_concurrency_contracts ....   Passed    0.02 sec
+      Start 24: genetik_oop_parallel
+24/25 Test #24: genetik_oop_parallel .............   Passed    0.00 sec
+      Start 25: genetik_character_parallel
+25/25 Test #25: genetik_character_parallel .......   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 25
+
+Total Test time (real) =  75.16 sec

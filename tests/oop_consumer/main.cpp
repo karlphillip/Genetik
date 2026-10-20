@@ -3,6 +3,7 @@
 #include <Population.hpp>
 #include <GeneticAlgorithm.hpp>
 #include <algorithm>
+#include <atomic>
 #include <array>
 #include <iostream>
 #include <numeric>
@@ -15,10 +16,12 @@ using Jobs = std::array<unsigned, 4>;
 // Runtime-polymorphic application objective; immutable problem definition per run.
 struct Objective {
     virtual ~Objective() = default;
+    virtual bool parallelSafe() const noexcept {return false;}
     virtual Fitness score(const Jobs&) const = 0;
 };
 struct CompletionCost final : Objective {
-    mutable unsigned calls = 0;
+    bool parallelSafe() const noexcept override {return true;}
+    mutable std::atomic<unsigned> calls{0};
     unsigned throwAt = 0; // deterministic operational-failure injection only
     bool invalid = false;
     Fitness score(const Jobs& jobs) const override {
@@ -36,6 +39,7 @@ public:
         validate(jobs_);
         if (!objective_) throw std::invalid_argument("missing objective");
     }
+    bool parallelEvaluationSafe() const noexcept override {return objective_->parallelSafe();}
     const Jobs& jobs() const noexcept { return jobs_; }
     void replace(const Jobs& jobs) {
         validate(jobs); // failed edits preserve both genome and cache
@@ -129,7 +133,11 @@ void originalCause(const std::exception& e,const std::string& message) {
     require(e.what()==message);
 }
 }
-int main() {
+int main(int argc,char** argv) {
+    try {
+    ExecutionConfig execution;
+    if(argc!=1){if(argc!=3 || std::string_view(argv[1])!="--threads")return 1;execution=ExecutionConfig::parse(argv[2]);}
+    std::cout<<"threads_requested="<<execution.threads<<" threads_effective="<<std::min(execution.threads,8u)<<'\n';
     auto objective=std::make_shared<CompletionCost>();
     Jobs input{0,1,2,3};
     Schedule known(input,objective); known.calculateFitness(); require(known.fitness()==35);
@@ -147,7 +155,7 @@ int main() {
     variation.crossover(known,reverse,changed,reverse,1,operatorRng);
     auto sorted=changed.jobs(); std::sort(sorted.begin(),sorted.end());
     require(sorted==Jobs{0,1,2,3} && known.fitness()==35);
-    RandomContext random(42);
+    RandomContext random(42,execution);
     std::vector<Schedule> initial;
     for (unsigned i=0;i<8;++i) {
         Jobs jobs{0,1,2,3}; std::shuffle(jobs.begin(),jobs.end(),random.engine());
@@ -160,6 +168,12 @@ int main() {
     auto snapshot=pool.creatures();
     snapshot->front().replace({3,2,1,0});
     require(state(pool)==before);
+    if(execution.threads>1){
+        for(unsigned i=0;i<5;++i)require(interface.evolve(pool)==GenerationOutcome::Committed);
+        require(random.evaluationAttempts()==48 && pool.generation()==5 && algorithm.selections>0 && algorithm.crosses>0 && algorithm.mutations>0);
+        require(random.execution().peakTasks()<=execution.threads);
+        std::cout<<"parallel permutation contracts passed\n";return 0;
+    }
     algorithm.invalidSelection=true;
     try { interface.evolve(pool); require(false); }
     catch (const std::runtime_error& e) { originalCause(e,"selection must return valid evaluated parents"); }
@@ -171,7 +185,7 @@ int main() {
     catch (const std::runtime_error& e) { originalCause(e,"application variation fault"); }
     require(state(pool)==before && random.engine()!=rng && random.evaluationAttempts()==8);
     algorithm.failVariation=false;
-    objective->throwAt=objective->calls+3;
+    objective->throwAt=objective->calls.load()+3;
     try { interface.evolve(pool); require(false); }
     catch (const std::runtime_error& e) { originalCause(e,"application evaluator fault"); }
     require(state(pool)==before && random.evaluationAttempts()==11);
@@ -190,4 +204,5 @@ int main() {
     require(!noBest.generation() && !noBest.bestSeen());
     std::cout << "permutation OOP contracts passed; generations=" << *pool.generation()
               << " evaluations=" << random.evaluationAttempts() << '\n';
+    } catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
 }

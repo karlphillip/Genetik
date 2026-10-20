@@ -192,3 +192,15 @@ artifacts and executable names remain unchanged. OOP_QUALIFICATION.md records th
 repeated delivery and serial compatibility gates. Next: implement CONCURRENCY.md,
 then execute hosted support qualification and production-delivery checks. Checkpoint/
 resume, cross-call reuse, stronger solvers and GPU execution remain separate work.
+
+## Generic CPU concurrency — implemented
+
+ExecutionContext now owns a bounded reusable pool; RandomContext execution defaults
+to one. Coordinator retains RNG/variation/order/publication and virtual selection.
+Private candidate/refiner factories, checked shared loss admission, stable collection,
+cooperative batch cancellation and drain/error precedence are implemented. Historical
+serial-only statements above describe the OOP checkpoint. See CONCURRENCY.md and
+CONCURRENCY_RESULTS.md for API, local tests/TSan, throughput and limitations.
+Next: execute hosted compiler/platform qualification and release-readiness checks,
+then prioritize measured remaining costs; caching, stronger optimizers, expression
+compilation, checkpoint/resume and GPU execution remain separate decisions.

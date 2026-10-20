@@ -106,6 +106,7 @@ def consume(prefix,name,extra=(),build_it=True,fail=False):
         run([a.cmake,'--build',directory,'-j2'])
         for exe in ['installed_consumer','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart','oop_consumer/permutation_consumer']:
             run([directory/exe])
+            run([directory/exe,'--threads','2']) if exe!='installed_consumer' else None
             dependencies=run(['ldd',directory/exe])
             if any(x in dependencies for x in ['libasan','libubsan','libclang_rt']):
                 raise RuntimeError('development runtime dependency leaked')

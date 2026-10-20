@@ -1,4 +1,5 @@
 #pragma once
+#include <typeinfo>
 #include "EvaluatedCandidate.hpp"
 #include "Expression.hpp"
 #include <memory>
@@ -88,6 +89,11 @@ struct PreparedExpression { Expression expression; Fitness loss; };
 class RegressionPreparation {
 public:
     virtual ~RegressionPreparation() = default;
+    virtual bool parallelEvaluationSafe() const noexcept {return false;}
+    virtual std::shared_ptr<RegressionPreparation> forkParallel(ExecutionContext&) {
+        throw std::invalid_argument("preparation has no independent parallel factory");
+    }
+    virtual void mergeParallel(const RegressionPreparation&) {}
     virtual PreparedExpression prepare(const Expression&, const RegressionProblem&) = 0;
     // Existing two-argument custom preparations remain source compatible.
     virtual PreparedExpression prepare(const Expression& expression,const RegressionProblem& problem,PreparationContext) {
@@ -105,7 +111,21 @@ public:
     ExpressionCandidate(ExpressionCandidate&&) noexcept = default;
     ExpressionCandidate& operator=(ExpressionCandidate other) noexcept { swap(other); return *this; }
     void swap(ExpressionCandidate& other) noexcept {
-        swapEvaluation(other); problem_.swap(other.problem_); expression_.swap(other.expression_); text_.swap(other.text_); preparation_.swap(other.preparation_); std::swap(context_,other.context_);
+        swapEvaluation(other); problem_.swap(other.problem_); expression_.swap(other.expression_); text_.swap(other.text_); preparation_.swap(other.preparation_); parentPreparation_.swap(other.parentPreparation_); std::swap(context_,other.context_);
+    }
+    bool parallelEvaluationSafe() const noexcept override {
+        return typeid(*this)==typeid(ExpressionCandidate) && (!preparation_ || preparation_->parallelEvaluationSafe());
+    }
+    void beginParallelEvaluation(ExecutionContext& execution) override {
+        if(preparation_){
+            auto local=preparation_->forkParallel(execution);
+            if(!local || local.get()==preparation_.get() || local.use_count()!=1)
+                throw std::invalid_argument("parallel preparation factory must return an exclusively owned independent instance");
+            parentPreparation_=preparation_;preparation_=std::move(local);
+        }
+    }
+    void finishParallelEvaluation() override {
+        if(parentPreparation_){auto local=std::move(preparation_);preparation_=std::move(parentPreparation_);preparation_->mergeParallel(*local);}
     }
     // All throwing work precedes installation/invalidation, preserving old genome/cache on failure.
     void replaceExpression(const Expression& expression) {
@@ -149,6 +169,7 @@ private:
     Expression expression_;
     std::string text_;
     std::shared_ptr<RegressionPreparation> preparation_;
+    std::shared_ptr<RegressionPreparation> parentPreparation_;
     PreparationContext context_;
 };
 

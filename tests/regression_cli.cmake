@@ -123,3 +123,27 @@ foreach(bad "0" "-1" "nan" "1.5" "1junk" "18446744073709551616")
         message(FATAL_ERROR "bad cadence accepted: ${bad}")
     endif()
 endforeach()
+
+# Explicit one preserves omitted mode; parallel requests execute a bounded search.
+set(parallel_args --inputs first,second --target target --seed 42 --loss-budget 64 --no-fit)
+execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/training.csv" ${parallel_args} --threads 1 RESULT_VARIABLE status OUTPUT_VARIABLE one)
+execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/training.csv" ${parallel_args} --threads 3 RESULT_VARIABLE parallel_status OUTPUT_VARIABLE parallel)
+string(REGEX MATCH "nodes=[^\n]+" one_model "${one}")
+string(REGEX MATCH "nodes=[^\n]+" parallel_model "${parallel}")
+if(NOT status EQUAL 0 OR NOT parallel_status EQUAL 0 OR NOT one_model STREQUAL parallel_model OR NOT one_model STREQUAL training_only OR NOT parallel MATCHES "threads_requested=3 threads_effective=3")
+    message(FATAL_ERROR "parallel CLI reproduction failed: ${one} ${parallel}")
+endif()
+foreach(threads IN ITEMS 0 -1 +2 257 99999999999999999999 junk)
+    execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/training.csv" ${parallel_args} --threads "${threads}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+    if(NOT status EQUAL 1 OR output MATCHES "search_start")
+        message(FATAL_ERROR "invalid threads value accepted: ${threads}: ${output} ${error}")
+    endif()
+endforeach()
+
+# A flag-looking column name is still a value of --inputs, not an execution flag.
+file(WRITE "${WORKSPACE}/flag-column.csv" "--threads,target\n0,1\n1,2\n")
+execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/flag-column.csv" --inputs --threads --target target --seed 42 --loss-budget 64 --no-fit --threads 2
+    RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(NOT status EQUAL 0 OR NOT output MATCHES "x0=--threads" OR NOT output MATCHES "threads_requested=2 threads_effective=2")
+    message(FATAL_ERROR "flag-looking input name misparsed: ${output} ${error}")
+endif()

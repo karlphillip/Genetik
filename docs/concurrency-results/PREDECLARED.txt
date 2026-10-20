@@ -1,0 +1,12 @@
+Fixed workloads: EvaluationCorpus prime representative / 1000 fitting rows; mixed
+strict-arithmetic expression / 25 fitting rows. Each batch has 64 expressions.
+Vary first constant by 0.125*(i%5-2); topology fixed, bounds [-8,8].
+Reference coordinate fitter: 256 loss calls,128 sweeps,8192 proposals,step1,min1e-8,
+no local threshold, cadence1. Global cap1e9 is nonbinding. No search retuning.
+One untimed fit warm-up per workload, five rounds; requested concurrency1,2,4;
+even rounds ascending, odd descending. Each fresh run measures startup-inclusive
+initial preparation then reuses its pool to prepare the same original candidates.
+Validate exact complete population expression/fitness strings and all listed work
+increments against first serial batch. Time includes preparation/merge/publication;
+excludes immutable dataset/corpus construction, fingerprint/reporting and file IO.
+RSS sampled after work; process ru_maxrss is cumulative high water, not per-run peak.

@@ -1,3 +1,4 @@
+#include "examples/ExecutionOptions.hpp"
 #include "examples/RegressionData.hpp"
 #include "examples/RegressionWorkflow.hpp"
 #include <chrono>
@@ -11,13 +12,15 @@ static std::uint64_t integer(const std::string& text,std::uint64_t maximum,const
     return value;
 }
 static void usage() {
-    std::cout<<"Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target --seed N --loss-budget N [--loss-threshold MSE] [--fit-every N] [--no-fit] [--operators add,sub,mul,div,log] [--evaluate FILE ...]\n"
+    std::cout<<"Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target --seed N --loss-budget N [--loss-threshold MSE] [--threads N] [--fit-every N] [--no-fit] [--operators add,sub,mul,div,log] [--evaluate FILE ...]\n"
              <<"Input order defines x0,x1,...; budget is actual training-loss attempts, 0..10000000.\n";
 }
 int main(int argc,char** argv) {
     std::cout<<std::setprecision(17);
     std::shared_ptr<TrainingObjective> objective;
     try {
+        const auto execution=genetik_example::executionOptions(argc,argv,true);
+        genetik_example::printExecution(execution, 64);
         if(argc==2 && std::string(argv[1])=="--help"){usage();return 0;}
         if(argc<2){usage();return 1;}
         std::vector<std::string> inputs,evaluations;
@@ -73,7 +76,7 @@ int main(int argc,char** argv) {
         std::cout<<"training_file="<<argv[1]<<" training_rows="<<training.rows.size()<<" dimensions="<<inputs.size()
                  <<" target_column="<<target<<" target_file_column="<<training.targetColumn+1<<" seed="<<*seed<<'\n';
         for(std::size_t i=0;i<inputs.size();++i)std::cout<<"x"<<i<<"="<<inputs[i]<<" training_file_column="<<training.inputColumns[i]+1<<'\n';
-        RandomContext random(*seed);
+        RandomContext random(*seed,execution);
         objective=std::make_shared<TrainingObjective>(problem,*budget);
         std::cout<<"search_start\n";
         const auto start=std::chrono::steady_clock::now();

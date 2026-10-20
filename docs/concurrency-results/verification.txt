@@ -1,0 +1,11 @@
+Final production/backend qualification:
+Release full suite 25/25, 79.67 s (includes final CLI value-protection regression).
+Debug full suite 25/25, 101.48 s.
+ASan+UBSan full suite 25/25, 271.02 s.
+Exact CMake/CTest 3.16.0 full suite 25/25, 75.16 s.
+Final CLI-only repair focused checks: Debug/ASan+UBSan/3.16.0 each 3/3.
+TSan instrumented forced-overlap and OOP cases, each repeated 10 times: pass, 4.98 s.
+Serial prime2/arithmetic42/cadence4 stdout equal accepted captures; parallel short cadence4 equals serial.
+127 historical artifact SHA256 values unchanged.
+Hosted CI configured, not executed.
+See CONCURRENCY_RESULTS.md for commands, environment, limitations and timing methodology.

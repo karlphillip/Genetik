@@ -155,3 +155,12 @@ candidate, no symbolic includes, repaired virtual selection dispatch, and organi
 application/tool sources. See [OOP_QUALIFICATION.md](OOP_QUALIFICATION.md) for final-
 tree commands/results; earlier delivery measurements above remain historical.
 Quickstart sources now reside in examples/quickstarts; package names/layout are unchanged.
+
+## Subsequent CPU backend delivery
+
+Threads::Threads is now a transitive platform requirement and GenetikConfig invokes
+find_dependency(Threads) before exports. The package is still header-only, with
+Execution.hpp installed under include/Genetik and no architecture-specific binary.
+Ordinary/relocated multi-TU consumers and installed generic/symbolic/OOP parallel
+work pass, including exact CMake 3.16.0. No dev sanitizer runtime leaks. See
+CONCURRENCY_RESULTS.md for the new separate evidence and current local TSan status.

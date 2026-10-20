@@ -43,3 +43,10 @@ This packaging milestone itself changes no evaluator, RNG or search algorithm.
   helpers; public include spelling, installed layout and executable names are unchanged.
   Include Creature_i.hpp explicitly when using scalar candidates; Population_i.hpp
   now depends only on EvaluatedCandidate.hpp. Historical evidence stays in docs/.
+
+- Added opt-in generic candidate CPU execution (ExecutionConfig/ExecutionContext,
+  RandomContext ownership, --threads), explicit callback qualification and private
+  refinement factories. Default one retains serial results; binding parallel work/
+  failure boundaries have separately documented speculative-work semantics.
+- Threads::Threads is now a transitive package dependency. Added a private, separate
+  TSan development path; the package remains header-only and 0.1.0 unreleased.

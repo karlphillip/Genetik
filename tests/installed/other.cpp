@@ -10,7 +10,7 @@ bool symbolic_check() {
     if(problem->measure(fitted.expression).loss!=fitted.loss)return false;
     SymbolicRegressionConfig cfg;cfg.population=4;cfg.elites=1;cfg.maxGenerationAttempts=4;
     cfg.maxEvaluations=20;cfg.maxTrainingLossAttempts=64;cfg.fitting=fit;cfg.fitEveryGenerations=4;
-    RandomContext run(42);const auto result=symbolicRegression(problem,cfg,run);
+    RandomContext run(42,{2});const auto result=symbolicRegression(problem,cfg,run);
     return result.best && result.trainingWork.lossAttempts<=64 &&
         problem->measure(result.best->expression()).loss==result.best->evaluation();
 }

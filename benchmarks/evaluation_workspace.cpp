@@ -1,3 +1,4 @@
+#include "examples/ExecutionOptions.hpp"
 // Evidence harness: identical source compiled against archived and candidate headers.
 #include "benchmarks/EvaluationCorpus.hpp"
 #include <bit>
@@ -46,14 +47,15 @@ static RegressionMetrics request(const RegressionProblem& p,const Expression& e,
 #endif
     return p.measure(e,rows);
 }
-static void replay(const std::string& name,unsigned interval,bool shortRun) {
+static void replay(const std::string& name,unsigned interval,bool shortRun,ExecutionConfig execution={}) {
     const bool prime=name=="prime";const unsigned seed=prime?2:42;
     const auto problem=RegressionProblem::create(prime?prime_example::rows(prime_example::reference()):regression_example::arithmeticRows(0),{31,6,8});
     auto cfg=prime_example::config(shortRun?4096:100000);
     if(!prime){cfg.trainingLossThreshold=1e-14;cfg.fitting->lossThreshold=1e-14;}
     cfg.fitEveryGenerations=interval;
     if(shortRun){cfg.population=8;cfg.elites=1;cfg.maxGenerationAttempts=5;cfg.fitting->maxLossAttempts=8;cfg.trainingLossThreshold=0;cfg.fitting->lossThreshold=0;}
-    RandomContext rng(seed);const auto start=std::chrono::steady_clock::now();
+    RandomContext rng(seed,execution);
+    std::cerr<<"threads_requested="<<execution.threads<<" threads_effective="<<std::min<std::size_t>(execution.threads,cfg.population)<<'\n';const auto start=std::chrono::steady_clock::now();
     const auto r=symbolicRegression(problem,cfg,rng);
     const auto seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
     std::cerr<<name<<" interval="<<interval<<" seconds="<<std::setprecision(17)<<seconds<<'\n';
@@ -78,13 +80,15 @@ static void replay(const std::string& name,unsigned interval,bool shortRun) {
 }
 int main(int argc,char** argv) {
     try {
+        const auto execution=genetik_example::executionOptions(argc,argv);
         if(argc<2)throw std::invalid_argument("--reference | --allocations | --timing CASE | --replay prime|arithmetic [4]");
         const std::string mode=argv[1];
         if(mode=="--replay") {
             if((argc!=3 && argc!=4) || (std::string(argv[2])!="prime" && std::string(argv[2])!="arithmetic") ||
                (argc==4 && std::string(argv[3])!="4"))throw std::invalid_argument("--replay prime|arithmetic [4]");
-            replay(argv[2],argc>3?4:1,argc>3);return 0;
+            replay(argv[2],argc>3?4:1,argc>3,execution);return 0;
         }
+        if(execution.threads!=1)throw std::invalid_argument("--threads applies only to replay evolution");
         if(mode!="--reference" && mode!="--allocations" && mode!="--timing")throw std::invalid_argument("unknown evidence mode");
 #ifndef GENETIK_COUNT_ALLOCATIONS
         if(mode=="--allocations")throw std::invalid_argument("compile with GENETIK_COUNT_ALLOCATIONS for allocation measurement");

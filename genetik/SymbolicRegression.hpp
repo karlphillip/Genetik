@@ -17,9 +17,10 @@ struct SymbolicRegressionConfig {
     std::uint64_t fitEveryGenerations=1; // positive; generation zero always eligible
     std::shared_ptr<RefinementDiagnostics> diagnostics; // optional, fresh bounded observer
 };
-enum class SearchStop { ExactTrainingFit, GenerationLimit, EvaluationBudget, NoViableCandidates, TrainingLossThreshold };
+enum class SearchStop { ExactTrainingFit, GenerationLimit, EvaluationBudget, NoViableCandidates, TrainingLossThreshold, Cancelled };
 inline const char* searchStopName(SearchStop stop) {
     switch (stop) {
+    case SearchStop::Cancelled: return "cancelled";
     case SearchStop::TrainingLossThreshold: return "training_loss_threshold";
     case SearchStop::ExactTrainingFit: return "exact_training_fit";
     case SearchStop::GenerationLimit: return "generation_limit";
@@ -62,6 +63,9 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
     if (objective->problem() != problem || objective->maximum() != config.maxTrainingLossAttempts || objective->diagnostics()!=config.diagnostics ||
         objective->work() != TrainingWork{})
         throw std::invalid_argument("symbolic search requires a fresh objective with matching problem and loss allowance");
+    if(random.execution().requested()>1 && (!objective->parallelEvaluationSafe() || config.diagnostics))
+        throw std::invalid_argument("parallel search requires independent objective factories and no detailed refinement diagnostics");
+    if(random.execution().requested()>1)(void)objective->forkParallel(random.execution()); // validate factory before initialization
     auto preparation = std::make_shared<ConstantRefinement>(objective, config.fitting,config.fitEveryGenerations);
     ExpressionVariation variation(problem, config.grammar, preparation);
     SymbolicRegressionResult result;
@@ -97,8 +101,9 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
         storage = std::make_unique<P>(initial, random, ObjectiveDirection::Minimize,static_cast<bool>(config.diagnostics));
     }
     catch (...) {
-        if (!budgetFailure(std::current_exception())) throw;
-        result.stoppingReason = SearchStop::EvaluationBudget;
+        const auto failure=std::current_exception();
+        if (!budgetFailure(failure) && !isEvaluationCancelled(failure)) throw;
+        result.stoppingReason = budgetFailure(failure)?SearchStop::EvaluationBudget:SearchStop::Cancelled;
         result.candidateEvaluations = random.evaluationAttempts(); result.trainingWork = objective->work();
         result.initialWork=result.trainingWork;
         result.variation = variation.statistics(); result.rawInitialBestMSE = preparation->rawInitialBest;
@@ -146,8 +151,9 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
                 result.stoppingReason = SearchStop::NoViableCandidates; break;
             }
         } catch (...) {
-            if (!budgetFailure(std::current_exception())) throw;
-            result.stoppingReason = SearchStop::EvaluationBudget; break;
+            const auto failure=std::current_exception();
+            if (!budgetFailure(failure) && !isEvaluationCancelled(failure)) throw;
+            result.stoppingReason = budgetFailure(failure)?SearchStop::EvaluationBudget:SearchStop::Cancelled; break;
         }
         committedLosses=objective->work().lossAttempts;committedRows=objective->work().rowAttempts;
         committedRequests=random.evaluationAttempts();

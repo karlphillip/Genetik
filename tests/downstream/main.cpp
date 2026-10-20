@@ -31,7 +31,7 @@ int main() {
     if (fitted.loss.score() != 0 || fitted.expression.nodes()[0].constantValue() != 2.5) return 1;
     config.fitting = ConstantFitConfig{};
     config.maxTrainingLossAttempts = 64; config.fitting->maxLossAttempts = 4;
-    RandomContext continuous(9);
+    RandomContext continuous(9,{2});
     const auto refined = symbolicRegression(continuousProblem, config, continuous);
     if (!refined.best || refined.trainingWork.fittingInvocations == 0 || refined.trainingWork.lossAttempts > 64) return 1;
     // Ordinary caller-supplied three-input rows; no example/file support headers.
@@ -55,11 +55,11 @@ int main() {
     const auto sequence = RegressionProblem::create({{{.001},.0002},{{.002},.0003},{{.003},.0005}}, {31,6,8});
     config.trainingLossThreshold=0;config.fitting->lossThreshold=0;
     config.fitEveryGenerations=4;
-    RandomContext sequenceRun(42);
+    RandomContext sequenceRun(42,{3});
     const auto sequenceResult=symbolicRegression(sequence,config,sequenceRun);
     if (!sequenceResult.best || sequenceResult.trainingWork.lossAttempts>64 || sequenceResult.preparationWork.skippedBySchedule==0 ||
         sequence->measure(sequenceResult.best->expression()).loss!=sequenceResult.best->evaluation()) return 1;
-    RandomContext run(9);
+    RandomContext run(9,{3});
     Population<Creature<char>> population(3, run);
     GeneticAlgorithm<decltype(population), Creature<char>> ga(0.5f, 0.9f, run);
     if (ga.evolve(population) != GenerationOutcome::Committed) return 1;

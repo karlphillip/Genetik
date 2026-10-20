@@ -1,3 +1,4 @@
+#include "examples/ExecutionOptions.hpp"
 #include "examples/StrictArithmeticData.hpp"
 #include "examples/RegressionWorkflow.hpp"
 #include <chrono>
@@ -6,6 +7,7 @@ using namespace regression_example;
 int main(int argc,char** argv) {
     std::cout<<std::setprecision(17)<<std::unitbuf;
     try {
+        const auto execution=genetik_example::executionOptions(argc,argv,false,true);
         bool arithmetic=false;std::uint64_t fitEvery=1;
         std::optional<std::filesystem::path> directory;
         for(int i=1;i<argc;++i) {
@@ -16,9 +18,10 @@ int main(int argc,char** argv) {
                 if(parsed.ec!=std::errc{} || parsed.ptr!=value.data()+value.size() || fitEvery==0)throw std::invalid_argument("--fit-every: expected positive integer");
             }
             else if(option=="--generate" && !directory && i+1<argc)directory=argv[++i];
-            else throw std::invalid_argument("Usage: genetik_multivariate_demo [--arithmetic] [--generate DIRECTORY] [--fit-every N]");
+            else throw std::invalid_argument("Usage: genetik_multivariate_demo [--arithmetic] [--generate DIRECTORY] [--fit-every N] [--threads N]");
         }
-        if(directory){if(arithmetic)writeArithmeticFiles(*directory);else writeMultivariateFiles(*directory);return 0;}
+        if(directory){if(execution.threads!=1)throw std::invalid_argument("--threads applies to evolution, not file generation");if(arithmetic)writeArithmeticFiles(*directory);else writeMultivariateFiles(*directory);return 0;}
+        genetik_example::printExecution(execution,64);
         const auto rows=arithmetic?arithmeticRows:multivariateRows;
         const auto train=rows(0);
         const auto problem=RegressionProblem::create(train,{31,6,8});
@@ -32,7 +35,7 @@ int main(int argc,char** argv) {
         bool missed=false;
         bool thresholdReached=false;
         for(unsigned seed:{0u,1u,2u,3u,42u}) {
-            RandomContext random(seed);
+            RandomContext random(seed,execution);
             const auto start=std::chrono::steady_clock::now();
             auto result=symbolicRegression(problem,config,random);
             const auto seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();

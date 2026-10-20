@@ -1,3 +1,4 @@
+#include "examples/ExecutionOptions.hpp"
 #include "examples/PrimeRegression.hpp"
 #include "examples/StrictArithmeticData.hpp"
 #include <chrono>
@@ -51,13 +52,16 @@ static void profile(const CadenceRun& run,const RefinementDiagnostics& d,std::os
 int main(int argc,char** argv) {
     std::cout<<std::setprecision(17)<<std::unitbuf;
     try {
-        if(argc!=3 || std::string(argv[1])!="--output")throw std::invalid_argument("genetik_cadence_campaign --output NEW_DIRECTORY (two profiles + twenty unprofiled comparisons)");
+        const auto execution=genetik_example::executionOptions(argc,argv);
+        genetik_example::printExecution(execution, 64);
+        if(argc!=3 || std::string(argv[1])!="--output")throw std::invalid_argument("genetik_cadence_campaign --output NEW_DIRECTORY [--threads N] (serial: two profiles + twenty unprofiled comparisons)");
         const std::filesystem::path directory=argv[2];
         if(std::filesystem::exists(directory/"campaign.txt"))throw std::invalid_argument("choose a new output directory; preserve prior results");
         std::filesystem::create_directories(directory);
         const auto primes=prime_example::reference();const auto primeRows=prime_example::rows(primes);
         const auto arithmetic=arithmeticRows(0);
         auto log=prime_example::output(directory/"campaign.txt");
+        log<<"threads_requested="<<execution.threads<<" threads_effective="<<std::min(execution.threads,64u)<<'\n';
         log<<"order=prime_then_arithmetic seeds=0,1,2,3,42 even_pair=1_then_4 odd_pair=4_then_1 diagnostics=off budget=100000\n";
         std::vector<CadenceRun> profiles,runs;
         const auto execute=[&](const std::string& name,unsigned seed,unsigned interval,std::shared_ptr<RefinementDiagnostics> diagnostic={}) {
@@ -66,11 +70,12 @@ int main(int argc,char** argv) {
             auto config=prime_example::config(100000);if(!prime){config.trainingLossThreshold=1e-14;config.fitting->lossThreshold=1e-14;}
             config.fitEveryGenerations=interval;config.diagnostics=std::move(diagnostic);
             auto* previous=std::cout.rdbuf(log.rdbuf());printConfig(config);std::cout.rdbuf(previous);
-            RandomContext random(seed);const auto start=Clock::now();auto result=symbolicRegression(problem,config,random);
+            RandomContext random(seed,execution);const auto start=Clock::now();auto result=symbolicRegression(problem,config,random);
             const auto elapsed=std::chrono::duration<double>(Clock::now()-start).count();
             std::ostringstream rng;rng<<random.engine();return CadenceRun{name,seed,interval,std::move(result),elapsed,rng.str()};
         };
-        for(const std::string name:{"prime","arithmetic"}) {
+        if(execution.threads>1)log<<"detailed_profiles=unsupported_skipped parallel_work=unprofiled_runs\n";
+        for(const std::string& name: execution.threads==1 ? std::vector<std::string>{"prime","arithmetic"}:std::vector<std::string>{}) {
             auto diagnostic=std::make_shared<RefinementDiagnostics>();auto run=execute(name,2,1,diagnostic);
             auto out=prime_example::output(directory/("profile-"+name+".txt"));profile(run,*diagnostic,out);profiles.push_back(std::move(run));
             std::cout<<"profile_complete="<<name<<'\n';
@@ -79,7 +84,7 @@ int main(int argc,char** argv) {
             const auto seed=prime_example::seeds[pair];const std::array<unsigned,2> intervals=pair%2 ? std::array{4u,1u}:std::array{1u,4u};
             for(auto interval:intervals) {
                 auto run=execute(name,seed,interval);details(run,log);
-                if(seed==2 && interval==1) {
+                if(execution.threads==1 && seed==2 && interval==1) {
                     const auto& observed=profiles.at(name=="prime"?0:1);
                     require(same(run,observed),"diagnostics changed results, counters, preparation or RNG");log<<"profile_equivalence="<<name<<" verified=1\n";
                 }
@@ -116,7 +121,7 @@ int main(int argc,char** argv) {
             }
             std::cout.rdbuf(previous);
         }
-        log<<"comparison_runs=20 profile_runs=2 prime_reporting_rows=12000 arithmetic_reporting_rows=490\n";
+        log<<"comparison_runs=20 profile_runs="<<profiles.size()<<" prime_reporting_rows=12000 arithmetic_reporting_rows=490\n";
         return 0;
     }catch(const std::exception& e){printError(e);return 1;}
 }

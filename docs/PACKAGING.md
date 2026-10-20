@@ -3,13 +3,14 @@
 `find_package(Genetik 0.1 CONFIG REQUIRED)` provides `Genetik::Genetik`. This is the
 same canonical target available through add_subdirectory. The old unnamespaced
 `genetik_lib` remains a source-build compatibility name, not an installed alias.
-Enable CXX before requesting the package. There are no public link dependencies
-beyond the C++ standard/runtime libraries selected by the compiler.
+Enable CXX before requesting the package. The public platform dependency is Threads::Threads, discovered by the package
+with find_dependency(Threads) before exports load. No manual thread flags or
+third-party mathematical dependencies are needed.
 
 The library is entirely header-only: INTERFACE include roots and cxx_std_20 allow
 consumers to select newer standards. Build includes use the genetik directory;
 installed includes use `<prefix>/<includedir>/Genetik`. Public include spelling
-remains `<Expression.hpp>`, `<SymbolicRegression.hpp>`, etc. All 15 public headers
+remains `<Expression.hpp>`, `<SymbolicRegression.hpp>`, etc. All 16 public headers
 and detail/ScopedTiming.hpp are installed. Do not rely on detail names as public APIs.
 
 Default install layout (GNUInstallDirs may choose another libdir):
@@ -108,3 +109,9 @@ verify no symbolic headers are needed. This probe works with the exact CMake 3.1
 Makefile generator, which need not retain .o.d files. The quickstart source location
 is now examples/quickstarts; installed header/package layout and target names do
 not change. See OOP_QUALIFICATION.md for repeated final-tree delivery evidence.
+
+GENETIK_THREAD_SANITIZER is a development-only TSan option, OFF by default and
+mutually exclusive with GENETIK_SANITIZERS. Its flags are private. Execution.hpp
+is installed alongside the existing public headers. The library remains header-only
+and version matching remains architecture-independent. See CONCURRENCY_RESULTS.md
+for repeated minimum-CMake/relocation/multi-TU consumption with parallel work.

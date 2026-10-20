@@ -1,3 +1,4 @@
+#include "examples/ExecutionOptions.hpp"
 #include "examples/PrimeRegression.hpp"
 #include <chrono>
 using namespace prime_example;
@@ -6,6 +7,7 @@ static double seconds(Clock::time_point start){return std::chrono::duration<doub
 int main(int argc,char** argv) {
     std::cout.imbue(std::locale::classic());std::cout<<std::setprecision(17)<<std::unitbuf;
     try {
+        const auto execution=genetik_example::executionOptions(argc,argv);
         std::string mode,prefix;std::filesystem::path directory;std::optional<std::uint64_t> budget;
         std::uint64_t fitEvery=1;
         std::set<std::string> options;
@@ -16,7 +18,7 @@ int main(int argc,char** argv) {
                 mode=option;continue;
             }
             if(option=="--help") {
-                std::cout<<"genetik_prime_regression (--generate | --pilot | --campaign) --output DIR [--prime-file FIRST1000.txt] [--loss-budget 50000|100000] [--fit-every N]\n";return 0;
+                std::cout<<"genetik_prime_regression (--generate | --pilot | --campaign) --output DIR [--prime-file FIRST1000.txt] [--loss-budget 50000|100000] [--fit-every N] [--threads N]\n";return 0;
             }
             if(option!="--output" && option!="--prime-file" && option!="--loss-budget" && option!="--fit-every")throw std::invalid_argument("unknown option "+option);
             if(++i==argc)throw std::invalid_argument("missing value for "+option);
@@ -38,6 +40,7 @@ int main(int argc,char** argv) {
             const auto supplied=loadPrefix(prefix,ref);
             std::copy(supplied.begin(),supplied.end(),ref.begin());
         }
+        if(mode!="--campaign" && execution.threads!=1)throw std::invalid_argument("--threads applies to campaign evolution, not generation/pilot");
         exportData(directory,ref);
         std::cout<<"reference=bounded_sieve_10000 independent_check=trial_division anchors=OEIS_A000040 data_source="<<(prefix.empty()?"local_generation":prefix)
                  <<" x0=n/1000.0 target=prime/10000.0 predicted_prime=10000.0*g(x0) fitting_indices=1..1000 extrapolation_indices=1001..1200\n";
@@ -61,6 +64,7 @@ int main(int argc,char** argv) {
                      <<" completed_fits="<<completedFits<<" conservative_six_run_100000_seconds="<<estimate
                      <<" margin=2 recommended_allowance="<<(estimate<=1800?100000:50000)<<" pilot_models_discarded=1\n";return 0;
         }
+        genetik_example::printExecution(execution,64);
         auto c=config(*budget);c.fitEveryGenerations=fitEvery;regression_example::printConfig(c);
         std::cout<<"seeds=0,1,2,3,42 representative_order=fitting_mse,nodes,faithful_text,seed no_configuration_adjustment=1\n";
         // Fit references and select ALL committed models before any later-range predictions.
@@ -76,7 +80,7 @@ int main(int argc,char** argv) {
         auto frozen=output(directory/"frozen-models.txt");
         std::optional<std::size_t> representative;
         for(auto seed:seeds) {
-            RandomContext random(seed);const auto start=Clock::now();
+            RandomContext random(seed,execution);const auto start=Clock::now();
             auto result=symbolicRegression(problem,c,random);
             std::cout<<"seed="<<seed<<'\n';regression_example::printResult(result,*budget,seconds(start));
             if(result.best) {

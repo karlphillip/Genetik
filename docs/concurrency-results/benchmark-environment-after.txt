@@ -1,0 +1,8 @@
+1.39 2.25 3.05 1/1056 448805
+%CPU COMMAND
+ 3.8 chrome
+ 3.7 codex
+ 2.4 Xorg
+ 2.1 gnome-shell
+ 1.5 x0vncserver
+ 1.4 irq/264-gk20a_nonstall

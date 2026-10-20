@@ -1,0 +1,11 @@
+Test project /home/karlphillip/workspaces/primeResearcher/build-debug
+    Start  8: genetik_regression_cli
+1/3 Test  #8: genetik_regression_cli ...........   Passed    0.15 sec
+    Start 16: genetik_prime_cli
+2/3 Test #16: genetik_prime_cli ................   Passed    0.08 sec
+    Start 25: genetik_character_parallel
+3/3 Test #25: genetik_character_parallel .......   Passed    0.01 sec
+
+100% tests passed out of 3
+
+Total Test time (real) =   0.24 sec

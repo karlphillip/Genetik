@@ -1,4 +1,5 @@
 #pragma once
+#include <typeinfo>
 #include "Creature_i.hpp"
 #include <iomanip>
 #include <sstream>
@@ -20,6 +21,7 @@ public:
         const auto genes = this->chromosome();
         return std::string(genes.begin(), genes.end());
     }
+    bool parallelEvaluationSafe() const noexcept override {return typeid(*this)==typeid(Creature<T>);}
     std::string stats() override {
         std::ostringstream out;
         out << std::fixed << std::setprecision(3) << "str=[ " << getString() << " ] f=";

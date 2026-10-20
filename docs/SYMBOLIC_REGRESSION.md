@@ -118,3 +118,27 @@ contract changes. All-row example reporting also resets/reuses its local storage
 while continuing to count every invalid prediction. See
 [EVALUATION_WORKSPACE.md](EVALUATION_WORKSPACE.md) for exact numerical/search replays
 and measured allocation/time results.
+
+
+## Optional candidate concurrency
+
+`RandomContext random(seed, ExecutionConfig{4});` requests up to four simultaneous
+candidate evaluation/refinement tasks; default 1 retains the qualified serial
+path. Initialization and scheduled refinement run through the same private
+preparation/publication boundary. Coordinator-owned RNG, variation, ranking and
+publication remain serial. Each task gets an independent objective/refinement
+instance and scratch; only immutable training data and synchronized loss admission
+are shared. Cadence and per-fit coordinate order are unchanged.
+
+Custom derived objectives must explicitly declare capability and implement
+`cloneForParallel()` with fresh independent mutable state; optional no-throw
+`mergeWorker()` collects custom diagnostics after draining. This does **not** make
+concurrent calls on one `TrainingObjective::measure()` or one
+`ConstantRefinement::prepare()` supported. Existing serial subclasses remain
+supported without changes. Detailed `RefinementDiagnostics` is currently serial-only.
+Operational failures outrank budget/cancellation, all admitted work drains, and
+actual work from unpublished preparation remains counted. Binding limits may
+change speculative work/RNG relative to serial; nonbinding deterministic callbacks
+have stable slot-ordered results. See [CONCURRENCY.md](CONCURRENCY.md) for the full
+capability, lifetime and cancellation contract and
+[CONCURRENCY_RESULTS.md](CONCURRENCY_RESULTS.md) for executed qualification.

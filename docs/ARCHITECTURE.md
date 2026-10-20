@@ -109,15 +109,14 @@ The ordinary/relocated installed fixture also builds/runs this source after dele
 its disposable producer trees, alongside multi-TU scalar/symbolic consumers. The
 active checkout is never removed. Package and support policy remain unchanged.
 
-## Execution today
+## Execution now (supersedes the serial-only audit finding)
 
-There is **no runtime population concurrency**. Population::publishGeneration
-iterates candidates serially; GeneticAlgorithm::evolve prepares/selects/varies
-serially; symbolicRegression calls that engine synchronously; TrainingObjective
-and ConstantRefinement run inline. Source has no thread pool, std::thread/async,
-parallel execution policy, task scheduler or concurrency configuration. Compiler
-build parallelism (-j) is unrelated. Tests qualify serial ownership/publication,
-not parallel runs; no TSan/backend qualification exists. Independently owned read-
-only expression/dataset evaluations support reentrancy, but run-owned RNG, counters,
-preparations and public engine operations are not thread-safe shared interfaces.
-See [the next execution-layer design](CONCURRENCY.md).
+The OOP checkpoint had no runtime concurrency. The subsequent concurrency milestone
+adds generic ExecutionContext dispatch in Population::publishGeneration. Default
+one retains caller-thread preparation; opt-in workers evaluate/refine private
+candidate slots. Coordinator RNG/selection/variation/ordering/publication and all
+virtual algorithm hooks remain intact. Worker-local expression preparations fold
+statistics after draining. Threads::Threads is now a public platform dependency;
+there is still no third-party mathematical dependency or installed compiled binary.
+See [CONCURRENCY.md](CONCURRENCY.md) for callback qualification, execution ownership,
+limits and failure contracts, and CONCURRENCY_RESULTS.md for executed evidence.

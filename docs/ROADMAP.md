@@ -1,8 +1,41 @@
+# Current phased development plan
+
+The published v0.1.0 checkpoint is `f9299ea2cb5136d06e2de8f68bb83ecf460ca369`.
+Delivery and hosted qualification below are completed history. Phase 1 starts from
+that current clean checkpoint; no typed-math work was present to checkpoint.
+Existing `ExpressionNode` operator tags are not a completed general typed-value API.
+
+1. **Workspace/repository cleanup** — this milestone: inventory before action,
+   indexed compact archives, stable tools, fresh canonical builds, output hygiene,
+   unchanged frozen evidence and public interfaces. See [CLEANUP.md](CLEANUP.md).
+2. **Typed values and evaluation** — design and qualify explicit value/type and
+   evaluation semantics while preserving scalar GA and current strict expressions;
+   define errors, ownership, conversion and faithful output before integration.
+3. **Typed evolution** — type-correct initialization/variation and bounded search
+   through the same generic engine, fitness, budgets and publication contracts.
+4. **Scientific functions** — individually specified domains, numerical semantics,
+   export, structural typing and portable deterministic tests for each addition.
+5. **Text input and adapters** — validated public input/model adapters, with parsing
+   and data formats outside the generic evolutionary core.
+6. **Constraints and templates** — explicit bounded constraints/templates with
+   honest search-space and initialization reporting.
+7. **Calculus** — separately design and qualify operations, domains and numerical
+   contracts; no implied symbolic algebra capability today.
+8. **Additional model families** — individually scoped proposals and acceptance
+   criteria, not a single open-ended rewrite.
+
+None of phases 2–8 is implemented by cleanup. Further delivery/platform qualification,
+profiling, checkpoint/resume, cache policy and GPU work remain separately scoped.
+The remaining sections preserve the historical engineering and experiment record;
+old “next”/“unreleased” statements describe those checkpoints, not current status.
+
+---
+
 # Genetik roadmap
 
 The baseline and fitness/publication contracts are implemented and verified. The bounded expression value and strict CPU evaluator are implemented; bounded polynomial structure evolution is also implemented through the shared engine. Bounded deterministic continuous constant fitting and a verified generic multivariate/file-data workflow are implemented; strict division/natural logarithm and mixed-arity evolution are implemented; the first reproducible prime experiment and optional deterministic fitting cadence are implemented. See [BASELINE.md](BASELINE.md) for evidence and API migration.
 
-Current delivery order:
+Historical delivery order (completed checkpoints; current phased plan above):
 
 1. Generic multivariate/data-input milestone — complete; public row API, strict application loader, 2/3-input contracts and all five campaign seeds reported.
 2. Strict ordinary division/natural logarithm throughout typed construction, evaluation, variation, limits, export and domain tests — complete; the first prime regression campaign is also complete.

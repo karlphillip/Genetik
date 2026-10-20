@@ -37,12 +37,12 @@ public:
     virtual std::vector<T> chromosome() const final { return chromosome_; }
     virtual T gene(const unsigned int& pos) const final { return chromosome_.at(pos); }
     virtual void setGene(const unsigned int& pos, const T& value) final {
-        chromosome_.at(pos); // a rejected edit does not change genome or validity
+        static_cast<void>(chromosome_.at(pos)); // a rejected edit does not change genome or validity
         invalidateFitness();
         chromosome_[pos] = value;
     }
     virtual void mutateGene(const unsigned int& pos, std::mt19937& rng) final {
-        chromosome_.at(pos);
+        static_cast<void>(chromosome_.at(pos));
         const T value = mutatedGene(pos, rng);
         setGene(pos, value);
     }

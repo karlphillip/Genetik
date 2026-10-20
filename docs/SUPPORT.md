@@ -79,3 +79,17 @@ forced-overlap/OOP tests pass ten repetitions each; ASan+UBSan remains a separat
 build. See CONCURRENCY_RESULTS.md for exact evidence and limitations. Hosted jobs,
 including the configured ARM64 TSan step, have not executed. Parallel safety of
 arbitrary callbacks is not inferred from constness or from this local qualification.
+
+## Hosted qualification preparation
+
+The workflow now asserts its 24-test portable manifest and the separate two-test
+TSan selection, explicitly enables development coverage, and records checkout/image/
+compiler/header/runtime package versions. No Jetson-specific captured trajectory is
+asserted on hosted runners. A focused new contract verifies that requesting detailed
+refinement diagnostics together with parallel execution fails clearly before work,
+without changing the requested execution mode; serial diagnostics remain supported.
+See DELIVERY.md and the local ignored out/hosted-preflight/PREFLIGHT.md for upload
+scope, verification and authorization status. This preparation does not change any
+support-table entry to hosted-verified; jobs have not yet executed. The recorded
+approximately fourfold prime-refinement result remains a Jetson fixed-work/reused-
+pool observation, not a hosted performance claim or general scaling guarantee.

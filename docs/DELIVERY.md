@@ -164,3 +164,58 @@ Execution.hpp installed under include/Genetik and no architecture-specific binar
 Ordinary/relocated multi-TU consumers and installed generic/symbolic/OOP parallel
 work pass, including exact CMake 3.16.0. No dev sanitizer runtime leaks. See
 CONCURRENCY_RESULTS.md for the new separate evidence and current local TSan status.
+
+## Hosted qualification preflight (authorization pending)
+
+The accepted CPU backend at `a9f28f6898c9ec83bb9d98a6ddf9369405153f18`
+remains the local numerical/performance reference. No hosted results are claimed.
+Read-only inspection of public `karlphillip/Genetik` found only remote main at
+`b8059f08ececa9bda6b2c19f35a925c070052f56`, with no hosted workflows. Therefore
+uploading the proposed `qualification/hosted-0.1.0` branch exposes the complete
+modernization ancestry, not just the backend. The generated exact-candidate/range/
+command record lives under ignored `out/hosted-preflight/PREFLIGHT.md`.
+
+The workflow's unrestricted push trigger is sufficient for the new branch; no
+pull request, default-branch update or workflow_dispatch is required. The matrix is:
+
+- x86-64 Ubuntu 24.04, GCC 13 Release, checksum-pinned CMake/CTest 3.16.0.
+- x86-64 Ubuntu 24.04, Clang 18 Debug, ASan+UBSan.
+- native ARM64 Ubuntu 24.04, GCC 13 Release, plus a separate Debug TSan build.
+
+All jobs explicitly enable examples/tests and disable captured Jetson references.
+`scripts/check_ci_manifest.py` requires all 24 portable CTest cases, including
+installed/relocated multi-TU scalar/symbolic/permutation consumers, virtual OOP,
+worker limits, budgets, public file/character workflows and strict FP checks.
+Standalone headers compile in the normal build. The separate TSan filter must
+select exactly the two instrumented overlap/OOP fixtures. Missing/extra tests fail
+qualification rather than silently reducing coverage. Runtime/image/compiler,
+standard-library headers and installed DSO package versions are logged together
+with the exact checkout SHA. Each job must pass; setup, sanitizer initialization,
+missing runners, skips and transient failures are not successful qualification.
+
+The preflight adds no production/API change. It adds a regression check that
+parallel detailed diagnostics fail before initialization, preserving the requested
+concurrency, RNG and zero work; serial diagnostics remain supported. Local checks
+and their logs are recorded in the generated preflight. Earlier full local gates
+remain in CONCURRENCY_RESULTS.md, including the fixed-work performance evidence.
+
+Remote upload/execution awaits the specific approval described in the preflight.
+After approval, qualify each newly pushed fix SHA, retain failing run logs, and
+record job URLs/toolchains/conclusions here and in SUPPORT.md. Keep 0.1.0 unreleased;
+no default-branch update, tag or release asset publication is included.
+
+Preflight checks executed locally on the existing qualified Jetson/GCC13 runtime:
+
+- actionlint 1.7.12: workflow passes; official action tag SHAs rechecked read-only.
+- Focused new concurrency contract: Release/Debug/ASan+UBSan pass; separate TSan
+  concurrency + OOP fixtures pass 2/2, with instrumented overlap and no suppression.
+- Fresh source copy containing tracked inputs plus the proposed manifest checker,
+  exact CMake/CTest 3.16.0, Release/Werror, captured reference OFF: **24/24 pass**
+  (74.89 s), including isolated normal/relocated installed consumers and source
+  inclusion. The full build compiles standalone headers and all public workflows.
+- Both actual test manifests pass validation; synthetic missing/extra manifests
+  are rejected. All 127 historical evidence checksums remain unchanged.
+
+These are local preparation results, not hosted qualification. Generated raw logs,
+remote refs, full upload commit inventory and exact candidate are retained under
+out/hosted-preflight/. No research campaign or runtime benchmark was repeated.

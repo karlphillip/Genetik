@@ -155,6 +155,25 @@ class SerialOnly final:public EvaluatedCandidate {
 public:std::string stats()override{return "serial";}
 protected:Fitness evaluate()const override{return Fitness::valid(0);}
 };
+static void diagnosticsCompatibility(){
+    auto problem=RegressionProblem::create({{{0},1},{{1},2}}, {7,3,8});
+    SymbolicRegressionConfig config;config.population=4;config.elites=1;
+    config.maxGenerationAttempts=1;config.maxEvaluations=8;config.maxTrainingLossAttempts=64;
+    config.fitting=ConstantFitConfig{};config.fitting->maxLossAttempts=4;
+    config.diagnostics=std::make_shared<RefinementDiagnostics>(4);
+    auto objective=std::make_shared<TrainingObjective>(problem,config.maxTrainingLossAttempts,config.diagnostics);
+    RandomContext parallel(7,{3});const auto before=parallel.engine();
+    bool rejected=false;
+    try{(void)symbolicRegression(problem,config,parallel,objective);}
+    catch(const std::invalid_argument& e){rejected=std::string(e.what()).find("no detailed refinement diagnostics")!=std::string::npos;}
+    check(rejected,"parallel detailed diagnostics rejected clearly");
+    check(parallel.execution().requested()==3 && parallel.execution().peakTasks()==0 && parallel.engine()==before && parallel.evaluationAttempts()==0,
+          "incompatible diagnostics preserve execution request and consume no work or RNG");
+    check(objective->work()==TrainingWork{} && config.diagnostics->expressions.empty(),"diagnostics not silently dropped or executed");
+    RandomContext serial(7);
+    const auto result=symbolicRegression(problem,config,serial);
+    check(result.best.has_value() && result.trainingWork.lossAttempts>0 && !config.diagnostics->expressions.empty(),"serial detailed diagnostics remain supported");
+}
 static void equivalence(){
     RandomContext serial(0);Population<SerialOnly> serialPopulation(std::vector<SerialOnly>(2),serial);
     RandomContext parallel(0,{2});
@@ -315,4 +334,4 @@ static void numerics(){
     executor.run(4,[&](auto){envGate.arrive_and_wait();check(std::fesetround(FE_DOWNWARD)==0,"worker FP setup");});
     executor.run(4,[](auto){check(std::fegetround()==FE_TONEAREST,"worker FP environment reset per task");});
 }
-int main(){try{executorContracts();equivalence();budgets();contention();failedPublication();numerics();std::cout<<"concurrent contracts passed\n";}catch(const std::exception& e){std::cerr<<cause(std::current_exception())<<'\n';return 1;}}
+int main(){try{executorContracts();diagnosticsCompatibility();equivalence();budgets();contention();failedPublication();numerics();std::cout<<"concurrent contracts passed\n";}catch(const std::exception& e){std::cerr<<cause(std::current_exception())<<'\n';return 1;}}

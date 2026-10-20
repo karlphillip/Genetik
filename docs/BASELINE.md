@@ -925,3 +925,11 @@ accepted executable versus modified default engine gives byte-identical prime2,
 arithmetic42 and short cadence4 replay captures (including RNG and counters).
 Post-organization/final-tree gates are recorded separately in OOP_QUALIFICATION.md.
 No concurrency backend exists; CONCURRENCY.md records the next design requirements.
+
+Source/output organization and final-tree gates are complete: Release/Debug/
+ASan+UBSan/exact CMake 3.16.0 each pass 22/22, with standalone headers, Werror,
+strict-FP, installed/relocated multi-TU/quickstart/permutation and source-parent
+checks. Final serial replays remain byte-identical; 127 historical evidence hashes
+are unchanged. See OOP_QUALIFICATION.md and its separate qualification-results.
+The library still executes candidate preparation serially; CONCURRENCY.md is a
+subsequent implementation plan, not an implemented backend.

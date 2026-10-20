@@ -147,3 +147,11 @@ domain, within-build deterministic and isolated-package tests remain required.
 The next release-readiness task is executing/reviewing the hosted matrix and its
 actual compiler/runtime evidence, followed by the documented release checklist.
 No remote push, release tag or publication belongs to this milestone.
+
+## Subsequent OOP/layout qualification
+
+The next milestone re-exercises this package interface with an external permutation
+candidate, no symbolic includes, repaired virtual selection dispatch, and organized
+application/tool sources. See [OOP_QUALIFICATION.md](OOP_QUALIFICATION.md) for final-
+tree commands/results; earlier delivery measurements above remain historical.
+Quickstart sources now reside in examples/quickstarts; package names/layout are unchanged.

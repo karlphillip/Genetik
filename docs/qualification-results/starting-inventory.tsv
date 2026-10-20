@@ -1,0 +1,218 @@
+checkpoint_path	purpose	current_path
+.github/workflows/ci.yml	configured hosted CI	.github/workflows/ci.yml
+AGENTS.md	project guidance/documentation	AGENTS.md
+CHANGELOG.md	project guidance/documentation	CHANGELOG.md
+CMakeLists.txt	CMake build/delivery configuration	CMakeLists.txt
+LICENSE	MIT license and attribution	LICENSE
+README.md	project guidance/documentation	README.md
+cadence_campaign.cpp	bounded campaign runner	scripts/cadence_campaign.cpp
+cmake/GenetikConfig.cmake.in	CMake build/delivery configuration	cmake/GenetikConfig.cmake.in
+cmake/GenetikFloatingPoint.cmake	CMake build/delivery configuration	cmake/GenetikFloatingPoint.cmake
+constant_fitting_campaign.cpp	bounded campaign runner	scripts/constant_fitting_campaign.cpp
+demo.cpp	bounded demonstration/application	examples/demo.cpp
+docs/API.md	public contract or support guide	docs/API.md
+docs/BASELINE.md	public contract or support guide	docs/BASELINE.md
+docs/CONSTANT_FITTING.md	public contract or support guide	docs/CONSTANT_FITTING.md
+docs/CONSTANT_FITTING_CAMPAIGN.md	accepted report/raw evidence	docs/CONSTANT_FITTING_CAMPAIGN.md
+docs/DELIVERY.md	public contract or support guide	docs/DELIVERY.md
+docs/EVALUATION_WORKSPACE.md	public contract or support guide	docs/EVALUATION_WORKSPACE.md
+docs/EXPRESSIONS.md	public contract or support guide	docs/EXPRESSIONS.md
+docs/FITTING_CADENCE.md	public contract or support guide	docs/FITTING_CADENCE.md
+docs/FITTING_CADENCE_RESULTS.md	accepted report/raw evidence	docs/FITTING_CADENCE_RESULTS.md
+docs/MULTIVARIATE.md	public contract or support guide	docs/MULTIVARIATE.md
+docs/MULTIVARIATE_CAMPAIGN.md	accepted report/raw evidence	docs/MULTIVARIATE_CAMPAIGN.md
+docs/PACKAGING.md	public contract or support guide	docs/PACKAGING.md
+docs/POLYNOMIAL_CAMPAIGN.md	accepted report/raw evidence	docs/POLYNOMIAL_CAMPAIGN.md
+docs/PRIME_CAMPAIGN.md	accepted report/raw evidence	docs/PRIME_CAMPAIGN.md
+docs/PRIME_REGRESSION.md	public contract or support guide	docs/PRIME_REGRESSION.md
+docs/ROADMAP.md	public contract or support guide	docs/ROADMAP.md
+docs/STRICT_ARITHMETIC.md	public contract or support guide	docs/STRICT_ARITHMETIC.md
+docs/STRICT_ARITHMETIC_CAMPAIGN.md	accepted report/raw evidence	docs/STRICT_ARITHMETIC_CAMPAIGN.md
+docs/SUPPORT.md	public contract or support guide	docs/SUPPORT.md
+docs/SYMBOLIC_REGRESSION.md	public contract or support guide	docs/SYMBOLIC_REGRESSION.md
+docs/cadence-results/SHA256SUMS	accepted report/raw evidence	docs/cadence-results/SHA256SUMS
+docs/cadence-results/audit-failure/campaign.txt	accepted report/raw evidence	docs/cadence-results/audit-failure/campaign.txt
+docs/cadence-results/audit-failure/prime-0-1-trace.csv	accepted report/raw evidence	docs/cadence-results/audit-failure/prime-0-1-trace.csv
+docs/cadence-results/audit-failure/prime-0-4-trace.csv	accepted report/raw evidence	docs/cadence-results/audit-failure/prime-0-4-trace.csv
+docs/cadence-results/audit-failure/profile-arithmetic.txt	accepted report/raw evidence	docs/cadence-results/audit-failure/profile-arithmetic.txt
+docs/cadence-results/audit-failure/profile-prime.txt	accepted report/raw evidence	docs/cadence-results/audit-failure/profile-prime.txt
+docs/cadence-results/file-arithmetic-2-four.txt	accepted report/raw evidence	docs/cadence-results/file-arithmetic-2-four.txt
+docs/cadence-results/file-compatibility.txt	accepted report/raw evidence	docs/cadence-results/file-compatibility.txt
+docs/cadence-results/file-prime-0-default.txt	accepted report/raw evidence	docs/cadence-results/file-prime-0-default.txt
+docs/cadence-results/prime-workflow-compatibility.txt	accepted report/raw evidence	docs/cadence-results/prime-workflow-compatibility.txt
+docs/cadence-results/reference-after.txt	accepted report/raw evidence	docs/cadence-results/reference-after.txt
+docs/cadence-results/reference-before.txt	accepted report/raw evidence	docs/cadence-results/reference-before.txt
+docs/cadence-results/runs/arithmetic-0-1-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/arithmetic-0-1-trace.csv
+docs/cadence-results/runs/arithmetic-0-4-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/arithmetic-0-4-trace.csv
+docs/cadence-results/runs/arithmetic-1-1-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/arithmetic-1-1-trace.csv
+docs/cadence-results/runs/arithmetic-1-4-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/arithmetic-1-4-trace.csv
+docs/cadence-results/runs/arithmetic-2-1-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/arithmetic-2-1-trace.csv
+docs/cadence-results/runs/arithmetic-2-4-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/arithmetic-2-4-trace.csv
+docs/cadence-results/runs/arithmetic-3-1-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/arithmetic-3-1-trace.csv
+docs/cadence-results/runs/arithmetic-3-4-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/arithmetic-3-4-trace.csv
+docs/cadence-results/runs/arithmetic-42-1-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/arithmetic-42-1-trace.csv
+docs/cadence-results/runs/arithmetic-42-4-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/arithmetic-42-4-trace.csv
+docs/cadence-results/runs/campaign.txt	accepted report/raw evidence	docs/cadence-results/runs/campaign.txt
+docs/cadence-results/runs/compatibility.txt	accepted report/raw evidence	docs/cadence-results/runs/compatibility.txt
+docs/cadence-results/runs/prime-0-1-predictions.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-0-1-predictions.csv
+docs/cadence-results/runs/prime-0-1-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-0-1-trace.csv
+docs/cadence-results/runs/prime-0-4-predictions.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-0-4-predictions.csv
+docs/cadence-results/runs/prime-0-4-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-0-4-trace.csv
+docs/cadence-results/runs/prime-1-1-predictions.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-1-1-predictions.csv
+docs/cadence-results/runs/prime-1-1-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-1-1-trace.csv
+docs/cadence-results/runs/prime-1-4-predictions.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-1-4-predictions.csv
+docs/cadence-results/runs/prime-1-4-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-1-4-trace.csv
+docs/cadence-results/runs/prime-2-1-predictions.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-2-1-predictions.csv
+docs/cadence-results/runs/prime-2-1-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-2-1-trace.csv
+docs/cadence-results/runs/prime-2-4-predictions.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-2-4-predictions.csv
+docs/cadence-results/runs/prime-2-4-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-2-4-trace.csv
+docs/cadence-results/runs/prime-3-1-predictions.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-3-1-predictions.csv
+docs/cadence-results/runs/prime-3-1-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-3-1-trace.csv
+docs/cadence-results/runs/prime-3-4-predictions.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-3-4-predictions.csv
+docs/cadence-results/runs/prime-3-4-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-3-4-trace.csv
+docs/cadence-results/runs/prime-42-1-predictions.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-42-1-predictions.csv
+docs/cadence-results/runs/prime-42-1-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-42-1-trace.csv
+docs/cadence-results/runs/prime-42-4-predictions.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-42-4-predictions.csv
+docs/cadence-results/runs/prime-42-4-trace.csv	accepted report/raw evidence	docs/cadence-results/runs/prime-42-4-trace.csv
+docs/cadence-results/runs/profile-arithmetic.txt	accepted report/raw evidence	docs/cadence-results/runs/profile-arithmetic.txt
+docs/cadence-results/runs/profile-prime.txt	accepted report/raw evidence	docs/cadence-results/runs/profile-prime.txt
+docs/cadence-results/runs/summary.csv	accepted report/raw evidence	docs/cadence-results/runs/summary.csv
+docs/cadence-results/runs/summary.md	accepted report/raw evidence	docs/cadence-results/runs/summary.md
+docs/cadence-results/verification.txt	accepted report/raw evidence	docs/cadence-results/verification.txt
+docs/constant-fitting-campaign.txt	accepted report/raw evidence	docs/constant-fitting-campaign.txt
+docs/delivery-results/GenetikConfig.cmake.txt	accepted report/raw evidence	docs/delivery-results/GenetikConfig.cmake.txt
+docs/delivery-results/GenetikConfigVersion.cmake.txt	accepted report/raw evidence	docs/delivery-results/GenetikConfigVersion.cmake.txt
+docs/delivery-results/GenetikFloatingPoint.cmake.txt	accepted report/raw evidence	docs/delivery-results/GenetikFloatingPoint.cmake.txt
+docs/delivery-results/GenetikTargets.cmake.txt	accepted report/raw evidence	docs/delivery-results/GenetikTargets.cmake.txt
+docs/delivery-results/SHA256SUMS	accepted report/raw evidence	docs/delivery-results/SHA256SUMS
+docs/delivery-results/cross-version-consumer.txt	accepted report/raw evidence	docs/delivery-results/cross-version-consumer.txt
+docs/delivery-results/ctest-debug.txt	accepted report/raw evidence	docs/delivery-results/ctest-debug.txt
+docs/delivery-results/ctest-min.txt	accepted report/raw evidence	docs/delivery-results/ctest-min.txt
+docs/delivery-results/ctest-release.txt	accepted report/raw evidence	docs/delivery-results/ctest-release.txt
+docs/delivery-results/ctest-sanitize.txt	accepted report/raw evidence	docs/delivery-results/ctest-sanitize.txt
+docs/delivery-results/environment.txt	accepted report/raw evidence	docs/delivery-results/environment.txt
+docs/delivery-results/installed-compile-commands.json	accepted report/raw evidence	docs/delivery-results/installed-compile-commands.json
+docs/delivery-results/installed-consumer-commands.txt	accepted report/raw evidence	docs/delivery-results/installed-consumer-commands.txt
+docs/delivery-results/installed-files.txt	accepted report/raw evidence	docs/delivery-results/installed-files.txt
+docs/delivery-results/package-debug-metadata-final.txt	accepted report/raw evidence	docs/delivery-results/package-debug-metadata-final.txt
+docs/delivery-results/package-min-metadata-final.txt	accepted report/raw evidence	docs/delivery-results/package-min-metadata-final.txt
+docs/delivery-results/package-min.txt	accepted report/raw evidence	docs/delivery-results/package-min.txt
+docs/delivery-results/package-release-final.txt	accepted report/raw evidence	docs/delivery-results/package-release-final.txt
+docs/delivery-results/package-release-metadata-final.txt	accepted report/raw evidence	docs/delivery-results/package-release-metadata-final.txt
+docs/delivery-results/package-sanitize-metadata-final.txt	accepted report/raw evidence	docs/delivery-results/package-sanitize-metadata-final.txt
+docs/delivery-results/resolved-package.txt	accepted report/raw evidence	docs/delivery-results/resolved-package.txt
+docs/evaluation-results/SHA256SUMS	accepted report/raw evidence	docs/evaluation-results/SHA256SUMS
+docs/evaluation-results/accepted-arithmetic.txt	accepted report/raw evidence	docs/evaluation-results/accepted-arithmetic.txt
+docs/evaluation-results/accepted-interval4.txt	accepted report/raw evidence	docs/evaluation-results/accepted-interval4.txt
+docs/evaluation-results/accepted-prime.txt	accepted report/raw evidence	docs/evaluation-results/accepted-prime.txt
+docs/evaluation-results/accepted-reference.txt	accepted report/raw evidence	docs/evaluation-results/accepted-reference.txt
+docs/evaluation-results/baseline-allocations.csv	accepted report/raw evidence	docs/evaluation-results/baseline-allocations.csv
+docs/evaluation-results/candidate-allocations.csv	accepted report/raw evidence	docs/evaluation-results/candidate-allocations.csv
+docs/evaluation-results/character.txt	accepted report/raw evidence	docs/evaluation-results/character.txt
+docs/evaluation-results/ctest-debug.txt	accepted report/raw evidence	docs/evaluation-results/ctest-debug.txt
+docs/evaluation-results/ctest-release.txt	accepted report/raw evidence	docs/evaluation-results/ctest-release.txt
+docs/evaluation-results/ctest-sanitize-allocation-focused.txt	accepted report/raw evidence	docs/evaluation-results/ctest-sanitize-allocation-focused.txt
+docs/evaluation-results/ctest-sanitize.txt	accepted report/raw evidence	docs/evaluation-results/ctest-sanitize.txt
+docs/evaluation-results/equivalence.txt	accepted report/raw evidence	docs/evaluation-results/equivalence.txt
+docs/evaluation-results/provenance.txt	accepted report/raw evidence	docs/evaluation-results/provenance.txt
+docs/evaluation-results/reference-debug-final.txt	accepted report/raw evidence	docs/evaluation-results/reference-debug-final.txt
+docs/evaluation-results/reference-release-final.txt	accepted report/raw evidence	docs/evaluation-results/reference-release-final.txt
+docs/evaluation-results/reference-sanitize-final.txt	accepted report/raw evidence	docs/evaluation-results/reference-sanitize-final.txt
+docs/evaluation-results/timing-summary.csv	accepted report/raw evidence	docs/evaluation-results/timing-summary.csv
+docs/evaluation-results/timings.csv	accepted report/raw evidence	docs/evaluation-results/timings.csv
+docs/evaluation-results/verification.txt	accepted report/raw evidence	docs/evaluation-results/verification.txt
+docs/multivariate-campaign.txt	accepted report/raw evidence	docs/multivariate-campaign.txt
+docs/polynomial-campaign-initial.txt	accepted report/raw evidence	docs/polynomial-campaign-initial.txt
+docs/prime-results/SHA256SUMS	accepted report/raw evidence	docs/prime-results/SHA256SUMS
+docs/prime-results/affine-predictions.csv	accepted report/raw evidence	docs/prime-results/affine-predictions.csv
+docs/prime-results/baselines.txt	accepted report/raw evidence	docs/prime-results/baselines.txt
+docs/prime-results/campaign.txt	accepted report/raw evidence	docs/prime-results/campaign.txt
+docs/prime-results/constant-predictions.csv	accepted report/raw evidence	docs/prime-results/constant-predictions.csv
+docs/prime-results/cubic-predictions.csv	accepted report/raw evidence	docs/prime-results/cubic-predictions.csv
+docs/prime-results/extrapolation.csv	accepted report/raw evidence	docs/prime-results/extrapolation.csv
+docs/prime-results/file-seed-0.txt	accepted report/raw evidence	docs/prime-results/file-seed-0.txt
+docs/prime-results/first-1000.txt	accepted report/raw evidence	docs/prime-results/first-1000.txt
+docs/prime-results/first-1200.txt	accepted report/raw evidence	docs/prime-results/first-1200.txt
+docs/prime-results/fitted_log-predictions.csv	accepted report/raw evidence	docs/prime-results/fitted_log-predictions.csv
+docs/prime-results/fitting.csv	accepted report/raw evidence	docs/prime-results/fitting.csv
+docs/prime-results/frozen-models.txt	accepted report/raw evidence	docs/prime-results/frozen-models.txt
+docs/prime-results/n_log_n-predictions.csv	accepted report/raw evidence	docs/prime-results/n_log_n-predictions.csv
+docs/prime-results/pilot.txt	accepted report/raw evidence	docs/prime-results/pilot.txt
+docs/prime-results/representative-first-1000.csv	accepted report/raw evidence	docs/prime-results/representative-first-1000.csv
+docs/prime-results/reproduction-check.txt	accepted report/raw evidence	docs/prime-results/reproduction-check.txt
+docs/prime-results/residuals.png	accepted report/raw evidence	docs/prime-results/residuals.png
+docs/prime-results/seed-0-predictions.csv	accepted report/raw evidence	docs/prime-results/seed-0-predictions.csv
+docs/prime-results/seed-0-trace.csv	accepted report/raw evidence	docs/prime-results/seed-0-trace.csv
+docs/prime-results/seed-1-predictions.csv	accepted report/raw evidence	docs/prime-results/seed-1-predictions.csv
+docs/prime-results/seed-1-trace.csv	accepted report/raw evidence	docs/prime-results/seed-1-trace.csv
+docs/prime-results/seed-2-predictions.csv	accepted report/raw evidence	docs/prime-results/seed-2-predictions.csv
+docs/prime-results/seed-2-trace.csv	accepted report/raw evidence	docs/prime-results/seed-2-trace.csv
+docs/prime-results/seed-3-predictions.csv	accepted report/raw evidence	docs/prime-results/seed-3-predictions.csv
+docs/prime-results/seed-3-trace.csv	accepted report/raw evidence	docs/prime-results/seed-3-trace.csv
+docs/prime-results/seed-42-predictions.csv	accepted report/raw evidence	docs/prime-results/seed-42-predictions.csv
+docs/prime-results/seed-42-trace.csv	accepted report/raw evidence	docs/prime-results/seed-42-trace.csv
+docs/reproductions/baseline.cpp	historical defect reproduction	docs/reproductions/baseline.cpp
+docs/strict-arithmetic-campaign.txt	accepted report/raw evidence	docs/strict-arithmetic-campaign.txt
+evaluation_workspace.cpp	performance/replay harness	benchmarks/evaluation_workspace.cpp
+examples/EvaluationCorpus.hpp	application support or measurement fixture	benchmarks/EvaluationCorpus.hpp
+examples/MultivariateData.hpp	application support or measurement fixture	examples/MultivariateData.hpp
+examples/PrimeRegression.hpp	application support or measurement fixture	examples/PrimeRegression.hpp
+examples/RegressionData.hpp	application support or measurement fixture	examples/RegressionData.hpp
+examples/RegressionWorkflow.hpp	application support or measurement fixture	examples/RegressionWorkflow.hpp
+examples/StrictArithmeticData.hpp	application support or measurement fixture	examples/StrictArithmeticData.hpp
+examples/check_prime_reproduction.py	development/report helper	scripts/check_prime_reproduction.py
+examples/measure_evaluation_workspace.py	development/report helper	scripts/measure_evaluation_workspace.py
+examples/plot_prime_residuals.py	development/report helper	scripts/plot_prime_residuals.py
+examples/summarize_cadence.py	development/report helper	scripts/summarize_cadence.py
+expression_demo.cpp	bounded demonstration/application	examples/expression_demo.cpp
+genetik/CMakeLists.txt	CMake build/delivery configuration	genetik/CMakeLists.txt
+genetik/ConstantFitting.hpp	public library or required implementation header	genetik/ConstantFitting.hpp
+genetik/Creature.hpp	public library or required implementation header	genetik/Creature.hpp
+genetik/Creature_i.hpp	public library or required implementation header	genetik/Creature_i.hpp
+genetik/EvaluatedCandidate.hpp	public library or required implementation header	genetik/EvaluatedCandidate.hpp
+genetik/Expression.hpp	public library or required implementation header	genetik/Expression.hpp
+genetik/ExpressionVariation.hpp	public library or required implementation header	genetik/ExpressionVariation.hpp
+genetik/Fitness.hpp	public library or required implementation header	genetik/Fitness.hpp
+genetik/GeneticAlgorithm.hpp	public library or required implementation header	genetik/GeneticAlgorithm.hpp
+genetik/GeneticAlgorithm_i.hpp	public library or required implementation header	genetik/GeneticAlgorithm_i.hpp
+genetik/Population.hpp	public library or required implementation header	genetik/Population.hpp
+genetik/Population_i.hpp	public library or required implementation header	genetik/Population_i.hpp
+genetik/RandomContext.hpp	public library or required implementation header	genetik/RandomContext.hpp
+genetik/Regression.hpp	public library or required implementation header	genetik/Regression.hpp
+genetik/ScalarVariation.hpp	public library or required implementation header	genetik/ScalarVariation.hpp
+genetik/SymbolicRegression.hpp	public library or required implementation header	genetik/SymbolicRegression.hpp
+genetik/detail/ScopedTiming.hpp	public library or required implementation header	genetik/detail/ScopedTiming.hpp
+main.cpp	obsolete unbuilt original source (preserved)	docs/history/main.cpp
+multivariate_regression.cpp	bounded demonstration/application	examples/multivariate_regression.cpp
+polynomial_regression.cpp	bounded demonstration/application	examples/polynomial_regression.cpp
+prime_regression.cpp	bounded demonstration/application	examples/prime_regression.cpp
+quickstarts/CMakeLists.txt	CMake build/delivery configuration	examples/quickstarts/CMakeLists.txt
+quickstarts/scalar.cpp	compiled public quickstart	examples/quickstarts/scalar.cpp
+quickstarts/symbolic.cpp	compiled public quickstart	examples/quickstarts/symbolic.cpp
+regression_search.cpp	generic numerical-file application	apps/regression_search.cpp
+tests/CMakeLists.txt	CMake build/delivery configuration	tests/CMakeLists.txt
+tests/constant_fitting.cpp	contract test or downstream/delivery fixture	tests/constant_fitting.cpp
+tests/downstream.cmake	contract test or downstream/delivery fixture	tests/downstream.cmake
+tests/downstream/CMakeLists.txt	CMake build/delivery configuration	tests/downstream/CMakeLists.txt
+tests/downstream/main.cpp	contract test or downstream/delivery fixture	tests/downstream/main.cpp
+tests/embedding/CMakeLists.txt	CMake build/delivery configuration	tests/embedding/CMakeLists.txt
+tests/embedding/main.cpp	contract test or downstream/delivery fixture	tests/embedding/main.cpp
+tests/embedding/unrelated.cpp	contract test or downstream/delivery fixture	tests/embedding/unrelated.cpp
+tests/evaluation_reference.cmake	contract test or downstream/delivery fixture	tests/evaluation_reference.cmake
+tests/evaluation_workspace.cpp	contract test or downstream/delivery fixture	tests/evaluation_workspace.cpp
+tests/expressions.cpp	contract test or downstream/delivery fixture	tests/expressions.cpp
+tests/fp_policy.cmake	contract test or downstream/delivery fixture	tests/fp_policy.cmake
+tests/generation.cpp	contract test or downstream/delivery fixture	tests/generation.cpp
+tests/installed/CMakeLists.txt	CMake build/delivery configuration	tests/installed/CMakeLists.txt
+tests/installed/common.hpp	contract test or downstream/delivery fixture	tests/installed/common.hpp
+tests/installed/main.cpp	contract test or downstream/delivery fixture	tests/installed/main.cpp
+tests/installed/mixed.c	contract test or downstream/delivery fixture	tests/installed/mixed.c
+tests/installed/other.cpp	contract test or downstream/delivery fixture	tests/installed/other.cpp
+tests/multivariate.cpp	contract test or downstream/delivery fixture	tests/multivariate.cpp
+tests/package_integration.py	contract test or downstream/delivery fixture	tests/package_integration.py
+tests/prime_cli.cmake	contract test or downstream/delivery fixture	tests/prime_cli.cmake
+tests/prime_regression.cpp	contract test or downstream/delivery fixture	tests/prime_regression.cpp
+tests/regression_cli.cmake	contract test or downstream/delivery fixture	tests/regression_cli.cmake
+tests/strict_arithmetic.cpp	contract test or downstream/delivery fixture	tests/strict_arithmetic.cpp
+tests/symbolic_regression.cpp	contract test or downstream/delivery fixture	tests/symbolic_regression.cpp
+tests/tests.cpp	contract test or downstream/delivery fixture	tests/tests.cpp

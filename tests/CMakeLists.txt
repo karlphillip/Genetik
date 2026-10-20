@@ -108,7 +108,7 @@ if(GENETIK_BUILD_EXAMPLES AND GENETIK_RECORDED_REFERENCE)
     set_tests_properties(genetik_evaluation_reference PROPERTIES TIMEOUT 60)
 endif()
 
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_EvaluationCorpus.cpp "#include <examples/EvaluationCorpus.hpp>\n")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_EvaluationCorpus.cpp "#include <benchmarks/EvaluationCorpus.hpp>\n")
 add_library(example_header_EvaluationCorpus OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_EvaluationCorpus.cpp)
 target_include_directories(example_header_EvaluationCorpus PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(example_header_EvaluationCorpus PRIVATE genetik_lib)

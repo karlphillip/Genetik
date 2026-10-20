@@ -48,7 +48,7 @@ run([a.cmake,'-S',producer,'-B',build,*base,f'-DCMAKE_INSTALL_PREFIX={prefix_a}'
      '-DGENETIK_BUILD_EXAMPLES=OFF','-DGENETIK_INSTALL=ON','-DGENETIK_SANITIZERS=ON','-DGENETIK_WARNINGS_AS_ERRORS=ON'])
 run([a.cmake,'--build',build,'-j2']);run([a.cmake,'--install',build])
 consumer=root/'external consumer';shutil.copytree(src/'tests/installed',consumer)
-shutil.copytree(src/'quickstarts',consumer/'quickstarts')
+shutil.copytree(src/'examples/quickstarts',consumer/'quickstarts')
 shutil.copytree(src/'tests/oop_consumer',consumer/'oop_consumer')
 def inspect(prefix,consumer_build):
     configs=list(prefix.rglob('GenetikConfig.cmake'))
@@ -78,12 +78,19 @@ def inspect(prefix,consumer_build):
             elif token.startswith('-I') and len(token)>2:path=token[2:]
             if path and not Path(path).resolve().is_relative_to(prefix.resolve()):raise RuntimeError('foreign include root')
     # Prove the non-regression TU does not acquire symbolic implementation headers.
-    dependencies=list((consumer_build/'oop_consumer').rglob('main.cpp.o.d'))
-    if not dependencies:raise RuntimeError('missing permutation include-dependency evidence')
-    for dependency in dependencies:
-        text=dependency.read_text()
-        if any('/'+name+'.hpp' in text for name in ['Expression','Regression','SymbolicRegression','ConstantFitting']):
-            raise RuntimeError('symbolic dependency in generic consumer')
+    # CMake 3.16's Makefiles need not retain .o.d files. Ask the same qualified
+    # GNU-compatible compiler for dependencies with the actual TU usage flags.
+    entries=[c for c in commands if Path(c['file']).parent.name=='oop_consumer']
+    if len(entries)!=1:raise RuntimeError('missing permutation compilation evidence')
+    tokens=iter(shlex.split(entries[0]['command']));dependency_command=[]
+    for token in tokens:
+        if token in ['-o','-MF','-MT','-MQ']:
+            next(tokens)
+        elif token not in ['-c','-MD','-MMD','-MP']:
+            dependency_command.append(token)
+    text=run([*dependency_command,'-M'])
+    if any('/'+name+'.hpp' in text for name in ['Expression','Regression','SymbolicRegression','ConstantFitting']):
+        raise RuntimeError('symbolic dependency in generic consumer')
     installed={p.relative_to(prefix).as_posix() for p in prefix.rglob('*') if p.is_file()}
     if not any(x.endswith('detail/ScopedTiming.hpp') for x in installed):raise RuntimeError('transitive header omitted')
     if not any(x.endswith('licenses/Genetik/LICENSE') for x in installed):raise RuntimeError('license omitted')

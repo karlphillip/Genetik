@@ -1,0 +1,7 @@
+Linux 6.8.12-1021-tegra aarch64
+g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+glibc 2.39
+cmake version 4.4.4
+cmake version 3.16.0
+#define __GLIBCXX__ 20240904
+#define _GLIBCXX_RELEASE 13

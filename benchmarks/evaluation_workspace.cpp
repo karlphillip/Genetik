@@ -1,5 +1,5 @@
 // Evidence harness: identical source compiled against archived and candidate headers.
-#include "examples/EvaluationCorpus.hpp"
+#include "benchmarks/EvaluationCorpus.hpp"
 #include <bit>
 #include <cstdlib>
 #include <new>

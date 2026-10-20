@@ -39,3 +39,7 @@ This packaging milestone itself changes no evaluator, RNG or search algorithm.
 - OOP qualification: evolution now honors overridden roulette selection (previously
   bypassed); default draws/ranking are unchanged. Added a read-only short-lived
   Population::selectionView and installed non-regression permutation consumer.
+- Organized active demos, file application, benchmark/replay harness and campaign
+  helpers; public include spelling, installed layout and executable names are unchanged.
+  Include Creature_i.hpp explicitly when using scalar candidates; Population_i.hpp
+  now depends only on EvaluatedCandidate.hpp. Historical evidence stays in docs/.

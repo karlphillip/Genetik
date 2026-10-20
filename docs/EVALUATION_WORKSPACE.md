@@ -68,7 +68,7 @@ loss remain unchanged.
 
 ## Declared corpus and measurement method
 
-`examples/EvaluationCorpus.hpp` fixes all expressions, rows and timed request
+`benchmarks/EvaluationCorpus.hpp` fixes all expressions, rows and timed request
 counts before comparison:
 
 - Seven-node polynomial `x0*x0+x0+1` and the accepted 16-node prime representative,
@@ -190,16 +190,16 @@ mkdir -p ../evaluation-reference ../evaluation-evidence
 # Independent accepted headers/helpers, without modifying this checkout:
 git archive 94f05814afaaf26cc48fa4d22438cf56bb8943bc | tar -x -C ../evaluation-reference
 CXXFLAGS='-std=c++20 -O3 -DNDEBUG -fno-fast-math -ffp-contract=off'
-g++ $CXXFLAGS -I../evaluation-reference/genetik -I../evaluation-reference -I. evaluation_workspace.cpp -o ../evaluation-evidence/baseline
-g++ $CXXFLAGS -Igenetik -I. evaluation_workspace.cpp -o ../evaluation-evidence/candidate
-g++ $CXXFLAGS -DGENETIK_COUNT_ALLOCATIONS -I../evaluation-reference/genetik -I../evaluation-reference -I. evaluation_workspace.cpp -o ../evaluation-evidence/baseline-count
-g++ $CXXFLAGS -DGENETIK_COUNT_ALLOCATIONS -Igenetik -I. evaluation_workspace.cpp -o ../evaluation-evidence/candidate-count
+g++ $CXXFLAGS -I../evaluation-reference/genetik -I../evaluation-reference -I. benchmarks/evaluation_workspace.cpp -o ../evaluation-evidence/baseline
+g++ $CXXFLAGS -Igenetik -I. benchmarks/evaluation_workspace.cpp -o ../evaluation-evidence/candidate
+g++ $CXXFLAGS -DGENETIK_COUNT_ALLOCATIONS -I../evaluation-reference/genetik -I../evaluation-reference -I. benchmarks/evaluation_workspace.cpp -o ../evaluation-evidence/baseline-count
+g++ $CXXFLAGS -DGENETIK_COUNT_ALLOCATIONS -Igenetik -I. benchmarks/evaluation_workspace.cpp -o ../evaluation-evidence/candidate-count
 ../evaluation-evidence/baseline --reference > ../evaluation-evidence/baseline-reference.txt
 ../evaluation-evidence/candidate --reference > ../evaluation-evidence/candidate-reference.txt
 cmp ../evaluation-evidence/baseline-reference.txt ../evaluation-evidence/candidate-reference.txt
 ../evaluation-evidence/baseline-count --allocations
 ../evaluation-evidence/candidate-count --allocations
-python3 examples/measure_evaluation_workspace.py ../evaluation-evidence/baseline ../evaluation-evidence/candidate ../evaluation-evidence
+python3 scripts/measure_evaluation_workspace.py ../evaluation-evidence/baseline ../evaluation-evidence/candidate ../evaluation-evidence
 # Run once with each binary, prime/arithmetic; add '4' for the bounded cadence check:
 ../evaluation-evidence/baseline --replay prime > ../evaluation-evidence/baseline-prime.txt
 ../evaluation-evidence/candidate --replay prime > ../evaluation-evidence/candidate-prime.txt
@@ -235,7 +235,7 @@ source bodies also compare identically with the archived source (provenance.txt)
 ../.tools/bin/ctest --test-dir ../build-sanitize --output-on-failure
 timeout 10s ../build-release/genetik_demo 42 1000
 # Full warning check, including the evidence and fault-injection executables:
-g++ -std=c++20 -fno-fast-math -ffp-contract=off -Wall -Wextra -Wpedantic -Igenetik -I. -fsyntax-only evaluation_workspace.cpp tests/evaluation_workspace.cpp cadence_campaign.cpp prime_regression.cpp tests/prime_regression.cpp regression_search.cpp tests/strict_arithmetic.cpp multivariate_regression.cpp tests/multivariate.cpp tests/downstream/main.cpp tests/constant_fitting.cpp constant_fitting_campaign.cpp tests/symbolic_regression.cpp tests/expressions.cpp tests/generation.cpp tests/tests.cpp demo.cpp polynomial_regression.cpp expression_demo.cpp
+g++ -std=c++20 -fno-fast-math -ffp-contract=off -Wall -Wextra -Wpedantic -Igenetik -I. -fsyntax-only benchmarks/evaluation_workspace.cpp tests/evaluation_workspace.cpp scripts/cadence_campaign.cpp examples/prime_regression.cpp tests/prime_regression.cpp apps/regression_search.cpp tests/strict_arithmetic.cpp examples/multivariate_regression.cpp tests/multivariate.cpp tests/downstream/main.cpp tests/constant_fitting.cpp scripts/constant_fitting_campaign.cpp tests/symbolic_regression.cpp tests/expressions.cpp tests/generation.cpp tests/tests.cpp examples/demo.cpp examples/polynomial_regression.cpp examples/expression_demo.cpp
 git -c core.whitespace=cr-at-eol diff --check
 ```
 

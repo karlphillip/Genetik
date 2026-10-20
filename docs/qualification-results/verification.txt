@@ -1,0 +1,15 @@
+All four complete builds passed with GENETIK_WARNINGS_AS_ERRORS=ON.
+Public/support standalone header targets compiled in each build.
+Release CTest 22/22: 85.79 s; final portable installed-dependency recheck: 66.19 s.
+Debug CTest 22/22: 82.91 s.
+ASan+UBSan CTest 22/22: 238.66 s.
+Exact CMake/CTest 3.16.0 Release CTest 22/22: 62.77 s.
+Direct installed OOP consumer: 5 committed generations, 59 evaluator attempts.
+Three final replay stdout captures cmp-equal to preserved pre-edit binary output
+and to docs/evaluation-results/accepted-{prime,arithmetic,interval4}.txt.
+Includes initialization, final expression/fitness, counters/fit decisions, traces,
+stop and RNG. No timing equivalence or new search-quality claim.
+127 accepted historical evidence artifacts have unchanged SHA256 values.
+All 217 checkpoint files classified in starting-inventory.tsv.
+Routine builds/tests created no root output files; fixture output stays in build.
+Hosted CI unexecuted; no new compiler/platform qualification or runtime concurrency.

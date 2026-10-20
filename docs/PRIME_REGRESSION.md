@@ -28,7 +28,7 @@ Search minimizes checked normalized MSE. The standalone decoded predictor is
 semantics. These fixed transformations are not learned constants. There is no
 prime oracle, target lookup, reference feature, residual formula, repair or injected
 baseline/skeleton in expression initialization or variation. All prime-specific
-code is application-only in examples/PrimeRegression.hpp and prime_regression.cpp.
+code is application-only in examples/PrimeRegression.hpp and examples/prime_regression.cpp.
 The shared library, dataset loss, fitter and publication engine are unchanged.
 
 Order each run and the overall representative by fitting MSE, node count, faithful
@@ -136,8 +136,8 @@ To capture and check a reproduction and checksum the generated artifacts:
 
 ```sh
 ../build-release/genetik_regression_search docs/prime-results/fitting.csv --inputs u --target v --seed 0 --loss-budget 100000 --loss-threshold 0 --operators add,sub,mul,div,log > ../prime-file-seed-0.txt
-python3 examples/check_prime_reproduction.py docs/prime-results/campaign.txt ../prime-file-seed-0.txt 0
-python3 examples/plot_prime_residuals.py docs/prime-results
+python3 scripts/check_prime_reproduction.py docs/prime-results/campaign.txt ../prime-file-seed-0.txt 0
+python3 scripts/plot_prime_residuals.py docs/prime-results
 (cd docs/prime-results && sha256sum *.csv *.txt residuals.png > SHA256SUMS)
 (cd docs/prime-results && sha256sum -c SHA256SUMS)
 ```

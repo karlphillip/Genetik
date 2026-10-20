@@ -1,7 +1,7 @@
 # Public API guide
 
-Start with the complete, compiled [scalar quickstart](../quickstarts/scalar.cpp)
-and [symbolic quickstart](../quickstarts/symbolic.cpp). Link Genetik::Genetik through
+Start with the complete, compiled [scalar quickstart](../examples/quickstarts/scalar.cpp)
+and [symbolic quickstart](../examples/quickstarts/symbolic.cpp). Link Genetik::Genetik through
 [installed or source inclusion](PACKAGING.md); all headers are self-contained.
 Class names remain in their existing global namespace in 0.1; the CMake namespace
 is not a C++ namespace migration.
@@ -9,7 +9,7 @@ is not a C++ namespace migration.
 | Area | Public entry points | Contract guide |
 | --- | --- | --- |
 | Randomness | RandomContext(seed), engine(), evaluationAttempts() | [Baseline/migration](BASELINE.md) |
-| Scalar candidates | Creature_i<T>, controlled gene edits; Creature<char> demo | [Quickstart](../quickstarts/scalar.cpp) |
+| Scalar candidates | Creature_i<T>, controlled gene edits; Creature<char> demo | [Quickstart](../examples/quickstarts/scalar.cpp) |
 | Evolution | Population, GeneticAlgorithm, GenerationOutcome | [Shared-engine contracts](SYMBOLIC_REGRESSION.md) |
 | Fitness | Fitness, FitnessState, ObjectiveDirection | [Validity/publication](BASELINE.md) |
 | Expression values | Expression, ExpressionNode, ExpressionLimits, ExpressionResult | [Expressions](EXPRESSIONS.md) |

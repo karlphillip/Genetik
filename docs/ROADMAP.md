@@ -186,3 +186,9 @@ is retained. Next implement the generic bounded execution layer in CONCURRENCY.m
 serial default, consistent eventual --threads N, exclusive worker state, explicit
 admission/draining/failure guarantees and TSan/performance qualification. No runtime
 population concurrency exists today. Preserve all historical campaign outcomes.
+
+The organized source/output layout is recorded in ORGANIZATION.md; accepted campaign
+artifacts and executable names remain unchanged. OOP_QUALIFICATION.md records the
+repeated delivery and serial compatibility gates. Next: implement CONCURRENCY.md,
+then execute hosted support qualification and production-delivery checks. Checkpoint/
+resume, cross-call reuse, stronger solvers and GPU execution remain separate work.

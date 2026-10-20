@@ -1,7 +1,8 @@
 # Genetik
 
 Genetik is a header-only C++20 genetic algorithm library with a reusable symbolic
-regression module. Use ordinary scalar genomes or evolve bounded mathematical
+regression module. Use application-owned candidates through public OOP extension points, ordinary
+scalar genomes, or evolve bounded mathematical
 expression trees against your own multi-input, single-output numerical rows.
 
 The library uses only the C++ standard library and is [MIT licensed](LICENSE),
@@ -11,10 +12,10 @@ and the required strict floating-point options. Newer C++ standards are allowed.
 
 ## Two compiled quickstarts
 
-- [Complete scalar-genome program](quickstarts/scalar.cpp): a custom real-valued
+- [Complete scalar-genome program](examples/quickstarts/scalar.cpp): a custom real-valued
   candidate minimizes squared error, shares an explicit `RandomContext(42)` with
   its population/algorithm, and stops after ten generations.
-- [Complete symbolic-regression program](quickstarts/symbolic.cpp): caller-provided
+- [Complete symbolic-regression program](examples/quickstarts/symbolic.cpp): caller-provided
   rows bind `x0` to the first input column. Optional constant fitting, a 256 actual
   loss-call budget and four-generation ceiling bound the search. It prints the
   stopping outcome and faithful expression. Exact discovery is not required for
@@ -26,13 +27,13 @@ Build and run these exact files through an installed package:
 cmake -S . -B ../genetik-library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/../genetik-prefix"
 cmake --build ../genetik-library
 cmake --install ../genetik-library
-cmake -S quickstarts -B ../genetik-quickstarts -DCMAKE_PREFIX_PATH="$PWD/../genetik-prefix"
+cmake -S examples/quickstarts -B ../genetik-quickstarts -DCMAKE_PREFIX_PATH="$PWD/../genetik-prefix"
 cmake --build ../genetik-quickstarts -j2
 ../genetik-quickstarts/scalar_quickstart
 ../genetik-quickstarts/symbolic_quickstart
 ```
 
-The quickstarts' [CMakeLists.txt](quickstarts/CMakeLists.txt) is a complete external
+The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a complete external
 consumer. In your application, enable CXX and use:
 
 ```cmake
@@ -106,3 +107,21 @@ For example, after generating ordinary numerical files as described in the guide
 Tests and examples use deterministic execution bounds; stochastic recovery is
 reported separately and is never a required CI campaign. See [delivery evidence](docs/DELIVERY.md),
 [version/release policy](docs/SUPPORT.md), [changelog](CHANGELOG.md) and [roadmap](docs/ROADMAP.md).
+
+## Custom genomes and project layout
+
+The installed [permutation scheduling consumer](tests/oop_consumer) demonstrates
+application-owned representation, virtual fitness/selection/variation and the shared
+publication lifecycle without symbolic headers. [Architecture and extension contracts](docs/ARCHITECTURE.md).
+
+```sh
+cmake -S tests/oop_consumer -B ../oop-consumer -DCMAKE_PREFIX_PATH="$PWD/../genetik-prefix"
+cmake --build ../oop-consumer -j2
+../oop-consumer/permutation_consumer
+```
+
+Demos live in examples/, numerical file search in apps/, performance harnesses in
+benchmarks/, campaigns/helpers in scripts/. Executable names and explicit output
+options are unchanged. Put new generated results under out/ or build/temp paths;
+accepted evidence remains in docs/. [Layout and historical path mapping](docs/ORGANIZATION.md).
+Runtime population execution is serial; [concurrency is the next implementation task](docs/CONCURRENCY.md).

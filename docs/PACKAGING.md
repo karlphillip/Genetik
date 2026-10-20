@@ -99,3 +99,12 @@ The fixture is Linux GNU-frontend test tooling, not qualification of every front
 for which the package can select options. CMake 3.16 is the retained minimum; exact
 3.16.0 and workspace 4.4.4 have been exercised locally. Public instructions use
 `cmake -E chdir ... ctest` because CTest 3.16 predates --test-dir.
+
+## Generic extension qualification
+
+The isolated fixture also installs/builds/runs tests/oop_consumer as an external
+permutation application. Compiler-emitted dependencies using its actual usage flags
+verify no symbolic headers are needed. This probe works with the exact CMake 3.16.0
+Makefile generator, which need not retain .o.d files. The quickstart source location
+is now examples/quickstarts; installed header/package layout and target names do
+not change. See OOP_QUALIFICATION.md for repeated final-tree delivery evidence.

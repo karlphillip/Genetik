@@ -37,3 +37,14 @@
 - Canonical source/installed target: Genetik::Genetik; genetik_lib is retained for source compatibility. Keep CMake >=3.16, header-only C++20/strict-FP requirements, relocatable GNUInstallDirs exports and consumer-frontend flag selection. Development flags must stay private; embedded extras/installation default OFF and the parent owns CTest/global compiler settings. See docs/PACKAGING.md.
 - Packaging checks copy current intended library sources to disposable trees, relocate the prefix and remove only those producer trees. Installed multi-TU consumers and the actual quickstart files must compile/run without source includes or development runtime dependencies. Preserve the MIT license.
 - Captured Jetson/GCC13/libm2.39 bits are opt-in via GENETIK_RECORDED_REFERENCE=ON on the qualified local builds; CI uses portable math/domain and within-build repeatability checks. Do not turn captured trajectories into cross-platform assertions. See docs/SUPPORT.md; configured CI is not verified hosted CI.
+
+- Keep custom representation support through EvaluatedCandidate and public virtual
+  algorithm hooks; evolve must dispatch roulette/crossover/mutation. New candidates
+  own/validate their representation and invalidate only through controlled edits.
+  See docs/ARCHITECTURE.md and tests/oop_consumer; no symbolic dependency in core.
+- Active layout: examples/ (including quickstarts), apps/ for file regression,
+  benchmarks/ for evaluation harness/corpus, scripts/ for campaigns/helpers.
+  New run output goes to explicit out/ or build/temp directories. Preserve accepted
+  docs evidence and historical source locations; do not blanket-ignore logs.
+- No runtime population concurrency exists. Implement the generic execution-layer
+  design in docs/CONCURRENCY.md before advertising thread controls or safety.

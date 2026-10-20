@@ -93,3 +93,14 @@ permutation consumer. Scalar and symbolic candidates share the same engine; gene
 core includes do not require regression. [Concurrency](CONCURRENCY.md) is implemented as an opt-in library-owned CPU
 backend, defaulting to one. Use RandomContext(seed, ExecutionConfig{N}); custom
 callbacks need explicit qualification and independent mutable state.
+
+
+## Additive typed mathematical evaluation
+
+`TypedValue.hpp` owns distinct finite scalars, column vectors and row-major matrices.
+`TypedExpression.hpp` validates typed postfix trees against an ordered shape schema,
+infers shapes, exports faithful text and evaluates with explicit arithmetic/payload
+limits. See [TYPED_EXPRESSIONS.md](TYPED_EXPRESSIONS.md) and the compiled installed
+[typed quickstart](../examples/quickstarts/typed.cpp). The generic GA and existing
+scalar symbolic-regression APIs do not include or require typed mathematical headers.
+Typed datasets, aggregate losses, evolution and fitting are future work.

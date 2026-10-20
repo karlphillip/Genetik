@@ -8,7 +8,7 @@ target `genetik_lib`, executable names and explicit output options remain intact
 | --- | --- |
 | Public headers, private transitive implementation headers | `genetik/` |
 | Small demonstrations and application support | `examples/` |
-| Installed compiled quickstarts | `examples/quickstarts/` |
+| Installed compiled scalar/symbolic/typed quickstarts | `examples/quickstarts/` |
 | Generic file regression application | `apps/regression_search.cpp` |
 | Compiled campaign applications | `apps/campaigns/` |
 | Contract tests, data fixtures, external consumers | `tests/` |

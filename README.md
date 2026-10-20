@@ -29,6 +29,10 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   loss-call budget and four-generation ceiling bound the search. It prints the
   stopping outcome and faithful expression. Exact discovery is not required for
   either program to finish successfully.
+- [Owned scalar/vector/matrix evaluation](examples/quickstarts/typed.cpp): constructs
+  rectangular `A*x+b`, checks `[14,8]`, matrix multiplication, transpose and dot product,
+  and handles a local resource limit. This additive evaluator is separate from
+  scalar regression/search; see [typed contracts](docs/TYPED_EXPRESSIONS.md).
 - [Application-owned permutation consumer](tests/oop_consumer/main.cpp): a non-scalar
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
@@ -41,7 +45,10 @@ cd Genetik
 ```
 
 Alternatively extract the published source archive and enter `Genetik-0.1.0/`.
-From either source root, install and build these exact programs:
+The typed quickstart and canonical output conventions below describe post-0.1.0
+local development. The published tag contains the original scalar/symbolic
+quickstarts, not the additive typed API; omit the typed program when using that tag.
+From the corresponding source root, install and build the available programs:
 
 ```sh
 cmake -S . -B out/build/library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/out/install/local"
@@ -51,6 +58,7 @@ cmake -S examples/quickstarts -B out/consumers/quickstarts -DCMAKE_PREFIX_PATH="
 cmake --build out/consumers/quickstarts -j2
 out/consumers/quickstarts/scalar_quickstart
 out/consumers/quickstarts/symbolic_quickstart
+out/consumers/quickstarts/typed_quickstart
 ```
 
 The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a complete external

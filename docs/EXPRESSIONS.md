@@ -129,3 +129,9 @@ strict arithmetic, first-invalid-node behavior and all result bits are unchanged
 No public workspace API, cross-call storage or result cache is added. See
 [EVALUATION_WORKSPACE.md](EVALUATION_WORKSPACE.md) for independent accepted-output
 comparisons, allocation-failure accounting and fixed-work timing evidence.
+
+
+The additive scalar/vector/matrix evaluator is now in
+[TypedExpression.hpp](../genetik/TypedExpression.hpp), documented in
+[TYPED_EXPRESSIONS.md](TYPED_EXPRESSIONS.md). This does not replace this scalar
+Expression API or change its evaluator, variation, fitting or search semantics.

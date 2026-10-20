@@ -14,3 +14,14 @@ bool symbolic_check() {
     return result.best && result.trainingWork.lossAttempts<=64 &&
         problem->measure(result.best->expression()).loss==result.best->evaluation();
 }
+
+bool typed_check() {
+    const std::array schema{TypedShape::matrix(2,3),TypedShape::vector(3)};
+    const auto f=TypedExpression::binary(TypedExpressionKind::MatVec,
+        TypedExpression::variable(0,schema),TypedExpression::variable(1,schema));
+    const std::array bindings{TypedValue::matrix(2,3,std::array{1.,2.,3.,-1.,0.,4.}),
+                              TypedValue::vector(std::array{2.,-1.,3.})};
+    const auto value=f.evaluate(bindings);
+    return value.valid() && value.value().at(0)==9 && value.value().at(1)==10 &&
+        value.arithmeticOperations()==10 && f.schemaString()=="schema{x0:matrix[2,3],x1:vector[3]}";
+}

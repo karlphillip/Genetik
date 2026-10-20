@@ -80,10 +80,10 @@ jobs:
         if: matrix.name == 'gcc13-arm64'
         run: |
           cmake -S . -B out/build/tsan -DCMAKE_BUILD_TYPE=Debug -DGENETIK_THREAD_SANITIZER=ON -DGENETIK_SANITIZERS=OFF -DBUILD_TESTING=ON -DGENETIK_BUILD_TESTS=ON -DGENETIK_BUILD_EXAMPLES=OFF -DGENETIK_RECORDED_REFERENCE=OFF -DGENETIK_WARNINGS_AS_ERRORS=ON
-          python3 scripts/ci_command.py --log out/build/tsan/compile.log --title "TSan compilation" -- cmake --build out/build/tsan --target genetik_concurrency_tests genetik_oop_consumer -j2
-          cmake -E chdir out/build/tsan ctest -R 'genetik_concurrency_contracts|genetik_oop_parallel' --show-only=json-v1 > out/build/tsan/test-manifest.json
+          python3 scripts/ci_command.py --log out/build/tsan/compile.log --title "TSan compilation" -- cmake --build out/build/tsan --target genetik_concurrency_tests genetik_oop_consumer genetik_typed_tests -j2
+          cmake -E chdir out/build/tsan ctest -R 'genetik_concurrency_contracts|genetik_oop_parallel|genetik_typed_overlap' --show-only=json-v1 > out/build/tsan/test-manifest.json
           python3 scripts/check_ci_manifest.py out/build/tsan/test-manifest.json --tsan
-          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log out/build/tsan/contracts.log --title "TSan contracts" --report -- cmake -E chdir out/build/tsan ctest -R 'genetik_concurrency_contracts|genetik_oop_parallel' --output-on-failure
+          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log out/build/tsan/contracts.log --title "TSan contracts" --report -- cmake -E chdir out/build/tsan ctest -R 'genetik_concurrency_contracts|genetik_oop_parallel|genetik_typed_overlap' --output-on-failure
       - name: Stage diagnostic artifacts
         if: always()
         run: |

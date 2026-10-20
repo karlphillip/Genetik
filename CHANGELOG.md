@@ -2,6 +2,11 @@
 
 ## Unreleased — after 0.1.0
 
+- Additive owned TypedValue and TypedExpression API for scalar/vector/matrix
+  construction, strict evaluation, shape inference, bounded work/payload and faithful
+  export. Rectangular matrix/vector operations and an installed typed quickstart;
+  no changes to existing scalar expressions or generic GA interfaces.
+
 - Canonical local/CI output directories, parent-workspace archival, location-based
   hygiene gate and rejection of in-source CMake configuration. Compiled campaign
   applications moved to apps/campaigns/; executable names and public APIs unchanged.

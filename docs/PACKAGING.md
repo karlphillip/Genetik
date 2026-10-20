@@ -10,7 +10,7 @@ third-party mathematical dependencies are needed.
 The library is entirely header-only: INTERFACE include roots and cxx_std_20 allow
 consumers to select newer standards. Build includes use the genetik directory;
 installed includes use `<prefix>/<includedir>/Genetik`. Public include spelling
-remains `<Expression.hpp>`, `<SymbolicRegression.hpp>`, etc. All 16 public headers
+remains `<Expression.hpp>`, `<SymbolicRegression.hpp>`, etc. Public headers, including TypedValue/TypedExpression,
 and detail/ScopedTiming.hpp are installed. Do not rely on detail names as public APIs.
 
 Default install layout (GNUInstallDirs may choose another libdir):
@@ -132,3 +132,10 @@ Maintainer verification uses `scripts/check_source_archive.py`; exact candidate,
 asset checksum and commands are recorded in the release-review output, not baked
 into a document that would change its own candidate hash. See
 [the release proposal](RELEASE_PROPOSAL.md).
+
+
+Phase 2 adds installed TypedValue.hpp/TypedExpression.hpp and the compiled typed
+quickstart. Both installed C++ translation units overlap typed-header usage and
+execute typed evaluation; the separate generic OOP consumer's compiler dependency
+check explicitly excludes typed as well as scalar-regression headers. No mathematical
+backend or new platform/runtime dependency was added.

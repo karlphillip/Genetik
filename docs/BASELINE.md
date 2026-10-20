@@ -957,3 +957,13 @@ integration or global attempt-counter change. Existing GA/OOP/concurrency and sc
 contracts remain intact. See TYPED_EXPRESSIONS.md and TYPED_EVALUATION_QUALIFICATION.md
 for API, independent fixtures, full/focused/sanitizer/package checks and limitations.
 All 127 historical evidence hashes and published assets remain unchanged.
+
+## Phase 3 checkpoint 1: typed problem and preparation
+
+Immutable aggregate rows and checked equal-component MSE are additive specializations.
+Typed candidates use the existing generic Population staging/publication and worker
+lifecycle; no engine or existing scalar header changed. Focused Release warning-as-error
+checks exercise scalar/vector/matrix losses, detached data, exact problem identity,
+invalid late predictions, local resource stops, reporting separation and worker scoring.
+Commands: `cmake --build out/build/release --target genetik_typed_regression_tests header_TypedRegression -j2`;
+`out/build/release/tests/genetik_typed_regression_tests`. See TYPED_REGRESSION.md.

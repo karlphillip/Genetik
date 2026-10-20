@@ -1,0 +1,7 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/sanitize
+    Start 30: genetik_typed_regression_contracts
+1/1 Test #30: genetik_typed_regression_contracts ...   Passed  109.41 sec
+
+100% tests passed out of 1
+
+Total Test time (real) = 109.42 sec

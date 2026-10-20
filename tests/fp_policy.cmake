@@ -1,5 +1,5 @@
 # Verify a public-header-only consumer cannot silently compile under known unsafe modes.
-foreach(header Expression TypedValue TypedExpression)
+foreach(header Expression TypedValue TypedExpression TypedRegression TypedSymbolicRegression TypedConstantFitting)
 foreach(option -ffast-math -ffinite-math-only)
     execute_process(COMMAND "${CXX_COMPILER}" -std=c++20 ${option}
         -I${GENETIK_SOURCE}/genetik -fsyntax-only -x c++ ${GENETIK_SOURCE}/genetik/${header}.hpp

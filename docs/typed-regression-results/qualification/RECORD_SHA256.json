@@ -1,0 +1,21 @@
+{
+  "ENVIRONMENT.txt": "680fdc67f75b4a95c163fdf1fca71c3348a8c843f7eda5d7acdf62f9b67ad8fb",
+  "PRESERVATION.json": "f80ca2524433d6e94430d85f59b2051ee008495b46707c8f73b53420c146f472",
+  "README.txt": "0f6ac2908e6b5fe16d99c15ec45a07ab3c7cfa663aa7fdb7d705af3a23cae184",
+  "SOURCE_SHA256.json": "99be083fa1c59e164d1156903172646290521f84f6295f17fc96831c8756f181",
+  "asan-current-contract-ctest.txt": "bdb90d8f0631f74f7fe8ac68274745708c5a3d2df990902f29055edc3158e5bb",
+  "asan-diagnostic-stack.txt": "07dfe50a419d8e8941f050ee3bd9560af17124b26f35f0fb3671fa569268dd81",
+  "asan-ubsan-ctest.txt": "282de0a74a6a9fb42e20011e40fe7c8679ca199417c94c414c58243675c9abe3",
+  "cmake-3.16-affected-ctest.txt": "038a44a8fc2d9e3eccc0fefefe0109641c4ab635cb4d4b4fc05fe9a243254d41",
+  "cmake-3.16-ctest.txt": "1fa3de909e8018ce63475a09beaa59029982bb3060d3462767be039b62b682a6",
+  "debug-affected-ctest.txt": "7601f73b268c350bcb0929e7fa9bdeb3b25aab6c9dc258803573ca64f8842fc5",
+  "debug-ctest.txt": "cd67bf643d3bea602e8b5814cabba1b94edc595fe80b08f5f34f68e68dc11610",
+  "initial-asan-timeout.txt": "26cb46f1bb606b01616e054f86391c9edcdbccc23caac60148bcdd4278eb9c95",
+  "portable-manifest.json": "5cabe522aab4d1d3c41ef644ee72514aed7b762463e325081b76a6d4647a4a40",
+  "pre-campaign-source-sha256.txt": "7a093ea51838542d13b39f0456007d5f82878a03126106025d32fbe8774eb994",
+  "release-ctest.txt": "6aa07ffc25a810e8d1c79202cda96f2395ccb3ff5b3a6f88cf190c0b8d389aa1",
+  "scalar-replay-sha256.json": "a6bb3482c02f7a9b12d8ecd076ed00497c28f708d2981ddfc504c2952045ef68",
+  "tsan-manifest.json": "7509961afd3d3e5f93b4a776443fb4a7d86d6f45129a0b403ce2952673a39601",
+  "tsan-repeated-ctest.txt": "a4f1fdb96f7f96ff3b1b85f526c7d25ec9d6ea977ae9e4b0927dbcdfe40ba0cb",
+  "typed-replay-comparison.txt": "64f4e6d7f6db05606287a7611a49e99492d1e2d99c026bd13410cc5c1f4ada93"
+}

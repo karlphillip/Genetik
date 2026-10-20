@@ -1,4 +1,5 @@
 #include <TypedExpression.hpp>
+#include <TypedConstantFitting.hpp>
 #include <array>
 #include <atomic>
 #include <bit>
@@ -284,6 +285,17 @@ static void ownership_and_export() {
     auto moved=std::move(snapshot);throws<std::logic_error>([&]{(void)snapshot.depth();},"moved expression access");
     snapshot=expression;check(moved.toString()==expression.toString() && snapshot.toString()==before,"expression move/reassignment");
 }
+class ReturnAllocationFault final:public TypedTrainingObjective {
+public:
+    using TypedTrainingObjective::TypedTrainingObjective;
+protected:
+    TypedRegressionMetrics compute(const TypedExpression& e) override {
+        auto result=TypedTrainingObjective::compute(e);
+        if(armed){armed=false;allocation_test::failAfter=0;}
+        return result;
+    }
+private:bool armed=true;
+};
 static void operational() {
     const auto f=affine(); const std::array b{vec({2,-1,3}),vec({5,-2})};
     const auto retained=f.evaluate(b);const auto text=f.toString();
@@ -292,14 +304,26 @@ static void operational() {
     allocation_test::counting=false;
     const auto boundaries=allocation_test::calls;
     check(boundaries>0 && boundaries<=64,"bounded observed evaluation allocation boundaries");
+    bool observedExecutedPrefix=false;
     for(int fail=0;fail<static_cast<int>(boundaries);++fail) {
         allocation_test::failAfter=fail;
-        bool caught=false;try{(void)f.evaluate(b);}catch(const std::bad_alloc&){caught=true;}
+        std::uint64_t attempted=0;
+        bool caught=false;try{(void)f.evaluateWithWork(b,attempted);}catch(const std::bad_alloc&){caught=true;}
+        if(attempted>0)observedExecutedPrefix=true;
         allocation_test::failAfter=-1;
         check(caught,"allocation failure is operational at each evaluation allocation");
         coefficients(retained.value(),{14,8});coefficients(f.evaluate(b).value(),{14,8});
         check(f.toString()==text && b[0].at(0)==2,"failure preserves values and bindings");
     }
+    check(observedExecutedPrefix,"primitive diagnostics survive later allocation failure");
+    // Fail while copying the scored value into the preparation result. Accounting
+    // was already merged: the exception must not record the same objective twice.
+    auto problem=TypedRegressionProblem::create(f.schema(),f.shape(),{{{b[0],b[1]},retained.value()}},f.limits());
+    auto objective=std::make_shared<ReturnAllocationFault>(problem);
+    TypedConstantRefinement scoring(objective);
+    throws<std::bad_alloc>([&]{(void)scoring.prepare(f,*problem,{});},"post-scoring result allocation failure");
+    check(objective->work().lossAttempts==1 && scoring.statistics().origins[0].ordinary==1,"post-scoring failure accounts once");
+    check(scoring.prepare(f,*problem,{}).loss.score()==0 && scoring.statistics().origins[0].ordinary==2,"successful preparation after failed result construction");
     auto value=vec({1,2});allocation_test::failAfter=0;
     throws<std::bad_alloc>([&]{value=b[0];},"value copy allocation failure");
     check(value.at(0)==1,"strong value copy assignment");

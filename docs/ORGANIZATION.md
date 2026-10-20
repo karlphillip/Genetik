@@ -9,6 +9,7 @@ target `genetik_lib`, executable names and explicit output options remain intact
 | Public headers, private transitive implementation headers | `genetik/` |
 | Small demonstrations and application support | `examples/` |
 | Installed compiled scalar/symbolic/typed quickstarts | `examples/quickstarts/` |
+| Typed regression/campaign application | `apps/typed_regression.cpp` |
 | Generic file regression application | `apps/regression_search.cpp` |
 | Compiled campaign applications | `apps/campaigns/` |
 | Contract tests, data fixtures, external consumers | `tests/` |
@@ -69,3 +70,7 @@ The earlier source-only inventory remains
 The Phase 1 action manifest and old-to-new paths are in `out/cleanup/` and copied
 to `../archive/genetik/`; see [CLEANUP.md](CLEANUP.md) for completed actions/evidence.
 The obsolete original main sketch remains `docs/history/main.cpp`, not an API example.
+
+Typed discovery and fixed-structure fitting use explicit `--output out/runs/NEW_DIR`;
+retained small Phase 3 reports/data live in docs/typed-regression-results/. No old
+evidence path or output convention changed. See TYPED_REGRESSION.md.

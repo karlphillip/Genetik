@@ -187,3 +187,11 @@ remain unchanged. TSan uses a separate development build with
 Hosted concurrent checks and the separate ARM64 TSan step have now executed
 successfully for the combinations/revision in HOSTED_QUALIFICATION.md. That record
 distinguishes actual support from untested compilers/platforms and arbitrary callbacks.
+
+## Typed specialization
+
+TypedExpressionCandidate and TypedConstantRefinement use the same private task and
+shared admission boundaries, with explicit independent typed objective factories.
+Aggregate evaluation/fitting remain sequential within each task. See TYPED_REGRESSION.md
+for shape/resource/counter semantics and TYPED_REGRESSION_QUALIFICATION.md for local
+forced-overlap, failure and TSan evidence. No nested matrix worker pool exists.

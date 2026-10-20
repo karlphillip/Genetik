@@ -152,3 +152,14 @@ are configured, not executed for this local feature. Previously verified hosted
 support applies to the recorded older revisions, not an automatic qualification
 of these new headers on every compiler/stdlib. No existing source API or numerical
 implementation changed, and the published v0.1.0 assets remain fixed.
+
+## Phase 3 typed regression
+
+Typed problems, aggregate loss, shape-aware structure search and coefficient fitting
+are additive local development after the published v0.1.0. See
+[TYPED_REGRESSION_QUALIFICATION.md](TYPED_REGRESSION_QUALIFICATION.md) for executed
+Jetson gates and exact source/evidence identities. The portable manifest now has32
+cases (33 with the qualified captured snapshot), separate TSan selection4. Hosted
+jobs are updated but have not executed for this feature. Earlier Linux hosted
+qualification does not automatically qualify these new APIs; other platforms remain
+as documented above. No dependency, ABI promise or release/version policy changed.

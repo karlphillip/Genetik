@@ -1,4 +1,4 @@
-#include "examples/TypedRegressionData.hpp"
+#include "examples/TypedFittingFixture.hpp"
 #include "examples/ExecutionOptions.hpp"
 #include <chrono>
 #include <filesystem>
@@ -8,13 +8,28 @@ using namespace typed_example;
 static std::ofstream file(const std::filesystem::path& path){std::ofstream f(path);if(!f)throw std::runtime_error("cannot write "+path.string());f<<std::setprecision(17);return f;}
 int main(int argc,char** argv){try{
     const auto execution=genetik_example::executionOptions(argc,argv);
-    bool smoke=false;std::filesystem::path directory;
-    for(int i=1;i<argc;++i){const std::string a=argv[i];if(a=="--smoke")smoke=true;else if(a=="--output" && i+1<argc)directory=argv[++i];else throw std::invalid_argument("usage: genetik_typed_regression --output NEW_DIR [--smoke] [--threads N]");}
+    bool smoke=false,fit=false,fixture=false;std::filesystem::path directory;
+    for(int i=1;i<argc;++i){const std::string a=argv[i];if(a=="--smoke")smoke=true;else if(a=="--fit")fit=true;else if(a=="--fit-fixture")fixture=true;else if(a=="--output" && i+1<argc)directory=argv[++i];else throw std::invalid_argument("usage: genetik_typed_regression --output NEW_DIR [--smoke] [--fit] [--fit-fixture] [--threads N]");}
     if(directory.empty() || std::filesystem::exists(directory/"results.txt"))throw std::invalid_argument("supply a new --output directory");
     std::filesystem::create_directories(directory);
+    if(fixture) {
+        if(execution.threads!=1)throw std::invalid_argument("fixed-structure fitting is synchronous; --threads applies to population search");
+        const auto rows=fittingData(0);auto problem=TypedRegressionProblem::create(fittingSchema,TypedShape::vector(2),rows,limits());
+        TypedTrainingObjective objective(problem,5000);const auto initial=unfitted();const auto begin=std::chrono::steady_clock::now();
+        const auto result=fitTypedConstants(initial,objective,fittingConfig());
+        const auto seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-begin).count();
+        auto out=file(directory/"results.txt");out<<"unfitted="<<initial.toString()<<" initial_mse="<<result.startingLoss.score()<<'\n';
+        out<<"frozen_expression="<<result.expression.toString()<<" final_mse="<<result.loss.score()<<" improved="<<result.improved<<" stop="<<constantFitStopName(result.stop)<<'\n';
+        out<<"constant_occurrences="<<result.expression.constantCount()<<" coefficients="<<result.expression.constantCoefficients()<<" nodes="<<result.expression.nodeCount()<<" depth="<<result.expression.depth()<<'\n';
+        out<<"loss_attempts="<<objective.work().lossAttempts<<" proposals="<<objective.work().proposals<<" accepted="<<objective.work().accepted<<" duplicates="<<objective.work().duplicates<<" rows="<<objective.work().rowAttempts<<" primitive_work="<<objective.arithmeticOperations()<<" seconds="<<seconds<<'\n';
+        for(unsigned split=0;split<3;++split){auto p=TypedRegressionProblem::create(fittingSchema,TypedShape::vector(2),fittingData(split),limits());const auto metrics=p->measure(result.expression,nullptr,nullptr,true);out<<"range="<<split<<" mse="<<metrics.loss.score()<<" max_error="<<*metrics.maxAbsoluteError<<" invalid_rows="<<metrics.invalidRows<<'\n';}
+        return 0;
+    }
     const auto training=data(0),interior=data(1),exterior=data(2);
     const auto problem=TypedRegressionProblem::create(schema,TypedShape::vector(2),training,limits());
     auto config=typed_example::config();if(smoke){config.population=8;config.elites=1;config.maxEvaluations=24;config.maxTrainingLossAttempts=24;config.maxGenerationAttempts=2;}
+    genetik_example::printExecution(execution,config.population);
+    if(fit){config.fitting=ConstantFitConfig{};if(smoke)config.fitting->maxLossAttempts=4;}
     // Freeze complete protocol and data files before any search outcomes exist.
     auto protocol=file(directory/"protocol.txt");
     protocol<<"target=A*x+b reference=independent_row_major_loops data_seeds=73001,73002,73003 rows=64,64,64\n"
@@ -23,8 +38,11 @@ int main(int argc,char** argv){try{
         <<" generations="<<config.maxGenerationAttempts<<" nodes=15 depth=5 constant_nodes=4 coefficients=16 constant_abs=8\n"
         <<"operators=add,sub,mul,dot,matvec,matmul,transpose policy=uniform_feasible_productions operation_probability=.65\n"
         <<"constant_shapes=scalar constant_values=-1,0,1 initial_depth=4 mutation_depth=3 proposals=8 elites="<<config.elites
-        <<" crossover=.9 mutation=.35 fitting=off stop_loss=0 recovery_max_error=1e-6\n"
-        <<"ordering=loss,nodes,depth,constant_occurrences,coefficients,text final_tie=seed_list_order threads="<<execution.threads<<'\n';protocol.close();
+        <<" crossover=.9 mutation=.35 fitting="<<(fit?"on":"off")<<" stop_loss=0 recovery_max_error=1e-6\n"
+        <<"ordering=loss,nodes,depth,constant_occurrences,coefficients,text final_tie=seed_list_order threads="<<execution.threads
+        <<" threads_requested="<<execution.threads<<" threads_effective="<<std::min<std::size_t>(execution.threads,config.population)<<'\n';
+    if(config.fitting){const auto& f=*config.fitting;protocol<<"fit_bounds="<<f.lower<<','<<f.upper<<" initial_step="<<f.initialStep<<" minimum_step="<<f.minimumStep<<" local_loss_calls="<<f.maxLossAttempts<<" sweeps="<<f.maxSweeps<<" proposals="<<f.maxProposals<<" cadence="<<config.fitEveryGenerations<<'\n';}
+    protocol.close();
     const std::array<const std::vector<TypedRegressionRow>*,3> datasets{&training,&interior,&exterior};
     for(std::size_t split=0;split<3;++split){auto out=file(directory/("data-"+std::to_string(split)+".csv"));out<<"a00,a01,a02,a10,a11,a12,x0,x1,x2,b0,b1,y0,y1\n";
         for(const auto& row:*datasets[split]){bool first=true;for(const auto& input:row.inputs)for(double v:input.coefficients()){if(!first)out<<',';first=false;out<<v;}for(double v:row.target.coefficients())out<<','<<v;out<<'\n';}}
@@ -39,6 +57,11 @@ int main(int argc,char** argv){try{
     for(std::size_t i=0;i<runs.size();++i)if(runs[i].result.best){const auto& c=*runs[i].result.best;frozen<<runs[i].seed<<'\t'<<c.fitness()<<'\t'<<c.text()<<'\n';
         if(!representative || TypedRegressionOrdering{}.better(c,*runs[*representative].result.best,ObjectiveDirection::Minimize))representative=i;}
     frozen<<"representative_seed="<<(representative?std::to_string(runs[*representative].seed):"none")<<'\n';frozen.close();
+    // Three simple baselines, trained/fixed before their evaluation-only assessment.
+    std::array<double,2> mean{};for(const auto& row:training)for(std::size_t i=0;i<2;++i)mean[i]+=row.target.coefficients()[i]/64.;
+    const auto average=TypedExpression::constant(TypedValue::vector(mean),schema,limits());
+    const auto b=TypedExpression::variable(2,schema,limits());
+    const auto product=TypedExpression::binary(K::MatVec,TypedExpression::variable(0,schema,limits()),TypedExpression::variable(1,schema,limits()),limits());
     // All model and representative decisions are final before evaluation scoring begins.
     auto out=file(directory/"results.txt");out<<"representative_seed="<<(representative?std::to_string(runs[*representative].seed):"none")<<'\n';
     for(const auto& run:runs){const auto& r=run.result;
@@ -47,17 +70,17 @@ int main(int argc,char** argv){try{
             <<" attempted_generations="<<r.attemptedGenerations<<" loss_attempts="<<r.trainingWork.lossAttempts<<" rows="<<r.trainingWork.rowAttempts
             <<" primitive_work="<<r.arithmeticOperations<<" unused="<<config.maxTrainingLossAttempts-r.trainingWork.lossAttempts
             <<" runtime="<<run.seconds<<" stop="<<searchStopName(r.stoppingReason)<<'\n';
+        out<<"initial_raw="<<(r.rawInitialBestMSE?*r.rawInitialBestMSE:-1)<<" candidate_requests="<<r.candidateEvaluations
+            <<" ordinary_calls="<<r.trainingWork.ordinaryLossAttempts<<" fit_baselines="<<r.trainingWork.fittingBaselineAttempts
+            <<" fit_probes="<<r.trainingWork.fittingProbeAttempts<<" fitting_invocations="<<r.trainingWork.fittingInvocations
+            <<" accepted="<<r.trainingWork.accepted<<" invalid_probes="<<r.trainingWork.invalid<<" infeasible="<<r.trainingWork.infeasible
+            <<" duplicates="<<r.trainingWork.duplicates<<" schedule_skips="<<r.preparationWork.skippedBySchedule<<'\n';
         out<<"mutation_changes="<<r.variation.mutationChanges<<" crossover_changes="<<r.variation.crossoverChanges<<" structural_rejections="<<r.variation.structuralRejections<<" mutation_fallbacks="<<r.variation.mutationFallbacks<<" crossover_fallbacks="<<r.variation.crossoverFallbacks<<'\n';
         if(r.best){const auto& e=r.best->expression();out<<"expression="<<e.toString()<<'\n'<<e.schemaString()<<" output="<<e.shape().toString()<<" nodes="<<e.nodeCount()<<" depth="<<e.depth()<<" constants="<<e.constantCount()<<" coefficients="<<e.constantCoefficients()<<'\n';
             for(std::size_t split=0;split<3;++split){auto assessment=TypedRegressionProblem::create(schema,TypedShape::vector(2),*datasets[split],limits());const auto m=assessment->measure(e,nullptr,nullptr,true);
                 out<<"range="<<split<<" loss="<<(m.loss.state()==FitnessState::Valid?std::to_string(m.loss.score()):"invalid")<<" max_error="<<(m.maxAbsoluteError?*m.maxAbsoluteError:-1)<<" invalid_rows="<<m.invalidRows<<" rows="<<m.rowsAttempted<<'\n';}}
         for(const auto& point:r.improvements)out<<"trace="<<point.lossAttempts<<','<<point.generation<<','<<point.mse<<'\n';
     }
-    // Three simple baselines, trained/fixed before their evaluation-only assessment.
-    std::array<double,2> mean{};for(const auto& row:training)for(std::size_t i=0;i<2;++i)mean[i]+=row.target.coefficients()[i]/64.;
-    const auto average=TypedExpression::constant(TypedValue::vector(mean),schema,limits());
-    const auto b=TypedExpression::variable(2,schema,limits());
-    const auto product=TypedExpression::binary(K::MatVec,TypedExpression::variable(0,schema,limits()),TypedExpression::variable(1,schema,limits()),limits());
     for(const auto& [name,e]:std::array<std::pair<const char*,TypedExpression>,3>{{{"mean",average},{"b",b},{"Ax",product}}})
         for(std::size_t split=0;split<3;++split){auto p=TypedRegressionProblem::create(schema,TypedShape::vector(2),*datasets[split],limits());const auto m=p->measure(e);out<<"baseline="<<name<<" range="<<split<<" mse="<<m.loss.score()<<" max_error="<<*m.maxAbsoluteError<<'\n';}
     std::cout<<"results="<<(directory/"results.txt")<<'\n';return 0;

@@ -186,3 +186,14 @@ Current output conventions and retained workspace records: [ORGANIZATION.md](doc
 and [Phase 1 cleanup evidence](docs/CLEANUP.md). Use `out/build/` for fresh builds,
 `out/install/` and `out/consumers/` for delivery, and `out/runs/`, `out/data/`,
 `out/logs/`, `out/tmp/` for generated work. Do not move configured CMake caches.
+
+### Additive typed symbolic regression (post-v0.1.0 development)
+
+Owned scalar/vector/matrix expressions now participate in the same generic engine.
+Use ordinary immutable typed rows, exact shape-aware variation and optional bounded
+coefficient fitting, with serial default or run-owned `--threads N` execution.
+See [the public typed-regression guide](docs/TYPED_REGRESSION.md), the compiled
+[installed quickstart](examples/quickstarts/typed_search.cpp),
+[operation discovery](docs/TYPED_DISCOVERY_RESULTS.md) and separate
+[coefficient recovery](docs/TYPED_FITTING_RESULTS.md). Typed file syntax is not supported.
+The generic OOP interfaces and existing scalar APIs remain independent/compatible.

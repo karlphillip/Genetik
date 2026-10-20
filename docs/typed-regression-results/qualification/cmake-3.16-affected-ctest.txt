@@ -1,0 +1,21 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/minimum
+    Start 14: genetik_expression_fp_policy
+1/8 Test #14: genetik_expression_fp_policy .........   Passed   26.27 sec
+    Start 27: genetik_typed_contracts
+2/8 Test #27: genetik_typed_contracts ..............   Passed    0.01 sec
+    Start 28: genetik_typed_overlap
+3/8 Test #28: genetik_typed_overlap ................   Passed    0.00 sec
+    Start 29: genetik_typed_example
+4/8 Test #29: genetik_typed_example ................   Passed    0.00 sec
+    Start 30: genetik_typed_regression_contracts
+5/8 Test #30: genetik_typed_regression_contracts ...   Passed    0.04 sec
+    Start 31: genetik_typed_preparation_overlap
+6/8 Test #31: genetik_typed_preparation_overlap ....   Passed    0.00 sec
+    Start 32: genetik_typed_search_quickstart
+7/8 Test #32: genetik_typed_search_quickstart ......   Passed    0.00 sec
+    Start 33: genetik_typed_regression_cli
+8/8 Test #33: genetik_typed_regression_cli .........   Passed    0.03 sec
+
+100% tests passed, 0 tests failed out of 8
+
+Total Test time (real) =  26.38 sec

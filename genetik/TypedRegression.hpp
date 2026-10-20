@@ -21,20 +21,22 @@ public:
     TypedRegressionProblem(std::span<const TypedShape> schema, TypedShape output,
                            const std::vector<TypedRegressionRow>& rows,
                            TypedExpressionLimits limits={}, TypedDatasetLimits dataLimits={})
-        : schema_(schema.begin(),schema.end()), output_(output), limits_(limits), dataLimits_(dataLimits) {
+        : output_(output), limits_(limits), dataLimits_(dataLimits) {
         using namespace genetik_typed_detail;
         if(rows.empty() || !dataLimits.maxRows || !dataLimits.maxCoefficients)
             throw std::invalid_argument("typed dataset must be nonempty with positive storage limits");
         bound(rows.size(),dataLimits.maxRows,"typed dataset row limit");
+        bound(schema.size(),limits.maxVariables,"typed dataset schema variable limit");
+        schema_.assign(schema.begin(),schema.end());
         validateShape(output,limits.values);
-        // Validate schema/configuration without requiring an output terminal or constant allowance.
-        std::vector<TypedExpressionNode> probe;
-        if(schema_.empty()) {
-            // Configuration-only validation with a temporary permissive constant allowance.
-            auto config=limits; config.maxConstantNodes=std::max(std::size_t{1},config.maxConstantNodes);
-            config.maxConstantCoefficients=std::max(std::size_t{1},config.maxConstantCoefficients);
-            (void)TypedExpression::constant(TypedValue::scalar(0),schema_,config);
-        } else (void)TypedExpression::variable(0,schema_,limits);
+        // Configuration-only probe: unused large bindings need not fit operand scratch.
+        // This is never a candidate or a claimed feasible output. Actual expressions
+        // are checked separately against the original, unmodified limits.
+        auto config=limits;
+        config.maxConstantNodes=std::max(std::size_t{1},config.maxConstantNodes);
+        config.maxConstantCoefficients=std::max(std::size_t{1},config.maxConstantCoefficients);
+        config.maxTemporaryCoefficients=std::max(std::size_t{1},config.maxTemporaryCoefficients);
+        (void)TypedExpression::constant(TypedValue::scalar(0),schema_,config);
         std::size_t coefficients=0;
         for(const auto& row:rows) {
             if(row.inputs.size()!=schema_.size() || row.target.shape()!=output_)
@@ -76,10 +78,10 @@ public:
             throw std::invalid_argument("typed expression/problem schema or output differs");
         std::size_t used=0;
         maximumArithmetic=std::min(maximumArithmetic,dataLimits_.maxArithmeticPerLoss);
-        auto charge=[&](std::size_t n) {
+        auto charge=[&](std::size_t n,bool countExternal=true) {
             if(n>maximumArithmetic-used)throw TypedResourceExhausted("typed loss local arithmetic allowance exhausted");
             used+=n;
-            if(arithmeticWork) {
+            if(arithmeticWork && countExternal) {
                 if(n>std::numeric_limits<std::uint64_t>::max()-*arithmeticWork)throw std::overflow_error("typed arithmetic counter exhausted");
                 *arithmeticWork+=n;
             }
@@ -89,10 +91,11 @@ public:
         bool invalid=false;
         for(const auto& row:rows_) {
             ++result.rowsAttempted;if(rowWork)countTrainingWork(*rowWork);
-            const auto prediction=expression.evaluate(row.inputs,{maximumArithmetic-used,limits_.maxTemporaryCoefficients});
+            const auto prediction=arithmeticWork?expression.evaluateWithWork(row.inputs,*arithmeticWork,{maximumArithmetic-used,limits_.maxTemporaryCoefficients}):
+                expression.evaluate(row.inputs,{maximumArithmetic-used,limits_.maxTemporaryCoefficients});
             if(prediction.status()==TypedEvaluationStatus::ResourceLimit)
                 throw TypedResourceExhausted("typed prediction resource allowance exhausted");
-            charge(prediction.arithmeticOperations());
+            charge(prediction.arithmeticOperations(),false);
             if(!prediction.valid()) {
                 invalid=true;++result.invalidRows;
                 if(!inspectAllRows)return {Fitness::invalid(),{},result.rowsAttempted,result.invalidRows};
@@ -126,6 +129,9 @@ private:
     std::size_t components_=0;
 };
 
+struct TypedConstantFitResult;
+class TypedTrainingObjective;
+inline TypedConstantFitResult fitTypedConstants(const TypedExpression&,TypedTrainingObjective&,const ConstantFitConfig&);
 class TypedTrainingObjective {
 public:
     explicit TypedTrainingObjective(std::shared_ptr<const TypedRegressionProblem> problem,
@@ -139,7 +145,7 @@ public:
     std::shared_ptr<TypedTrainingObjective> forkParallel(ExecutionContext& execution) {
         if(!parallelEvaluationSafe())throw std::invalid_argument("typed objective needs independent parallel factory");
         auto local=cloneForParallel();
-        if(!local || local.get()==this || local.use_count()!=1 || local->problem_!=problem_ || local->maximum_!=maximum_ || local->work_!=TrainingWork{})
+        if(!local || local.get()==this || local.use_count()!=1 || local->problem_!=problem_ || local->maximum_!=maximum_ || local->work_!=TrainingWork{} || local->arithmetic_!=0)
             throw std::invalid_argument("invalid typed objective parallel factory");
         if(!admission_)admission_=std::make_shared<TrainingLossAdmission>(maximum_,work_.lossAttempts);
         local->admission_=admission_;local->execution_=&execution;return local;
@@ -172,16 +178,18 @@ public:
     std::uint64_t remaining() const{return admission_?admission_->remaining():maximum_-work_.lossAttempts;}
     const TrainingWork& work() const noexcept{return work_;}
     std::uint64_t arithmeticOperations() const noexcept{return arithmetic_;}
-    // Fitter bookkeeping never charges a second objective attempt.
-    TrainingWork& fittingWork() noexcept{return work_;}
 protected:
     virtual std::shared_ptr<TypedTrainingObjective> cloneForParallel() const {
         if(typeid(*this)!=typeid(TypedTrainingObjective))throw std::invalid_argument("derived typed objective must supply factory");
         return std::make_shared<TypedTrainingObjective>(problem_,maximum_);
     }
     virtual void mergeWorker(const TypedTrainingObjective&) noexcept {}
-    virtual TypedRegressionMetrics compute(const TypedExpression& expression){return problem_->measure(expression,&work_.rowAttempts,&arithmetic_);}
+    TypedRegressionMetrics computeWithLimits(const TypedExpression& expression,std::size_t maximumArithmetic) {
+        return problem_->measure(expression,&work_.rowAttempts,&arithmetic_,false,maximumArithmetic);
+    }
+    virtual TypedRegressionMetrics compute(const TypedExpression& expression){return computeWithLimits(expression,std::numeric_limits<std::size_t>::max());}
 private:
+    friend TypedConstantFitResult fitTypedConstants(const TypedExpression&,TypedTrainingObjective&,const ConstantFitConfig&);
     std::shared_ptr<const TypedRegressionProblem> problem_;
     const std::uint64_t maximum_;
     TrainingWork work_;

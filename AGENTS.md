@@ -71,3 +71,9 @@
   from the first checked product, then increasing inner-index product/add checks;
   outputs traverse row-major. Maintain invocation-owned scratch and result ownership.
   See docs/TYPED_EXPRESSIONS.md. Include genetik_typed_overlap in separate TSan gates.
+
+- Typed regression uses immutable ordered schemas/aggregate rows and checked equal-component
+  MSE. Keep TypedResourceExhausted distinct from Invalid fitness. Typed candidates use
+  generic staging; typed shape/complexity rules remain specialization policies. Typed
+  and scalar fitting share the coordinate kernel; qualify shared changes with accepted
+  serial replays. See docs/TYPED_REGRESSION.md. Include typed preparation overlap in TSan.

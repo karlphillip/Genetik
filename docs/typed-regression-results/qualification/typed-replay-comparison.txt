@@ -1,0 +1,2 @@
+All five discovery seeds: identical data, frozen models, representative, initial/final losses, discovery generations, published/attempted generations, loss/row/arithmetic work, variation counters, stops, improvement traces and range metrics. Runtime excluded.
+Fixed eight-coefficient fixture: identical model, loss, counters, stop and errors. Runtime excluded.

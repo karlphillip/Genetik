@@ -978,3 +978,15 @@ search/RNG equivalence. A bounded two-worker application smoke passed. The froze
 five-seed no-fit campaign is in TYPED_DISCOVERY_RESULTS.md: three honest generation-zero
 recoveries and discoveries at generations5/6; every selected model has zero measured
 error on fitting/interior/exterior samples. No outcome-dependent adjustment.
+
+## Phase 3 checkpoint 3: aggregate coefficient fitting
+
+Scalar and typed adapters share the same deterministic coordinate-search kernel;
+all three independent accepted scalar replays remain byte-identical. Aggregate
+constant occurrence/row-major coefficient order, returned expression/fitness pairing,
+private fitting, cadence, worker admission and reporting are documented in
+TYPED_REGRESSION.md. The supplied W*x+c fixture recovers all eight dyadic coefficients
+with zero sample error in617 actual calls; this is separate from operation discovery.
+Qualification repairs prevent double-counting post-score copy failure and permit
+unused input shapes larger than operand scratch while excluding infeasible terminals.
+See TYPED_REGRESSION_QUALIFICATION.md for executed gates and retained evidence.

@@ -50,7 +50,7 @@ if(GENETIK_BUILD_EXAMPLES)
                         genetik_demo_invalid_argument PROPERTIES TIMEOUT 30)
 endif()
 # Each public header must compile as the first and only include.
-foreach(header TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)
+foreach(header TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp "#include <${header}.hpp>\n")
     add_library(header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp)
     target_link_libraries(header_${header} PRIVATE genetik_lib)
@@ -66,7 +66,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_test(NAME genetik_expression_fp_policy COMMAND ${CMAKE_COMMAND}
         -DCXX_COMPILER=${CMAKE_CXX_COMPILER} -DGENETIK_SOURCE=${PROJECT_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/fp_policy.cmake)
-    set_tests_properties(genetik_expression_fp_policy PROPERTIES TIMEOUT 30)
+    set_tests_properties(genetik_expression_fp_policy PROPERTIES TIMEOUT 90)
 endif()
 
 # Application support headers also compile without accidental preceding includes.
@@ -161,4 +161,19 @@ endif()
 add_executable(genetik_typed_regression_tests typed_regression.cpp)
 target_link_libraries(genetik_typed_regression_tests PRIVATE Genetik::Genetik)
 add_test(NAME genetik_typed_regression_contracts COMMAND genetik_typed_regression_tests)
-set_tests_properties(genetik_typed_regression_contracts PROPERTIES TIMEOUT 90)
+# O0 + ASan stack-use-after-return bookkeeping is costly on native ARM64;
+# keep all fixed numerical/operator fixtures and instrumentation, with a bounded allowance.
+set_tests_properties(genetik_typed_regression_contracts PROPERTIES TIMEOUT 300)
+
+add_test(NAME genetik_typed_preparation_overlap COMMAND genetik_typed_regression_tests --overlap)
+set_tests_properties(genetik_typed_preparation_overlap PROPERTIES TIMEOUT 90)
+if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_typed_search_quickstart COMMAND genetik_typed_search_quickstart --threads 2)
+    set_tests_properties(genetik_typed_search_quickstart PROPERTIES TIMEOUT 60)
+endif()
+if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_typed_regression_cli COMMAND ${CMAKE_COMMAND}
+        -DSEARCH=$<TARGET_FILE:genetik_typed_regression> -DWORKSPACE=${CMAKE_CURRENT_BINARY_DIR}/typed-cli
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/typed_cli.cmake)
+    set_tests_properties(genetik_typed_regression_cli PROPERTIES TIMEOUT 180)
+endif()

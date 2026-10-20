@@ -1,0 +1,13 @@
+
+Thread 1 (Thread 0xfffff7ff3020 (LWP 534496) "genetik_typed_r"):
+#0  0x0000fffff78ca350 in __asan::FakeStack::Allocate (this=0xfffff4af7000, stack_size_log=20, class_id=1, real_stack=281474976654160) at ../../../../src/libsanitizer/asan/asan_fake_stack.cpp:105
+#1  __asan::OnMalloc (class_id=1, size=<optimized out>) at ../../../../src/libsanitizer/asan/asan_fake_stack.cpp:229
+#2  __asan_stack_malloc_1 (size=<optimized out>) at ../../../../src/libsanitizer/asan/asan_fake_stack.cpp:274
+#3  0x0000aaaaaae4a560 [PAC] in std::vector<TypedExpressionNode, std::allocator<TypedExpressionNode> >::empty (this=0x51900000f7b8) at /usr/include/c++/13/bits/stl_vector.h:1088
+#4  0x0000aaaaaadbd45c in TypedExpression::usable (this=0x51900000f750) at /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/TypedExpression.hpp:331
+#5  0x0000aaaaaadb4698 in TypedExpression::nodeCount (this=0x51900000f750) at /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/TypedExpression.hpp:185
+#6  0x0000aaaaaae0b9b8 in TypedVariation::makeProductions (this=0xfffff521a6d0, s=3, depth=2, budget=15) at /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/TypedVariation.hpp:191
+#7  0x0000aaaaaadff420 in TypedVariation::TypedVariation (this=0xfffff521a6d0, problem=std::shared_ptr<const TypedRegressionProblem> (empty) = {...}, grammar=..., preparation=std::shared_ptr<TypedRegressionPreparation> (empty) = {...}) at /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/TypedVariation.hpp:108
+#8  0x0000aaaaaae24614 in typedSymbolicRegression (problem=std::shared_ptr<const TypedRegressionProblem> (use count 6, weak count 0) = {...}, config=..., random=..., objective=std::shared_ptr<TypedTrainingObjective> (use count 2, weak count 0) = {...}) at /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/TypedSymbolicRegression.hpp:62
+#9  0x0000aaaaaad7a150 in variationContracts () at /home/karlphillip/workspaces/primeResearcher/Genetik/tests/typed_regression.cpp:148
+#10 0x0000aaaaaada2ec0 in main (argc=1) at /home/karlphillip/workspaces/primeResearcher/Genetik/tests/typed_regression.cpp:296

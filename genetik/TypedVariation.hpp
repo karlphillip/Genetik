@@ -86,7 +86,7 @@ public:
             for(std::size_t s=0;s<grammar_.shapes.size();++s) {
                 auto accept=[&](TypedExpression e){if(!level[s] || e.nodeCount()<level[s]->nodeCount())level[s]=std::move(e);};
                 for(std::size_t v=0;v<problem_->schema().size();++v)if(problem_->schema()[v]==grammar_.shapes[s])
-                    accept(TypedExpression::variable(v,problem_->schema(),problem_->limits()));
+                    try{accept(TypedExpression::variable(v,problem_->schema(),problem_->limits()));}catch(const TypedLimitError&){}
                 if(isConstantShape(s))try{accept(TypedExpression::constant(constant(s,nullptr),problem_->schema(),problem_->limits()));}catch(const TypedLimitError&){}
                 if(d==1)continue;
                 for(auto op:grammar_.operators)for(std::size_t a=0;a<grammar_.shapes.size();++a) {
@@ -95,6 +95,8 @@ public:
                     const auto n=arity==1?std::size_t{1}:grammar_.shapes.size();
                     for(std::size_t b=0;b<n;++b) {
                         if(arity==2 && !witnesses_[d-1][b])continue;
+                        const auto output=genetik_typed_detail::operationShape(op,grammar_.shapes[a],arity==1?grammar_.shapes[a]:grammar_.shapes[b]);
+                        if(!output || *output!=grammar_.shapes[s])continue;
                         auto expression=compose(op,*witnesses_[d-1][a],arity==1?nullptr:&*witnesses_[d-1][b]);
                         if(expression && expression->shape()==grammar_.shapes[s])accept(std::move(*expression));
                     }
@@ -188,6 +190,8 @@ private:
                 const auto& right=witnesses_[depth-1][b];if(arity==2 && !right)continue;
                 const auto minimum=left->nodeCount()+(arity==2?right->nodeCount():0);
                 if(minimum>=budget)continue;
+                const auto output=genetik_typed_detail::operationShape(op,grammar_.shapes[a],arity==1?grammar_.shapes[a]:grammar_.shapes[b]);
+                if(!output || *output!=grammar_.shapes[s])continue;
                 const auto e=compose(op,*left,arity==1?nullptr:&*right);
                 if(e && e->shape()==grammar_.shapes[s])out.push_back({op,a,b});
             }

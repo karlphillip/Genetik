@@ -1,5 +1,5 @@
 #include <TypedSymbolicRegression.hpp>
-#include "../examples/TypedRegressionData.hpp"
+#include "../examples/TypedFittingFixture.hpp"
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
@@ -24,7 +24,9 @@ static void lossContracts(){
     check(a.fitness()!=b.fitness(),"same schema does not certify same objective");
     auto snapshot=a;auto same=x;
     a.replaceExpression(same);check(a.fitnessState()==FitnessState::Unevaluated && snapshot.fitness()==4,"controlled replacement invalidates");
+    a.calculateFitness();const auto validBeforeFailure=a.evaluation();
     rejects([&]{a.replaceExpression(TypedExpression::constant(TypedValue::vector(std::array{1.}),scalarSchema));});
+    check(a.evaluation()==validBeforeFailure,"failed replacement preserves valid cached fitness");
     check(a.expression().toString()==x.toString(),"failed replacement preserves genome");
     const std::array vectorSchema{TypedShape::vector(2)};
     auto vp=TypedRegressionProblem::create(vectorSchema,TypedShape::vector(2),{{{TypedValue::vector(std::array{1.,3.})},TypedValue::vector(std::array{0.,1.})}});
@@ -43,6 +45,12 @@ static void lossContracts(){
     std::uint64_t attempted=0,operations=0;
     rejects<TypedResourceExhausted>([&]{(void)problem->measure(x,&attempted,&operations,false,3);});
     check(attempted==2 && operations==3,"resource stop after first row retains work");
+    std::uint64_t primitiveCount=0;
+    check(logarithm.evaluateWithWork(std::array{TypedValue::scalar(1)},primitiveCount).valid() && primitiveCount==1,"per-primitive accounted evaluator");
+    check(!logarithm.evaluateWithWork(std::array{TypedValue::scalar(-1)},primitiveCount).valid() && primitiveCount==1,"domain rejection charges no primitive");
+    primitiveCount=std::numeric_limits<std::uint64_t>::max();
+    rejects<std::overflow_error>([&]{(void)logarithm.evaluateWithWork(std::array{TypedValue::scalar(1)},primitiveCount);});
+    check(logarithm.evaluate(std::array{TypedValue::scalar(1)}).valid(),"independent evaluation after failed diagnostic");
     auto huge=TypedExpression::constant(TypedValue::scalar(std::numeric_limits<double>::max()),scalarSchema);
     check(problem->measure(huge).loss.state()==FitnessState::Invalid,"checked square overflow");
     auto objective=std::make_shared<TypedTrainingObjective>(problem,10);
@@ -65,7 +73,10 @@ static void variationContracts(){
             bool varies=false;for(const auto& row:rows)if(row.inputs[input].coefficients()[c]!=rows[0].inputs[input].coefficients()[c])varies=true;
             check(varies,"every campaign input coefficient varies");
         }
-        for(std::size_t c=0;c<2;++c){bool varies=false;for(const auto& row:rows)if(row.target.at(c)!=rows[0].target.at(c))varies=true;check(varies,"campaign output components vary");}
+        for(std::size_t c=0;c<2;++c){bool varies=false;for(const auto& row:rows)if(row.target.at(c)!=rows[0].target.at(c))varies=true;check(varies,"campaign output components vary");
+            bool productVaries=false;
+            for(const auto& row:rows)if(row.target.at(c)-row.inputs[2].at(c)!=rows[0].target.at(c)-rows[0].inputs[2].at(c))productVaries=true;
+            check(productVaries,"omitted Ax contribution is not constant");}
     }
 
     const std::array schema{TypedShape::matrix(2,3),TypedShape::vector(3),TypedShape::vector(2)};
@@ -99,6 +110,39 @@ static void variationContracts(){
     check(constructive.initialize(random).expression().nodeCount()==3,"construct operation-only output");
     grammar.operators={K::Add};rejects([&]{TypedVariation impossible(noTerminal,grammar);});
     grammar.operators={K::MatVec};grammar.initialMaxDepth=1;rejects([&]{TypedVariation impossible(noTerminal,grammar);});
+    auto coefficientsLimited=limits;coefficientsLimited.maxConstantCoefficients=1;
+    auto vectorConstant=TypedExpression::constant(TypedValue::vector(std::array{1.,2.}),schema,limits);
+    check(!replaceTypedSubtree(b,0,vectorConstant,coefficientsLimited),"complete coefficient-count limit");
+    // Unary, dot and rectangular matrix products with no usable output terminal.
+    for(unsigned fixture=0;fixture<3;++fixture) {
+        const std::vector<TypedShape> inputs=fixture==0?std::vector<TypedShape>{TypedShape::vector(3),TypedShape::vector(3)}:
+            fixture==1?std::vector<TypedShape>{TypedShape::matrix(2,3),TypedShape::matrix(3,2)}:std::vector<TypedShape>{TypedShape::matrix(2,3)};
+        const auto output=fixture==0?TypedShape::scalar():fixture==1?TypedShape::matrix(2,2):TypedShape::matrix(3,2);
+        std::vector<TypedValue> bindings;
+        for(auto shape:inputs){std::vector<double> coefficients(shape.coefficients(),1);
+            bindings.push_back(shape.kind()==TypedValueKind::Vector?TypedValue::vector(coefficients):TypedValue::matrix(shape.rows(),shape.columns(),coefficients));}
+        const auto targetValue=fixture==0?TypedValue::scalar(0):fixture==1?TypedValue::matrix(2,2,std::array{0.,0.,0.,0.}):TypedValue::matrix(3,2,std::array{0.,0.,0.,0.,0.,0.});
+        auto fixtureProblem=TypedRegressionProblem::create(inputs,output,{{bindings,targetValue}},limits);
+        TypedGrammar g;g.constantShapes.clear();g.operators={fixture==0?K::Dot:fixture==1?K::MatMul:K::Transpose};
+        TypedVariation operatorVariation(fixtureProblem,g);
+        const auto generated=operatorVariation.initialize(random).expression();
+        check(generated.nodes().back().kind()==g.operators[0] && generated.nodeCount()>=(fixture==2?2u:3u) && generated.shape()==output && generated.evaluate(bindings).valid(),"constructive aggregate operation support");
+    }
+    for(auto operation:{K::Divide,K::Log}) {
+        const std::array scalarSchema{TypedShape::scalar()};
+        auto scalarProblem=TypedRegressionProblem::create(scalarSchema,TypedShape::scalar(),{{{TypedValue::scalar(-1)},TypedValue::scalar(0)}},limits);
+        TypedGrammar g;g.operators={operation};g.constantShapes.clear();g.operationProbability=1;
+        TypedVariation scalarVariation(scalarProblem,g);bool observed=false;
+        for(unsigned sample=0;sample<32;++sample){auto generated=scalarVariation.initialize(random);if(generated.expression().nodes().back().kind()==operation)observed=true;(void)scalarProblem->checkedExpression(generated.expression());}
+        check(observed,"opt-in scalar division/log production supported without validity resampling");
+    }
+    // Schema validation must not require every unused input to fit operand scratch.
+    {
+        const std::array s{TypedShape::vector(3)};auto small=limits;small.maxTemporaryCoefficients=1;
+        auto p=TypedRegressionProblem::create(s,TypedShape::scalar(),{{{TypedValue::vector(std::array{1.,2.,3.})},TypedValue::scalar(1)}},small);
+        TypedVariation feasible(p);auto generated=feasible.initialize(random);
+        check(generated.expression().shape()==TypedShape::scalar() && p->measure(generated.expression()).loss.state()==FitnessState::Valid,"unused large binding excluded as terminal without rejecting feasible output");
+    }
     // Search uses the shared engine; deterministic complete-generation outcomes are independent of worker count.
     TypedSymbolicRegressionConfig config;config.population=9;config.elites=1;config.maxGenerationAttempts=2;config.maxEvaluations=27;config.maxTrainingLossAttempts=1000;
     std::optional<TypedSymbolicRegressionResult> reference;std::string referenceRng;
@@ -128,9 +172,127 @@ private:std::shared_ptr<OverlapState> state;bool entered=false;
 static void overlapContracts(){
     const std::array schema{TypedShape::vector(2)};
     auto p=TypedRegressionProblem::create(schema,TypedShape::vector(2),{{{TypedValue::vector(std::array{1.,2.})},TypedValue::vector(std::array{2.,4.})}});
-    auto state=std::make_shared<OverlapState>();auto objective=std::make_shared<OverlapObjective>(p,state);auto prep=std::make_shared<TypedScoring>(objective);
-    auto e=TypedExpression::variable(0,schema);RandomContext random(1,{2});
+    auto state=std::make_shared<OverlapState>();auto objective=std::make_shared<OverlapObjective>(p,state);auto fitting=ConstantFitConfig{};fitting.maxLossAttempts=4;
+    auto prep=std::make_shared<TypedConstantRefinement>(objective,fitting);
+    auto e=TypedExpression::binary(K::Multiply,TypedExpression::constant(TypedValue::scalar(1),schema),TypedExpression::variable(0,schema));RandomContext random(1,{2});
     Population<TypedExpressionCandidate,TypedRegressionOrdering> population({TypedExpressionCandidate(e,p,prep),TypedExpressionCandidate(e,p,prep)},random,ObjectiveDirection::Minimize);
-    check(state->peak==2 && objective->work().lossAttempts==2,"typed worker preparation forced overlap");
+    check(state->peak==2 && objective->work().fittingInvocations==2 && objective->work().accepted>=2,"typed worker preparation forced overlap");
 }
-int main(int argc,char**){try{if(argc==1){lossContracts();variationContracts();}overlapContracts();std::cout<<"typed regression contracts passed\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}
+
+static void fittingContracts(){
+    const auto initial=typed_example::unfitted();
+    auto problem=TypedRegressionProblem::create(typed_example::fittingSchema,TypedShape::vector(2),typed_example::fittingData(0),typed_example::limits());
+    const auto old=initial.toString();TypedTrainingObjective objective(problem,5000);
+    auto result=fitTypedConstants(initial,objective,typed_example::fittingConfig());
+    check(std::abs(result.startingLoss.score()-5.286458333333333)<1e-14,"independent initial coefficient-fixture MSE");
+    check(result.improved && result.loss.score()==problem->measure(result.expression).loss.score() && initial.toString()==old,"accepted value and verified fitness pair; unchanged source");
+    check(result.expression.nodeCount()==initial.nodeCount() && result.expression.depth()==initial.depth() && result.expression.constantCount()==2 && result.expression.constantCoefficients()==8,"fixed topology and eight independent coefficients");
+    const auto nodes=result.expression.nodes();const std::array expected{1.5,-.75,.25,-.5,2.,1.25};
+    for(std::size_t i=0;i<6;++i)check(std::abs(nodes[0].constantValue().coefficients()[i]-expected[i])<1e-7,"matrix coefficients recovered");
+    check(std::abs(nodes[3].constantValue().at(0)-.625)<1e-7 && std::abs(nodes[3].constantValue().at(1)+1.375)<1e-7,"bias coefficients recovered independently");
+    for(unsigned split=0;split<3;++split){auto p=TypedRegressionProblem::create(typed_example::fittingSchema,TypedShape::vector(2),typed_example::fittingData(split),typed_example::limits());check(*p->measure(result.expression).maxAbsoluteError<=1e-6,"fixed-structure sample recovery");}
+    TypedTrainingObjective repeat(problem,5000);auto again=fitTypedConstants(initial,repeat,typed_example::fittingConfig());
+    check(again.expression.toString()==result.expression.toString() && again.loss==result.loss && repeat.work()==objective.work(),"deterministic numerical fitting");
+    const std::array schema{TypedShape::scalar()};
+    auto p=TypedRegressionProblem::create(schema,TypedShape::scalar(),{{{TypedValue::scalar(1)},TypedValue::scalar(1.2)}});
+    const auto constant=[&](double x){return TypedExpression::constant(TypedValue::scalar(x),schema);};
+    auto fit=ConstantFitConfig{};fit.maxSweeps=1;fit.lossThreshold.reset();
+    const auto logarithm=TypedExpression::binary(K::Add,constant(0),TypedExpression::unary(K::Log,constant(1)));
+    TypedTrainingObjective logObjective(p);const auto logResult=fitTypedConstants(logarithm,logObjective,fit);
+    check(logResult.improved && logResult.expression.nodes()[0].constantValue().scalarValue()==1 && logResult.expression.nodes()[1].constantValue().scalarValue()==1 && logObjective.work().invalid>0 && logResult.loss==p->measure(logResult.expression).loss,"invalid probe preserves earlier accepted coefficients");
+    auto x=TypedExpression::variable(0,schema);
+    TypedTrainingObjective freeObjective(p);check(fitTypedConstants(x,freeObjective,fit).stop==ConstantFitStop::NoConstants,"no constant outcome");
+    TypedTrainingObjective invalidObjective(p);check(fitTypedConstants(TypedExpression::unary(K::Log,constant(-1)),invalidObjective,fit).stop==ConstantFitStop::InvalidStart,"invalid start outcome");
+    TypedTrainingObjective limitedObjective(p);fit.maxLossAttempts=2;auto limited=fitTypedConstants(constant(0),limitedObjective,fit);
+    check(limited.improved && limited.stop==ConstantFitStop::EvaluationLimit && limited.expression.nodes()[0].constantValue().scalarValue()==1,"local limit returns best accepted value");
+    fit=ConstantFitConfig{};fit.lower=fit.upper=0;fit.maxSweeps=2;TypedTrainingObjective boundObjective(p);auto bounded=fitTypedConstants(constant(0),boundObjective,fit);
+    check(!bounded.improved && boundObjective.work().infeasible>0,"infeasible proposals bounded");
+    fit=ConstantFitConfig{};fit.maxSweeps=1;
+    auto zeroProduct=TypedExpression::binary(K::Multiply,constant(0),constant(0));TypedTrainingObjective coupled(p);
+    check(!fitTypedConstants(zeroProduct,coupled,fit).improved,"coupled zero coordinate stall reported honestly");
+    auto two=TypedRegressionProblem::create(schema,TypedShape::vector(2),{{{TypedValue::scalar(0)},TypedValue::vector(std::array{2.,3.})}});
+    auto independent=TypedExpression::constant(TypedValue::vector(std::array{1.,1.}),schema);TypedTrainingObjective independentObjective(two);fit.lossThreshold=0;
+    auto independentResult=fitTypedConstants(independent,independentObjective,fit);
+    check(independentResult.expression.nodes()[0].constantValue().at(0)==2 && independentResult.expression.nodes()[0].constantValue().at(1)==2,"equal-valued coefficients are independent in a limited sweep");
+    // Subsequent scheduled fitting can improve an already fitted bounded result.
+    auto refinementObjective=std::make_shared<TypedTrainingObjective>(two);auto refinement=std::make_shared<TypedConstantRefinement>(refinementObjective,fit,4);
+    auto first=refinement->prepare(independent,*two,{0,PreparationOrigin::Initialization});
+    auto skipped=refinement->prepare(first.expression,*two,{3,PreparationOrigin::Elite});
+    auto next=refinement->prepare(skipped.expression,*two,{4,PreparationOrigin::Elite});
+    check(next.loss.score()<first.loss.score() && refinement->statistics().skippedBySchedule==1,"scheduled inherited fit refines again");
+    // Nonbinding parallel fitting preserves all candidate decisions, accounting, cadence and RNG.
+    TypedSymbolicRegressionConfig config;config.population=7;config.elites=1;config.maxGenerationAttempts=3;config.maxEvaluations=28;config.maxTrainingLossAttempts=10000;
+    config.fitting=ConstantFitConfig{};config.fitting->maxLossAttempts=4;config.fitEveryGenerations=2;
+    config.grammar.constantShapes={TypedShape::scalar(),TypedShape::vector(2),TypedShape::matrix(2,3)};
+    config.grammar.shapes={TypedShape::vector(3),TypedShape::vector(2),TypedShape::matrix(2,3),TypedShape::scalar()};
+    std::optional<TypedSymbolicRegressionResult> reference;std::string rngReference;
+    for(unsigned n:{1u,2u,3u,4u}){RandomContext run(21,{n});auto r=typedSymbolicRegression(problem,config,run);std::ostringstream rng;rng<<run.engine();
+        if(reference)check(r.best->text()==reference->best->text() && r.best->evaluation()==reference->best->evaluation() && r.trainingWork==reference->trainingWork && r.preparationWork==reference->preparationWork && r.arithmeticOperations==reference->arithmeticOperations && r.preparedInitialExpressions==reference->preparedInitialExpressions && rng.str()==rngReference,"parallel fit/cadence equivalence");
+        else {reference=r;rngReference=rng.str();}}
+}
+struct FaultState {std::mutex mutex;std::condition_variable cv;bool armed=false,progress=false,resource=false,cancel=false;ExecutionContext* execution=nullptr;};
+class FaultObjective final:public TypedTrainingObjective {
+public:
+    FaultObjective(std::shared_ptr<const TypedRegressionProblem> p,std::uint64_t maximum,std::shared_ptr<FaultState> s):TypedTrainingObjective(std::move(p),maximum),state(std::move(s)){}
+    bool parallelEvaluationSafe() const noexcept override{return true;}
+protected:
+    std::shared_ptr<TypedTrainingObjective> cloneForParallel() const override{return std::make_shared<FaultObjective>(problem(),maximum(),state);}
+    TypedRegressionMetrics compute(const TypedExpression& e) override {
+        if(state->resource)return computeWithLimits(e,3);
+        if(state->cancel)state->execution->requestStop();
+        if(state->armed){const double v=e.nodes()[0].constantValue().scalarValue();
+            if(v==-1){std::lock_guard lock(state->mutex);state->progress=true;state->cv.notify_all();}
+            if(v==.5){std::unique_lock lock(state->mutex);if(!state->cv.wait_for(lock,std::chrono::seconds(5),[&]{return state->progress;}))throw std::runtime_error("no private fit progress");throw std::runtime_error("typed injected operational failure");}
+        }
+        return TypedTrainingObjective::compute(e);
+    }
+private:std::shared_ptr<FaultState> state;
+};
+static std::string rootCause(std::exception_ptr e){try{std::rethrow_exception(e);}catch(const std::exception& x){const auto* n=dynamic_cast<const std::nested_exception*>(&x);return n && n->nested_ptr()?rootCause(n->nested_ptr()):x.what();}catch(...){return "nonstandard";}}
+static void publicationContracts(){
+    const std::array schema{TypedShape::scalar()};
+    auto p=TypedRegressionProblem::create(schema,TypedShape::scalar(),{{{TypedValue::scalar(1)},TypedValue::scalar(1.2)},{{TypedValue::scalar(2)},TypedValue::scalar(1.2)}});
+    const auto c=[&](double v){return TypedExpression::constant(TypedValue::scalar(v),schema);};
+    for(unsigned threads:{1u,2u})for(unsigned interval:{1u,2u}){
+        auto objective=std::make_shared<TypedTrainingObjective>(p,3);auto scoring=std::make_shared<TypedScoring>(objective);
+        RandomContext run(3,{threads});using P=Population<TypedExpressionCandidate,TypedRegressionOrdering>;
+        P population({TypedExpressionCandidate(c(0),p,scoring),TypedExpressionCandidate(c(.5),p,scoring)},run,ObjectiveDirection::Minimize);
+        const auto before=population.bestSeen()->text();auto fit=ConstantFitConfig{};fit.maxLossAttempts=4;
+        auto prep=std::make_shared<TypedConstantRefinement>(objective,fit,interval);
+        try{population.publishGeneration({TypedExpressionCandidate(c(0),p,prep),TypedExpressionCandidate(c(.5),p,prep)});throw std::runtime_error("expected global stop");}
+        catch(...){check(isEvaluationBudget(std::current_exception()),"global budget remains structured through nested preparation");}
+        check(population.generation()==0 && population.bestSeen()->text()==before && objective->work().lossAttempts==3,"binding budget preserves committed state and exact admission");
+        if(interval==2)check(objective->work().fittingInvocations==0,"unscheduled generation does ordinary scoring only");
+    }
+    auto state=std::make_shared<FaultState>();auto objective=std::make_shared<FaultObjective>(p,1000,state);
+    auto scoring=std::make_shared<TypedScoring>(objective);RandomContext run(2,{2});
+    Population<TypedExpressionCandidate,TypedRegressionOrdering> population({TypedExpressionCandidate(c(0),p,scoring),TypedExpressionCandidate(c(.5),p,scoring)},run,ObjectiveDirection::Minimize);
+    const auto before=population.bestSeen()->text();const auto beforeFitness=population.bestSeen()->evaluation();
+    auto fit=ConstantFitConfig{};fit.maxSweeps=1;auto prep=std::make_shared<TypedConstantRefinement>(objective,fit);
+    state->armed=true;
+    try{population.publishGeneration({TypedExpressionCandidate(c(0),p,prep),TypedExpressionCandidate(c(.5),p,prep)});throw std::logic_error("expected fit failure");}
+    catch(...){check(rootCause(std::current_exception())=="typed injected operational failure","preserved original operational cause");}
+    check(state->progress && objective->work().accepted>0 && population.generation()==0 && population.bestSeen()->text()==before && population.bestSeen()->evaluation()==beforeFitness,"private accepted improvement cannot escape failed publication");
+    state->armed=false;state->resource=true;
+    try{population.publishGeneration({TypedExpressionCandidate(c(0),p,scoring),TypedExpressionCandidate(c(.5),p,scoring)});throw std::logic_error("expected resource failure");}
+    catch(...){check(rootCause(std::current_exception()).find("allowance exhausted")!=std::string::npos,"resource classification preserved");}
+    check(population.generation()==0 && population.bestSeen()->text()==before,"resource stop preserves commit");
+    state->resource=false;state->cancel=true;state->execution=&run.execution();
+    try{population.publishGeneration({TypedExpressionCandidate(c(0),p,scoring),TypedExpressionCandidate(c(.5),p,scoring)});throw std::logic_error("expected cancellation");}
+    catch(...){check(isEvaluationCancelled(std::current_exception()),"cooperative cancellation preserves classification");}
+    check(population.generation()==0 && population.bestSeen()->text()==before,"cancellation preserves commit");
+    // An all-invalid typed initial population has no committed generation or best.
+    auto invalid=TypedExpression::unary(K::Log,c(-1));RandomContext invalidRun(0);
+    Population<TypedExpressionCandidate,TypedRegressionOrdering> invalidPopulation({TypedExpressionCandidate(invalid,p)},invalidRun,ObjectiveDirection::Minimize);
+    check(!invalidPopulation.generation() && !invalidPopulation.bestSeen(),"all-invalid initialization has no best");
+    RandomContext validRun(0,{2});
+    Population<TypedExpressionCandidate,TypedRegressionOrdering> validPopulation({TypedExpressionCandidate(c(0),p),TypedExpressionCandidate(c(.5),p)},validRun,ObjectiveDirection::Minimize);
+    const auto committed=validPopulation.bestSeen()->text();
+    check(validPopulation.publishGeneration({TypedExpressionCandidate(invalid,p),TypedExpressionCandidate(invalid,p)})==GenerationOutcome::NoViableCandidates && validPopulation.generation()==0 && validPopulation.bestSeen()->text()==committed,"all-invalid successor preserves committed typed population");
+    const double maximum=std::numeric_limits<double>::max();
+    auto impossibleLoss=TypedRegressionProblem::create(schema,TypedShape::scalar(),{{{TypedValue::scalar(maximum)},TypedValue::scalar(-maximum)}});
+    TypedSymbolicRegressionConfig config;config.population=4;config.elites=1;config.grammar.operators.clear();config.grammar.constants={0};
+    RandomContext invalidSearch(7,{2});auto outcome=typedSymbolicRegression(impossibleLoss,config,invalidSearch);
+    check(!outcome.best && outcome.stoppingReason==SearchStop::NoViableCandidates && outcome.trainingWork.lossAttempts==4 && outcome.publishedGenerations==0,"typed search reports all-invalid initialization without retry");
+}
+int main(int argc,char**){try{if(argc==1){std::cerr<<"typed loss contracts\n";lossContracts();std::cerr<<"typed variation contracts\n";variationContracts();std::cerr<<"typed fitting contracts\n";fittingContracts();std::cerr<<"typed publication contracts\n";publicationContracts();}std::cerr<<"typed overlap contracts\n";overlapContracts();std::cout<<"typed regression contracts passed\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

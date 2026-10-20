@@ -2,6 +2,7 @@
 #include "TypedValue.hpp"
 #include <algorithm>
 #include <optional>
+#include <cstdint>
 
 // Operators are explicit; vector products never use an ambiguous Multiply token.
 enum class TypedExpressionKind { Variable, Constant, Add, Subtract, Multiply, Divide, Log, Dot, MatVec, MatMul, Transpose };
@@ -14,6 +15,25 @@ inline std::size_t typedExpressionArity(TypedExpressionKind kind) {
     case TypedExpressionKind::Dot: case TypedExpressionKind::MatVec: case TypedExpressionKind::MatMul: return 2;
     }
     throw std::invalid_argument("unsupported typed expression operator");
+}
+namespace genetik_typed_detail {
+// The validator and constructive grammar share exactly one operand-shape rule.
+// Incompatibility is an ordinary planning rejection; public construction still throws.
+inline std::optional<TypedShape> operationShape(TypedExpressionKind kind,TypedShape a,TypedShape b) {
+    using K=TypedExpressionKind;using V=TypedValueKind;
+
+    if ((kind == K::Add || kind == K::Subtract) && a == b) return a;
+    if (kind == K::Multiply) {
+        if (a.kind() == V::Scalar) return b;
+        if (b.kind() == V::Scalar) return a;
+    }
+    if ((kind == K::Divide || kind == K::Log) && a.kind() == V::Scalar && b.kind() == V::Scalar) return TypedShape::scalar();
+    if (kind == K::Dot && a.kind() == V::Vector && a == b) return TypedShape::scalar();
+    if (kind == K::MatVec && a.kind() == V::Matrix && b.kind() == V::Vector && a.columns() == b.length()) return TypedShape::vector(a.rows());
+    if (kind == K::MatMul && a.kind() == V::Matrix && b.kind() == V::Matrix && a.columns() == b.rows()) return TypedShape::matrix(a.rows(), b.columns());
+    if (kind == K::Transpose && a.kind() == V::Matrix) return TypedShape::matrix(a.columns(), a.rows());
+    return {};
+}
 }
 class TypedExpressionNode {
 public:
@@ -174,6 +194,17 @@ public:
     // Borrow bindings only for this synchronous call. Return an owned value;
     // validate all bindings before plan admission, then use lexical private scratch.
     TypedEvaluationResult evaluate(std::span<const TypedValue> bindings, TypedEvaluationLimits budget = {}) const {
+        return evaluateImpl(bindings,budget,nullptr);
+    }
+    // Optional invocation-exclusive diagnostic. Charge primitives as they begin,
+    // including work before an operational exception; no engine admission or RNG.
+    TypedEvaluationResult evaluateWithWork(std::span<const TypedValue> bindings,std::uint64_t& arithmetic,
+                                           TypedEvaluationLimits budget = {}) const {
+        return evaluateImpl(bindings,budget,&arithmetic);
+    }
+private:
+    TypedEvaluationResult evaluateImpl(std::span<const TypedValue> bindings,TypedEvaluationLimits budget,
+                                       std::uint64_t* arithmetic) const {
         usable();
         if (bindings.size() != schema_.size()) throw std::invalid_argument("typed binding count differs from schema");
         for (std::size_t i = 0; i < bindings.size(); ++i) {
@@ -187,8 +218,12 @@ public:
         stack.reserve(stackValues_);
         std::size_t executed = 0;
         // All operands are finite. Domain checks precede the corresponding primitive.
-        auto primitive = [&executed](K kind, double a, double b) -> std::optional<double> {
+        auto primitive = [&executed,arithmetic](K kind, double a, double b) -> std::optional<double> {
             if ((kind == K::Divide && b == 0.0) || (kind == K::Log && !(a > 0.0))) return {};
+            if(arithmetic) {
+                if(*arithmetic==std::numeric_limits<std::uint64_t>::max())throw std::overflow_error("typed primitive diagnostic counter exhausted");
+                ++*arithmetic;
+            }
             ++executed; // the checked full plan makes this increment overflow-safe
             volatile double result = 0;
             switch (kind) {
@@ -255,6 +290,7 @@ public:
         return TypedEvaluationResult(std::move(stack.back()), executed);
     }
 
+public:
     std::string schemaString() const {
         usable(); std::string out = "schema{";
         for (std::size_t i = 0; i < schema_.size(); ++i) {
@@ -302,17 +338,8 @@ private:
         for (double x : value.coefficients())
             if (!std::isfinite(x) || std::abs(x) > limits.maxAbsConstant) throw std::invalid_argument("typed constant outside finite bound");
     }
-    static TypedShape infer(K kind, TypedShape a, TypedShape b) {
-        if ((kind == K::Add || kind == K::Subtract) && a == b) return a;
-        if (kind == K::Multiply) {
-            if (a.kind() == V::Scalar) return b;
-            if (b.kind() == V::Scalar) return a;
-        }
-        if ((kind == K::Divide || kind == K::Log) && a.kind() == V::Scalar && b.kind() == V::Scalar) return TypedShape::scalar();
-        if (kind == K::Dot && a.kind() == V::Vector && a == b) return TypedShape::scalar();
-        if (kind == K::MatVec && a.kind() == V::Matrix && b.kind() == V::Vector && a.columns() == b.length()) return TypedShape::vector(a.rows());
-        if (kind == K::MatMul && a.kind() == V::Matrix && b.kind() == V::Matrix && a.columns() == b.rows()) return TypedShape::matrix(a.rows(), b.columns());
-        if (kind == K::Transpose && a.kind() == V::Matrix) return TypedShape::matrix(a.columns(), a.rows());
+    static TypedShape infer(K kind,TypedShape a,TypedShape b) {
+        if(auto shape=genetik_typed_detail::operationShape(kind,a,b))return *shape;
         throw std::invalid_argument("unsupported typed operand kinds or incompatible shapes");
     }
     static std::size_t cost(K kind, TypedShape a, TypedShape out) {

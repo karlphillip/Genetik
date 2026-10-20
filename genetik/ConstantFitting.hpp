@@ -173,13 +173,16 @@ struct ConstantFitConfig {
     std::uint64_t maxLossAttempts = 256, maxSweeps = 128, maxProposals = 8192;
     std::optional<double> lossThreshold;
 };
-inline void validateConstantFitConfig(const ConstantFitConfig& c, const RegressionProblem& problem) {
+inline void validateConstantFitConfigForLimit(const ConstantFitConfig& c, double maximumConstant) {
     if (!std::isfinite(c.lower) || !std::isfinite(c.upper) || c.lower > c.upper ||
-        std::abs(c.lower) > problem.limits().maxAbsConstant || std::abs(c.upper) > problem.limits().maxAbsConstant ||
+        std::abs(c.lower) > maximumConstant || std::abs(c.upper) > maximumConstant ||
         !std::isfinite(c.initialStep) || !std::isfinite(c.minimumStep) || c.minimumStep <= 0 ||
         c.initialStep < c.minimumStep || c.maxLossAttempts == 0 || c.maxSweeps == 0 || c.maxProposals == 0 ||
         (c.lossThreshold && (!std::isfinite(*c.lossThreshold) || *c.lossThreshold < 0)))
         throw std::invalid_argument("invalid constant fit configuration");
+}
+inline void validateConstantFitConfig(const ConstantFitConfig& c,const RegressionProblem& problem) {
+    validateConstantFitConfigForLimit(c,problem.limits().maxAbsConstant);
 }
 enum class ConstantFitStop { NoConstants, LossThreshold, InvalidStart, MinimumStep, SweepLimit, ProposalLimit, EvaluationLimit };
 inline const char* constantFitStopName(ConstantFitStop s) {
@@ -201,6 +204,63 @@ struct ConstantFitResult {
     ConstantFitStop stop = ConstantFitStop::SweepLimit;
     std::uint64_t lossAttempts = 0, sweeps = 0, proposals = 0;
 };
+// Shared deterministic reference algorithm. Representation adapters enumerate parameters,
+// read one coefficient and construct one checked replacement. No RNG or publication here.
+namespace genetik_detail {
+template<class Result,class ExpressionValue,class Objective,class Parameters,class Coefficient,class Replace>
+Result fitCoordinates(ExpressionValue expression,Objective& objective,const ConstantFitConfig& config,
+                      const Parameters& parameters,TrainingWork& work,Coefficient coefficient,Replace replace) {
+    countTrainingWork(work.fittingInvocations);
+    Result result{std::move(expression), {}, {}};
+    const auto begin = work.lossAttempts;
+    auto finish = [&](ConstantFitStop stop) {
+        result.stop = stop; result.lossAttempts = work.lossAttempts - begin;
+        return std::move(result);
+    };
+    result.loss = result.startingLoss = objective.measure(result.expression, TrainingLossKind::FittingBaseline).loss;
+    if (result.loss.state() == FitnessState::Invalid) return finish(ConstantFitStop::InvalidStart);
+    auto reached = [&] { return config.lossThreshold && result.loss.score() <= *config.lossThreshold; };
+    if (reached()) return finish(ConstantFitStop::LossThreshold);
+    if (parameters.empty()) return finish(ConstantFitStop::NoConstants);
+    double step = config.initialStep;
+    std::set<std::string> visited{result.expression.toString()}; // bounded by maxProposals+1
+    while (result.sweeps < config.maxSweeps) {
+        ++result.sweeps;
+        bool sweepImproved = false;
+        for (auto parameter : parameters) {
+            const double origin = coefficient(result.expression,parameter);
+            for (double direction : {1., -1.}) {
+                if (result.proposals >= config.maxProposals) return finish(ConstantFitStop::ProposalLimit);
+                ++result.proposals; countTrainingWork(work.proposals);
+                volatile double proposed = origin + direction * step;
+                if (!std::isfinite(proposed) || proposed < config.lower || proposed > config.upper ||
+                    std::abs(proposed) > result.expression.limits().maxAbsConstant) {
+                    countTrainingWork(work.infeasible); continue;
+                }
+                if (proposed == origin) { countTrainingWork(work.duplicates); continue; }
+                auto trial = replace(result.expression,parameter,proposed);
+                if (!visited.insert(trial.toString()).second) { countTrainingWork(work.duplicates); continue; }
+                if (work.lossAttempts - begin >= config.maxLossAttempts) return finish(ConstantFitStop::EvaluationLimit);
+                const auto score = objective.measure(trial, TrainingLossKind::FittingProbe).loss;
+                if (score.state() == FitnessState::Invalid) { countTrainingWork(work.invalid); continue; }
+                if (score.score() < result.loss.score()) {
+                    result.expression.swap(trial); result.loss = score;
+                    if(!result.improved)countTrainingWork(work.fittingImproved);
+                    result.improved = sweepImproved = true; countTrainingWork(work.accepted);
+                    if (reached()) return finish(ConstantFitStop::LossThreshold);
+                }
+            }
+        }
+        if (!sweepImproved) {
+            const double next = step * .5;
+            if (next < config.minimumStep || next == step) return finish(ConstantFitStop::MinimumStep);
+            step = next;
+        }
+    }
+    return finish(ConstantFitStop::SweepLimit);
+}
+}
+
 // Always obtains a fresh baseline: no caller-provided numerical cache can certify a different tree.
 // Each occurrence is independent, traversed in postfix order; each coordinate probes +step then
 // -step relative to its value at coordinate entry. Equal/invalid trials keep the incumbent.
@@ -216,54 +276,9 @@ inline ConstantFitResult fitConstants(const Expression& input, TrainingObjective
         if (value < config.lower || value > config.upper) throw std::invalid_argument("starting constant outside fitting bounds");
         parameters.push_back(i);
     }
-    countTrainingWork(objective.work_.fittingInvocations);
-    ConstantFitResult result{std::move(expression), {}, {}};
-    const auto begin = objective.work_.lossAttempts;
-    auto finish = [&](ConstantFitStop stop) {
-        result.stop = stop; result.lossAttempts = objective.work_.lossAttempts - begin;
-        return std::move(result);
-    };
-    result.loss = result.startingLoss = objective.measure(result.expression, true).loss;
-    if (result.loss.state() == FitnessState::Invalid) return finish(ConstantFitStop::InvalidStart);
-    auto reached = [&] { return config.lossThreshold && result.loss.score() <= *config.lossThreshold; };
-    if (reached()) return finish(ConstantFitStop::LossThreshold);
-    if (parameters.empty()) return finish(ConstantFitStop::NoConstants);
-    double step = config.initialStep;
-    std::set<std::string> visited{result.expression.toString()}; // bounded by maxProposals+1
-    while (result.sweeps < config.maxSweeps) {
-        ++result.sweeps;
-        bool sweepImproved = false;
-        for (auto parameter : parameters) {
-            const double origin = result.expression.nodes()[parameter].constantValue();
-            for (double direction : {1., -1.}) {
-                if (result.proposals >= config.maxProposals) return finish(ConstantFitStop::ProposalLimit);
-                ++result.proposals; countTrainingWork(objective.work_.proposals);
-                volatile double proposed = origin + direction * step;
-                if (!std::isfinite(proposed) || proposed < config.lower || proposed > config.upper ||
-                    std::abs(proposed) > result.expression.limits().maxAbsConstant) {
-                    countTrainingWork(objective.work_.infeasible); continue;
-                }
-                if (proposed == origin) { countTrainingWork(objective.work_.duplicates); continue; }
-                auto trial = result.expression.withConstant(parameter, proposed);
-                if (!visited.insert(trial.toString()).second) { countTrainingWork(objective.work_.duplicates); continue; }
-                if (objective.work_.lossAttempts - begin >= config.maxLossAttempts) return finish(ConstantFitStop::EvaluationLimit);
-                const auto score = objective.measure(trial, TrainingLossKind::FittingProbe).loss;
-                if (score.state() == FitnessState::Invalid) { countTrainingWork(objective.work_.invalid); continue; }
-                if (score.score() < result.loss.score()) {
-                    result.expression.swap(trial); result.loss = score;
-                    if(!result.improved)countTrainingWork(objective.work_.fittingImproved);
-                    result.improved = sweepImproved = true; countTrainingWork(objective.work_.accepted);
-                    if (reached()) return finish(ConstantFitStop::LossThreshold);
-                }
-            }
-        }
-        if (!sweepImproved) {
-            const double next = step * .5;
-            if (next < config.minimumStep || next == step) return finish(ConstantFitStop::MinimumStep);
-            step = next;
-        }
-    }
-    return finish(ConstantFitStop::SweepLimit);
+    return genetik_detail::fitCoordinates<ConstantFitResult>(std::move(expression),objective,config,parameters,objective.work_,
+        [](const Expression& e,std::size_t parameter){return e.nodes()[parameter].constantValue();},
+        [](const Expression& e,std::size_t parameter,double value){return e.withConstant(parameter,value);});
 }
 
 // Shared only for run accounting, never for mutable genomes. No loss cache is reused, including

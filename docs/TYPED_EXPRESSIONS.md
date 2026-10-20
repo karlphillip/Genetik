@@ -135,8 +135,9 @@ No parser, serialization round-trip or algebraic-equivalence claim is made.
 
 Useful plan inspectors: nodeCount, depth, nodeShape, schema, nodes, constantCount,
 constantCoefficients, bindingCoefficients, arithmeticCost, temporaryCoefficients.
-Future typed datasets/loss, typed variation/search/fitting, parsers, scientific
-functions, calculus and matrix-equation discovery remain separate milestones.
+Typed datasets/loss and bounded typed variation/search/fitting are now implemented
+additively in TYPED_REGRESSION.md. Parsers, scientific functions and calculus remain
+future work; this expression value itself retains no problem or fitness.
 
 ## Installed public example
 
@@ -183,8 +184,12 @@ TypedValue reuses Expression.hpp's strict-FP/native-binary64 build diagnostics; 
 existing header includes the new typed API. Value factory limits govern each new
 construction; an expression independently revalidates schema and constant shapes
 under its own limits. There is no retained objective identity, dataset or fitness.
-A resource outcome must not later be mistaken for mathematical invalidity in a
-future typed regression adapter; that adapter and its accounting are not implemented.
+A resource outcome is never mathematical invalidity. The additive Phase 3 adapter
+now maps it to TypedResourceExhausted through failed preparation; see TYPED_REGRESSION.md.
 
 Executed local checks and remaining platform scope are recorded in
 [TYPED_EVALUATION_QUALIFICATION.md](TYPED_EVALUATION_QUALIFICATION.md).
+
+Phase 3 adds an optional evaluateWithWork diagnostic sharing this same interpreter;
+its exclusive counter retains executed primitive counts on thrown calls. The
+original evaluate API and arithmetic traversal are unchanged.

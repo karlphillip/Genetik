@@ -1,0 +1,29 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/tsan
+    Start 14: genetik_concurrency_contracts
+    Test #14: genetik_concurrency_contracts .......   Passed    0.36 sec
+    Start 14: genetik_concurrency_contracts
+    Test #14: genetik_concurrency_contracts .......   Passed    0.49 sec
+    Start 14: genetik_concurrency_contracts
+1/4 Test #14: genetik_concurrency_contracts .......   Passed    0.42 sec
+    Start 15: genetik_oop_parallel
+    Test #15: genetik_oop_parallel ................   Passed    0.02 sec
+    Start 15: genetik_oop_parallel
+    Test #15: genetik_oop_parallel ................   Passed    0.02 sec
+    Start 15: genetik_oop_parallel
+2/4 Test #15: genetik_oop_parallel ................   Passed    0.02 sec
+    Start 18: genetik_typed_overlap
+    Test #18: genetik_typed_overlap ...............   Passed    0.03 sec
+    Start 18: genetik_typed_overlap
+    Test #18: genetik_typed_overlap ...............   Passed    0.03 sec
+    Start 18: genetik_typed_overlap
+3/4 Test #18: genetik_typed_overlap ...............   Passed    0.03 sec
+    Start 20: genetik_typed_preparation_overlap
+    Test #20: genetik_typed_preparation_overlap ...   Passed    0.02 sec
+    Start 20: genetik_typed_preparation_overlap
+    Test #20: genetik_typed_preparation_overlap ...   Passed    0.02 sec
+    Start 20: genetik_typed_preparation_overlap
+4/4 Test #20: genetik_typed_preparation_overlap ...   Passed    0.02 sec
+
+100% tests passed out of 4
+
+Total Test time (real) =   1.51 sec

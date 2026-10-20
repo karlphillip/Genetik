@@ -92,4 +92,109 @@ publication; its outer driver only handles stopping/accounting like scalar searc
 Fresh run/objective required. Result contains exact initial snapshots, committed
 best/history, work/row/arithmetic counters, unpublished work, variation statistics
 and stop reason. Ordinary scoring is fresh even for elites/unchanged clones. Optional
-fitting is added in checkpoint 3. The generic core and scalar driver are unchanged.
+fitting is implemented in checkpoint 3 below. The generic core and scalar driver are unchanged.
+
+## Aggregate coefficients and optional refinement
+
+`TypedConstantFitting.hpp` provides `fitTypedConstants(expression, objective, config)`
+and `withTypedCoefficient(expression, node, coefficient, value)`. Parameters enumerate
+constant nodes in postfix order, then coefficients in vector-index/matrix-row-major
+order. Equal-valued coefficients/occurrences remain independent. A validated owned
+replacement preserves topology/schema/shape. Dataset inputs are never adjustable.
+No parser/format conversion lies between scoring and installation.
+
+Both scalar and typed adapters call the same internal coordinate-search kernel:
+positive then negative probes relative to coordinate-entry value; accept only
+strictly lower finite loss; halve step after a complete unimproved sweep. A fresh
+baseline certifies the exact expression/problem. Bounds/proposals/sweeps/loss calls
+are independently finite. Invalid or worsening probes retain earlier improvements;
+local stops return that matching value/loss, with improvement separate from reason.
+Invalid starts are skipped, no-constant/threshold starts return explicitly, incompatible
+starting bounds are API errors. Coupled zero parameters can stall. There is no
+claim of global optimality or identifiable coefficient recovery for arbitrary trees.
+See CONSTANT_FITTING.md for shared numerical rules.
+
+`TypedSymbolicRegressionConfig::fitting` is optional (default disabled), using
+ConstantFitConfig. `fitEveryGenerations` defaults1, positive; initialization is0,
+then prospective committed multiples are refined, including elites/unchanged clones.
+Other generations score freshly. Failed attempts do not advance that schedule.
+TypedConstantRefinement supplies this trusted preparation boundary and reports the
+same origin/termination/skip categories as scalar refinement. No already-fitted flag
+or numerical cache exists. Fitted constants become the inherited owned genome.
+
+TypedTrainingObjective is run-owned/noncopyable; its work is read-only. Subclasses
+may override compute/cloneForParallel/mergeWorker and must explicitly qualify parallel
+safety. `computeWithLimits` supports resource-controlled evaluation with the same
+accounting. Worker factories must return independent, fresh objective instances with
+identical problem and allowance; only existing synchronized admission is shared.
+Each worker has private counters, candidate, fitting state and invocation scratch.
+The coordinator merges after drain, orders stable slots, handles best-seen/publication
+and owns every RNG draw. No matrix kernel starts workers. Concurrent public engine
+mutation/destruction remains unsupported. External callback side effects cannot be
+rolled back. Operational failures outrank budget/cancellation and preserve their
+nested cause. Resource exceptions are operationally failed preparations, never
+Invalid fitness or NoViableCandidates.
+
+Counters: outer RandomContext candidate calls; TrainingWork actual loss attempts,
+ordinary versus fitting baseline/probe disjoint subsets, attempted rows, fit/proposal/
+accepted/invalid/infeasible/duplicate diagnostics. Fitting work is a subset, never
+added twice. Denied global admission is not a call; throwing/invalid/baseline/probe
+calls count. No fitted score requires an extra verification evaluation. Reporting
+via problem.measure is separate unbudgeted work, never a search-budget bypass.
+`arithmeticOperations` counts expression primitives plus executed checked loss
+subtraction/square/sum and final division. Node-copy/transpose/validation work is
+bounded by dataset/expression storage limits but not arithmetic units. Local plan
+limits do not create a second global primitive-work admission system.
+
+`TypedExpression::evaluateWithWork(bindings, exclusiveCounter, budget)` is an optional
+synchronous diagnostic using the same interpreter as evaluate. It increments before
+each primitive, including work before an allocation/unexpected failure. Invalid domain
+checks have zero primitive charge. Counter overflow is operational. Do not share a
+mutable counter concurrently. Returned per-call counts and objective totals are
+alternative observations, not additive work; no result or binding reference escapes.
+Existing evaluate signature/semantics remain unchanged.
+
+## Public workflow
+
+Complete installed usage: [typed_search.cpp](../examples/quickstarts/typed_search.cpp).
+It uses caller-owned rows, optional fitting/cadence, a finite allowance and real
+run-owned workers. Search completion never depends on recovering a random target.
+
+```cpp
+#include <TypedSymbolicRegression.hpp>
+const std::array schema{TypedShape::vector(2)};
+const std::vector<TypedRegressionRow> rows{
+    {{TypedValue::vector(std::array{1.,2.})}, TypedValue::vector(std::array{2.,4.})}};
+auto p = TypedRegressionProblem::create(schema, TypedShape::vector(2), rows);
+TypedSymbolicRegressionConfig c;
+c.population=8; c.elites=1; c.maxEvaluations=40; c.maxGenerationAttempts=4;
+c.maxTrainingLossAttempts=256; c.fitting=ConstantFitConfig{};
+c.fitting->maxLossAttempts=4;
+RandomContext run(42, ExecutionConfig{2});
+auto result=typedSymbolicRegression(p,c,run);
+// Inspect result.stoppingReason; best may be absent if initialization never commits.
+// If present: best->text(), expression().schemaString(), shape(), evaluation().
+```
+
+Application commands (stdout/files remain under explicit destinations):
+
+```sh
+cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release
+cmake --build out/build/release -j2
+out/build/release/genetik_typed_regression --output out/runs/typed-discovery-new
+out/build/release/genetik_typed_regression --smoke --fit --threads 2 --output out/runs/typed-search-smoke-new
+out/build/release/genetik_typed_regression --fit-fixture --output out/runs/typed-fitting-new
+```
+
+Default discovery uses the frozen no-fit protocol. --fit enables bounded default
+refinement (four calls per fit in --smoke); --threads applies the existing execution
+limit inside each sequential seed run, never across seeds. Fixed-structure fitting
+is synchronous and rejects --threads other than1. It uses no RNG. App parsing/data
+and independent target loops remain outside the library. Typed text input, aggregate
+CSV syntax/parsers, new operations, shared parameters, calculus and numerical backends
+are future scope. The conservative finite witness grammar is a current restriction.
+
+Operation recovery and supplied-structure coefficient recovery are separate evidence:
+[TYPED_DISCOVERY_RESULTS.md](TYPED_DISCOVERY_RESULTS.md),
+[TYPED_FITTING_RESULTS.md](TYPED_FITTING_RESULTS.md). No broader mathematical-equivalence
+claim follows solely from sample metrics.

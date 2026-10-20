@@ -41,3 +41,17 @@ baselines and evaluation scoring. These short individual observations are not a
 performance benchmark. Results predate checkpoint3 aggregate fitting; no-fit search
 remains supported. Reproduce with the command in the protocol, using a fresh output
 directory. Full campaign is not a stochastic correctness gate.
+
+The finite campaign vocabulary contains only matrix[2,3], so enabled MatMul and
+Transpose have no feasible production here (their required/result matrix shapes
+are absent). Add/subtract/scaling/dot remain feasible distractors. The reported
+policy is uniform over feasible productions, not a claim of equal realized weight
+for unreachable kinds. Separate operation-only construction tests cover rectangular
+MatMul and Transpose with appropriate vocabulary. No shapes were added after results.
+The fitted mean-output baseline is vector[2](-0.1875,0.03515625);
+all its parameters come from the64 fitting rows.
+
+In the flat inspection CSVs, columns x0/x1/x2 are the three coordinates of the
+mathematical vector x. The typed expression bindings are instead x0=A, x1=x, x2=b
+as declared by the associated schema. These inspection tables are not a typed input
+file syntax or a claim that the existing scalar CSV reader constructs aggregates.

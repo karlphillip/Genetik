@@ -1,0 +1,7 @@
+unfitted=(matvec(matrix[2,3](1.0,1.0,1.0,1.0,1.0,1.0),x0) + vector[2](1.0,1.0)) initial_mse=5.286458333333333
+frozen_expression=(matvec(matrix[2,3](1.5,(-0.75),0.25,(-0.5),2.0,1.25),x0) + vector[2](0.625,(-1.375))) final_mse=0 improved=1 stop=minimum_step
+constant_occurrences=2 coefficients=8 nodes=5 depth=3
+loss_attempts=617 proposals=624 accepted=16 duplicates=8 rows=16659 primitive_work=300479 seconds=0.0094834900000000007
+range=0 mse=0 max_error=0 invalid_rows=0
+range=1 mse=0 max_error=0 invalid_rows=0
+range=2 mse=0 max_error=0 invalid_rows=0

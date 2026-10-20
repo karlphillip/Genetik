@@ -1,7 +1,7 @@
 #pragma once
 #include "TypedVariation.hpp"
 #include "SymbolicRegression.hpp"
-#include "ConstantFitting.hpp"
+#include "TypedConstantFitting.hpp"
 #include "GeneticAlgorithm.hpp"
 #include "Population.hpp"
 
@@ -12,7 +12,7 @@ struct TypedSymbolicRegressionConfig {
     std::size_t elites = 2;
     float crossoverRate = .9f, mutationRate = .35f;
     TypedGrammar grammar;
-    // Optional aggregate fitting is added at checkpoint 3.
+    std::optional<ConstantFitConfig> fitting; // disabled by default
     std::uint64_t maxTrainingLossAttempts = std::numeric_limits<std::uint64_t>::max();
     double trainingLossThreshold = 0;
     std::uint64_t fitEveryGenerations=1; // positive; generation zero always eligible
@@ -55,7 +55,10 @@ inline TypedSymbolicRegressionResult typedSymbolicRegression(std::shared_ptr<con
     if(random.execution().requested()>1 && !objective->parallelEvaluationSafe())
         throw std::invalid_argument("parallel search requires independent objective factories and no detailed refinement diagnostics");
     if(random.execution().requested()>1)(void)objective->forkParallel(random.execution()); // validate factory before initialization
-    auto preparation = std::make_shared<TypedScoring>(objective);
+    auto preparation = std::make_shared<TypedConstantRefinement>(objective,config.fitting,config.fitEveryGenerations);
+    if(config.fitting)for(double coefficient:config.grammar.constants)
+        if(coefficient<config.fitting->lower || coefficient>config.fitting->upper)
+            throw std::invalid_argument("typed grammar constants outside fitting interval");
     TypedVariation variation(problem, config.grammar, preparation);
     TypedSymbolicRegressionResult result;
     if (config.maxEvaluations < config.population || config.maxTrainingLossAttempts < config.population) {
@@ -95,7 +98,8 @@ inline TypedSymbolicRegressionResult typedSymbolicRegression(std::shared_ptr<con
         result.stoppingReason = budgetFailure(failure)?SearchStop::EvaluationBudget:SearchStop::Cancelled;
         result.candidateEvaluations = random.evaluationAttempts(); result.trainingWork = objective->work(); result.arithmeticOperations=objective->arithmeticOperations();
         result.initialWork=result.trainingWork;
-        result.variation = variation.statistics(); result.rawInitialBestMSE = std::optional<double>{};
+        result.preparationWork=preparation->statistics();
+        result.variation = variation.statistics(); result.rawInitialBestMSE = preparation->rawInitialBest;
         
         result.unpublishedLossAttempts=result.trainingWork.lossAttempts;
         result.unpublishedRowAttempts=result.trainingWork.rowAttempts;
@@ -115,12 +119,12 @@ inline TypedSymbolicRegressionResult typedSymbolicRegression(std::shared_ptr<con
     auto committedLosses=population.generation() ? objective->work().lossAttempts:0;
     auto committedRows=population.generation() ? objective->work().rowAttempts:0;
     auto committedRequests=population.generation() ? random.evaluationAttempts():0;
-    result.rawInitialBestMSE = std::optional<double>{};
+    result.rawInitialBestMSE = preparation->rawInitialBest;
     GeneticAlgorithm<P, TypedExpressionCandidate, TypedVariation> ga(config.crossoverRate, config.mutationRate,
                                                                     random, std::move(variation), config.elites);
     if (population.bestSeen()) {
         result.initialBestMSE = population.bestSeen()->fitness();
-        result.rawInitialBestMSE=result.initialBestMSE;
+
         result.improvements.push_back({objective->work().lossAttempts, 0, *result.initialBestMSE});
     }
     auto previous = population.bestSeen();
@@ -155,6 +159,7 @@ inline TypedSymbolicRegressionResult typedSymbolicRegression(std::shared_ptr<con
     result.best = population.bestSeen(); result.bestGeneration = population.bestGeneration();
     result.attemptedGenerations = ga.attempts(); result.publishedGenerations = ga.evolutions();
     result.trainingWork = objective->work(); result.arithmeticOperations=objective->arithmeticOperations();
+    result.preparationWork=preparation->statistics();
     
     result.unpublishedLossAttempts=result.trainingWork.lossAttempts-committedLosses;
     result.unpublishedRowAttempts=result.trainingWork.rowAttempts-committedRows;

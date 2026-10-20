@@ -1,0 +1,28 @@
+Recorded UTC 2026-10-20T23:23:46.053774+00:00
+
+$ uname -srmp
+Linux 6.8.12-1021-tegra aarch64 aarch64
+
+$ c++ --version
+c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Copyright (C) 2023 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+$ ../.tools/bin/cmake --version
+cmake version 4.4.4
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+
+$ ../delivery-tools/cmake-min/bin/cmake --version
+cmake version 3.16.0
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+
+$ dpkg-query -W -f=${Package} ${Version}
+ gcc-13 libstdc++6 libtsan2 libc6
+gcc-13 13.3.0-6ubuntu2~24.04.1
+libc6 2.39-0ubuntu8.8
+libstdc++6 14.2.0-4ubuntu2~24.04.1
+libtsan2 14.2.0-4ubuntu2~24.04.1

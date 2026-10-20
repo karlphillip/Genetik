@@ -22,6 +22,11 @@ bool typed_check() {
     const std::array bindings{TypedValue::matrix(2,3,std::array{1.,2.,3.,-1.,0.,4.}),
                               TypedValue::vector(std::array{2.,-1.,3.})};
     const auto value=f.evaluate(bindings);
+    auto p=TypedRegressionProblem::create(schema,TypedShape::vector(2),{{{bindings[0],bindings[1]},TypedValue::vector(std::array{9.,10.})}});
+    TypedSymbolicRegressionConfig config;config.population=4;config.elites=1;config.maxGenerationAttempts=2;
+    config.maxEvaluations=12;config.maxTrainingLossAttempts=64;config.fitting=ConstantFitConfig{};config.fitting->maxLossAttempts=4;config.fitEveryGenerations=2;
+    RandomContext random(8,{2});auto result=typedSymbolicRegression(p,config,random);
+    if(!result.best || p->measure(result.best->expression()).loss!=result.best->evaluation())return false;
     return value.valid() && value.value().at(0)==9 && value.value().at(1)==10 &&
         value.arithmeticOperations()==10 && f.schemaString()=="schema{x0:matrix[2,3],x1:vector[3]}";
 }

@@ -1,0 +1,377 @@
+{
+  "total_count": 3,
+  "jobs": [
+    {
+      "id": 118814704432,
+      "run_id": 39476788744,
+      "workflow_name": "C++ contracts and installed package",
+      "head_branch": "qualification/hosted-0.1.0",
+      "run_url": "https://api.github.com/repos/karlphillip/Genetik/actions/runs/39476788744",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOFBNKtc8AAAAbqeiDMA",
+      "head_sha": "4fff1180a6b8b68f851887827593edce00eb49f6",
+      "url": "https://api.github.com/repos/karlphillip/Genetik/actions/jobs/118814704432",
+      "html_url": "https://github.com/karlphillip/Genetik/actions/runs/39476788744/job/118814704432",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-10-20T18:40:20Z",
+      "started_at": "2026-10-20T18:40:25Z",
+      "completed_at": "2026-10-20T18:42:59Z",
+      "name": "gcc13-arm64",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-20T18:40:26Z",
+          "completed_at": "2026-10-20T18:40:27Z"
+        },
+        {
+          "name": "Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-20T18:40:27Z",
+          "completed_at": "2026-10-20T18:40:28Z"
+        },
+        {
+          "name": "Select the declared minimum CMake",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3,
+          "started_at": "2026-10-20T18:40:28Z",
+          "completed_at": "2026-10-20T18:40:28Z"
+        },
+        {
+          "name": "Record qualified environment and verify compiler choice",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-20T18:40:28Z",
+          "completed_at": "2026-10-20T18:40:29Z"
+        },
+        {
+          "name": "Configure",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-20T18:40:29Z",
+          "completed_at": "2026-10-20T18:40:30Z"
+        },
+        {
+          "name": "Compile contracts, standalone headers, and quickstarts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-20T18:40:30Z",
+          "completed_at": "2026-10-20T18:41:56Z"
+        },
+        {
+          "name": "Verify the portable test manifest",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-20T18:41:56Z",
+          "completed_at": "2026-10-20T18:41:56Z"
+        },
+        {
+          "name": "Run bounded contracts, installed relocation, and public workflows",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-20T18:41:56Z",
+          "completed_at": "2026-10-20T18:42:46Z"
+        },
+        {
+          "name": "Separate ThreadSanitizer concurrency qualification",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-20T18:42:46Z",
+          "completed_at": "2026-10-20T18:42:56Z"
+        },
+        {
+          "name": "Retain failure diagnostics",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 10,
+          "started_at": "2026-10-20T18:42:56Z",
+          "completed_at": "2026-10-20T18:42:56Z"
+        },
+        {
+          "name": "Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-20T18:42:56Z",
+          "completed_at": "2026-10-20T18:42:56Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-20T18:42:56Z",
+          "completed_at": "2026-10-20T18:42:56Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/karlphillip/Genetik/check-runs/118814704432",
+      "labels": [
+        "ubuntu-24.04-arm"
+      ],
+      "runner_id": 1000000007,
+      "runner_name": "GitHub Actions 1000000007",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 118814704768,
+      "run_id": 39476788744,
+      "workflow_name": "C++ contracts and installed package",
+      "head_branch": "qualification/hosted-0.1.0",
+      "run_url": "https://api.github.com/repos/karlphillip/Genetik/actions/runs/39476788744",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOFBNKtc8AAAAbqeiEgA",
+      "head_sha": "4fff1180a6b8b68f851887827593edce00eb49f6",
+      "url": "https://api.github.com/repos/karlphillip/Genetik/actions/jobs/118814704768",
+      "html_url": "https://github.com/karlphillip/Genetik/actions/runs/39476788744/job/118814704768",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-10-20T18:40:20Z",
+      "started_at": "2026-10-20T18:40:23Z",
+      "completed_at": "2026-10-20T18:47:42Z",
+      "name": "gcc13-x64-minimum",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-20T18:40:24Z",
+          "completed_at": "2026-10-20T18:40:25Z"
+        },
+        {
+          "name": "Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-20T18:40:25Z",
+          "completed_at": "2026-10-20T18:40:26Z"
+        },
+        {
+          "name": "Select the declared minimum CMake",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-20T18:40:26Z",
+          "completed_at": "2026-10-20T18:45:33Z"
+        },
+        {
+          "name": "Record qualified environment and verify compiler choice",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-20T18:45:33Z",
+          "completed_at": "2026-10-20T18:45:33Z"
+        },
+        {
+          "name": "Configure",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-20T18:45:33Z",
+          "completed_at": "2026-10-20T18:45:34Z"
+        },
+        {
+          "name": "Compile contracts, standalone headers, and quickstarts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-20T18:45:34Z",
+          "completed_at": "2026-10-20T18:46:57Z"
+        },
+        {
+          "name": "Verify the portable test manifest",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-20T18:46:57Z",
+          "completed_at": "2026-10-20T18:46:57Z"
+        },
+        {
+          "name": "Run bounded contracts, installed relocation, and public workflows",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-20T18:46:57Z",
+          "completed_at": "2026-10-20T18:47:39Z"
+        },
+        {
+          "name": "Separate ThreadSanitizer concurrency qualification",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9,
+          "started_at": "2026-10-20T18:47:39Z",
+          "completed_at": "2026-10-20T18:47:39Z"
+        },
+        {
+          "name": "Retain failure diagnostics",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 10,
+          "started_at": "2026-10-20T18:47:39Z",
+          "completed_at": "2026-10-20T18:47:39Z"
+        },
+        {
+          "name": "Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-20T18:47:39Z",
+          "completed_at": "2026-10-20T18:47:39Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-20T18:47:39Z",
+          "completed_at": "2026-10-20T18:47:39Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/karlphillip/Genetik/check-runs/118814704768",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000000008,
+      "runner_name": "GitHub Actions 1000000008",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 118814704772,
+      "run_id": 39476788744,
+      "workflow_name": "C++ contracts and installed package",
+      "head_branch": "qualification/hosted-0.1.0",
+      "run_url": "https://api.github.com/repos/karlphillip/Genetik/actions/runs/39476788744",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOFBNKtc8AAAAbqeiEhA",
+      "head_sha": "4fff1180a6b8b68f851887827593edce00eb49f6",
+      "url": "https://api.github.com/repos/karlphillip/Genetik/actions/jobs/118814704772",
+      "html_url": "https://github.com/karlphillip/Genetik/actions/runs/39476788744/job/118814704772",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-10-20T18:40:20Z",
+      "started_at": "2026-10-20T18:40:23Z",
+      "completed_at": "2026-10-20T18:40:37Z",
+      "name": "clang18-x64-sanitizers",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-20T18:40:24Z",
+          "completed_at": "2026-10-20T18:40:25Z"
+        },
+        {
+          "name": "Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-20T18:40:25Z",
+          "completed_at": "2026-10-20T18:40:26Z"
+        },
+        {
+          "name": "Select the declared minimum CMake",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3,
+          "started_at": "2026-10-20T18:40:26Z",
+          "completed_at": "2026-10-20T18:40:26Z"
+        },
+        {
+          "name": "Record qualified environment and verify compiler choice",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-20T18:40:26Z",
+          "completed_at": "2026-10-20T18:40:28Z"
+        },
+        {
+          "name": "Configure",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-20T18:40:28Z",
+          "completed_at": "2026-10-20T18:40:30Z"
+        },
+        {
+          "name": "Compile contracts, standalone headers, and quickstarts",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 6,
+          "started_at": "2026-10-20T18:40:30Z",
+          "completed_at": "2026-10-20T18:40:35Z"
+        },
+        {
+          "name": "Verify the portable test manifest",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 7,
+          "started_at": "2026-10-20T18:40:35Z",
+          "completed_at": "2026-10-20T18:40:35Z"
+        },
+        {
+          "name": "Run bounded contracts, installed relocation, and public workflows",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8,
+          "started_at": "2026-10-20T18:40:35Z",
+          "completed_at": "2026-10-20T18:40:35Z"
+        },
+        {
+          "name": "Separate ThreadSanitizer concurrency qualification",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9,
+          "started_at": "2026-10-20T18:40:35Z",
+          "completed_at": "2026-10-20T18:40:35Z"
+        },
+        {
+          "name": "Retain failure diagnostics",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 10,
+          "started_at": "2026-10-20T18:40:35Z",
+          "completed_at": "2026-10-20T18:40:35Z"
+        },
+        {
+          "name": "Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20,
+          "started_at": "2026-10-20T18:40:35Z",
+          "completed_at": "2026-10-20T18:40:35Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-10-20T18:40:35Z",
+          "completed_at": "2026-10-20T18:40:35Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/karlphillip/Genetik/check-runs/118814704772",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000000009,
+      "runner_name": "GitHub Actions 1000000009",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}

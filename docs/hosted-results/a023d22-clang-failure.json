@@ -1,0 +1,26 @@
+[
+  {
+    "path": ".github",
+    "blob_href": "https://github.com/karlphillip/Genetik/blob/a023d22f137fc6ae0ffc5ae20cb387e15d63519a/.github",
+    "start_line": 53,
+    "start_column": null,
+    "end_line": 53,
+    "end_column": null,
+    "annotation_level": "failure",
+    "title": "",
+    "message": "Process completed with exit code 2.",
+    "raw_details": ""
+  },
+  {
+    "path": ".github",
+    "blob_href": "https://github.com/karlphillip/Genetik/blob/a023d22f137fc6ae0ffc5ae20cb387e15d63519a/.github",
+    "start_line": 30,
+    "start_column": null,
+    "end_line": 30,
+    "end_column": null,
+    "annotation_level": "failure",
+    "title": "Compilation diagnostics",
+    "message": "[  1%] Building CXX object CMakeFiles/genetik_symbolic_quickstart.dir/examples/quickstarts/symbolic.cpp.o\n[  2%] Building CXX object CMakeFiles/genetik_scalar_quickstart.dir/examples/quickstarts/scalar.cpp.o\nIn file included from /home/runner/work/Genetik/Genetik/examples/quickstarts/scalar.cpp:1:\n/home/runner/work/Genetik/Genetik/genetik/Creature_i.hpp:40:9: error: ignoring return value of function declared with 'nodiscard' attribute [-Werror,-Wunused-result]\n   40 |         chromosome_.at(pos); // a rejected edit does not change genome or validity\n      |         ^~~~~~~~~~~~~~ ~~~\n/home/runner/work/Genetik/Genetik/genetik/Creature_i.hpp:36:13: note: in instantiation of member function 'Creature_i<double>::setGene' requested here\n   36 |     virtual ~Creature_i() = default;\n      |             ^\n/home/runner/work/Genetik/Genetik/genetik/Creature_i.hpp:45:9: error: ignoring return value of function declared with 'nodiscard' attribute [-Werror,-Wunused-result]\n   45 |         chromosome_.at(pos);\n      |         ^~~~~~~~~~~~~~ ~~~\n/home/runner/work/Genetik/Genetik/genetik/Creature_i.hpp:36:13: note: in instantiation of member function 'Creature_i<double>::mutateGene' requested here\n   36 |     virtual ~Creature_i() = default;\n      |             ^\n2 errors generated.\ngmake[2]: *** [CMakeFiles/genetik_scalar_quickstart.dir/build.make:79: CMakeFiles/genetik_scalar_quickstart.dir/examples/quickstarts/scalar.cpp.o] Error 1\ngmake[1]: *** [CMakeFiles/Makefile2:1191: CMakeFiles/genetik_scalar_quickstart.dir/all] Error 2\ngmake[1]: *** Waiting for unfinished jobs....\n[  4%] Linking CXX executable genetik_symbolic_quickstart\n[  4%] Built target genetik_symbolic_quickstart\ngmake: *** [Makefile:146: all] Error 2\n",
+    "raw_details": ""
+  }
+]

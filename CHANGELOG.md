@@ -50,3 +50,8 @@ This packaging milestone itself changes no evaluator, RNG or search algorithm.
   failure boundaries have separately documented speculative-work semantics.
 - Threads::Threads is now a transitive package dependency. Added a private, separate
   TSan development path; the package remains header-only and 0.1.0 unreleased.
+
+- Hosted GCC13 x64/minimum-CMake, Clang18 x64/ASan+UBSan and GCC13 ARM64/TSan
+  qualification executed. Explicit scalar bounds-check discards fix Clang Werror
+  without changing source API or numerical semantics. Artifact staging and bounded
+  public diagnostics retain concrete failure evidence; see HOSTED_QUALIFICATION.md.

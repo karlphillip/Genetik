@@ -25,20 +25,20 @@ qualification on arbitrary architectures. Compiler/runtime qualification is sepa
 | --- | --- |
 | Jetson ARM64 Linux, GCC/libstdc++ 13.3.0, glibc/libm 2.39; Release, Debug, ASan+UBSan | Locally verified; delivery results in DELIVERY.md. |
 | CMake 3.16.0 and 4.4.4 on the Jetson | Locally exercised minimum and current tool; install/relocation/consumption. |
-| Ubuntu 24.04 x86-64 GCC 13 Release, CMake 3.16.0 | Configured for CI; hosted execution pending. |
-| Ubuntu 24.04 x86-64 Clang 18 GNU frontend + libstdc++, Debug ASan+UBSan | Configured for CI; hosted execution pending. |
-| Native Ubuntu 24.04 ARM64 GCC 13 Release | Configured for CI; hosted execution pending (Jetson tests are not a hosted-run claim). |
+| Ubuntu 24.04 x86-64 GCC 13 Release, CMake 3.16.0 | Hosted verified; see HOSTED_QUALIFICATION.md for exact SHA, jobs and runtimes. |
+| Ubuntu 24.04 x86-64 Clang 18 GNU frontend + libstdc++, Debug ASan+UBSan | Hosted verified; see HOSTED_QUALIFICATION.md for exact SHA, jobs and runtimes. |
+| Native Ubuntu 24.04 ARM64 GCC 13 Release | Hosted verified, including separate TSan; see HOSTED_QUALIFICATION.md. |
 | Windows/MSVC, clang-cl, AppleClang/macOS, libc++, other compilers/runtimes | Unqualified. Flag-selection logic alone does not qualify them. |
 
 CMake 3.16 remains the minimum; a workspace tool at 4.4.4 does not establish a new
 minimum. No CMake requirement was raised. Local minimum tooling was built from the
 checksum-verified official 3.16.0 source, with OpenSSL disabled (only a build-tool
-choice, not a Genetik library requirement). GCC 13 is the available local compiler;
-Clang 18 and x86-64 jobs have not run locally or on hosted CI in this milestone.
+choice, not a Genetik library requirement). GCC 13 is the available local compiler. Clang 18 and x86-64 were pending at the
+original delivery milestone; the subsequent hosted qualification is recorded below.
 
 Same-seed repeatability is scoped to the **exact library revision/version**, compiler,
 standard library, runtime math library/FP environment, input/order, configuration
-and serial execution mode. A compiler/libm update can change logarithm rounding,
+and execution mode/concurrency and callback qualification (see CONCURRENCY.md). A compiler/libm update can change logarithm rounding,
 scores, tie ordering and trajectories. Do not compare different builds as if a seed
 were a portable model identifier. CI uses portable domain/math tolerances and
 within-build deterministic checks. The captured evaluation-results bit reference
@@ -68,7 +68,9 @@ bounded jobs and no required stochastic campaigns. Runner labels/tool availabili
 were checked against [GitHub runner documentation](https://docs.github.com/en/actions/reference/runners/github-hosted-runners),
 [Ubuntu x64 image](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md)
 and [ARM64 image](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Arm64-Readme.md).
-The checked-in workflow is configuration, not evidence of a passing hosted matrix.
+The initial checked-in workflow was configuration only. Executed hosted evidence
+is now recorded in HOSTED_QUALIFICATION.md; workflow authorship alone still does
+not qualify any additional combination.
 
 ## CPU execution qualification update
 
@@ -76,8 +78,8 @@ Opt-in generic worker execution and private built-in refinement are locally test
 with GCC 13.3.0/release-13 standard headers, installed libstdc++6/libtsan2 packages
 14.2.0-4ubuntu2~24.04.1 and libc6 2.39-0ubuntu8.8 on the Jetson. Separate TSan
 forced-overlap/OOP tests pass ten repetitions each; ASan+UBSan remains a separate
-build. See CONCURRENCY_RESULTS.md for exact evidence and limitations. Hosted jobs,
-including the configured ARM64 TSan step, have not executed. Parallel safety of
+build. See CONCURRENCY_RESULTS.md for exact evidence and limitations. At that local checkpoint, hosted jobs (including ARM64 TSan) had not executed.
+The subsequent hosted results below supersede that pending status. Parallel safety of
 arbitrary callbacks is not inferred from constness or from this local qualification.
 
 ## Hosted qualification preparation
@@ -89,7 +91,24 @@ asserted on hosted runners. A focused new contract verifies that requesting deta
 refinement diagnostics together with parallel execution fails clearly before work,
 without changing the requested execution mode; serial diagnostics remain supported.
 See DELIVERY.md and the local ignored out/hosted-preflight/PREFLIGHT.md for upload
-scope, verification and authorization status. This preparation does not change any
-support-table entry to hosted-verified; jobs have not yet executed. The recorded
+scope, verification and authorization status. That preparation alone did not qualify hosted support; actual execution now
+supports the updated table above. The recorded
 approximately fourfold prime-refinement result remains a Jetson fixed-work/reused-
 pool observation, not a hosted performance claim or general scaling guarantee.
+
+
+## Executed hosted qualification
+
+[HOSTED_QUALIFICATION.md](HOSTED_QUALIFICATION.md) records successful workflow
+39477303495 at `23914b8502dfe4665bf65a2a6e7fa94c8d8e3654`: GCC13 x64 Release with
+exact CMake/CTest 3.16.0; Clang18 x64 Debug ASan+UBSan with **libstdc++14 headers**;
+and native GCC13 ARM64 Release plus separate Debug TSan. Each passes 24/24 portable
+cases; TSan passes its two overlap/OOP cases. All include installed/relocated
+multi-TU and generic/symbolic/OOP consumption. The sole local-suite exclusion is
+the captured Jetson numerical snapshot, not arithmetic/domain or concurrency tests.
+
+Runner images, exact header/runtime packages, job links, original failures and
+repairs are retained in that record. These are selected tested combinations, not
+all compiler/CMake/OS permutations. libc++/Windows/Apple platforms remain unqualified.
+The final documentation-only tip is also submitted to fresh CI before completion.
+0.1.0 remains unreleased; no default-branch or release action was performed.

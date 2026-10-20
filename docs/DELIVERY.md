@@ -1,5 +1,8 @@
 # Installable development-package qualification
 
+Current hosted results: [HOSTED_QUALIFICATION.md](HOSTED_QUALIFICATION.md). The
+original packaging and preflight sections below are historical checkpoint records.
+
 Starting point: clean accepted workspace milestone
 `d7b6352ee30f6283cd07cba25847b4e8f49511aa`. No unrelated edits or local release
 tags were present. The existing project version was 0.1.0; it remains the single
@@ -219,3 +222,21 @@ Preflight checks executed locally on the existing qualified Jetson/GCC13 runtime
 These are local preparation results, not hosted qualification. Generated raw logs,
 remote refs, full upload commit inventory and exact candidate are retained under
 out/hosted-preflight/. No research campaign or runtime benchmark was repeated.
+
+
+## Authorized hosted execution
+
+The user approved the complete preflight upload range and targeted fixes on
+qualification/hosted-0.1.0. The SSH-authenticated development-branch push triggered
+real jobs. Workflow [39477303495](https://github.com/karlphillip/Genetik/actions/runs/39477303495)
+passed all three jobs for `23914b8502dfe4665bf65a2a6e7fa94c8d8e3654`, including
+minimum CMake, ASan+UBSan, separate ARM64 TSan, installed/relocated multi-TU consumers
+and external OOP/symbolic paths. See HOSTED_QUALIFICATION.md for exact runtime/job
+records and the mapping from local 25 cases to hosted 24 plus two TSan executions.
+Concrete repairs were explicit scalar bounds-check result discards for Clang Werror
+and supported artifact staging/bounded diagnostic reporting; no arithmetic or
+execution policy was changed. Original failures remain recorded.
+
+The final documentation-only candidate receives a fresh push-triggered matrix;
+completion reports its exact tip SHA and run. No default-branch update, history
+rewrite, tag or release publication occurred. Version remains 0.1.0 unreleased.

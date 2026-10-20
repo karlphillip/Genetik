@@ -141,4 +141,5 @@ installed consumers need no manual thread flags. Public engine access remains
 single-coordinator; only the documented stop controls are concurrently callable.
 
 Local concurrency [qualification and fixed-work measurements](docs/CONCURRENCY_RESULTS.md)
-include exact serial replays and separate ThreadSanitizer execution. Hosted CI is pending.
+include exact serial replays and separate ThreadSanitizer execution. Hosted GCC13 x64/minimum-CMake, Clang18 x64/ASan+UBSan and GCC13 ARM64/TSan
+[qualification has executed](docs/HOSTED_QUALIFICATION.md); version 0.1.0 remains unreleased.

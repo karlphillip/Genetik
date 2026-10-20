@@ -184,5 +184,6 @@ before loading exports. Consumers add no manual thread flags. C++20/strict-FP
 requirements, private development flags, casing/include layout and CMake >=3.16
 remain unchanged. TSan uses a separate development build with
 -DGENETIK_THREAD_SANITIZER=ON; combining it with GENETIK_SANITIZERS is rejected.
-Hosted workflows are configured for concurrent checks plus a separate ARM64 TSan
-step; they are not evidence of successful hosted qualification.
+Hosted concurrent checks and the separate ARM64 TSan step have now executed
+successfully for the combinations/revision in HOSTED_QUALIFICATION.md. That record
+distinguishes actual support from untested compilers/platforms and arbitrary callbacks.

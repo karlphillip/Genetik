@@ -8,7 +8,7 @@ Current delivery order:
 2. Strict ordinary division/natural logarithm throughout typed construction, evaluation, variation, limits, export and domain tests — complete; the first prime regression campaign is also complete.
 3. Prime regression as an example of generic indexed-sequence regression — first campaign complete, including all weak results and baselines.
 4. Refinement profiling and optional cadence — complete; keep interval 1 default, preserve mixed twenty-run results. Checked evaluator workspace profiling/reuse is complete.
-5. Local install/export/relocation, compiled quickstarts and version/support policy are complete. A three-job CI matrix is configured; hosted execution/qualification is pending. Checkpoint/resume and acceleration remain separately scoped.
+5. Local install/export/relocation, compiled quickstarts and version/support policy are complete. The three-job hosted matrix has executed successfully; see HOSTED_QUALIFICATION.md for exact supported combinations and candidate. Development-release review remains next. Checkpoint/resume and acceleration remain separately scoped.
 
 ## 1. Baseline, C++20 and first hardening — complete
 
@@ -102,9 +102,9 @@ invalidity or rejected structure. Reserve a new later range for future informed
 extrapolation assessment. Keep production delivery below on the roadmap; no GPU work
 before representative CPU profiling.
 
-## 6. Library delivery — implemented locally; hosted qualification pending
+## 6. Library delivery — local and selected hosted qualification complete
 
-Implemented the header-only Genetik package and canonical Genetik::Genetik source/installed target, retained source genetik_lib, GNUInstallDirs metadata, relative install includes, consumer frontend/language strict-FP requirements and private development flags. Ordinary and relocated multi-TU consumers/quickstarts pass after disposable producer removal. Version 0.1.0 remains unreleased; SameMinorVersion/ARCH_INDEPENDENT behavior and required-component rejection are tested. Exact minimum CMake 3.16.0 and current 4.4.4 pass locally with GCC13. API/support/release guides and a pinned three-job workflow are present. No hosted CI has run; do not label Clang/x86 or hosted ARM jobs verified. See DELIVERY.md, PACKAGING.md and SUPPORT.md.
+Implemented the header-only Genetik package and canonical Genetik::Genetik source/installed target, retained source genetik_lib, GNUInstallDirs metadata, relative install includes, consumer frontend/language strict-FP requirements and private development flags. Ordinary and relocated multi-TU consumers/quickstarts pass after disposable producer removal. Version 0.1.0 remains unreleased; SameMinorVersion/ARCH_INDEPENDENT behavior and required-component rejection are tested. Exact minimum CMake 3.16.0 and current 4.4.4 pass locally with GCC13. API/support/release guides and a pinned three-job workflow are present. The subsequent hosted matrix has now verified selected Clang/x86 and GCC/x86/ARM combinations; see HOSTED_QUALIFICATION.md. Do not extend that claim to untested combinations. See DELIVERY.md, PACKAGING.md and SUPPORT.md.
 
 Checkpoint/resume remains a separate subsequent task. Specify serialization of engine state (not only original seed), population, objective/cache state, work counters, configuration and archive. Test interrupted/resumed equivalence under declared supported conditions. Add useful cancellation and result persistence before promising resumability.
 
@@ -201,6 +201,14 @@ Private candidate/refiner factories, checked shared loss admission, stable colle
 cooperative batch cancellation and drain/error precedence are implemented. Historical
 serial-only statements above describe the OOP checkpoint. See CONCURRENCY.md and
 CONCURRENCY_RESULTS.md for API, local tests/TSan, throughput and limitations.
-Next: execute hosted compiler/platform qualification and release-readiness checks,
+Next: review the first development release using executed hosted qualification,
 then prioritize measured remaining costs; caching, stronger optimizers, expression
 compilation, checkpoint/resume and GPU execution remain separate decisions.
+
+
+Hosted qualification now has actual passing jobs for the repaired implementation,
+including minimum CMake, isolated installed consumers and separate TSan. See
+HOSTED_QUALIFICATION.md for failure repairs, exact environments and test accounting.
+Proceed to development-release review and broader supported-platform qualification;
+no tag/publication is implied. Preserve recorded benchmark scope and keep caching,
+new optimizers, rewriting, compilation and GPU execution separately scoped.

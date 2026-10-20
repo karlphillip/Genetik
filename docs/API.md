@@ -1,14 +1,16 @@
 # Public API guide
 
-Start with the complete, compiled [scalar quickstart](../examples/quickstarts/scalar.cpp)
-and [symbolic quickstart](../examples/quickstarts/symbolic.cpp). Link Genetik::Genetik through
+Start with the compiled [scalar quickstart](../examples/quickstarts/scalar.cpp),
+application-owned [permutation consumer](../tests/oop_consumer/main.cpp), or
+[symbolic quickstart](../examples/quickstarts/symbolic.cpp). Link Genetik::Genetik through
 [installed or source inclusion](PACKAGING.md); all headers are self-contained.
 Class names remain in their existing global namespace in 0.1; the CMake namespace
 is not a C++ namespace migration.
 
 | Area | Public entry points | Contract guide |
 | --- | --- | --- |
-| Randomness | RandomContext(seed), engine(), evaluationAttempts() | [Baseline/migration](BASELINE.md) |
+| Randomness | RandomContext(seed), engine(), evaluationAttempts() | [Migration](MIGRATION.md) |
+| Execution | ExecutionConfig, ExecutionContext, --threads N | [Concurrency](CONCURRENCY.md) |
 | Scalar candidates | Creature_i<T>, controlled gene edits; Creature<char> demo | [Quickstart](../examples/quickstarts/scalar.cpp) |
 | Evolution | Population, GeneticAlgorithm, GenerationOutcome | [Shared-engine contracts](SYMBOLIC_REGRESSION.md) |
 | Fitness | Fitness, FitnessState, ObjectiveDirection | [Validity/publication](BASELINE.md) |
@@ -40,7 +42,10 @@ API errors (shape/configuration) throw; unexpected failures propagate with neste
 context and original cause. A failed attempted generation preserves committed
 population/genomes/fitness/generation/best while consumed RNG/work stays consumed.
 No implicit retry or regeneration occurs; inspect GenerationOutcome/SearchStop.
-There is no general cancellation, observer or checkpoint/resume API yet.
+ExecutionContext::requestStop() provides cooperative cancellation of an active
+preparation batch; it does not interrupt blocking callbacks or provide a sticky
+engine-wide token. There is no general observer or checkpoint/resume framework.
+See [the execution contract](CONCURRENCY.md).
 
 Regression binds x0..x[d-1] to caller input-vector order and returns one scalar.
 Rows must have consistent dimensions and finite values/targets; zero-input constant

@@ -1,16 +1,26 @@
 # Genetik
 
-Genetik is a header-only C++20 genetic algorithm library with a reusable symbolic
-regression module. Use application-owned candidates through public OOP extension points, ordinary
-scalar genomes, or evolve bounded mathematical
-expression trees against your own multi-input, single-output numerical rows.
+Genetik is a general-purpose, header-only C++20 genetic algorithm library with
+public OOP extension points. Applications own their candidates and customize
+initialization, fitness, optional preparation/refinement, selection, crossover and
+mutation through the supported [OOP and variation interfaces](docs/ARCHITECTURE.md).
+Use scalar genomes or your own representation, such as a permutation.
+
+Symbolic regression is a reusable specialization of that same engine: evolve
+bounded expressions against ordinary multi-input, single-output numerical rows.
+It is heuristic search, with no guarantee of a good fit, a particular equation or
+extrapolation accuracy. Prime regression is one application example.
 
 The library uses only the C++ standard library and is [MIT licensed](LICENSE),
-copyright Karl Phillip (2021). Version **0.1.0 is an unreleased development version**.
+copyright Karl Phillip (2021). Package version **0.1.0** is planned as a development
+pre-release. It remains
+**unreleased during this review**; [release proposal](docs/RELEASE_PROPOSAL.md) and
+[release availability](https://github.com/karlphillip/Genetik/releases) are separate
+from successful CI.
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
 
-## Two compiled quickstarts
+## Start here
 
 - [Complete scalar-genome program](examples/quickstarts/scalar.cpp): a custom real-valued
   candidate minimizes squared error, shares an explicit `RandomContext(42)` with
@@ -20,17 +30,29 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   loss-call budget and four-generation ceiling bound the search. It prints the
   stopping outcome and faithful expression. Exact discovery is not required for
   either program to finish successfully.
+- [Application-owned permutation consumer](tests/oop_consumer/main.cpp): a non-scalar
+  scheduling genome with custom fitness and virtual selection/variation, no symbolic
+  headers, and deterministic correctness checks independent of discovering an optimum.
 
-Build and run these exact files through an installed package:
+Obtain the current review branch (the default branch has not yet been integrated):
 
 ```sh
-cmake -S . -B ../genetik-library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/../genetik-prefix"
-cmake --build ../genetik-library
-cmake --install ../genetik-library
-cmake -S examples/quickstarts -B ../genetik-quickstarts -DCMAKE_PREFIX_PATH="$PWD/../genetik-prefix"
-cmake --build ../genetik-quickstarts -j2
-../genetik-quickstarts/scalar_quickstart
-../genetik-quickstarts/symbolic_quickstart
+git clone --branch qualification/hosted-0.1.0 https://github.com/karlphillip/Genetik.git Genetik
+cd Genetik
+```
+
+After approval, `v0.1.0` is the proposed tag; it does not exist during preparation.
+Alternatively extract the proposed source archive and enter `Genetik-0.1.0/`.
+From either source root, install and build these exact programs:
+
+```sh
+cmake -S . -B out/library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/out/prefix"
+cmake --build out/library
+cmake --install out/library
+cmake -S examples/quickstarts -B out/quickstarts -DCMAKE_PREFIX_PATH="$PWD/out/prefix"
+cmake --build out/quickstarts -j2
+out/quickstarts/scalar_quickstart
+out/quickstarts/symbolic_quickstart
 ```
 
 The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a complete external
@@ -83,6 +105,15 @@ with unsafe math flags. Default IEEE rounding, gradual underflow, nontrapping
 arithmetic and the qualified runtime math library are part of the numerical
 contract. [Support and repeatability policy](docs/SUPPORT.md).
 
+## Documentation
+
+- [API/contract index](docs/API.md) and [OOP extensions](docs/ARCHITECTURE.md).
+- [Migration from the original interfaces](docs/MIGRATION.md).
+- [Installation/package requirements](docs/PACKAGING.md).
+- [Concurrency and callback qualification](docs/CONCURRENCY.md).
+- [Support/version policy](docs/SUPPORT.md) and [executed hosted qualification](docs/HOSTED_QUALIFICATION.md).
+- [Proposed 0.1.0 release notes](docs/releases/0.1.0/NOTES.md) and [integration/publication proposal](docs/RELEASE_PROPOSAL.md).
+
 ## API and examples
 
 Start at the [public API guide](docs/API.md). Detailed contracts cover explicit
@@ -115,9 +146,9 @@ application-owned representation, virtual fitness/selection/variation and the sh
 publication lifecycle without symbolic headers. [Architecture and extension contracts](docs/ARCHITECTURE.md).
 
 ```sh
-cmake -S tests/oop_consumer -B ../oop-consumer -DCMAKE_PREFIX_PATH="$PWD/../genetik-prefix"
-cmake --build ../oop-consumer -j2
-../oop-consumer/permutation_consumer
+cmake -S tests/oop_consumer -B out/oop-consumer -DCMAKE_PREFIX_PATH="$PWD/out/prefix"
+cmake --build out/oop-consumer -j2
+out/oop-consumer/permutation_consumer
 ```
 
 Demos live in examples/, numerical file search in apps/, performance harnesses in
@@ -132,8 +163,8 @@ supported. [Ownership, budgets, cancellation and repeatability](docs/CONCURRENCY
 
 ```sh
 ../build-release/genetik_demo 42 20 --threads 4
-../genetik-quickstarts/symbolic_quickstart --threads 4
-../oop-consumer/permutation_consumer --threads 3
+out/quickstarts/symbolic_quickstart --threads 4
+out/oop-consumer/permutation_consumer --threads 3
 ```
 
 Genetik::Genetik supplies platform threading requirements through Threads::Threads;

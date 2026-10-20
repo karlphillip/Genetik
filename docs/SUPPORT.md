@@ -10,7 +10,7 @@ Before 1.0, a minor change (0.1 to 0.2) may introduce documented public source A
 incompatibilities. Patches within a minor series preserve the documented public
 source API while correcting defects. Numerical or seeded-trajectory changes must
 receive explicit release notes, including defect fixes in patches. CMake uses
-SameMinorVersion: installed 0.1.x accepts an equal/older request in the 0.1 series,
+SameMinorVersion (ordinary version requests, without EXACT): installed 0.1.x accepts an equal/older request in the 0.1 series,
 not requests from 0.0 or 0.2 and not newer unavailable patches. EXACT requests must
 match exactly. Header-only delivery does not provide a stable binary ABI; recompile
 all dependent translation units consistently when changing headers/options.
@@ -112,3 +112,18 @@ repairs are retained in that record. These are selected tested combinations, not
 all compiler/CMake/OS permutations. libc++/Windows/Apple platforms remain unqualified.
 The final documentation-only tip is also submitted to fresh CI before completion.
 0.1.0 remains unreleased; no default-branch or release action was performed.
+
+
+## First development-release proposal
+
+See [RELEASE_PROPOSAL.md](RELEASE_PROPOSAL.md) and the proposed
+[0.1.0 notes](releases/0.1.0/NOTES.md). Version 0.1.0 remains unreleased during
+preparation; no tag or GitHub release is created by this review task. The proposed
+release is explicitly a GitHub **pre-release**, with a source archive and checksum.
+
+Patch compatibility means documented public **source API** compatibility, not
+identical numerical results or seeded trajectories. Compatible defect fixes may
+change those results and require explicit notes. Breaking public API changes require
+a new minor series before 1.0, matching SameMinorVersion's refusal to match another
+minor. This first modernization is not promised source-compatible with the original
+unreleased 2021 interfaces; consult MIGRATION.md. No stable binary ABI is promised.

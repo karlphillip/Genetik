@@ -54,4 +54,9 @@ This packaging milestone itself changes no evaluator, RNG or search algorithm.
 - Hosted GCC13 x64/minimum-CMake, Clang18 x64/ASan+UBSan and GCC13 ARM64/TSan
   qualification executed. Explicit scalar bounds-check discards fix Clang Werror
   without changing source API or numerical semantics. Artifact staging and bounded
-  public diagnostics retain concrete failure evidence; see HOSTED_QUALIFICATION.md.
+  public diagnostics retain concrete failure evidence; see [hosted qualification](docs/HOSTED_QUALIFICATION.md).
+
+Release review consolidates [migration guidance](docs/MIGRATION.md),
+[proposed release notes](docs/releases/0.1.0/NOTES.md) and
+[the integration/asset proposal](docs/RELEASE_PROPOSAL.md). This documentation and
+archive-verification work changes no library API or numerical/search policy.

@@ -60,6 +60,7 @@ warning, profiling or coverage option is an installed usage requirement.
 | GENETIK_BUILD_EXAMPLES | ON | OFF | Examples and opt-in campaign/measurement executables. No full campaign runs in CTest. |
 | GENETIK_INSTALL | ON | OFF | Development-package installation/export rules. |
 | GENETIK_SANITIZERS | OFF | OFF | ASan+UBSan on this directory's development targets only. |
+| GENETIK_THREAD_SANITIZER | OFF | OFF | Separate development-only TSan build; mutually exclusive with ASan. |
 | GENETIK_WARNINGS_AS_ERRORS | OFF | OFF | Werror on qualified development compilers. |
 | GENETIK_RECORDED_REFERENCE | OFF | OFF | Opt-in captured Jetson/GCC13/libm2.39 bit reference. |
 
@@ -115,3 +116,19 @@ mutually exclusive with GENETIK_SANITIZERS. Its flags are private. Execution.hpp
 is installed alongside the existing public headers. The library remains header-only
 and version matching remains architecture-independent. See CONCURRENCY_RESULTS.md
 for repeated minimum-CMake/relocation/multi-TU consumption with parallel work.
+
+
+## Source distribution
+
+The planned first development release ships a Git source archive, not platform
+binaries. It includes the MIT license, public/transitive headers, CMake package
+helpers, compiled quickstarts, external OOP consumer and accepted evidence. Ignored
+build/output trees and .git are absent. From an extracted source root, the same
+README install/consumer commands work; no Git metadata or Jetson tooling is needed.
+Only archive generation needs Git; verification tooling additionally needs Python
+3.9+ and the selected supported C++ compiler/CMake.
+
+Maintainer verification uses `scripts/check_source_archive.py`; exact candidate,
+asset checksum and commands are recorded in the release-review output, not baked
+into a document that would change its own candidate hash. See
+[the release proposal](RELEASE_PROPOSAL.md).

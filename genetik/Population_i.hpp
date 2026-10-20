@@ -1,5 +1,5 @@
 #pragma once
-#include "Creature_i.hpp"
+#include "EvaluatedCandidate.hpp"
 #include <memory>
 #include <vector>
 

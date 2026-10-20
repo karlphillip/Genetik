@@ -79,3 +79,11 @@ Default IEEE rounding, gradual underflow, nontrapping arithmetic and qualified l
 are required. [Expression](EXPRESSIONS.md) and [strict-arithmetic](STRICT_ARITHMETIC.md) guides define the details; do not mix
 translation units built with incompatible options. Workspace reuse is invocation-
 local storage management, not cached mathematical evaluation (EVALUATION_WORKSPACE.md).
+
+## Custom representations and OOP
+
+See [architecture and external extension guide](ARCHITECTURE.md) for runtime virtual
+candidate, evaluator, preparation, selection and variation contracts and the installed
+permutation consumer. Scalar and symbolic candidates share the same engine; generic
+core includes do not require regression. [Concurrency](CONCURRENCY.md) is planned,
+not implemented.

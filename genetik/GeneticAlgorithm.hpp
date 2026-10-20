@@ -42,8 +42,13 @@ public:
                 if constexpr(requires {variation_.markElite(next.back());}) variation_.markElite(next.back());
             }
             while (next.size() < snapshot->size()) {
-                const C father = select(*snapshot);
-                const C mother = select(*snapshot);
+                const C father = roulette(population);
+                const C mother = roulette(population);
+                if (father.fitnessState() != FitnessState::Valid || mother.fitnessState() != FitnessState::Valid)
+                    throw std::logic_error("selection must return valid evaluated parents");
+                if (father.problemIdentity() != snapshot->front().problemIdentity() ||
+                    mother.problemIdentity() != snapshot->front().problemIdentity())
+                    throw std::invalid_argument("selected parent belongs to another problem");
                 C a = father, b = mother;
                 crossover(father, mother, a, b);
                 next.push_back(mutation(a));
@@ -74,7 +79,9 @@ public:
         if (&population.randomContext() != &this->_random)
             throw std::invalid_argument("population and algorithm must share a run context");
         population.requireReady();
-        return select(*population.creatures());
+        if constexpr (requires { population.selectionView(); })
+            return select(population.selectionView());
+        else return select(*population.creatures());
     }
 private:
     Variation variation_;

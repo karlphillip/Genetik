@@ -176,3 +176,13 @@ release checklist before any explicitly authorized push/tag/publication. Broader
 platform/stdlib qualification remains pending. Packaging does not imply checkpoint/
 resume, ABI stability, new solvers, cross-call caches, compiled expressions or GPU
 execution; keep those as separately measured/designed future decisions.
+
+## Generic OOP qualification and organization
+
+The public value-owned candidate/preparation and runtime algorithm hooks are audited
+in ARCHITECTURE.md; installed permutation qualification exercises a non-regression
+representation. Virtual roulette dispatch is repaired while default serial behavior
+is retained. Next implement the generic bounded execution layer in CONCURRENCY.md:
+serial default, consistent eventual --threads N, exclusive worker state, explicit
+admission/draining/failure guarantees and TSan/performance qualification. No runtime
+population concurrency exists today. Preserve all historical campaign outcomes.

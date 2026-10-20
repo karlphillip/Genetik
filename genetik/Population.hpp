@@ -6,6 +6,7 @@
 #include <exception>
 #include <limits>
 #include <optional>
+#include <type_traits>
 #include <stdexcept>
 
 // Serial, value-owned committed state. All potentially throwing preparation precedes swap.
@@ -61,6 +62,10 @@ public:
     std::shared_ptr<std::vector<T>> creatures() const override {
         return std::make_shared<std::vector<T>>(committed_ ? committed_->members : std::vector<T>{});
     }
+    // Read-only committed view, valid only until the next successful publication or
+    // destruction. Do not retain it across engine operations. Snapshot via creatures()
+    // when an independently owned value is required.
+    const std::vector<T>& selectionView() const { requireReady(); return committed_->members; }
     // Explicit score/selection boundary: pending edits and absent initial state are rejected.
     void requireReady() const {
         if (pending_) throw std::logic_error("population has pending edits; call updateValues()");

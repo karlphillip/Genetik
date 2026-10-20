@@ -33,6 +33,7 @@ endif()
 add_executable(installed_consumer main.cpp other.cpp mixed.c)
 target_link_libraries(installed_consumer PRIVATE Genetik::Genetik)
 add_subdirectory(quickstarts)
+add_subdirectory(oop_consumer)
 # These are configuration-logic checks, not qualification of simulated compilers.
 function(check_frontend id frontend expected)
     set(CMAKE_CXX_COMPILER_ID ${id})

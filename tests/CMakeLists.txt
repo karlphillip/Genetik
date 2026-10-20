@@ -126,3 +126,8 @@ if(GENETIK_BUILD_EXAMPLES)
     add_test(NAME genetik_symbolic_quickstart COMMAND genetik_symbolic_quickstart)
     set_tests_properties(genetik_scalar_quickstart genetik_symbolic_quickstart PROPERTIES TIMEOUT 30)
 endif()
+
+add_executable(genetik_oop_consumer oop_consumer/main.cpp)
+target_link_libraries(genetik_oop_consumer PRIVATE Genetik::Genetik)
+add_test(NAME genetik_oop_contracts COMMAND genetik_oop_consumer)
+set_tests_properties(genetik_oop_contracts PROPERTIES TIMEOUT 30)

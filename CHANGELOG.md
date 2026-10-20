@@ -35,3 +35,7 @@ The modernization changes numerical behavior and seeded trajectories relative to
 strict arity/arithmetic, fitting/cadence). Repeatability requires the exact revision,
 toolchain/runtime, inputs/configuration and execution mode; see docs/SUPPORT.md.
 This packaging milestone itself changes no evaluator, RNG or search algorithm.
+
+- OOP qualification: evolution now honors overridden roulette selection (previously
+  bypassed); default draws/ranking are unchanged. Added a read-only short-lived
+  Population::selectionView and installed non-regression permutation consumer.

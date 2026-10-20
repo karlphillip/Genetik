@@ -49,6 +49,7 @@ run([a.cmake,'-S',producer,'-B',build,*base,f'-DCMAKE_INSTALL_PREFIX={prefix_a}'
 run([a.cmake,'--build',build,'-j2']);run([a.cmake,'--install',build])
 consumer=root/'external consumer';shutil.copytree(src/'tests/installed',consumer)
 shutil.copytree(src/'quickstarts',consumer/'quickstarts')
+shutil.copytree(src/'tests/oop_consumer',consumer/'oop_consumer')
 def inspect(prefix,consumer_build):
     configs=list(prefix.rglob('GenetikConfig.cmake'))
     if len(configs)!=1:raise RuntimeError('missing/ambiguous installed config')
@@ -76,6 +77,13 @@ def inspect(prefix,consumer_build):
             if token in ['-I','-isystem']:path=tokens[i+1]
             elif token.startswith('-I') and len(token)>2:path=token[2:]
             if path and not Path(path).resolve().is_relative_to(prefix.resolve()):raise RuntimeError('foreign include root')
+    # Prove the non-regression TU does not acquire symbolic implementation headers.
+    dependencies=list((consumer_build/'oop_consumer').rglob('main.cpp.o.d'))
+    if not dependencies:raise RuntimeError('missing permutation include-dependency evidence')
+    for dependency in dependencies:
+        text=dependency.read_text()
+        if any('/'+name+'.hpp' in text for name in ['Expression','Regression','SymbolicRegression','ConstantFitting']):
+            raise RuntimeError('symbolic dependency in generic consumer')
     installed={p.relative_to(prefix).as_posix() for p in prefix.rglob('*') if p.is_file()}
     if not any(x.endswith('detail/ScopedTiming.hpp') for x in installed):raise RuntimeError('transitive header omitted')
     if not any(x.endswith('licenses/Genetik/LICENSE') for x in installed):raise RuntimeError('license omitted')
@@ -89,7 +97,7 @@ def consume(prefix,name,extra=(),build_it=True,fail=False):
     if fail:return output
     if build_it:
         run([a.cmake,'--build',directory,'-j2'])
-        for exe in ['installed_consumer','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart']:
+        for exe in ['installed_consumer','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart','oop_consumer/permutation_consumer']:
             run([directory/exe])
             dependencies=run(['ldd',directory/exe])
             if any(x in dependencies for x in ['libasan','libubsan','libclang_rt']):

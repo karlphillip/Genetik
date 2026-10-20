@@ -39,6 +39,9 @@ public:
     virtual std::string stats() = 0;
 protected:
     // Runs only on the private staged value during population publication.
+    // Optional representation-owned refinement. Return fitness for precisely the
+    // resulting owned genome and fixed objective. Stage throwing edits before
+    // installation; never mutate committed copies through shared mutable storage.
     virtual Fitness prepareEvaluation() { return evaluate(); }
     virtual Fitness evaluate() const = 0;
     void swapEvaluation(EvaluatedCandidate& other) noexcept {

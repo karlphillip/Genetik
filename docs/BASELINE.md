@@ -906,3 +906,22 @@ Actions workflow configures GCC13/x86 minimum CMake, Clang18/x86 sanitizers and 
 ARM64/GCC13. No hosted job has executed; local GCC13 is the only available compiler.
 Windows/MSVC, AppleClang and libc++ remain unqualified. No push/tag/publication was
 performed. Next: execute/review hosted qualification and the release checklist.
+
+## Generic OOP extension qualification
+
+Starting checkpoint 8b633264 was clean. The source audit and installed permutation
+consumer are documented in ARCHITECTURE.md. Repaired evolve's bypass of virtual
+roulette; retained default rank/draw behavior and private staged publication. The
+core's population interface no longer transitively requires scalar Creature_i.
+Include your own candidate headers explicitly. No symbolic types entered core.
+A const short-lived selection view avoids copying snapshots for each default draw.
+Custom selections are checked for valid fitness and matching problem identity.
+
+Before organization: Release CTest 22/22 (84.70 s); focused installed/relocated
+package repeat passed (67.72 s), including the new permutation consumer and an
+include-dependency check proving no symbolic headers. The focused custom consumer
+passes known costs/invariants, invalidation and failure/work contracts. Preserved
+accepted executable versus modified default engine gives byte-identical prime2,
+arithmetic42 and short cadence4 replay captures (including RNG and counters).
+Post-organization/final-tree gates are recorded separately in OOP_QUALIFICATION.md.
+No concurrency backend exists; CONCURRENCY.md records the next design requirements.

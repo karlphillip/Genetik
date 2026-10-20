@@ -44,6 +44,13 @@ int main() {
     RandomContext expandedRun(9);
     const auto expandedResult=symbolicRegression(multivariate,config,expandedRun);
     if (!expandedResult.best || expandedResult.trainingWork.lossAttempts>64) return 1;
+    // A sequence application supplies normalized index/value rows through the same public API.
+    const auto sequence = RegressionProblem::create({{{.001},.0002},{{.002},.0003},{{.003},.0005}}, {31,6,8});
+    config.trainingLossThreshold=0;config.fitting->lossThreshold=0;
+    RandomContext sequenceRun(42);
+    const auto sequenceResult=symbolicRegression(sequence,config,sequenceRun);
+    if (!sequenceResult.best || sequenceResult.trainingWork.lossAttempts>64 ||
+        sequence->measure(sequenceResult.best->expression()).loss!=sequenceResult.best->evaluation()) return 1;
     RandomContext run(9);
     Population<Creature<char>> population(3, run);
     GeneticAlgorithm<decltype(population), Creature<char>> ga(0.5f, 0.9f, run);

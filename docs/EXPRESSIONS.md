@@ -19,7 +19,7 @@ const auto result = f.evaluate(std::array{2.});
 // f.nodeCount(): 7; f.depth(): 4
 ```
 
-Variables are zero-based schema indices, exported as `x0`, `x1`, etc. This does not change the later prime experiment's one-based **data indices**: its single binding x0 will receive n=1,2,...,1000. Each expression declares a binding count. Constant-only expressions default to zero bindings; declare the same schema explicitly when combining constants with variables. Binary composition requires equal schemas, even if some variables are unused. A schema may declare unused variables, but evaluation still validates all supplied values. No randomness or reference data is stored in an expression.
+Variables are zero-based schema indices, exported as `x0`, `x1`, etc. This does not change the later prime experiment's one-based **data indices**: its single binding x0 receives the declared normalized index n/1000.0, for n=1,2,...,1000 (see PRIME_REGRESSION.md). Each expression declares a binding count. Constant-only expressions default to zero bindings; declare the same schema explicitly when combining constants with variables. Binary composition requires equal schemas, even if some variables are unused. A schema may declare unused variables, but evaluation still validates all supplied values. No randomness or reference data is stored in an expression.
 
 Typed postfix construction is also public and useful for assembling/splicing variable-size candidates in the next milestone:
 

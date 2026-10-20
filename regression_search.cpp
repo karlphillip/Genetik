@@ -11,7 +11,7 @@ static std::uint64_t integer(const std::string& text,std::uint64_t maximum,const
     return value;
 }
 static void usage() {
-    std::cout<<"Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target --seed N --loss-budget N [--no-fit] [--operators add,sub,mul,div,log] [--evaluate FILE ...]\n"
+    std::cout<<"Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target --seed N --loss-budget N [--loss-threshold MSE] [--no-fit] [--operators add,sub,mul,div,log] [--evaluate FILE ...]\n"
              <<"Input order defines x0,x1,...; budget is actual training-loss attempts, 0..10000000.\n";
 }
 int main(int argc,char** argv) {
@@ -25,16 +25,22 @@ int main(int argc,char** argv) {
         std::optional<std::uint32_t> seed;
         std::optional<std::uint64_t> budget;
         bool fitting=true;
+        std::optional<double> threshold;
         std::optional<std::vector<ExpressionKind>> operators;
         std::set<std::string> seen;
         for(int i=2;i<argc;++i) {
             const std::string option=argv[i];
             if(option!="--evaluate" && !seen.insert(option).second)throw std::invalid_argument("repeated option "+option);
             if(option=="--no-fit"){fitting=false;continue;}
-            if(option!="--inputs" && option!="--target" && option!="--seed" && option!="--loss-budget" && option!="--evaluate" && option!="--operators")
+            if(option!="--inputs" && option!="--target" && option!="--seed" && option!="--loss-budget" && option!="--evaluate" && option!="--operators" && option!="--loss-threshold")
                 throw std::invalid_argument("unknown option "+option);
             if(++i==argc)throw std::invalid_argument("missing value for "+option);
             const std::string value=argv[i];
+            if(option=="--loss-threshold") {
+                double v=0;auto parsed=std::from_chars(value.data(),value.data()+value.size(),v);
+                if(parsed.ec!=std::errc{} || parsed.ptr!=value.data()+value.size() || !std::isfinite(v) || v<0)throw std::invalid_argument("--loss-threshold: expected finite nonnegative MSE");
+                threshold=v;
+            }
             if(option=="--operators")operators=selectOperators(splitColumns(value));
             if(option=="--inputs")inputs=splitColumns(value);
             if(option=="--target")target=std::string(trim(value));
@@ -53,6 +59,7 @@ int main(int argc,char** argv) {
         const auto problem=RegressionProblem::create(training.rows,{31,6,8});
         auto config=searchConfig(*budget,fitting);
         if (operators) config.grammar.operators=*operators;
+        if(threshold){config.trainingLossThreshold=*threshold;if(config.fitting)config.fitting->lossThreshold=*threshold;}
         printConfig(config);
         const TableLimits limits;
         std::cout<<"file_byte_limit="<<limits.maxBytes<<" line_byte_limit="<<limits.maxLineBytes

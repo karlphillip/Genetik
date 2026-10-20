@@ -41,11 +41,11 @@ Implemented optional deterministic coordinate fitting, fixed topology/independen
 
 Generic multivariate/data-input extension is complete: arbitrary positive input dimensionality (zero-input constants retained), fixed input order, one scalar target, typed variable-preserving variation, dimension-independent constant fitting and exact separate-problem cache rules. No core restriction or defect required a library change. A bounded application-layer unquoted table loader and small file-search CLI accept caller-selected ordered inputs, target, seed/loss budget and separate evaluation files; in-memory and parsed paths share the public search. Two/three-input contracts, round trips, malformed files, same-seed counters/RNG and downstream consumption are qualified. The frozen affine two-input campaign recovers training/interior/exterior on every seed without adjustment; see [MULTIVARIATE.md](MULTIVARIATE.md) and [MULTIVARIATE_CAMPAIGN.md](MULTIVARIATE_CAMPAIGN.md). This is sample agreement, not a universal search guarantee.
 
-Strict ordinary division/natural logarithm are complete and qualified across construction/evaluation/export, mixed-arity variation, fitting/domain failures, budgets/publication and downstream/file workflows. Next implement prime regression as a generic-module example using the protocol below. Keep stronger numerical solvers separate from this extension. Track error and complexity separately; a small bounded accuracy/complexity archive remains pending. Do not conceal a complexity penalty inside reported error.
+Strict ordinary division/natural logarithm are complete and qualified across construction/evaluation/export, mixed-arity variation, fitting/domain failures, budgets/publication and downstream/file workflows. Prime regression is now implemented as a generic-module example using the protocol below; see PRIME_REGRESSION.md and PRIME_CAMPAIGN.md. Keep stronger numerical solvers separate from this extension. Track error and complexity separately; a small bounded accuracy/complexity archive remains pending. Do not conceal a complexity penalty inside reported error.
 
 Acceptance: useful bounded polynomial experiment, tested fit rollback on failures/worsening, matching evaluator/export semantics and reproducible reporting. Any input/output normalization derives only from fitting data and includes the inverse transformation in the exported standalone model.
 
-## 5. Generic sequence regression and prime experiment — pending
+## 5. Generic sequence regression and prime experiment — first campaign complete
 
 ### Data and application boundary
 
@@ -57,7 +57,7 @@ Allow configurable operators including +, -, *, ordinary / and natural log, with
 
 ### Fitting and untouched extrapolation
 
-1. Develop using an ordered internal split, e.g. fit 1–800, validate 801–1000. Any random split within the first 1,000 is an additional interpolation experiment.
+1. An optional future development protocol may use an ordered internal split, e.g. fit 1–800, validate 801–1000. The first implemented campaign instead fits all 1–1000 directly; none of that prefix is a holdout. Any random split within the first 1,000 is an additional interpolation experiment.
 2. Choose the search/fitting/selection procedure using only that prefix. Freeze seeds, budget, vocabulary, complexity limits, normalization, fitter and selection policy before assessing later indices.
 3. Clearly label a final fit using all first 1,000 observations and report reconstruction on indices 1–1000.
 4. Freeze candidate expressions and their selection before evaluating indices 1001–1200. Report extrapolation separately. Do not tune using this range while continuing to call it untouched. If used for development, disclose that and reserve a new later range before subsequent testing.
@@ -79,9 +79,26 @@ For each range and candidate report:
 
 Use identical fitting data and evaluation ranges for a fitted constant, fitted linear model, low-degree fitted polynomial (predeclare degree and solver), and n*log(n). The last is a fixed asymptotic formula, with n=1 defined ordinarily as 0. A refined logarithmic approximation may be added with explicit small-n domain handling and labeling; it must not dictate the evolved grammar or initialization.
 
-Initial declared seed list for the future experiment: **[1, 7, 42, 2026, 2027]**. Before running, record numerical budgets (population/generations, node/depth/constant limits, fitter iteration/evaluation caps, total evaluation-work cap, archive size and any time cap), solver versions and all configuration. Those budgets are not yet selected or run. Report every run including unsuccessful ones, distribution of outcomes and computation used. Baseline comparisons establish what structure evolution contributes; avoid selecting the best seed using extrapolation.
+The implemented first campaign uses the superseding declared seeds **[0, 1, 2, 3, 42]**. Before running, record numerical budgets (population/generations, node/depth/constant limits, fitter iteration/evaluation caps, total evaluation-work cap, archive size and any time cap), solver versions and all configuration. The first campaign selected 100,000 actual loss calls per seed from a separate runtime-only 4,096-call pilot; population 64, generation ceiling 2,000, nodes 31/depth 6, five operators and accepted optional coordinate fitting. Full fixed settings, all five outcomes and five fitted/fixed baselines are recorded in PRIME_CAMPAIGN.md. Scaling is predeclared u=n/1000, v=p/10000, inverse output 10000*g(u), all application-only. No target templates, lookups or repair enter candidate search. Report every run including unsuccessful ones, distribution of outcomes and computation used. Baseline comparisons establish what structure evolution contributes; avoid selecting the best seed using extrapolation.
 
 Acceptance: independently checked exact data; verified indexing; bounded structure and constant search; prefix reconstruction and separately frozen extrapolation report; identical-data baselines; complete metrics and invalid accounting; declared repeated-run budgets; no hidden answer access or repair. Matching a finite prefix and predicting later primes are separate empirical results. Claims about all primes require mathematical justification beyond these experiments.
+
+First campaign acceptance is complete: exact offline sieve/trial-division reference,
+validated supplied prefix, full-precision generic file workflow, fitting-only selection,
+frozen baseline/model assessment, safe int64 rounding and complete raw-unit metrics/
+prediction tables. All five runs use the loss cap; only 8–12 generations publish.
+Representative seed 2 approaches the separately fitted logarithmic baseline, without
+an established accuracy advantage or exact-prime recovery. All unsuccessful results
+are preserved. The 1001–1200 range is now examined; do not call it fresh after informed
+tuning. A bounded accuracy/complexity archive, stronger numerical solver, and an
+800/200 development/refit study remain future work, not implemented claims.
+
+Recommended next: profile evaluator/refinement work and assess a bounded fitting
+schedule/cache policy under unchanged immutable-problem/publication contracts. The
+measured call allowance is mostly spent refining fewer than 13 generations, not on
+invalidity or rejected structure. Reserve a new later range for future informed
+extrapolation assessment. Keep production delivery below on the roadmap; no GPU work
+before representative CPU profiling.
 
 ## 6. Packaging, documentation, qualification and resume — pending
 

@@ -47,9 +47,14 @@ inline void printConfig(const SymbolicRegressionConfig& config) {
     std::cout << " operator_selection=uniform_over_structurally_feasible_entries"
               << " selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3"
               << " full_probability=.5 grow_probability=.65 variation_proposal_limit=8"
-              << " constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=1e-14"
+              << " constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=" << config.trainingLossThreshold
               << " fitting=" << static_cast<bool>(config.fitting);
-    if(config.fitting)std::cout<<" fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_threshold=1e-14 fit_slots=all_including_elites_and_clones";
+    if(config.fitting) {
+        std::cout<<" fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_threshold=";
+        if(config.fitting->lossThreshold)std::cout<<*config.fitting->lossThreshold;
+        else std::cout<<"disabled";
+        std::cout<<" fit_slots=all_including_elites_and_clones";
+    }
     std::cout<<'\n';
 }
 // Prediction-only diagnostics: never recompute training MSE outside its allowance.

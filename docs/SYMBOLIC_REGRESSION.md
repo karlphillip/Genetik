@@ -89,3 +89,12 @@ See BASELINE.md for exact Release, Debug, ASan+UBSan, warning, header and downst
 Bounded training-only coordinate fitting is implemented and verified, preserving accepted local improvements and committed state on operational failure; the optional protected preparation hook leaves existing evaluate overrides unchanged. Keep configurable division/natural-log semantics, complexity archives, indexed-prime regression with distinct frozen fitting/validation/extrapolation reports, and CPU profiling before any GPU work in the roadmap.
 
 Strict division and natural logarithm are opt-in through the same public grammar and shared engine. See [STRICT_ARITHMETIC.md](STRICT_ARITHMETIC.md) for domains, mixed-arity structure, fitting invalidity/counters, runtime libm and file selection/reporting. Default +,-,* draws and meaning are preserved.
+
+## Prime-prefix application
+
+[PRIME_REGRESSION.md](PRIME_REGRESSION.md) supplies the first 1,000 indexed primes
+as ordinary one-input normalized rows, evolves structures and constants using this
+API, and compares frozen models with five separate baselines. Scaling, reference
+generation/validation, QR fits, int64 diagnostics and exports stay in the example.
+See [PRIME_CAMPAIGN.md](PRIME_CAMPAIGN.md) for the complete unsuccessful/successful
+approximation evidence; no exact-prime recovery is promised.

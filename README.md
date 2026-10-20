@@ -164,3 +164,13 @@ See [strict semantics, mixed arity and numerical environment](docs/STRICT_ARITHM
 and the [complete five-seed discovery results](docs/STRICT_ARITHMETIC_CAMPAIGN.md).
 Three seeds recovered all declared sample ranges; two budget-limited misses are
 reported too. Run `genetik_multivariate_demo --arithmetic` for the full campaign.
+
+## Prime-prefix regression example
+
+The generic symbolic-regression API can evolve structure and constants against the
+first 1,000 indexed primes. The example handles offline reference generation,
+validated user lists, explicit scaling, stable fitted baselines, safe rounded-match
+diagnostics and frozen extrapolation reporting outside the library.
+See [the runnable workflow](docs/PRIME_REGRESSION.md) and
+[all five measured results and prediction tables](docs/PRIME_CAMPAIGN.md).
+Approximation results are empirical; this does not establish a general prime formula.

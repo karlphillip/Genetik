@@ -632,3 +632,76 @@ search and coordinate-fitting limitations remain documented. Next is prime
 regression as another generic-module example using the preserved fitting/baseline/
 validation/extrapolation protocol, followed by measured CPU profiling and production
 delivery work.
+
+## Prime-prefix application milestone (2026-10-20)
+
+Starting revision fd1e7fe14b7a55c768edb528a2dec641a286aaaa, clean working tree.
+Preserved the accepted strict-arithmetic campaign and all five outcomes unchanged.
+Same Jetson AArch64, GCC 13.3.0/libstdc++13, qualified glibc/libm and workspace
+CMake/CTest 4.4.4, C++20 strict FP interface flags; 15 GiB RAM (7.2 GiB available
+at verification), no swap, 833 GiB free storage. No toolchain/dependency change.
+
+Implemented application-only bounded sieve plus independent exhaustive trial-division
+reference check/anchors, exact ordered user-prefix loading, full-precision numerical
+CSV exports, fixed index/output scaling, checked int64 rounding and all-row raw-unit
+metrics/sequence diagnostics. Added a small Householder QR reference solver and five
+separate baselines. The public symbolic engine, immutable problems, candidate fitness,
+coordinate fitter, run-owned randomness, budgets and generation publication are
+unchanged. New genetik_prime_regression modes generate, pilot and campaign use those
+public APIs. No oracle feature, target template, formula/residual seeding or prime
+repair enters initialization or evaluation. Added CLI --loss-threshold for faithful
+file reproduction; old default and all file numerical contracts stay unchanged.
+
+Focused contracts cover exact indexing/anchors, malformed/incomplete/incorrect/reordered
+prefixes and limits, fixed scaling/decode overflow, independent raw-unit errors,
+rounding ties/negatives/int64 bounds/invalidity, denominators/adjacent pairs/duplicates,
+full-range invalid aggregate behavior, known mean/affine/cubic/log QR fixtures,
+frozen fitting-selected choice, exact generated/parsed doubles and same-seed bounded
+public search counters. Existing failure, fitting, arithmetic and publication suites
+are reused. A downstream public-only consumer additionally runs normalized sequence
+rows with fitting and checks exact expression/fitness pairing. New application header
+joins all 15 public and existing application standalone-header builds.
+
+Reproducible verification (from repository):
+
+```sh
+../.tools/bin/cmake -S . -B ../build-release -DCMAKE_BUILD_TYPE=Release
+../.tools/bin/cmake --build ../build-release -j2
+../.tools/bin/ctest --test-dir ../build-release --output-on-failure
+../.tools/bin/cmake -S . -B ../build-debug -DCMAKE_BUILD_TYPE=Debug
+../.tools/bin/cmake --build ../build-debug -j2
+../.tools/bin/ctest --test-dir ../build-debug --output-on-failure
+../.tools/bin/cmake -S . -B ../build-sanitize -DCMAKE_BUILD_TYPE=Debug -DGENETIK_SANITIZERS=ON
+../.tools/bin/cmake --build ../build-sanitize -j2
+../.tools/bin/ctest --test-dir ../build-sanitize --output-on-failure
+
+g++ -std=c++20 -fno-fast-math -ffp-contract=off -Wall -Wextra -Wpedantic -Igenetik -fsyntax-only prime_regression.cpp tests/prime_regression.cpp regression_search.cpp tests/strict_arithmetic.cpp multivariate_regression.cpp tests/multivariate.cpp tests/downstream/main.cpp tests/constant_fitting.cpp constant_fitting_campaign.cpp tests/symbolic_regression.cpp tests/expressions.cpp tests/generation.cpp tests/tests.cpp demo.cpp polynomial_regression.cpp expression_demo.cpp
+timeout 10s ../build-release/genetik_demo 42 1000
+git -c core.whitespace=cr-at-eol diff --check
+```
+
+Release and Debug: all 16 CTest cases passed. Sanitizer results are recorded in
+PRIME_CAMPAIGN.md. Includes public/downstream, invalid FP compilation, character,
+generic-file and prime-file workflows. New sanitizer smoke is a short fixed-data
+search/refinement and bounded file run, not the complete campaign. Warnings/whitespace
+checks clean. Character example retains best-seen fitness .892, 1,000 published
+generations and 100,100 outer evaluations. No older long campaign repeated because
+no library arithmetic, fitting, variation or default search policy changed.
+
+The runtime-only seed-2026 pilot selected 100,000 calls per seed with margin; five
+campaign runs consumed 500,000 actual loss calls and 499,319,422 actual row attempts.
+All five stopped at budget, publishing only 8–12 generations; no adjustment or
+restart. Main runs plus file reproduction took ~49 search seconds versus the
+conservative ~76-second estimate. All model and baseline choices were frozen before
+extrapolation. Complete expressions, counters, trace/prediction tables, SHA-256 data
+checksums and optional offline residual plot are retained in docs/prime-results.
+See PRIME_CAMPAIGN.md for every seed, baseline and separately accounted work.
+
+Engineering acceptance is separate from quality: seed 2 is fitting-selected and
+approaches the fitted logarithmic baseline; it matches only 48/1000 fitting and
+6/200 extrapolation rounded values. Other seeds are weaker and retained; there is
+no exact-prime recovery or universal formula claim. The later range is now examined.
+Recommended next: CPU profiling of refinement/evaluation and a bounded fitting
+schedule/cache policy experiment to permit more structure exploration under the
+same work contract, followed by production delivery. Stronger solvers, archives and
+checkpoint/resume remain pending rather than implied by this application.

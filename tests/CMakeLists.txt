@@ -74,3 +74,19 @@ foreach(header RegressionData RegressionWorkflow MultivariateData StrictArithmet
     add_library(example_header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp)
     target_link_libraries(example_header_${header} PRIVATE genetik_lib)
 endforeach()
+
+add_executable(genetik_prime_tests prime_regression.cpp)
+target_link_libraries(genetik_prime_tests PRIVATE genetik_lib)
+add_test(NAME genetik_prime_contracts COMMAND genetik_prime_tests ${CMAKE_CURRENT_BINARY_DIR}/prime-contract-data)
+set_tests_properties(genetik_prime_contracts PROPERTIES TIMEOUT 60)
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_PrimeRegression.cpp "#include <${PROJECT_SOURCE_DIR}/examples/PrimeRegression.hpp>\n")
+add_library(example_header_PrimeRegression OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_PrimeRegression.cpp)
+target_link_libraries(example_header_PrimeRegression PRIVATE genetik_lib)
+if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_prime_cli COMMAND ${CMAKE_COMMAND}
+        -DPRIME=$<TARGET_FILE:genetik_prime_regression>
+        -DSEARCH=$<TARGET_FILE:genetik_regression_search>
+        -DWORKSPACE=${CMAKE_CURRENT_BINARY_DIR}/prime-cli
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/prime_cli.cmake)
+    set_tests_properties(genetik_prime_cli PROPERTIES TIMEOUT 60)
+endif()

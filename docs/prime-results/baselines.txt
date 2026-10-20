@@ -1,0 +1,5 @@
+constant coefficients=0.36829129999999999, normalized_expression=0.36829129999999999 representable=1 nodes=1 depth=1
+affine coefficients=-0.037487775375375378,0.81074740334740336, normalized_expression=((-0.037487775375375378) + (0.81074740334740336 * x0)) representable=1 nodes=5 depth=3
+cubic coefficients=-0.0075744053125561314,0.59216197573305029,0.33671788501933692,-0.13141333635570568, normalized_expression=(((-0.0075744053125561314) + (0.59216197573305029 * x0)) + ((0.33671788501933692 * (x0 * x0)) + ((-0.13141333635570568) * ((x0 * x0) * x0)))) representable=1 nodes=19 depth=6
+n_log_n coefficients= actual_raw_form=n*std::log(n) fitted_parameters=0 normalized_family_representable=1_algebraically_not_bitwise g=(0.1*x0)*(log(x0)+log(1000))
+fitted_log coefficients=0.11186729397186387,0.79193547658527197,-0.00010567476144389897, normalized_expression=(((0.11186729397186387 * (x0 * log(x0))) + (0.79193547658527197 * x0)) + (-0.00010567476144389897)) representable=1 nodes=12 depth=6

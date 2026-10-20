@@ -187,3 +187,9 @@ categorical/missing-value handling, normalization, parser for exported expressio
 serialization, cancellation or threading. Strict ordinary division and natural logarithm are now supported; see [STRICT_ARITHMETIC.md](STRICT_ARITHMETIC.md) for domains, operator selection and full-precision files. Prime regression is the next example
 using its preserved protocol. Profile representative CPU workloads before GPU work
 and complete packaging/platform/resume production requirements in the roadmap.
+
+The additive `--loss-threshold MSE` option sets the run and per-fit training
+thresholds together; default 1e-14 is preserved, and zero requests exact-zero stops
+only. Values must be finite and nonnegative. The [prime example](PRIME_REGRESSION.md)
+uses this option to reproduce its normalized one-input experiment through this same
+file executable, with identical numerical input and search counters.

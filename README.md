@@ -141,5 +141,26 @@ Input order defines x0,x1,... independently of file column positions. Constant
 fitting is optional (`--no-fit`). Only training data enter search; evaluation
 files are scored after selecting the final expression. See the [generic API,
 file format and complete workflow](docs/MULTIVARIATE.md), and the [five-seed
-multivariate campaign](docs/MULTIVARIATE_CAMPAIGN.md). Prime regression remains a
-later example of the general module, after strict division/logarithm support.
+multivariate campaign](docs/MULTIVARIATE_CAMPAIGN.md). Prime regression remains the next example of the general module; strict division/logarithm support is now available.
+
+## Strict division and natural logarithm
+
+Opt in with `config.grammar.operators = {ExpressionKind::Add, ExpressionKind::Subtract,
+ExpressionKind::Multiply, ExpressionKind::Divide, ExpressionKind::Log};`.
+`Expression::unary(ExpressionKind::Log, child)` constructs a natural logarithm;
+`Expression::binary(ExpressionKind::Divide, left, right)` constructs division.
+Zero denominators and nonpositive log arguments are mathematical invalidity;
+there are no protected fallback values. Defaults remain +,-,*.
+
+```sh
+../build-release/genetik_multivariate_demo --arithmetic --generate ../arithmetic-data
+../build-release/genetik_regression_search ../arithmetic-data/training.csv \
+  --inputs first,second --target target --seed 42 --loss-budget 100000 \
+  --operators add,sub,mul,div,log \
+  --evaluate ../arithmetic-data/interior.csv --evaluate ../arithmetic-data/exterior.csv
+```
+
+See [strict semantics, mixed arity and numerical environment](docs/STRICT_ARITHMETIC.md)
+and the [complete five-seed discovery results](docs/STRICT_ARITHMETIC_CAMPAIGN.md).
+Three seeds recovered all declared sample ranges; two budget-limited misses are
+reported too. Run `genetik_multivariate_demo --arithmetic` for the full campaign.

@@ -89,7 +89,7 @@ be unique after trimming. Every evaluation file must contain those same selected
 physical column order may differ. Extra columns are allowed but must also be numeric.
 
 Required options: inputs, target, seed (unsigned decimal uint32), loss-budget
-(unsigned decimal, 0..10,000,000). Optional `--no-fit` disables refinement; at most
+(unsigned decimal, 0..10,000,000). Optional `--operators add,sub,mul,div,log` opts into strict division/log (default add,sub,mul); empty, repeated or unknown names fail before search. The printed operator policy is uniform over structurally feasible entries. Optional `--no-fit` disables refinement; at most
 eight repeated `--evaluate FILE` options supply evaluation sets. `--help` shows the
 small interface. Duplicate singleton/unknown options and malformed numbers fail.
 Exit status: 0 for a completed bounded run with a candidate, 2 for a bounded stop
@@ -117,9 +117,11 @@ reporting performs predictions only, without an uncounted MSE recomputation.
 All training and supplied evaluation files are fully validated before search_start.
 Only training rows enter RegressionProblem/TrainingObjective used by search.
 Evaluation paths/data do not enter fitting, selection, configuration or stopping.
-After selection_finalized, each evaluation set is scored once with the frozen
-expression against its own immutable problem. Its MSE/max error and attempted
-reporting rows/loss call are reported separately. Invalid loss arithmetic is
+After selection_finalized, each evaluation set has one checked loss calculation
+with the frozen expression against its own immutable problem. Its MSE/max error
+and attempted loss rows/call are reported separately. An additional full prediction
+scan reports total invalid predictions/errors and its own row count; totals are
+never inferred from the early-stopping MSE. Invalid loss arithmetic is
 explicit, with no partial favorable metric. These reporting calls do not consume
 training allowance or change the selected candidate. Search runtime excludes file
 loading and post-search metrics. No serialization/second-process model loading is
@@ -182,7 +184,6 @@ Current restrictions: one scalar output, fixed immutable dimensions/objective pe
 run, +,-,* only, strict binary64/FP assumptions, bounded heuristic structure search
 and coordinate fitting (which can stall on coupled/irrelevant parameters). No
 categorical/missing-value handling, normalization, parser for exported expressions,
-serialization, cancellation or threading. Strict ordinary division and natural
-logarithm are the next arithmetic milestone; prime regression is a later example
+serialization, cancellation or threading. Strict ordinary division and natural logarithm are now supported; see [STRICT_ARITHMETIC.md](STRICT_ARITHMETIC.md) for domains, operator selection and full-precision files. Prime regression is the next example
 using its preserved protocol. Profile representative CPU workloads before GPU work
 and complete packaging/platform/resume production requirements in the roadmap.

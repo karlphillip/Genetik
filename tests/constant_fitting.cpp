@@ -8,6 +8,8 @@ template<class E, class F> static void throws(F f) { bool ok = false; try { f();
 using K = ExpressionKind;
 static Expression mul(const Expression& a, const Expression& b) { return Expression::binary(K::Multiply, a, b); }
 static Expression add(const Expression& a, const Expression& b) { return Expression::binary(K::Add, a, b); }
+static Expression logarithm(const Expression& a) { return Expression::unary(K::Log,a); }
+static Expression quotient(const Expression& a,const Expression& b) { return Expression::binary(K::Divide,a,b); }
 static Expression c(double value) { return Expression::constant(value, 1); }
 static std::vector<RegressionRow> rows(double a, double b, double d, int mode = 0) {
     std::vector<RegressionRow> result;
@@ -144,17 +146,18 @@ static void integration() {
     auto objective=std::make_shared<ThrowingObjective>(problem);
     ConstantFitConfig config; config.maxLossAttempts=4;
     auto preparation=std::make_shared<ConstantRefinement>(objective,config);
-    ExpressionCandidate parent(c(0),problem,preparation);
+    const auto starting=add(c(0),logarithm(c(1)));
+    ExpressionCandidate parent(starting,problem,preparation);
     RandomContext random(7);
     using P=Population<ExpressionCandidate,RegressionOrdering>;
     P population(std::vector{parent,parent},random,ObjectiveDirection::Minimize);
-    check(parent.fitnessState()==FitnessState::Unevaluated && parent.text()=="0.0", "initial fitting private copy");
+    check(parent.fitnessState()==FitnessState::Unevaluated && parent.text()==starting.toString(), "initial fitting private copy");
     const auto saved=population.creatures(); const auto best=population.bestSeen();
-    check(best->text()!="0.0" && objective->measure(best->expression()).loss==best->evaluation(),"installed refined expression and matching fitness");
+    check(best->text()!=parent.text() && objective->measure(best->expression()).loss==best->evaluation(),"installed refined expression and matching fitness");
     const auto previous=objective->work();
     objective->throwAt=previous.lossAttempts+3;
     ExpressionGrammar grammar; grammar.continuousProbability=.5;
-    GeneticAlgorithm<P,ExpressionCandidate,ExpressionVariation> ga(.9f,.35f,random,ExpressionVariation(problem,grammar,preparation));
+    GeneticAlgorithm<P,ExpressionCandidate,ExpressionVariation> ga(0.f,0.f,random,ExpressionVariation(problem,grammar,preparation));
     const auto engine=random.engine(); const auto calls=random.evaluationAttempts();
     bool thrown=false;
     try {ga.evolve(population);} catch(const std::exception& e) {thrown=hasCause(e);}
@@ -177,7 +180,7 @@ static void integration() {
     config.maxLossAttempts=2;
     auto prep=std::make_shared<ConstantRefinement>(cap,config);
     RandomContext rng(3);
-    ExpressionCandidate candidate(c(0),problem,prep);
+    ExpressionCandidate candidate(add(c(0),quotient(Expression::variable(0),c(1))),problem,prep);
     P limited(std::vector{candidate,candidate},rng,ObjectiveDirection::Minimize);
     const auto committed=limited.bestSeen();
     throws<std::runtime_error>([&]{limited.updateValues();});
@@ -188,15 +191,36 @@ static void integration() {
     ExpressionCandidate viable(c(0),invalidSuccessorProblem,invalidSuccessorPrep);
     RandomContext viableRng(0);P viablePopulation(std::vector{viable},viableRng,ObjectiveDirection::Minimize);
     const auto viableBest=viablePopulation.bestSeen();
-    viable.replaceExpression(mul(c(2),Expression::variable(0)));
+    viable.replaceExpression(logarithm(c(-1)));
     check(viablePopulation.publishGeneration(std::vector{viable})==GenerationOutcome::NoViableCandidates &&
           viablePopulation.generation()==0 && viablePopulation.bestSeen()->text()==viableBest->text(),"all invalid refined successor preserves committed state");
     auto invalidProblem=RegressionProblem::create({{{1e200},0}},{31,6,8});
     auto badObjective=std::make_shared<TrainingObjective>(invalidProblem);
     auto badPrep=std::make_shared<ConstantRefinement>(badObjective,ConstantFitConfig{});
-    ExpressionCandidate bad(mul(c(2),Expression::variable(0)),invalidProblem,badPrep);
+    ExpressionCandidate bad(quotient(c(1),c(0)),invalidProblem,badPrep);
     RandomContext badRng(0);P none(std::vector{bad},badRng,ObjectiveDirection::Minimize);
     check(none.lastOutcome()==GenerationOutcome::NoViableCandidates && !none.bestSeen() && !none.generation(),"all invalid refined initialization no commitment");
+}
+static void domainTrials() {
+    for (bool division : {false,true}) {
+        const auto problem=division ? RegressionProblem::create({{{1},2.2},{{2},3.2}},{31,6,8})
+                                    : RegressionProblem::create({{{0},1.2}},{31,6,8});
+        const auto input=add(c(0),division ? quotient(Expression::variable(0),c(1)) : logarithm(c(1)));
+        const auto expected=add(c(1),division ? quotient(Expression::variable(0),c(1)) : logarithm(c(1)));
+        ConstantFitConfig config;config.maxSweeps=1;config.maxLossAttempts=32;
+        TrainingObjective objective(problem),repeat(problem);
+        const auto result=fitConstants(input,objective,config),again=fitConstants(input,repeat,config);
+        check(result.improved && result.stop==ConstantFitStop::SweepLimit && result.expression.toString()==expected.toString(),"accepted progress retained after worse/domain-invalid proposals");
+        check(std::abs(result.loss.score()-.04)<1e-14 && result.startingLoss.score()>1 && objective.work().accepted==1 &&
+              objective.work().invalid>=1 && objective.work().invalidLosses>=objective.work().invalid && result.lossAttempts<=32 && result.lossAttempts>=4 &&
+              objective.work().lossAttempts==result.lossAttempts && objective.work().fittingLossAttempts==result.lossAttempts,
+              "domain-invalid probes consume actual fitting loss allowance");
+        check(objective.work().rowAttempts>=result.lossAttempts && objective.work().rowAttempts<=result.lossAttempts*problem->sampleCount(),"actual row accounting includes early domain failures");
+        check(input.toString()==add(c(0),division ? quotient(Expression::variable(0),c(1)) : logarithm(c(1))).toString(),"fit input remains unchanged");
+        check(result.expression.toString()==again.expression.toString() && result.loss==again.loss && objective.work()==repeat.work(),"domain fitting is deterministic");
+        const auto before=objective.work().lossAttempts;
+        check(objective.measure(result.expression).loss==result.loss && objective.work().lossAttempts==before+1,"returned expression/score independently verified and verification charged");
+    }
 }
 static void sampling() {
     const auto problem=RegressionProblem::create({{{0},0}},{31,6,8});
@@ -258,6 +282,6 @@ static void searches() {
 }
 int main() {
     std::cout << std::setprecision(17);
-    try {fixtures();boundaries();integration();sampling();searches();std::cout<<"constant fitting contracts passed\n";}
+    try {fixtures();boundaries();integration();domainTrials();sampling();searches();std::cout<<"constant fitting contracts passed\n";}
     catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}
 }

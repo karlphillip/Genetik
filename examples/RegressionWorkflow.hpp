@@ -2,6 +2,7 @@
 #include <SymbolicRegression.hpp>
 #include <iomanip>
 #include <iostream>
+#include <set>
 
 namespace regression_example {
 inline SymbolicRegressionConfig searchConfig(std::uint64_t budget, bool fitting = true) {
@@ -12,10 +13,38 @@ inline SymbolicRegressionConfig searchConfig(std::uint64_t budget, bool fitting 
     if (fitting) {config.fitting=ConstantFitConfig{};config.fitting->lossThreshold=1e-14;}
     return config;
 }
+inline const char* operatorName(ExpressionKind kind) {
+    switch (kind) {
+    case ExpressionKind::Add: return "add";
+    case ExpressionKind::Subtract: return "sub";
+    case ExpressionKind::Multiply: return "mul";
+    case ExpressionKind::Divide: return "div";
+    case ExpressionKind::Log: return "log";
+    default: throw std::invalid_argument("expected an operator kind");
+    }
+}
+inline std::vector<ExpressionKind> selectOperators(const std::vector<std::string>& names) {
+    std::vector<ExpressionKind> kinds;
+    std::set<std::string> seen;
+    if (names.empty()) throw std::invalid_argument("--operators requires a nonempty list");
+    for (const auto& name : names) {
+        if (name.empty() || !seen.insert(name).second) throw std::invalid_argument("--operators requires nonempty unique names");
+        bool found = false;
+        for (auto kind : {ExpressionKind::Add, ExpressionKind::Subtract, ExpressionKind::Multiply, ExpressionKind::Divide, ExpressionKind::Log})
+            if (name == operatorName(kind)) { kinds.push_back(kind); found = true; break; }
+        if (!found) throw std::invalid_argument("--operators: unsupported operator '" + name + "'");
+    }
+    return kinds;
+}
 inline void printConfig(const SymbolicRegressionConfig& config) {
     std::cout << "execution=serial_cpu population=" << config.population << " generation_limit=" << config.maxGenerationAttempts
               << " training_loss_limit=" << config.maxTrainingLossAttempts << " outer_request_limit=" << config.maxEvaluations
-              << " nodes_limit=31 depth_limit=6 absolute_constant_limit=8 grammar=+,-,*"
+              << " nodes_limit=31 depth_limit=6 absolute_constant_limit=8 operators=";
+    for (std::size_t i=0;i<config.grammar.operators.size();++i) {
+        if (i) std::cout << ',';
+        std::cout << operatorName(config.grammar.operators[i]);
+    }
+    std::cout << " operator_selection=uniform_over_structurally_feasible_entries"
               << " selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3"
               << " full_probability=.5 grow_probability=.65 variation_proposal_limit=8"
               << " constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=1e-14"
@@ -24,7 +53,7 @@ inline void printConfig(const SymbolicRegressionConfig& config) {
     std::cout<<'\n';
 }
 // Prediction-only diagnostics: never recompute training MSE outside its allowance.
-struct PredictionReport { std::size_t rows=0, invalid=0; std::optional<double> maximum; };
+struct PredictionReport { std::size_t rows=0, invalid=0, invalidErrors=0; std::optional<double> maximum; };
 inline PredictionReport predictionReport(const Expression& expression,const std::vector<RegressionRow>& rows) {
     PredictionReport report; double maximum=0;
     for(const auto& row:rows) {
@@ -32,11 +61,19 @@ inline PredictionReport predictionReport(const Expression& expression,const std:
         const auto value=expression.evaluate(row.inputs);
         if(!value.valid()){++report.invalid;continue;}
         volatile double residual=value.value()-row.target;
-        if(!std::isfinite(residual)){++report.invalid;continue;}
+        if(!std::isfinite(residual)){++report.invalidErrors;continue;}
         maximum=std::max(maximum,std::abs(static_cast<double>(residual)));
     }
-    if(!report.invalid)report.maximum=maximum;
+    if(!report.invalid && !report.invalidErrors)report.maximum=maximum;
     return report;
+}
+struct EvaluationReport { RegressionMetrics metrics; PredictionReport predictions; };
+// One checked full-dataset loss (which may stop early), then an independent ALL-row
+// validity scan. Build both from the same rows; this is reporting, never fitting.
+inline EvaluationReport evaluationReport(const Expression& expression, const std::vector<RegressionRow>& rows,
+                                         ExpressionLimits limits = {31,6,8}) {
+    const auto problem=RegressionProblem::create(rows,limits);
+    return {problem->measure(expression),predictionReport(expression,rows)};
 }
 inline void printResult(const SymbolicRegressionResult& result,std::uint64_t allowance,double seconds) {
     const auto w=result.trainingWork;
@@ -47,7 +84,7 @@ inline void printResult(const SymbolicRegressionResult& result,std::uint64_t all
              <<" attempted_generations="<<result.attemptedGenerations<<" published_generations="<<result.publishedGenerations
              <<" candidate_requests="<<result.candidateEvaluations<<" training_loss_attempts="<<w.lossAttempts
              <<" unused_allowance="<<allowance-w.lossAttempts<<" row_attempts="<<w.rowAttempts
-             <<" fits="<<w.fittingInvocations<<" fitting_loss_attempts="<<w.fittingLossAttempts
+             <<" invalid_training_losses="<<w.invalidLosses<<" fits="<<w.fittingInvocations<<" fitting_loss_attempts="<<w.fittingLossAttempts
              <<" fit_proposals="<<w.proposals<<" accepted="<<w.accepted<<" invalid_probes="<<w.invalid
              <<" infeasible="<<w.infeasible<<" duplicates="<<w.duplicates
              <<" variation_rejections="<<result.variation.structuralRejections
@@ -62,7 +99,7 @@ inline void printPredictionReport(const std::string& label,const PredictionRepor
     std::cout<<"dataset="<<label<<" max_abs_error=";
     if(report.maximum)std::cout<<*report.maximum;else std::cout<<"invalid";
     std::cout<<" recovery="<<(report.maximum && *report.maximum<=1e-6)<<" reporting_prediction_rows="<<report.rows
-             <<" invalid_predictions="<<report.invalid<<'\n';
+             <<" invalid_predictions_total="<<report.invalid<<" invalid_errors_total="<<report.invalidErrors<<'\n';
 }
 inline void printError(const std::exception& error) {
     std::cerr<<error.what()<<'\n';

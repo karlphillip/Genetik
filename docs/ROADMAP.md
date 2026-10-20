@@ -1,11 +1,11 @@
 # Genetik roadmap
 
-The baseline and fitness/publication contracts are implemented and verified. The bounded expression value and strict CPU evaluator are implemented; bounded polynomial structure evolution is also implemented through the shared engine. Bounded deterministic continuous constant fitting and a verified generic multivariate/file-data workflow are implemented; division/logarithms and prime experiments remain planned capabilities. See [BASELINE.md](BASELINE.md) for evidence and API migration.
+The baseline and fitness/publication contracts are implemented and verified. The bounded expression value and strict CPU evaluator are implemented; bounded polynomial structure evolution is also implemented through the shared engine. Bounded deterministic continuous constant fitting and a verified generic multivariate/file-data workflow are implemented; strict division/natural logarithm and mixed-arity evolution are implemented; prime experiments remain planned capabilities. See [BASELINE.md](BASELINE.md) for evidence and API migration.
 
 Current delivery order:
 
 1. Generic multivariate/data-input milestone — complete; public row API, strict application loader, 2/3-input contracts and all five campaign seeds reported.
-2. Strict ordinary division/natural logarithm throughout typed construction, evaluation, variation, limits, export and domain tests — next.
+2. Strict ordinary division/natural logarithm throughout typed construction, evaluation, variation, limits, export and domain tests — complete; prime regression is next.
 3. Prime regression as an example of generic indexed-sequence regression using the preserved protocol below.
 4. Profile representative CPU workloads and complete production delivery (packaging, platform qualification, documentation and checkpoint/resume); justify acceleration from measurements.
 
@@ -23,7 +23,7 @@ The symbolic driver now has generation-boundary candidate-call budgets and commi
 
 ## 3. Bounded mathematical expressions — initial grammar and variation complete
 
-Implemented: a dedicated Expression value with typed postfix nodes for variables, finite double constants, +, -, *; inclusive node/depth/absolute-constant limits; one-root/arity/schema validation; iterative validation/evaluation/export/destruction; private detached storage and strong replacement semantics; strict intermediate-result checking; separate mathematical-invalid/API-error outcomes; faithful locale-independent parenthesized export; and a manually constructed polynomial example. The evaluator has no dataset or RNG access. The initial operator list is configurable; division/logarithm families remain pending before the prime experiment.
+Implemented: a dedicated Expression value with typed postfix nodes for variables, finite double constants, +, -, *; inclusive node/depth/absolute-constant limits; one-root/arity/schema validation; iterative validation/evaluation/export/destruction; private detached storage and strong replacement semantics; strict intermediate-result checking; separate mathematical-invalid/API-error outcomes; faithful locale-independent parenthesized export; and a manually constructed polynomial example. The evaluator has no dataset or RNG access. The operator list is configurable; strict Divide and unary natural Log are now available as opt-in families, with unchanged +,-,* defaults.
 
 See [EXPRESSIONS.md](EXPRESSIONS.md) for the strict evaluator and [SYMBOLIC_REGRESSION.md](SYMBOLIC_REGRESSION.md) for the implemented candidate bridge. EvaluatedCandidate now owns representation-independent fitness/cache behavior; scalar Creature_i and value-owned ExpressionCandidate share Population ranking, staged evaluation, publication, best-seen tracking and failure semantics. GA delegates scalar or expression variation through a defaulted policy; configured expression initialization uses an external factory and the vector constructor.
 
@@ -31,7 +31,7 @@ Implemented bounded random initialization, typed postfix subtree replacement mut
 
 Qualified deterministic tests cover variation/invalidation/ownership, fixed problems, consistent objective/complexity/text ordering, injected failures, all-invalid and budget behavior, and same-seed short serial repeatability. Stochastic polynomial recovery is a separate campaign below. Aggregate training-loss and row counters now include fitting work; per-node profiling remains future work.
 
-Add ordinary division and natural logarithms before milestone 5, with zero/nonpositive domain checks and strict non-finite handling. Make the allowed vocabulary configurable. Keep special operator behavior explicitly named/exported, if later introduced; never silently substitute protected operations. Preserve CPU correctness before performance work.
+Implemented ordinary division and unary natural logarithm with signed-zero/nonpositive domain checks, strict intermediate finiteness and arity-aware structure/limits/export/variation. No protected arithmetic or mathematical-validity resampling. Public C++ grammar and file --operators opt-in retain old defaults/draw order. See [STRICT_ARITHMETIC.md](STRICT_ARITHMETIC.md) and [STRICT_ARITHMETIC_CAMPAIGN.md](STRICT_ARITHMETIC_CAMPAIGN.md): three successful and two budget-limited discovery runs, all retained separately from engineering acceptance. Preserve CPU correctness and the runtime math-library contract before performance work.
 
 ## 4. Polynomial symbolic regression — structure search and reference constant fitting complete
 
@@ -41,7 +41,7 @@ Implemented optional deterministic coordinate fitting, fixed topology/independen
 
 Generic multivariate/data-input extension is complete: arbitrary positive input dimensionality (zero-input constants retained), fixed input order, one scalar target, typed variable-preserving variation, dimension-independent constant fitting and exact separate-problem cache rules. No core restriction or defect required a library change. A bounded application-layer unquoted table loader and small file-search CLI accept caller-selected ordered inputs, target, seed/loss budget and separate evaluation files; in-memory and parsed paths share the public search. Two/three-input contracts, round trips, malformed files, same-seed counters/RNG and downstream consumption are qualified. The frozen affine two-input campaign recovers training/interior/exterior on every seed without adjustment; see [MULTIVARIATE.md](MULTIVARIATE.md) and [MULTIVARIATE_CAMPAIGN.md](MULTIVARIATE_CAMPAIGN.md). This is sample agreement, not a universal search guarantee.
 
-Next implement strict ordinary division and natural logarithm in the typed expression/evaluation/export and configurable variation vocabulary, with domain/overflow tests and downstream qualification before prime search. Keep stronger numerical solvers separate from this extension. Track error and complexity separately; a small bounded accuracy/complexity archive remains pending. Do not conceal a complexity penalty inside reported error.
+Strict ordinary division/natural logarithm are complete and qualified across construction/evaluation/export, mixed-arity variation, fitting/domain failures, budgets/publication and downstream/file workflows. Next implement prime regression as a generic-module example using the protocol below. Keep stronger numerical solvers separate from this extension. Track error and complexity separately; a small bounded accuracy/complexity archive remains pending. Do not conceal a complexity penalty inside reported error.
 
 Acceptance: useful bounded polynomial experiment, tested fit rollback on failures/worsening, matching evaluator/export semantics and reproducible reporting. Any input/output normalization derives only from fitting data and includes the inverse transformation in the exported standalone model.
 

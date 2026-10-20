@@ -180,3 +180,12 @@ See CONSTANT_FITTING_CAMPAIGN.md for the frozen paired search, all results and
 traces. The independent fixed-structure tests intentionally know the quadratic
 structure; those fixtures are never used by random initialization. They establish
 numerical fitting independently of structure-search success.
+
+Division and natural logarithm now participate in the same preparation/loss path.
+Domain-invalid probes are ordinary Invalid fitness and retain accepted progress;
+invalid starts still skip. TrainingWork.invalidLosses includes all returned-invalid
+objective losses, while invalid counts fitting trial losses only. The one-sweep
+domain fixtures and reused log/div fault/global-cap/publication tests are described
+in [STRICT_ARITHMETIC.md](STRICT_ARITHMETIC.md). Same-build repeatability now also
+requires the same runtime math library for logarithms. No new fitting algorithm,
+rescue optimization or randomness was introduced.

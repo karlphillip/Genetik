@@ -1,6 +1,6 @@
 #include "../examples/RegressionData.hpp"
 #include "../examples/RegressionWorkflow.hpp"
-#include "../examples/MultivariateData.hpp"
+#include "../examples/StrictArithmeticData.hpp"
 #include <array>
 #include <filesystem>
 #include <locale>
@@ -117,6 +117,20 @@ static void parsingAndSearch() {
     }
     check(parsedRun.engine()==memoryRun.engine() && parsedRun.engine()==orderedRun.engine(),"identical consumed random state");
 }
+static void arithmeticFiles() {
+    writeArithmeticFiles(folder/"arithmetic");
+    const auto parsed=loadData((folder/"arithmetic/training.csv").string(),{"first","second"},"target");
+    sameRows(parsed.rows,arithmeticRows(0));
+    auto config=searchConfig(256);config.population=8;config.elites=1;config.maxGenerationAttempts=2;config.fitting->maxLossAttempts=8;
+    config.grammar.operators=selectOperators({"add","sub","mul","div","log"});
+    RandomContext first(42),second(42);
+    const auto a=symbolicRegression(RegressionProblem::create(parsed.rows,{31,6,8}),config,first);
+    const auto b=symbolicRegression(RegressionProblem::create(arithmeticRows(0),{31,6,8}),config,second);
+    check(a.best && b.best && a.best->text()==b.best->text() && a.best->evaluation()==b.best->evaluation() &&
+          a.trainingWork==b.trainingWork && a.variation==b.variation && a.candidateEvaluations==b.candidateEvaluations &&
+          a.bestGeneration==b.bestGeneration && a.stoppingReason==b.stoppingReason && first.engine()==second.engine(),"expanded grammar file/in-memory bounded search matches");
+    for(int range=1;range<3;++range)sameRows(loadData((folder/"arithmetic"/(range==1?"interior.csv":"exterior.csv")).string(),{"first","second"},"target").rows,arithmeticRows(range));
+}
 static void invalidFiles() {
     const std::vector<std::string> invalid={"","a,b,y\n","a,,y\n1,2,3\n","a,a,y\n1,2,3\n","a,b,y\n1,2\n","a,b,y\n1,2,3,4\n",
         "a,b,y\n1,,3\n","a,b,y\n1,2,3junk\n","a,b,y\n1,2,nan\n","a,b,y\ninf,2,3\n","a,b,y\n1e999,2,3\n",
@@ -152,7 +166,7 @@ int main(int argc,char** argv) {
     try {
         if(argc!=2)throw std::runtime_error("test workspace argument required");
         folder=argv[1];std::filesystem::create_directories(folder);
-        bindingsAndPolicies();parsingAndSearch();invalidFiles();
+        bindingsAndPolicies();parsingAndSearch();arithmeticFiles();invalidFiles();
         std::cout<<"multivariate and file-input contracts passed\n";
     }catch(const std::exception& error){printError(error);return 1;}
 }

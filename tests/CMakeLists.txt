@@ -1,3 +1,7 @@
+add_executable(genetik_arithmetic_tests strict_arithmetic.cpp)
+target_link_libraries(genetik_arithmetic_tests PRIVATE genetik_lib)
+add_test(NAME genetik_strict_arithmetic COMMAND genetik_arithmetic_tests)
+set_tests_properties(genetik_strict_arithmetic PROPERTIES TIMEOUT 60)
 add_executable(genetik_multivariate_tests multivariate.cpp)
 target_link_libraries(genetik_multivariate_tests PRIVATE genetik_lib)
 add_test(NAME genetik_multivariate_contracts COMMAND genetik_multivariate_tests ${CMAKE_CURRENT_BINARY_DIR}/multivariate-data)
@@ -65,7 +69,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # Application support headers also compile without accidental preceding includes.
-foreach(header RegressionData RegressionWorkflow MultivariateData)
+foreach(header RegressionData RegressionWorkflow MultivariateData StrictArithmeticData)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp "#include <${PROJECT_SOURCE_DIR}/examples/${header}.hpp>\n")
     add_library(example_header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp)
     target_link_libraries(example_header_${header} PRIVATE genetik_lib)

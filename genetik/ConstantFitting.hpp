@@ -10,6 +10,7 @@ inline void countTrainingWork(std::uint64_t& counter) {
 struct TrainingWork {
     std::uint64_t lossAttempts = 0, rowAttempts = 0, fittingInvocations = 0, fittingLossAttempts = 0;
     std::uint64_t proposals = 0, accepted = 0, invalid = 0, infeasible = 0, duplicates = 0;
+    std::uint64_t invalidLosses = 0; // all invalid objective results, including starting losses
     bool operator==(const TrainingWork&) const = default;
 };
 class TrainingLossBudgetExceeded : public std::runtime_error {
@@ -37,7 +38,11 @@ public:
         if (work_.lossAttempts >= maximum_) throw TrainingLossBudgetExceeded();
         countTrainingWork(work_.lossAttempts);
         if (fitting) countTrainingWork(work_.fittingLossAttempts);
-        try { return compute(expression); }
+        try {
+            auto result = compute(expression);
+            if (result.loss.state() == FitnessState::Invalid) countTrainingWork(work_.invalidLosses);
+            return result;
+        }
         catch (...) { std::throw_with_nested(std::runtime_error("training loss attempt " + std::to_string(work_.lossAttempts) + " failed")); }
     }
     const std::shared_ptr<const RegressionProblem>& problem() const noexcept { return problem_; }

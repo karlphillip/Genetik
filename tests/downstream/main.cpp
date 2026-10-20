@@ -35,6 +35,15 @@ int main() {
     if (!multivariateResult.best || multivariateResult.best->expression().variableCount() != 3 ||
         multivariateResult.trainingWork.lossAttempts > 64 ||
         multivariate->measure(multivariateResult.best->expression()).loss != multivariateResult.best->evaluation()) return 1;
+    const auto u=Expression::variable(0,2),v=Expression::variable(1,2);
+    const auto mixed=Expression::binary(ExpressionKind::Add,Expression::unary(ExpressionKind::Log,u),
+                                       Expression::binary(ExpressionKind::Divide,v,u));
+    if (mixed.nodeCount()!=6 || mixed.toString()!="(log(x0) + (x1 / x0))" ||
+        std::abs(mixed.evaluate(std::array{2.,4.}).value()-2.6931471805599453)>2e-15) return 1;
+    config.grammar.operators={ExpressionKind::Add,ExpressionKind::Subtract,ExpressionKind::Multiply,ExpressionKind::Divide,ExpressionKind::Log};
+    RandomContext expandedRun(9);
+    const auto expandedResult=symbolicRegression(multivariate,config,expandedRun);
+    if (!expandedResult.best || expandedResult.trainingWork.lossAttempts>64) return 1;
     RandomContext run(9);
     Population<Creature<char>> population(3, run);
     GeneticAlgorithm<decltype(population), Creature<char>> ga(0.5f, 0.9f, run);

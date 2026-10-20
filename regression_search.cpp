@@ -11,7 +11,7 @@ static std::uint64_t integer(const std::string& text,std::uint64_t maximum,const
     return value;
 }
 static void usage() {
-    std::cout<<"Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target --seed N --loss-budget N [--no-fit] [--evaluate FILE ...]\n"
+    std::cout<<"Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target --seed N --loss-budget N [--no-fit] [--operators add,sub,mul,div,log] [--evaluate FILE ...]\n"
              <<"Input order defines x0,x1,...; budget is actual training-loss attempts, 0..10000000.\n";
 }
 int main(int argc,char** argv) {
@@ -25,15 +25,17 @@ int main(int argc,char** argv) {
         std::optional<std::uint32_t> seed;
         std::optional<std::uint64_t> budget;
         bool fitting=true;
+        std::optional<std::vector<ExpressionKind>> operators;
         std::set<std::string> seen;
         for(int i=2;i<argc;++i) {
             const std::string option=argv[i];
             if(option!="--evaluate" && !seen.insert(option).second)throw std::invalid_argument("repeated option "+option);
             if(option=="--no-fit"){fitting=false;continue;}
-            if(option!="--inputs" && option!="--target" && option!="--seed" && option!="--loss-budget" && option!="--evaluate")
+            if(option!="--inputs" && option!="--target" && option!="--seed" && option!="--loss-budget" && option!="--evaluate" && option!="--operators")
                 throw std::invalid_argument("unknown option "+option);
             if(++i==argc)throw std::invalid_argument("missing value for "+option);
             const std::string value=argv[i];
+            if(option=="--operators")operators=selectOperators(splitColumns(value));
             if(option=="--inputs")inputs=splitColumns(value);
             if(option=="--target")target=std::string(trim(value));
             if(option=="--seed")seed=static_cast<std::uint32_t>(integer(value,std::numeric_limits<std::uint32_t>::max(),option));
@@ -49,7 +51,8 @@ int main(int argc,char** argv) {
         // Validate all supplied files before starting, but never pass evaluation rows to search.
         for(const auto& path:evaluations)heldout.push_back(loadData(path,inputs,target));
         const auto problem=RegressionProblem::create(training.rows,{31,6,8});
-        const auto config=searchConfig(*budget,fitting);
+        auto config=searchConfig(*budget,fitting);
+        if (operators) config.grammar.operators=*operators;
         printConfig(config);
         const TableLimits limits;
         std::cout<<"file_byte_limit="<<limits.maxBytes<<" line_byte_limit="<<limits.maxLineBytes
@@ -70,14 +73,17 @@ int main(int argc,char** argv) {
         printPredictionReport("training",predictionReport(result.best->expression(),training.rows));
         std::cout<<"selection_finalized evaluation_files="<<heldout.size()<<'\n';
         for(std::size_t i=0;i<heldout.size();++i) {
-            const auto evaluation=RegressionProblem::create(heldout[i].rows,{31,6,8});
-            const auto metrics=evaluation->measure(result.best->expression());
+            const auto reporting=evaluationReport(result.best->expression(),heldout[i].rows);
+            const auto& metrics=reporting.metrics;
+            const auto& predictions=reporting.predictions;
             std::cout<<"evaluation_file="<<evaluations[i]<<" target_column="<<target<<" target_file_column="<<heldout[i].targetColumn+1<<" mse=";
             if(metrics.loss.state()==FitnessState::Valid)std::cout<<metrics.loss.score();else std::cout<<"invalid";
             std::cout<<" max_abs_error=";
             if(metrics.maxAbsoluteError)std::cout<<*metrics.maxAbsoluteError;else std::cout<<"invalid";
             std::cout<<" recovery="<<(metrics.maxAbsoluteError && *metrics.maxAbsoluteError<=1e-6)
-                     <<" postsearch_evaluation_loss_calls=1 reporting_rows="<<metrics.samplesAttempted<<'\n';
+                     <<" postsearch_evaluation_loss_calls=1 reporting_loss_rows="<<metrics.samplesAttempted
+                     <<" reporting_prediction_rows="<<predictions.rows
+                     <<" invalid_predictions_total="<<predictions.invalid<<" invalid_errors_total="<<predictions.invalidErrors<<'\n';
             for(std::size_t j=0;j<inputs.size();++j)std::cout<<"evaluation_x"<<j<<"="<<inputs[j]<<" file_column="<<heldout[i].inputColumns[j]+1<<'\n';
         }
         return 0;

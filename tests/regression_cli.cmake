@@ -59,3 +59,28 @@ execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/training.csv" --inputs first,s
 if(NOT result EQUAL 1 OR output MATCHES "search_start")
     message(FATAL_ERROR "invalid budget accepted")
 endif()
+# These are observations of the everywhere-defined LINEAR target ln(2)*(x-1).
+# A log model also fits these training observations, but fails on evaluation.
+# The CLI smoke is quality-agnostic; deterministic reporting tests construct that model.
+# No labels of the generating log/div campaign are fabricated at undefined points.
+file(WRITE "${WORKSPACE}/linear-observations.csv" "first,target\n1,0\n2,0.6931471805599453\n")
+file(WRITE "${WORKSPACE}/linear-evaluation.csv" "first,target\n1,0\n0,-0.6931471805599453\n-1,-1.3862943611198906\n2,0.6931471805599453\n")
+execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/linear-observations.csv" --inputs first --target target --seed 42 --loss-budget 64 --no-fit
+    --operators log --evaluate "${WORKSPACE}/linear-evaluation.csv"
+    RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "unary-only file workflow failed: ${output} ${error}")
+endif()
+foreach(expected "operators=log operator_selection=uniform_over_structurally_feasible_entries" "selection_finalized" "invalid_predictions_total=" "reporting_loss_rows=" "reporting_prediction_rows=4")
+    string(FIND "${output}" "${expected}" found)
+    if(found EQUAL -1)
+        message(FATAL_ERROR "missing expanded workflow evidence ${expected}: ${output}")
+    endif()
+endforeach()
+foreach(operators IN ITEMS "" "add,,log" "div,div" "sqrt")
+    execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/training.csv" ${args} --operators "${operators}"
+        RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+    if(NOT result EQUAL 1 OR output MATCHES "search_start")
+        message(FATAL_ERROR "invalid operators accepted: ${operators}")
+    endif()
+endforeach()

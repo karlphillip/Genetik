@@ -1,0 +1,39 @@
+execution=serial_cpu population=64 generation_limit=2000 training_loss_limit=100000 outer_request_limit=100000 nodes_limit=31 depth_limit=6 absolute_constant_limit=8 operators=add,sub,mul,div,log operator_selection=uniform_over_structurally_feasible_entries selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3 full_probability=.5 grow_probability=.65 variation_proposal_limit=8 constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=1e-14 fitting=1 fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_threshold=1e-14 fit_slots=all_including_elites_and_clones
+campaign=strict_arithmetic seeds=0,1,2,3,42 x0=first x1=second target=target training_rows=25 recovery_max_abs=1e-6 representative_rule=training_mse_nodes_text_lowest_seed
+seed=0 raw_initial_mse=2.4726090417546036 refined_initial_mse=1.8909068540574137 training_mse=7.5564558307909507e-16 discovery_stage=offspring discovery_generation=10 attempted_generations=10 published_generations=10 candidate_requests=704 training_loss_attempts=68845 unused_allowance=31155 row_attempts=1716988 invalid_training_losses=176 fits=704 fitting_loss_attempts=68845 fit_proposals=86015 accepted=9600 invalid_probes=88 infeasible=1400 duplicates=16367 variation_rejections=27 variation_fallbacks=0 mutation_proposals=205 crossover_proposals=307 mutation_changes=196 crossover_changes=510 seconds=0.24732358500000001 stop=training_loss_threshold
+nodes=10 depth=4 expression=(((x1 / x0) - (-2.9802322387695312e-08)) + (log(x0) * 0.9999999963195485))
+seed=0 dataset=training max_abs_error=3.2353417056540934e-08 recovery=1 reporting_prediction_rows=25 invalid_predictions_total=0 invalid_errors_total=0
+seed=1 raw_initial_mse=2.4726090417546036 refined_initial_mse=1.890906027836402 training_mse=0.64027194471888438 discovery_stage=offspring discovery_generation=11 attempted_generations=12 published_generations=11 candidate_requests=813 training_loss_attempts=100000 unused_allowance=0 row_attempts=2496320 invalid_training_losses=164 fits=813 fitting_loss_attempts=100000 fit_proposals=126840 accepted=13302 invalid_probes=94 infeasible=2268 duplicates=25193 variation_rejections=61 variation_fallbacks=0 mutation_proposals=276 crossover_proposals=384 mutation_changes=256 crossover_changes=600 seconds=0.36514543500000002 stop=evaluation_budget
+nodes=15 depth=6 expression=((x1 + 0.032454761435163348) - (((-3.3154540779453523) + x1) * (0.10101879714180839 * ((x0 + (-3.0295090737776365)) + 1.9566235244274139))))
+seed=1 dataset=training max_abs_error=2.4179848721598773 recovery=0 reporting_prediction_rows=25 invalid_predictions_total=0 invalid_errors_total=0
+seed=2 raw_initial_mse=2.1312500000000001 refined_initial_mse=2.0611831791271022 training_mse=1.3197121232313256e-15 discovery_stage=offspring discovery_generation=9 attempted_generations=9 published_generations=9 candidate_requests=640 training_loss_attempts=60044 unused_allowance=39956 row_attempts=1495096 invalid_training_losses=254 fits=640 fitting_loss_attempts=60044 fit_proposals=76888 accepted=8485 invalid_probes=158 infeasible=1710 duplicates=15698 variation_rejections=46 variation_fallbacks=0 mutation_proposals=240 crossover_proposals=272 mutation_changes=218 crossover_changes=454 seconds=0.203097525 stop=training_loss_threshold
+nodes=10 depth=5 expression=(log(x0) + (((4.1999999284744263 + (-3.199999953358553)) * x1) / x0))
+seed=2 dataset=training max_abs_error=9.9536507036646071e-08 recovery=1 reporting_prediction_rows=25 invalid_predictions_total=0 invalid_errors_total=0
+seed=3 raw_initial_mse=2.4726090417546036 refined_initial_mse=1.8909060278364236 training_mse=0.04839553743457721 discovery_stage=offspring discovery_generation=9 attempted_generations=10 published_generations=9 candidate_requests=681 training_loss_attempts=100000 unused_allowance=0 row_attempts=2498067 invalid_training_losses=83 fits=681 fitting_loss_attempts=100000 fit_proposals=126088 accepted=13202 invalid_probes=22 infeasible=1525 duplicates=25032 variation_rejections=54 variation_fallbacks=0 mutation_proposals=232 crossover_proposals=324 mutation_changes=214 crossover_changes=544 seconds=0.36066169100000001 stop=evaluation_budget
+nodes=13 depth=5 expression=(((0.3565363944009361 - x1) * ((1.5620880126953125 / x0) * (-0.64016857005124805))) + (x0 * 0.29329147934913635))
+seed=3 dataset=training max_abs_error=0.3022626863808251 recovery=0 reporting_prediction_rows=25 invalid_predictions_total=0 invalid_errors_total=0
+seed=42 raw_initial_mse=1.9073039749738052 refined_initial_mse=1.2076509306233403 training_mse=5.3110430571409987e-16 discovery_stage=offspring discovery_generation=8 attempted_generations=8 published_generations=8 candidate_requests=576 training_loss_attempts=51624 unused_allowance=48376 row_attempts=1287392 invalid_training_losses=138 fits=576 fitting_loss_attempts=51624 fit_proposals=66252 accepted=8635 invalid_probes=61 infeasible=2526 duplicates=12589 variation_rejections=10 variation_fallbacks=0 mutation_proposals=178 crossover_proposals=239 mutation_changes=169 crossover_changes=438 seconds=0.17027611100000001 stop=training_loss_threshold
+nodes=10 depth=4 expression=(log(x0) + ((x1 + 0.0) / (x0 + (-8.8203488957105947e-09))))
+seed=42 dataset=training max_abs_error=7.0562792053863177e-08 recovery=1 reporting_prediction_rows=25 invalid_predictions_total=0 invalid_errors_total=0
+training_adjustment_decision=not_needed
+selection_finalized representative_seed=42 expression=(log(x0) + ((x1 + 0.0) / (x0 + (-8.8203488957105947e-09))))
+diagnostic seed=0 x0=0 x1=1 prediction=invalid no_target_label=true
+diagnostic seed=0 x0=-1 x1=1 prediction=invalid no_target_label=true
+seed=0 dataset=interior max_abs_error=3.0861122324310486e-08 recovery=1 reporting_prediction_rows=16 invalid_predictions_total=0 invalid_errors_total=0
+seed=0 dataset=exterior max_abs_error=3.4904511725386556e-08 recovery=1 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0
+diagnostic seed=1 x0=0 x1=1 prediction=0.78150212599021551 no_target_label=true
+diagnostic seed=1 x0=-1 x1=1 prediction=0.54759774019908103 no_target_label=true
+seed=1 dataset=interior max_abs_error=1.1287100459063972 recovery=0 reporting_prediction_rows=16 invalid_predictions_total=0 invalid_errors_total=0
+seed=1 dataset=exterior max_abs_error=9.8937649500349476 recovery=0 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0
+diagnostic seed=2 x0=0 x1=1 prediction=invalid no_target_label=true
+diagnostic seed=2 x0=-1 x1=1 prediction=invalid no_target_label=true
+seed=2 dataset=interior max_abs_error=4.9768253518323036e-08 recovery=1 reporting_prediction_rows=16 invalid_predictions_total=0 invalid_errors_total=0
+seed=2 dataset=exterior max_abs_error=2.9860952110993821e-07 recovery=1 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0
+diagnostic seed=3 x0=0 x1=1 prediction=invalid no_target_label=true
+diagnostic seed=3 x0=-1 x1=1 prediction=-0.93675485933786207 no_target_label=true
+seed=3 dataset=interior max_abs_error=0.33758344906089977 recovery=0 reporting_prediction_rows=16 invalid_predictions_total=0 invalid_errors_total=0
+seed=3 dataset=exterior max_abs_error=1.8977914962503575 recovery=0 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0
+diagnostic seed=42 x0=0 x1=1 prediction=invalid no_target_label=true
+diagnostic seed=42 x0=-1 x1=1 prediction=invalid no_target_label=true
+seed=42 dataset=interior max_abs_error=2.3520930536591322e-08 recovery=1 reporting_prediction_rows=16 invalid_predictions_total=0 invalid_errors_total=0
+seed=42 dataset=exterior max_abs_error=4.2337676120496326e-07 recovery=1 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0

@@ -507,3 +507,128 @@ Next: strict ordinary division and natural logarithm across representation,
 evaluation, variation, limits/export and domain tests. Then implement prime
 regression as a generic-module example using the preserved protocol, and profile
 representative CPU workloads alongside production delivery work.
+
+## Strict division, natural logarithm and mixed arity — 2026-10-20
+
+Started clean at `5436c194c58fe29684cf9a5a87739c7f16ecb990`, with no unrelated
+working-tree changes. Read repository, expression, regression, fitting, multivariate
+and roadmap contracts. Audited all expression/variation paths; the initial grammar
+was deliberately binary-only. The extension required changing stack consumption,
+depth/subtree metadata, export and child-node allocation, not the shared transaction.
+Retained C++20, workspace CMake and existing Release/Debug/ASan+UBSan directories.
+Qualified environment: Jetson AArch64, GCC 13.3.0/libstdc++13, glibc 2.39 and
+`/lib/aarch64-linux-gnu/libm.so.6`, strict interface flags and default nearest,
+gradual-underflow, nontrapping binary64. Runtime math library is now explicitly
+part of the reproducibility conditions; no cross-platform bitwise-log claim.
+
+Implemented ExpressionKind::Divide/Log (appended; old kinds retain values), public
+unary factories and a shared expressionArity definition (0/1/2). Validated flat trees
+include two-node unary/six-node mixed forms and arbitrary parity; every occurrence
+counts once, leaf depth remains 1. All traversal/copy/destruction paths remain
+iterative. Division checks either signed-zero denominator before native division;
+log requires a positive finite child before std::log; both check finite results.
+Subnormal operands/results and signed-zero underflow remain valid, with each parent
+applying its own domain. Invalid children cannot be masked or algebraically canceled.
+Structural errors remain API exceptions; log(-1) and 1/0 remain valid structures
+with ordinary mathematical-invalid results. Export preserves grouping/order,
+variable identities, full-precision constants and signed zero, using / and log(...).
+
+Random initialization/mutation choose uniformly over feasible enabled entries,
+allocate one child budget for log or the prior positive binary split, and never
+retry for mathematical validity. Subtree operations check complete destination
+depth and bounds. Existing +,-,* defaults/lists retain meaning and draw order;
+the accepted binary-only affine campaign reproduced all prior expressions,
+metrics and existing work/variation counts (time excluded). Empty C++ operator
+lists still support terminals. CLI --operators add,sub,mul,div,log validates names,
+empty/repeated/unknown selections before search and prints the effective policy.
+
+Fitting/loss/private publication use the same engine unchanged. One-sweep a+log(c)
+and a+x0/c fixtures retain a=1,c=1 (~.04 loss) after worse and domain-invalid probes.
+Invalid starts still skip; earlier accepted progress survives local limits. The
+existing operational fault fixture now carries log, the global-cap fixture carries
+division, and all-invalid prepared cases use log/div domain failures. Consumed
+randomness/loss/row work remains consumed; committed populations/cache/generation/
+archive remain safe on abort. Added invalidLosses for all returned-invalid training
+losses (baselines included), distinct from the existing invalid fitting-probe subset.
+Throwing attempts remain operational, not returned-invalid mathematical results.
+
+Generic file loading still permits finite zero/negative inputs. A shared application
+report helper calculates checked MSE (early invalid stop) then inspects all prediction
+rows for total invalid counts. CLI prints both row counts separately; it never
+reports an early observed count as a total or scores only the valid subset. A
+constructed log model is training-valid on two linear observations but invalid on
+separate evaluation rows; reporting retains its exact training expression/cache.
+This is a deterministic helper test, not a stochastic discovery gate. Those labels
+come from the everywhere-defined line ln(2)*(x-1), not from the undefined log/div
+target. Constructed-target zero/negative domain probes have no fabricated labels.
+
+The frozen Release campaign and every seed are in
+[STRICT_ARITHMETIC_CAMPAIGN.md](STRICT_ARITHMETIC_CAMPAIGN.md). Seeds 0,2,42 recovered
+all three ranges at <=1e-6 max error; 1,3 exhausted 100,000 loss attempts and missed.
+No configuration adjustment: the training-only decision found three successes
+before held-out evaluation. All discoveries were after initialization. Seed 42 is
+the training-selected representative. Seeds 1/3 discarded partial generation
+attempts and correctly retained their last committed models while counting the
+private work. Full-precision file seed 42 matched the in-memory expression, score
+and all non-time work counters, including 51,624 loss attempts. No template, target
+feature or mathematical-validity regeneration was supplied to initialization.
+
+Development checks caught a mixed const-pointer initializer-list deduction in a
+test (fixed with an explicit pointer array) and a test-only empty discrete list
+with mixed continuous sampling (fixed to the intended variable-only configuration).
+These were repaired before qualification; no evaluator/search defect was hidden as
+poor fitness. CLI smoke tests remain search-quality agnostic.
+
+Exact verification commands (existing configurations):
+
+```sh
+../.tools/bin/cmake --build ../build-release -j2
+../.tools/bin/ctest --test-dir ../build-release --output-on-failure
+../.tools/bin/cmake --build ../build-debug -j2
+../.tools/bin/ctest --test-dir ../build-debug --output-on-failure
+../.tools/bin/cmake --build ../build-sanitize -j2
+../.tools/bin/ctest --test-dir ../build-sanitize --output-on-failure
+timeout 600s ../build-release/genetik_multivariate_demo --arithmetic
+../build-release/genetik_multivariate_demo --arithmetic --generate ../arithmetic-data
+timeout 60s ../build-release/genetik_regression_search ../arithmetic-data/training.csv --inputs first,second --target target --seed 42 --loss-budget 100000 --operators add,sub,mul,div,log --evaluate ../arithmetic-data/interior.csv --evaluate ../arithmetic-data/exterior.csv
+timeout 60s ../build-release/genetik_multivariate_demo
+timeout 10s ../build-release/genetik_demo 42 1000
+g++ -std=c++20 -fno-fast-math -ffp-contract=off -Wall -Wextra -Wpedantic -Igenetik -fsyntax-only tests/strict_arithmetic.cpp regression_search.cpp multivariate_regression.cpp tests/multivariate.cpp tests/downstream/main.cpp tests/constant_fitting.cpp constant_fitting_campaign.cpp tests/symbolic_regression.cpp tests/expressions.cpp tests/generation.cpp tests/tests.cpp demo.cpp polynomial_regression.cpp expression_demo.cpp
+git -c core.whitespace=cr-at-eol diff --check
+```
+
+Final qualification: **14/14 CTest cases passed in Release, Debug and ASan+UBSan**,
+with no sanitizer diagnostics. Fifteen public headers and four application support
+headers compile standalone, including the new generator header. The independent
+downstream Release consumer constructs/evaluates/exports the six-node mixed tree
+and runs expanded-grammar search through public headers/target; as before, that
+separate fixture is not instrumented by the parent sanitizer option. The focused
+arithmetic checks include signed zeros, denominator/log domains, subnormals,
+quotient overflow, nested/masking/underflow errors, malformed and mixed/unary arity,
+inclusive/exceeded limits, iterative 4,096-log stress, ownership and mixed variation.
+Short search/fitting/file smoke tests cover the integrated sanitizer path; the full
+five-seed campaign runs only in Release.
+
+Warning review and whitespace check passed without diagnostics. The strict FP
+negative-build tests still reject fast/finite-only math. Character demo preserves
+fitness .892, generation_limit=1,000 and 100,100 outer calls. The default affine
+campaign was repeated for the concrete binary draw-order regression risk and
+matched accepted non-time results; no additional previous long campaign was needed.
+The final expanded file run still matches the representative's score/expression
+and counters after the reporting helper was shared with deterministic tests.
+
+Compatibility: existing factories, typed kind values, default +,-,* grammar and
+meaning of explicit lists remain supported; new unary factories/enum kinds and
+invalidLosses are additive. No existing same-build trajectory change was necessary
+for binary-only configurations. CLI reporting now distinguishes total invalid
+predictions/errors and loss/prediction row passes; scripts consuming the old
+example reporting_rows/invalid_predictions fields should use the new explicit
+labels. Runtime libm is part of supported log reproducibility, with tolerant math
+reference checks rather than cross-platform bitwise assertions.
+
+Arithmetic/structural and fitter/publication/workflow acceptance pass independently
+of the three recoveries/two misses. No unresolved engineering blocker. Stochastic
+search and coordinate-fitting limitations remain documented. Next is prime
+regression as another generic-module example using the preserved fitting/baseline/
+validation/extrapolation protocol, followed by measured CPU profiling and production
+delivery work.

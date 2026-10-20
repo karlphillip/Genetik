@@ -94,3 +94,21 @@ endif()
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header_ScopedTiming.cpp "#include <detail/ScopedTiming.hpp>\n")
 add_library(header_ScopedTiming OBJECT ${CMAKE_CURRENT_BINARY_DIR}/header_ScopedTiming.cpp)
 target_link_libraries(header_ScopedTiming PRIVATE genetik_lib)
+
+add_executable(genetik_workspace_tests evaluation_workspace.cpp)
+target_link_libraries(genetik_workspace_tests PRIVATE genetik_lib)
+add_test(NAME genetik_workspace_contracts COMMAND genetik_workspace_tests)
+set_tests_properties(genetik_workspace_contracts PROPERTIES TIMEOUT 30)
+if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_evaluation_reference COMMAND ${CMAKE_COMMAND}
+        -DEVIDENCE=$<TARGET_FILE:genetik_evaluation_workspace>
+        -DACTUAL=${CMAKE_CURRENT_BINARY_DIR}/evaluation-reference.txt
+        -DEXPECTED=${PROJECT_SOURCE_DIR}/docs/evaluation-results/accepted-reference.txt
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/evaluation_reference.cmake)
+    set_tests_properties(genetik_evaluation_reference PROPERTIES TIMEOUT 60)
+endif()
+
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_EvaluationCorpus.cpp "#include <examples/EvaluationCorpus.hpp>\n")
+add_library(example_header_EvaluationCorpus OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_EvaluationCorpus.cpp)
+target_include_directories(example_header_EvaluationCorpus PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(example_header_EvaluationCorpus PRIVATE genetik_lib)

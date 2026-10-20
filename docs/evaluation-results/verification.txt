@@ -1,0 +1,14 @@
+Release and Debug and ASan+UBSan: all 18 CTest cases pass (raw logs adjacent).
+Standalone public headers plus ScopedTiming and application support headers, including
+EvaluationCorpus: all configured object targets built in all three configurations.
+Downstream: separately configured consumer through genetik_lib; public 64-row exact
+polynomial loss added, existing multivariate/fitting/cadence/strict operators retained.
+Compiler warnings: full project syntax pass, then changed interceptor sources rechecked;
+-Wall -Wextra -Wpedantic, no diagnostics.
+Strict FP: interface -fno-fast-math -ffp-contract=off; unchanged interpreter/reduction
+source bodies; positive numerical and negative unsafe-compilation tests pass.
+Character seed42/1000: best .892; 1000 generations; 100100 attempted evaluations.
+Generic and prime file workflows: bounded CTest checks pass in all configurations.
+Initial ASan test-only allocation interceptor mismatch was repaired by pairing nothrow
+new/delete overrides; no sanitizer suppression or production-library workaround used.
+Full suite rerun after repair. No historical long campaign was repeated.

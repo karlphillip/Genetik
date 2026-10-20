@@ -1,0 +1,17 @@
+polynomial,7,1000,1000,56000,1
+prime,16,1000,1000,128000,1
+arithmetic,6,25,25,1200,1
+mixed,17,25,25,3400,1
+near_limit,31,1000,1000,248000,1
+early_invalid,2,1,1,16,2
+late_invalid,2,1000,1000,16000,2
+alternating_log,2,2,2,32,2
+positive_zero_division,3,1,1,24,2
+negative_zero_division,3,1,1,24,2
+signed_underflow,3,6,6,144,1
+subnormal_ratio,3,6,6,144,1
+masked_overflow,5,1,1,40,2
+underflow_domain,4,1,1,32,2
+residual_overflow,1,1,1,8,2
+sum_overflow,1,2,2,16,2
+higher_variable,3,2,2,48,1

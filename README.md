@@ -192,3 +192,8 @@ The default stays 1. Example:
 structure generations, mixed accuracy, reduced strict-arithmetic recovery and no
 general speedup. The library does not cache fitting results or mark values as
 already optimized.
+
+Checked CPU loss evaluation reuses one internal operand workspace across dataset
+rows. Public usage and arithmetic/search results are unchanged; see
+[workspace measurements and reproduction commands](docs/EVALUATION_WORKSPACE.md)
+for independent exact-output checks, bounded benchmarks and search replays.

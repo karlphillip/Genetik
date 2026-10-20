@@ -110,3 +110,11 @@ anchored to the same committed generation. The returned preparation/initial audi
 unpublished-work counters distinguish ordinary calls, fitting and policy skips.
 Optional bounded `RefinementDiagnostics` observes work without changing it. See
 [FITTING_CADENCE.md](FITTING_CADENCE.md) for API and [the measured comparison](FITTING_CADENCE_RESULTS.md).
+
+Checked loss uses invocation-local operand storage across rows, without reusing
+mathematical results. First growth stays after the first attempted row and actual
+loss have been charged. No public usage, fitness, budget, cadence or publication
+contract changes. All-row example reporting also resets/reuses its local storage
+while continuing to count every invalid prediction. See
+[EVALUATION_WORKSPACE.md](EVALUATION_WORKSPACE.md) for exact numerical/search replays
+and measured allocation/time results.

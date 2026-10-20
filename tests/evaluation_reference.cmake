@@ -1,0 +1,8 @@
+execute_process(COMMAND "${EVIDENCE}" --reference OUTPUT_FILE "${ACTUAL}" RESULT_VARIABLE result)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "numerical reference executable failed")
+endif()
+execute_process(COMMAND "${CMAKE_COMMAND}" -E compare_files "${EXPECTED}" "${ACTUAL}" RESULT_VARIABLE different)
+if(NOT different EQUAL 0)
+    message(FATAL_ERROR "accepted evaluator reference differs (bits, classification, row work or reporting)")
+endif()

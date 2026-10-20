@@ -61,9 +61,10 @@ inline void printConfig(const SymbolicRegressionConfig& config) {
 struct PredictionReport { std::size_t rows=0, invalid=0, invalidErrors=0; std::optional<double> maximum; };
 inline PredictionReport predictionReport(const Expression& expression,const std::vector<RegressionRow>& rows) {
     PredictionReport report; double maximum=0;
+    genetik_detail::EvaluationWorkspace workspace;
     for(const auto& row:rows) {
         ++report.rows;
-        const auto value=expression.evaluate(row.inputs);
+        const auto value=workspace.evaluate(expression,row.inputs);
         if(!value.valid()){++report.invalid;continue;}
         volatile double residual=value.value()-row.target;
         if(!std::isfinite(residual)){++report.invalidErrors;continue;}

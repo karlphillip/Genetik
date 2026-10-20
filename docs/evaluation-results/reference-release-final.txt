@@ -1,0 +1,7 @@
+Test project /home/karlphillip/workspaces/primeResearcher/build-release
+    Start 18: genetik_evaluation_reference
+1/1 Test #18: genetik_evaluation_reference .....   Passed    0.02 sec
+
+100% tests passed out of 1
+
+Total Test time (real) =   0.02 sec

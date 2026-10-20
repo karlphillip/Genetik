@@ -797,3 +797,59 @@ campaign runs; complete 1–1200 tables and bounded nonworsening traces checked.
 Checksums and raw successful CTest evidence: docs/cadence-results. The refreshed
 prime default file run also reproduces all accepted non-time fields and expression;
 helper comparison now handles additive counters without altering historical logs.
+
+## Invocation-local checked-evaluation workspace milestone (2026-10-20)
+
+Started clean at accepted cadence commit 94f05814afaaf26cc48fa4d22438cf56bb8943bc.
+GCC/libstdc++ 13.3.0, glibc/libm 2.39, Linux 6.8.12-1021-tegra/AArch64,
+workspace CMake/CTest 4.4.4; 8.6 GiB available RAM/no swap, 833 GiB free storage.
+Read the current evaluation, loss, fitting, preparation, publication, reporting and
+cadence contracts. No unrelated work was present.
+
+Confirmed: every accepted per-row evaluate allocated/reserved/destroyed its own
+operand vector; it did not zero-initialize the reserved doubles. The inclusive
+97.5% objective profile had not isolated allocation. Instrumented ordinary-new
+counts confirm 1,000 allocations/128,000 requested bytes for one prime representative
+loss and 1,000/248,000 for a 31-node fixture. Early failures visit/allocate fewer
+rows. A contained lexical workspace now allocates once per loss (128 and 248 bytes
+respectively), without cross-loss reuse or mathematical caching. All-row example
+reporting uses the same internal owner; direct public calls remain independent.
+
+There is one private interpreter, with unchanged traversal, binding checks, strict
+per-node binary64/domain checks and checked residual/square/sum/mean. Only operand
+storage management changed. First growth remains after actual-loss and first-row
+charges. Fault injection confirms nested bad_alloc, consumed work/RNG, preserved
+committed population/generation/fitness/best, and later successful evaluation.
+Focused growth/reset/ownership checks and the existing failure/budget suite pass.
+
+Archived accepted headers/helpers were preserved before editing. Independent
+reference artifacts compare exact finite uint64 representations, signed zeros,
+invalid nodes, losses, reporting, API errors and attempted rows/work. Full prime
+seed-2 and arithmetic seed-42 cadence-one replays compare initial/prepared values,
+all deterministic counters, accepted fitting improvements, committed traces, stop
+reason and final RNG state exactly; short cadence-four replay also matches.
+No historical campaign artifacts were modified. This is optimization qualification,
+not a new quality/tuning campaign. See EVALUATION_WORKSPACE.md and evaluation-results
+for the complete corpus, raw paired batches, exact replay records and limitations.
+
+The next milestone is library delivery: installation/exported CMake packages,
+clean installed downstream use, declared compiler/platform support, CI, API docs,
+and release/versioning policy. Cross-call scratch, exact caches, new optimizers,
+compilation and GPU execution remain separate decisions.
+
+Final qualification: 18/18 Release (2.01 s), 18/18 Debug (2.35 s),
+18/18 ASan+UBSan (159.26 s), including standalone-header builds, separately configured source-tree
+CMake consumer, strict-FP negative builds and bounded existing workflows. The new
+fault test's initial ASan interceptor mismatch was repaired with paired nothrow
+new/delete overrides, without disabling checks; the full suite was rerun. A short
+ASan arithmetic cadence-four replay also exactly matches accepted initialization,
+results, counters, trace and RNG. Full warnings/whitespace checks are clean.
+
+Final uninstrumented five-pair medians: prime representative 104.851 → 98.120 us
+per checked loss (6.42% reduction); arithmetic target 2.039 → 1.624 us (20.39%).
+Other declared multirow gains and noisy/slower one-row failures are retained in
+all raw batches. The single full-search observations are prime 7.9163 → 6.4173 s
+and arithmetic .17614 → .15982 s; these are not repeated speedup estimates. All
+work/result/RNG counters match, so no extra search generations or quality gain
+is claimed. Production APIs and supported numerical environment are unchanged.
+Exact commands and raw evidence: docs/EVALUATION_WORKSPACE.md and evaluation-results.

@@ -1,0 +1,14 @@
+accepted_revision=94f05814afaaf26cc48fa4d22438cf56bb8943bc
+baseline_mechanism=git archive into ../evaluation-reference before evaluator edits
+compiler=GCC/libstdc++13.3.0; C++20 -O3 -DNDEBUG -fno-fast-math -ffp-contract=off; no LTO
+runtime=Jetson Orin NX/AArch64 Linux6.8.12-1021-tegra glibc/libm2.39; schedutil
+allocation_scope=ordinary C++ operator new requests during measure; no process-wide/malloc/allocator-metadata claim
+Expression.hpp arithmetic_body_unchanged=1 sha256=0e4910ba7db30d92044b987e0a0e16d04e3819640fe55b140eb101150bb7ff44
+Regression.hpp arithmetic_body_unchanged=1 sha256=c990a9964e08c6b6901266ec77d73f0d49f4abbbd287743dd26960b362ba95a9
+../evaluation-reference/genetik/Expression.hpp sha256=8950c9449083b2e738d40458418dcdbe78b2734ca7df6ff80a46ed99628a812d
+../evaluation-reference/genetik/Regression.hpp sha256=7d6e4774ea6977101c756fb11f953eff14b2cc28e1407ee2b07825663429100b
+genetik/Expression.hpp sha256=0bdc50d9c3079e4a1de8fd3d872a228a862a17a81a469ff52a7a99b510ed4e34
+genetik/Regression.hpp sha256=c41b13536607fbfcc9a816087203dd29235949f52b527066763610fb7da82d01
+evaluation_workspace.cpp sha256=9d5ae808c3bd541a9433d222a8c1d56a5d8b1de1a46871a68e75cb964afc3008
+examples/EvaluationCorpus.hpp sha256=c908e74425fce6152051131978b85c5b226a4350b1ffd6b08766779d3020c35b
+evidence_whitespace=canonicalized line endings/trailing blanks; numeric bit patterns and classifications unchanged

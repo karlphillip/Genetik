@@ -121,3 +121,11 @@ simplifying expressions. Structural-limit objects are constraints and are not pa
 of this content comparison. It exposes no mutable alias and requires usable values.
 Fitting diagnostics additionally operate within one fixed problem/configuration;
 a future reusable cache must also account for compatible structural constraints.
+
+Checked dataset loss now owns one internal operand workspace and reuses capacity
+across rows; all-row example reporting does likewise. Public single-point evaluate
+retains independent local ownership and uses the same private interpreter. Validation,
+strict arithmetic, first-invalid-node behavior and all result bits are unchanged.
+No public workspace API, cross-call storage or result cache is added. See
+[EVALUATION_WORKSPACE.md](EVALUATION_WORKSPACE.md) for independent accepted-output
+comparisons, allocation-failure accounting and fixed-work timing evidence.

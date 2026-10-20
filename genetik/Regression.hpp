@@ -36,6 +36,9 @@ public:
         if (expression.variableCount() != dimensions_) throw std::invalid_argument("expression/problem dimensions differ");
         double sum = 0, maximum = 0;
         std::size_t attempted = 0;
+        // Empty construction cannot allocate. First growth stays after the first
+        // attempted-row charge, within the already charged training-loss call.
+        genetik_detail::EvaluationWorkspace workspace;
         for (const auto& row : rows_) {
             ++attempted;
             if (rowAttempts) {
@@ -43,7 +46,7 @@ public:
                     throw std::overflow_error("row counter exhausted");
                 ++*rowAttempts;
             }
-            const auto prediction = expression.evaluate(row.inputs);
+            const auto prediction = workspace.evaluate(expression, row.inputs);
             if (!prediction.valid()) return {Fitness::invalid(), {}, attempted};
             volatile double residual = prediction.value() - row.target;
             if (!std::isfinite(residual)) return {Fitness::invalid(), {}, attempted};

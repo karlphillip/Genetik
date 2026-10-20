@@ -7,7 +7,7 @@ Current delivery order:
 1. Generic multivariate/data-input milestone — complete; public row API, strict application loader, 2/3-input contracts and all five campaign seeds reported.
 2. Strict ordinary division/natural logarithm throughout typed construction, evaluation, variation, limits, export and domain tests — complete; the first prime regression campaign is also complete.
 3. Prime regression as an example of generic indexed-sequence regression — first campaign complete, including all weak results and baselines.
-4. Refinement profiling and optional cadence — complete; keep interval 1 default, preserve mixed twenty-run results. Further profile checked CPU evaluation and complete production delivery (packaging, platform qualification, documentation and checkpoint/resume); justify acceleration from measurements.
+4. Refinement profiling and optional cadence — complete; keep interval 1 default, preserve mixed twenty-run results. Checked evaluator workspace profiling/reuse is complete; next deliver installation/exported CMake packages, clean downstream consumption, compiler/platform coverage, CI, API documentation and release/versioning policy. Checkpoint/resume and acceleration remain separately scoped.
 
 ## 1. Baseline, C++20 and first hardening — complete
 
@@ -93,18 +93,21 @@ are preserved. The 1001–1200 range is now examined; do not call it fresh after
 tuning. A bounded accuracy/complexity archive, stronger numerical solver, and an
 800/200 development/refit study remain future work, not implemented claims.
 
-Recommended next: profile evaluator/refinement work and assess a bounded fitting
-schedule/cache policy under unchanged immutable-problem/publication contracts. The
+Historical recommendation after the first prime campaign (profiling/cadence now
+completed below): inspect evaluator/refinement work under unchanged immutable-
+problem/publication contracts. Cache policy remains a separate decision. The
 measured call allowance is mostly spent refining fewer than 13 generations, not on
 invalidity or rejected structure. Reserve a new later range for future informed
 extrapolation assessment. Keep production delivery below on the roadmap; no GPU work
 before representative CPU profiling.
 
-## 6. Packaging, documentation, qualification and resume — pending
+## 6. Library delivery — next
 
-Install/export targets and headers; version/package config; API and migration documentation; build matrix on supported toolchains/platforms; license/dependency notices. Specify serialization of engine state (not only original seed), population, objective/cache state, work counters, configuration and archive. Test interrupted/resumed equivalence under declared supported conditions. Add useful cancellation and result persistence before promising resumability.
+Install/export targets and headers; version/package config; clean installed downstream consumption; API and migration documentation; declared supported toolchains/platforms and CI build matrix; release/versioning policy; license/dependency notices.
 
-## 7. Profiling and performance — pending
+Checkpoint/resume remains a separate subsequent task. Specify serialization of engine state (not only original seed), population, objective/cache state, work counters, configuration and archive. Test interrupted/resumed equivalence under declared supported conditions. Add useful cancellation and result persistence before promising resumability.
+
+## 7. Further profiling and performance — separately scoped
 
 Profile representative CPU runs and evaluator/constant-fitting workloads. Improve measured bottlenecks under correctness/repeatability tests. Consider batching, parallel execution and Jetson GPU acceleration only with a declared execution/random-stream model, measured benefit, numerical qualification and an already correct CPU reference. Do not assume CUDA or threading is justified by this hardware alone.
 
@@ -124,12 +127,35 @@ one. Keep interval 1 as default. Prime's fitting-selected representative worsens
 with interval 4; all results, including misses, are retained. No evaluation-driven
 tuning was performed; indices 1001–1200 remain an examined benchmark.
 
-Next recommendation: profile checked evaluator workspace/allocation and arithmetic
-inside objective calls (about 97.5% of the prime profile), then qualify a contained
-CPU optimization under unchanged strict semantics, work counts and repeatability.
+That recommendation is now completed by invocation-local evaluation workspace
+reuse; see EVALUATION_WORKSPACE.md. Allocation counts drop from one per visited row
+to one per loss; fixed-work timings support keeping the change, and accepted
+numerical/search outcomes and work/RNG counters match exactly. The inclusive
+97.5% region was not itself evidence that allocation dominated.
 Exact input/result reuse is a separate later decision: observed repeat no-change
 work is measurable (~4.5% prime/~6.9% arithmetic calls), but inherited fitted outputs
 can still improve. Any cache needs exact content/constraints/problem/configuration
 identity and explicit budget semantics. No already-optimized flag, cache, new solver,
 algebraic rewrite or GPU execution is implemented. Production packaging/platform
 qualification/documentation and checkpoint/resume remain pending.
+
+
+## Checked evaluation workspace — complete; delivery is next
+
+Measured a fixed polynomial/prime/arithmetic/mixed/boundary/domain corpus against
+archived accepted headers before changing storage. One internal, loss-owned vector
+now retains capacity across rows, through the same strict interpreter as public
+single-point evaluation. No arithmetic, validation, reduction, cache, RNG or budget
+changes. Independent finite bits/invalidity/errors/row work match, including full
+prime seed-2 and arithmetic seed-42 control replays and a short cadence-4 check.
+Five paired fixed-work batches show useful multirow gains; noisy/slower single-row
+cases are retained. See EVALUATION_WORKSPACE.md and evaluation-results.
+
+The next bounded milestone is library delivery: install headers and exported
+CMake targets/package configuration; verify a clean separately configured consumer
+against an installed prefix; declare supported compiler/platform versions and add
+CI coverage; publish API/ownership/numerical documentation and a release/versioning
+policy with license notices. Start from the qualified C++20/strict-FP CPU behavior.
+Checkpoint/resume needs its own state/equivalence design rather than being implied
+by packaging. Exact-result caching, cross-loss storage, stronger solvers, expression
+compilation, algebraic rewrites and GPU execution remain separate decisions.

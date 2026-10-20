@@ -12,6 +12,13 @@ int main() {
         Expression::binary(ExpressionKind::Add, square, x), Expression::constant(1, 1));
     if (polynomial.evaluate(std::array{2.}).value() != 7 || polynomial.nodeCount() != 7 ||
         polynomial.depth() != 4 || polynomial.toString() != "(((x0 * x0) + x0) + 1.0)") return 1;
+    // Public checked-loss entry point exercises invocation-local row storage.
+    std::vector<RegressionRow> repeatedRows;
+    for(int i=0;i<64;++i)repeatedRows.push_back({{2.},7.});
+    const auto repeated=RegressionProblem::create(repeatedRows);
+    std::uint64_t visited=0;
+    const auto measured=repeated->measure(polynomial,&visited);
+    if(measured.loss.score()!=0 || visited!=64 || measured.samplesAttempted!=64) return 1;
     const auto problem = RegressionProblem::create({{{0}, .125}, {{1}, .375}});
     SymbolicRegressionConfig config;
     config.population = 4; config.elites = 1; config.maxGenerationAttempts = 1; config.maxEvaluations = 8;

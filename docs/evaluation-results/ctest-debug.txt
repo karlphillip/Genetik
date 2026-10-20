@@ -1,0 +1,41 @@
+Test project /home/karlphillip/workspaces/primeResearcher/build-debug
+      Start  1: genetik_strict_arithmetic
+ 1/18 Test  #1: genetik_strict_arithmetic ........   Passed    0.03 sec
+      Start  2: genetik_multivariate_contracts
+ 2/18 Test  #2: genetik_multivariate_contracts ...   Passed    0.03 sec
+      Start  3: genetik_fitting_contracts
+ 3/18 Test  #3: genetik_fitting_contracts ........   Passed    0.05 sec
+      Start  4: genetik_symbolic_contracts
+ 4/18 Test  #4: genetik_symbolic_contracts .......   Passed    0.01 sec
+      Start  5: genetik_expression_contracts
+ 5/18 Test  #5: genetik_expression_contracts .....   Passed    0.07 sec
+      Start  6: genetik_fitness_publication
+ 6/18 Test  #6: genetik_fitness_publication ......   Passed    0.00 sec
+      Start  7: genetik_contracts
+ 7/18 Test  #7: genetik_contracts ................   Passed    0.02 sec
+      Start  8: genetik_regression_cli
+ 8/18 Test  #8: genetik_regression_cli ...........   Passed    0.10 sec
+      Start  9: genetik_expression_example
+ 9/18 Test  #9: genetik_expression_example .......   Passed    0.00 sec
+      Start 10: genetik_demo_bounded
+10/18 Test #10: genetik_demo_bounded .............   Passed    0.02 sec
+      Start 11: genetik_demo_zero_budget
+11/18 Test #11: genetik_demo_zero_budget .........   Passed    0.00 sec
+      Start 12: genetik_demo_invalid_argument
+12/18 Test #12: genetik_demo_invalid_argument ....   Passed    0.00 sec
+      Start 13: genetik_downstream
+13/18 Test #13: genetik_downstream ...............   Passed    0.08 sec
+      Start 14: genetik_expression_fp_policy
+14/18 Test #14: genetik_expression_fp_policy .....   Passed    1.75 sec
+      Start 15: genetik_prime_contracts
+15/18 Test #15: genetik_prime_contracts ..........   Passed    0.05 sec
+      Start 16: genetik_prime_cli
+16/18 Test #16: genetik_prime_cli ................   Passed    0.07 sec
+      Start 17: genetik_workspace_contracts
+17/18 Test #17: genetik_workspace_contracts ......   Passed    0.00 sec
+      Start 18: genetik_evaluation_reference
+18/18 Test #18: genetik_evaluation_reference .....   Passed    0.04 sec
+
+100% tests passed out of 18
+
+Total Test time (real) =   2.35 sec

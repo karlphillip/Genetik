@@ -88,6 +88,8 @@ private:
     std::optional<std::size_t> failedNode_;
 };
 
+namespace genetik_detail { class EvaluationWorkspace; }
+
 class Expression {
 public:
     // Copy caller tokens even for rvalues. No caller-owned writable storage is adopted.
@@ -169,11 +171,21 @@ public:
     }
 
     ExpressionResult evaluate(std::span<const double> bindings) const {
+        std::vector<double> stack;
+        return evaluateWithStack(bindings, stack);
+    }
+
+private:
+    friend class genetik_detail::EvaluationWorkspace;
+    // One interpreter for convenience calls and invocation-local batch evaluation.
+    // Validate before allocating, retain capacity, and reset logical contents even
+    // after an invalid prior row. reserve does not initialize or index raw capacity.
+    ExpressionResult evaluateWithStack(std::span<const double> bindings, std::vector<double>& stack) const {
         requireUsable();
         if (bindings.size() != variables_) throw std::invalid_argument("binding count differs from expression arity");
         for (double input : bindings)
             if (!std::isfinite(input)) throw std::invalid_argument("variable bindings must all be finite");
-        std::vector<double> stack;
+        stack.clear();
         stack.reserve(nodes_.size());
         for (std::size_t i = 0; i < nodes_.size(); ++i) {
             const auto& node = nodes_[i];
@@ -208,6 +220,7 @@ public:
         return ExpressionResult(stack.back());
     }
 
+public:
     std::string toString() const {
         requireUsable();
         struct Frame { std::size_t root; unsigned int phase; };
@@ -299,3 +312,17 @@ private:
     ExpressionLimits limits_;
     std::size_t depth_ = 0;
 };
+
+// Internal implementation detail, not a public workspace/lifetime API. Owners keep
+// this lexical to one batch/loss invocation; no expression, binding or result alias
+// is retained. Growth happens before interpreting any node of the current row.
+namespace genetik_detail {
+class EvaluationWorkspace final {
+public:
+    ExpressionResult evaluate(const Expression& expression, std::span<const double> bindings) {
+        return expression.evaluateWithStack(bindings, stack_);
+    }
+private:
+    std::vector<double> stack_;
+};
+}

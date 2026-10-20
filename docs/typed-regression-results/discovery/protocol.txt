@@ -1,0 +1,6 @@
+target=A*x+b reference=independent_row_major_loops data_seeds=73001,73002,73003 rows=64,64,64
+schema=x0:matrix[2,3],x1:vector[3],x2:vector[2] result=vector[2] seeds=0,1,2,3,42
+population=128 loss_budget=10000 candidate_budget=10000 generations=100 nodes=15 depth=5 constant_nodes=4 coefficients=16 constant_abs=8
+operators=add,sub,mul,dot,matvec,matmul,transpose policy=uniform_feasible_productions operation_probability=.65
+constant_shapes=scalar constant_values=-1,0,1 initial_depth=4 mutation_depth=3 proposals=8 elites=2 crossover=.9 mutation=.35 fitting=off stop_loss=0 recovery_max_error=1e-6
+ordering=loss,nodes,depth,constant_occurrences,coefficients,text final_tie=seed_list_order threads=1

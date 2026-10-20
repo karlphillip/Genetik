@@ -1,0 +1,6 @@
+0	0	(matvec(x0,x1) + x2)
+1	0	(matvec(x0,x1) + x2)
+2	0	(x2 + matvec(x0,x1))
+3	0	(matvec(x0,x1) + x2)
+42	0	(matvec(x0,x1) + (scalar(1.0) * x2))
+representative_seed=0

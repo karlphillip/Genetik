@@ -55,3 +55,41 @@ before compute; exceptions acquire nested attempt context. TypedScoring forks
 exclusive objectives on workers, merging counters after drain. TypedExpressionCandidate
 uses the same controlled edit/final fitness wrapper and problemIdentity contract as
 scalar expression candidates; public replacements invalidate fitness even if equal.
+
+## Constructive grammar and search
+
+`TypedGrammar` declares enabled operators, finite admissible shapes, constant shapes,
+coefficient terminal choices, depth ceilings, operation probability and proposal cap.
+Default operators are add/subtract/scalar multiply/dot/matvec/matmul/transpose. Strict
+scalar Divide/Log can be enabled explicitly. Empty shapes resolves distinct ordered
+schema/output/scalar shapes. Each input shape must occur in the vocabulary. Planner
+bounds are 16 shapes, 64 initial/mutation levels, nine distinct operator kinds and
+4096 proposals. Constants sample each coefficient independently from declared doubles.
+
+The planner builds one least-node validated witness per shape and allowed depth,
+then enumerates feasible productions using those witnesses. It is conservative:
+limits may exclude a witness even when a different non-minimal plan would work.
+An unsupported/unwitnessed requested output is an API error before RNG consumption,
+not NoViableCandidates. This is a bounded constructive grammar, not a complete
+proof of realizability for arbitrary resource combinations. Operations remain
+possible when their result has no terminal. Selection is uniform over feasible
+operator/operand-shape productions. Remaining node budget is allocated subject to
+both child minima. Construction and complete-tree limit rejections have finite
+proposal caps and validated-witness fallback; counters expose both events.
+No mathematical-validity retry is performed. Restrictive construction may bias the
+search space and should be declared with results.
+
+`TypedVariation` supplies initialize/mutation/crossover to the unchanged GA policy
+interface. `typedSubtree`, `typedSubexpression`, `replaceTypedSubtree` preserve schema
+and exact result shapes. Replacement checks the whole new postfix tree, including
+destination depth, coefficient counts, primitive plan and payload. Metadata is
+recomputed by validation, never reused after an edit. Only TypedLimitError represents
+a rejected structural proposal; unexpected allocation/errors propagate.
+
+`typedSymbolicRegression(problem, config, run, optionalObjective)` uses the existing
+Population/GeneticAlgorithm transaction, stable ordering, worker ownership and
+publication; its outer driver only handles stopping/accounting like scalar search.
+Fresh run/objective required. Result contains exact initial snapshots, committed
+best/history, work/row/arithmetic counters, unpublished work, variation statistics
+and stop reason. Ordinary scoring is fresh even for elites/unchanged clones. Optional
+fitting is added in checkpoint 3. The generic core and scalar driver are unchanged.

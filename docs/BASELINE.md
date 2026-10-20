@@ -967,3 +967,14 @@ checks exercise scalar/vector/matrix losses, detached data, exact problem identi
 invalid late predictions, local resource stops, reporting separation and worker scoring.
 Commands: `cmake --build out/build/release --target genetik_typed_regression_tests header_TypedRegression -j2`;
 `out/build/release/tests/genetik_typed_regression_tests`. See TYPED_REGRESSION.md.
+
+## Phase 3 checkpoint 2: typed structure evolution
+
+TypedVariation and typedSymbolicRegression use the shared generic engine unchanged.
+Focused warning-as-error Release checks cover finite constructive grammars, operation-only
+outputs, root/internal shape matching, full destination limits, changed offspring,
+higher variable identities, parent fitness safety and nonbinding serial/2/3/4-worker
+search/RNG equivalence. A bounded two-worker application smoke passed. The frozen
+five-seed no-fit campaign is in TYPED_DISCOVERY_RESULTS.md: three honest generation-zero
+recoveries and discoveries at generations5/6; every selected model has zero measured
+error on fitting/interior/exterior samples. No outcome-dependent adjustment.

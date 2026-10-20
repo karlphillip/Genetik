@@ -1,0 +1,52 @@
+representative_seed=0
+seed=0 initial=0 final=0 best_generation=0 published=0 attempted_generations=0 loss_attempts=128 rows=8192 primitive_work=88320 unused=9872 runtime=0.021230993 stop=exact_training_fit
+mutation_changes=0 crossover_changes=0 structural_rejections=1 mutation_fallbacks=0 crossover_fallbacks=0
+expression=(matvec(x0,x1) + x2)
+schema{x0:matrix[2,3],x1:vector[3],x2:vector[2]} output=vector[2] nodes=5 depth=3 constants=0 coefficients=0
+range=0 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+range=1 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+range=2 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+trace=128,0,0
+seed=1 initial=0 final=0 best_generation=0 published=0 attempted_generations=0 loss_attempts=128 rows=8192 primitive_work=74880 unused=9872 runtime=0.017143801 stop=exact_training_fit
+mutation_changes=0 crossover_changes=0 structural_rejections=1 mutation_fallbacks=0 crossover_fallbacks=0
+expression=(matvec(x0,x1) + x2)
+schema{x0:matrix[2,3],x1:vector[3],x2:vector[2]} output=vector[2] nodes=5 depth=3 constants=0 coefficients=0
+range=0 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+range=1 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+range=2 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+trace=128,0,0
+seed=2 initial=1.732421875 final=0 best_generation=5 published=5 attempted_generations=5 loss_attempts=768 rows=49152 primitive_work=576192 unused=9232 runtime=0.032259508999999999 stop=exact_training_fit
+mutation_changes=116 crossover_changes=250 structural_rejections=471 mutation_fallbacks=0 crossover_fallbacks=13
+expression=(x2 + matvec(x0,x1))
+schema{x0:matrix[2,3],x1:vector[3],x2:vector[2]} output=vector[2] nodes=5 depth=3 constants=0 coefficients=0
+range=0 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+range=1 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+range=2 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+trace=128,0,1.732421875
+trace=768,5,0
+seed=3 initial=1.732421875 final=0 best_generation=6 published=6 attempted_generations=6 loss_attempts=896 rows=57344 primitive_work=664192 unused=9104 runtime=0.029601543000000001 stop=exact_training_fit
+mutation_changes=132 crossover_changes=314 structural_rejections=454 mutation_fallbacks=0 crossover_fallbacks=15
+expression=(matvec(x0,x1) + x2)
+schema{x0:matrix[2,3],x1:vector[3],x2:vector[2]} output=vector[2] nodes=5 depth=3 constants=0 coefficients=0
+range=0 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+range=1 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+range=2 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+trace=128,0,1.732421875
+trace=896,6,0
+seed=42 initial=0 final=0 best_generation=0 published=0 attempted_generations=0 loss_attempts=128 rows=8192 primitive_work=75008 unused=9872 runtime=0.011044132999999999 stop=exact_training_fit
+mutation_changes=0 crossover_changes=0 structural_rejections=0 mutation_fallbacks=0 crossover_fallbacks=0
+expression=(matvec(x0,x1) + (scalar(1.0) * x2))
+schema{x0:matrix[2,3],x1:vector[3],x2:vector[2]} output=vector[2] nodes=7 depth=3 constants=1 coefficients=1
+range=0 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+range=1 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+range=2 loss=0.000000 max_error=0 invalid_rows=0 rows=64
+trace=128,0,0
+baseline=mean range=0 mse=11.592643737792969 max_error=10.6875
+baseline=mean range=1 mse=6.2933769226074219 max_error=6.64453125
+baseline=mean range=2 mse=313.30794525146484 max_error=42.03515625
+baseline=b range=0 mse=9.31982421875 max_error=8.5
+baseline=b range=1 mse=4.6571502685546875 max_error=5.703125
+baseline=b range=2 mse=299.44482421875 max_error=38.5
+baseline=Ax range=0 mse=1.732421875 max_error=2
+baseline=Ax range=1 mse=1.240234375 max_error=1.875
+baseline=Ax range=2 mse=10.8046875 max_error=4

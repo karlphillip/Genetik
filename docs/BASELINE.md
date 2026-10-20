@@ -705,3 +705,95 @@ Recommended next: CPU profiling of refinement/evaluation and a bounded fitting
 schedule/cache policy experiment to permit more structure exploration under the
 same work contract, followed by production delivery. Stronger solvers, archives and
 checkpoint/resume remain pending rather than implied by this application.
+
+## Refinement profile and optional cadence milestone (2026-10-20)
+
+Starting revision e944ffbafff164ed7c548fc7b66abe840ada77c1, clean tree; accepted
+prime and strict-arithmetic reports/prediction artifacts preserved byte-for-byte.
+Same C++20/GCC13.3/libstdc++13/qualified libm Jetson environment and workspace-local
+CMake/CTest 4.4.4. Orin NX Seeed recomputer classic Super, AArch64 Linux
+6.8.12-1021-tegra, schedutil governor observed; 15 GiB RAM, 9.4 GiB available,
+no swap, 833 GiB free storage. Timings are single contemporaneous observations per
+seed/mode with alternating pair order, not isolated/fixed-frequency benchmarks.
+
+Added positive/default-one fitEveryGenerations and --fit-every across file and
+prime/multivariate campaign workflows. Generation zero always receives enabled
+fitting. Later eligibility uses the prospective committed population generation,
+never attempts or origin. Ineligible slots receive fresh ordinary checked loss;
+no fitness cache is reused. All eligible slots, including elites/clones, retain the
+old coordinate fitter and local limits. Optional preparation context preserves old
+custom two-argument preparations and scalar variation. Generation publication and
+failure/RNG contracts are unchanged. Result fields add complete initial audit/work,
+disjoint preparation accounting and work consumed without publication.
+
+Added optional bounded exact-expression repeat observation and boundary timing;
+no per-node/row clocks, no cache, optimizer change, rewrite or GPU. Actual objective
+calls split into ordinary, fitting baseline and fitting probe categories; their
+sum equals the old total. Exact comparisons include typed nodes, schema and constant
+bits, including signed zero. Origin labels are diagnostic only. Optional Population
+publication timing makes no clock calls by default. Full profile/control RNG/results/
+work agree on both seed-2 workloads. All ten contemporaneous default controls match
+accepted expressions, scores, stop reasons and every legacy non-time work counter.
+All ten paired raw/prepared initial populations, fitness and initial counters agree.
+
+The first audit implementation exposed a C++20 temporary-snapshot lifetime bug in
+new initial-audit capture. Retaining the detached shared owner through iteration
+fixed it; focused pair checks caught it before any evaluation reporting. Partial
+runs are retained under docs/cadence-results/audit-failure and excluded from measured
+policy conclusions. No search configuration changed. The initially oversized CLI
+qualification cases also timed out under ASan at 60 and 120 s; reducing parser/smoke
+work to 64/128 calls fixed this, with the original 60-second test ceiling restored.
+Full scheduling/failure/budget assertions remain in deterministic C++ fixtures and
+the Release file/in-memory reproduction; no search-quality assertion was weakened.
+
+Verification commands (from repository):
+
+```sh
+../.tools/bin/cmake -S . -B ../build-release -DCMAKE_BUILD_TYPE=Release
+../.tools/bin/cmake --build ../build-release -j2
+../.tools/bin/ctest --test-dir ../build-release --output-on-failure
+../.tools/bin/cmake -S . -B ../build-debug -DCMAKE_BUILD_TYPE=Debug
+../.tools/bin/cmake --build ../build-debug -j2
+../.tools/bin/ctest --test-dir ../build-debug --output-on-failure
+../.tools/bin/cmake -S . -B ../build-sanitize -DCMAKE_BUILD_TYPE=Debug -DGENETIK_SANITIZERS=ON
+../.tools/bin/cmake --build ../build-sanitize -j2
+../.tools/bin/ctest --test-dir ../build-sanitize --output-on-failure
+
+g++ -std=c++20 -fno-fast-math -ffp-contract=off -Wall -Wextra -Wpedantic -Igenetik -fsyntax-only cadence_campaign.cpp prime_regression.cpp tests/prime_regression.cpp regression_search.cpp tests/strict_arithmetic.cpp multivariate_regression.cpp tests/multivariate.cpp tests/downstream/main.cpp tests/constant_fitting.cpp constant_fitting_campaign.cpp tests/symbolic_regression.cpp tests/expressions.cpp tests/generation.cpp tests/tests.cpp demo.cpp polynomial_regression.cpp expression_demo.cpp
+timeout 10s ../build-release/genetik_demo 42 1000
+../build-release/genetik_cadence_campaign --output NEW_RESULT_DIRECTORY
+python3 examples/summarize_cadence.py NEW_RESULT_DIRECTORY
+git -c core.whitespace=cr-at-eol diff --check
+```
+
+Focused checks reuse the existing ThrowingObjective/publication fixtures and establish
+zero validation/disabled fitting, initialization equality, generations around 4,
+scheduled/unscheduled failures and cap exhaustion, unchanged committed members and
+archive, same schedule on retry, correct changed-expression score, inherited bounded
+refitting progress (1 -> 2), all-invalid unscheduled behavior, disjoint actual work/
+policy skips, same-seed/RNG and diagnostics equivalence, hard diagnostic capacity,
+exact signed-zero identity, and omitted/explicit-one compatibility. CLI and downstream
+fixtures exercise the option; standalone coverage includes the timing support header.
+Character best-seen remains .892, 1,000 generations, 100,100 outer calls. Full-suite,
+strict FP negative-build, warning and downstream outcomes are recorded with the new
+campaign evidence; long historical campaigns were not otherwise repeated.
+
+Complete new measurements are in FITTING_CADENCE_RESULTS.md and docs/cadence-results.
+Twenty comparisons plus two separate seed-2 profiles, not a parameter sweep. Interval
+4 publishes more generations for every seed, but has 3/2 fitting-MSE wins/losses on
+both problems; arithmetic recovery falls from 3/5 to 2/5. Paired median runtime ratios
+are 1.03461 prime and 1.29718 arithmetic (experimental/control). Interval 1 stays
+default. Prime profiles spend ~97.5% in objective evaluation; exact repeated-input
+no-change work is at least 4.472% of calls (6.897% arithmetic). Some prior fitter
+outputs improve again, ruling out an already-optimized shortcut. Next: inspect
+checked CPU evaluation workspace/allocation costs; exact reuse and stronger solvers
+are separate future choices. Keep production delivery and any later fresh prime
+assessment range explicit. No cache or policy tuning is implemented.
+
+Final cadence qualification: 16/16 Release (2.07 s), 16/16 Debug (2.26 s),
+16/16 ASan+UBSan (147.20 s), original CLI 60-second gate restored. Full warnings
+and whitespace checks clean. Disjoint per-origin work verified on all twenty
+campaign runs; complete 1–1200 tables and bounded nonworsening traces checked.
+Checksums and raw successful CTest evidence: docs/cadence-results. The refreshed
+prime default file run also reproduces all accepted non-time fields and expression;
+helper comparison now handles additive counters without altering historical logs.

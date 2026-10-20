@@ -98,3 +98,15 @@ API, and compares frozen models with five separate baselines. Scaling, reference
 generation/validation, QR fits, int64 diagnostics and exports stay in the example.
 See [PRIME_CAMPAIGN.md](PRIME_CAMPAIGN.md) for the complete unsuccessful/successful
 approximation evidence; no exact-prime recovery is promised.
+
+## Fitting cadence
+
+Set `config.fitEveryGenerations = 4` for the optional deterministic policy: refine
+generation zero, then 4,8,12,... based on the population's prospective committed
+generation. Default 1 preserves accepted computations and old counters. All slots
+are scored freshly; unscheduled scoring neither refines constants nor reuses cached
+fitness. Origin annotations only classify diagnostics. Failure leaves the schedule
+anchored to the same committed generation. The returned preparation/initial audit/
+unpublished-work counters distinguish ordinary calls, fitting and policy skips.
+Optional bounded `RefinementDiagnostics` observes work without changing it. See
+[FITTING_CADENCE.md](FITTING_CADENCE.md) for API and [the measured comparison](FITTING_CADENCE_RESULTS.md).

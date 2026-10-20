@@ -76,6 +76,9 @@ private:
     const ExpressionLimits limits_;
 };
 
+enum class PreparationOrigin { Initialization, ChangedOffspring, UnchangedOffspring, Elite, Unspecified };
+struct PreparationContext {std::uint64_t generation=0;PreparationOrigin origin=PreparationOrigin::Unspecified;};
+
 struct PreparedExpression { Expression expression; Fitness loss; };
 // Trusted preparation extension, analogous to the evaluator: must return the exact value scored
 // against this immutable problem. Implementations must not modify the input expression.
@@ -83,6 +86,10 @@ class RegressionPreparation {
 public:
     virtual ~RegressionPreparation() = default;
     virtual PreparedExpression prepare(const Expression&, const RegressionProblem&) = 0;
+    // Existing two-argument custom preparations remain source compatible.
+    virtual PreparedExpression prepare(const Expression& expression,const RegressionProblem& problem,PreparationContext) {
+        return prepare(expression,problem);
+    }
 };
 
 class ExpressionCandidate : public EvaluatedCandidate {
@@ -95,7 +102,7 @@ public:
     ExpressionCandidate(ExpressionCandidate&&) noexcept = default;
     ExpressionCandidate& operator=(ExpressionCandidate other) noexcept { swap(other); return *this; }
     void swap(ExpressionCandidate& other) noexcept {
-        swapEvaluation(other); problem_.swap(other.problem_); expression_.swap(other.expression_); text_.swap(other.text_); preparation_.swap(other.preparation_);
+        swapEvaluation(other); problem_.swap(other.problem_); expression_.swap(other.expression_); text_.swap(other.text_); preparation_.swap(other.preparation_); std::swap(context_,other.context_);
     }
     // All throwing work precedes installation/invalidation, preserving old genome/cache on failure.
     void replaceExpression(const Expression& expression) {
@@ -104,6 +111,14 @@ public:
         auto text = ready.toString();
         expression_.swap(ready); text_.swap(text); invalidateFitness();
     }
+    // Population supplies the authoritative prospective generation before evaluation.
+    // Origin is diagnostic only; it never decides cadence or permits fitness reuse.
+    void setPreparationGeneration(std::uint64_t generation) noexcept {
+        context_.generation=generation;
+        if(generation==0)context_.origin=PreparationOrigin::Initialization;
+        else if(context_.origin==PreparationOrigin::Initialization)context_.origin=PreparationOrigin::Unspecified;
+    }
+    void setPreparationOrigin(PreparationOrigin origin) noexcept {context_.origin=origin;}
     const Expression& expression() const noexcept { return expression_; }
     const std::string& text() const noexcept { return text_; }
     std::shared_ptr<const RegressionProblem> problem() const noexcept { return problem_; }
@@ -112,7 +127,7 @@ public:
 protected:
     Fitness prepareEvaluation() override {
         if (!preparation_) return evaluate(); // preserve numerical/custom evaluator API
-        auto ready = preparation_->prepare(expression_, *problem_);
+        auto ready = preparation_->prepare(expression_, *problem_,context_);
         if (ready.loss.state() == FitnessState::Unevaluated)
             throw std::logic_error("preparation returned unevaluated fitness");
         replaceExpression(ready.expression); // validate and detach before installation
@@ -131,6 +146,7 @@ private:
     Expression expression_;
     std::string text_;
     std::shared_ptr<RegressionPreparation> preparation_;
+    PreparationContext context_;
 };
 
 // Exact objective comparison, then hard complexity, then deterministic representation order.

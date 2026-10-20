@@ -1,0 +1,18 @@
+problem=prime seed=2 interval=1
+raw_initial_mse=0.0016721220378997103 refined_initial_mse=0.00011681874737724468 training_mse=1.4636376958468287e-06 discovery_stage=offspring discovery_generation=10 attempted_generations=12 published_generations=11 candidate_requests=803 training_loss_attempts=100000 unused_allowance=0 row_attempts=99864635 invalid_training_losses=145 fits=803 fitting_loss_attempts=100000 fit_proposals=124865 accepted=19309 invalid_probes=98 infeasible=1071 duplicates=24364 variation_rejections=74 variation_fallbacks=0 mutation_proposals=291 crossover_proposals=382 mutation_changes=247 crossover_changes=574 ordinary_loss_attempts=0 fitting_baselines=803 fitting_probes=99197 fitting_improved=540 schedule_skips=0 unpublished_losses=5967 unpublished_rows=5949018 seconds=8.0097288360000007 stop=evaluation_budget
+nodes=16 depth=6 expression=(x0 * (((((-3.0) / (-3.0)) * x0) * (0.79185613989830017 / x0)) + (0.1121049374658476 * log(x0))))
+initial_loss_calls=3068 initial_rows=3052016 completed_improved=539 completed_unchanged=95 no_constants=121 invalid_starts=47 aborted_fits=1 disjoint_check=1
+origin=initialization requests=64 fits=64 skips=0 ordinary=0 baselines=64 probes=3004 rows=3052016 invocations_with_progress=30
+origin=changed_offspring requests=612 fits=612 skips=0 ordinary=0 baselines=612 probes=81613 rows=82113611 invocations_with_progress=477
+origin=unchanged_offspring requests=103 fits=103 skips=0 ordinary=0 baselines=103 probes=10042 rows=10138007 invocations_with_progress=21
+origin=elite requests=24 fits=24 skips=0 ordinary=0 baselines=24 probes=4538 rows=4561001 invocations_with_progress=12
+origin=unspecified requests=0 fits=0 skips=0 ordinary=0 baselines=0 probes=0 rows=0 invocations_with_progress=0
+fit_stop=no_constants count=121
+fit_stop=loss_threshold count=0
+fit_stop=invalid_start count=47
+fit_stop=minimum_step count=402
+fit_stop=sweep_limit count=0
+fit_stop=proposal_limit count=0
+fit_stop=evaluation_limit count=232
+profile_search_seconds=8.0097288360000007 dataset_seconds=7.8125865959998917 fitting_inclusive_seconds=7.9961154699999968 fitting_dataset_seconds=7.8125865959998917 fitting_overhead_seconds=0.18352887400010509 preparation_inclusive_seconds=8.0015992629999992 generation_inclusive_seconds=8.0095533759999995 publication_seconds=0.00098402800000000007 other_search_seconds=0.012629338000003957
+diagnostic_capacity=1024 stored_expressions=1024 observed_fits=803 untracked_requests=9 capacity_drops=19 repeated_input_requests=168 repeat_loss_attempts=5731 repeated_completed_nochange_loss_attempts=4472 repeated_with_progress=16 previous_output_requests=227 previous_output_loss_attempts=16427 previous_output_with_progress=33 previous_output_completed_nochange=194

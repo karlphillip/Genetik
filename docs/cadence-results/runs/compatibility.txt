@@ -1,0 +1,2 @@
+PASS: all ten controls reproduce accepted expressions, scores, stopping reasons and every legacy non-time result counter.
+PASS: ten raw/prepared initial population, fitness and work pairs; two full profile/control result, work, preparation, RNG comparisons.

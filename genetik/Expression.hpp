@@ -1,5 +1,7 @@
 #pragma once
 #include <algorithm>
+#include <bit>
+#include <cstdint>
 #include <charconv>
 #include <cmath>
 #include <cfloat>
@@ -96,6 +98,19 @@ public:
         if (postfix.size() > limits.maxNodes) throw std::length_error("expression node limit exceeded");
         nodes_.assign(postfix.begin(), postfix.end());
         validate();
+    }
+    // Exact typed representation, including signed-zero constant bits and binding schema.
+    // Limits are constraints on a value, not expression content. Moved-from values are not usable.
+    bool sameRepresentation(const Expression& other) const {
+        requireUsable();other.requireUsable();
+        if(variables_!=other.variables_ || nodes_.size()!=other.nodes_.size())return false;
+        for(std::size_t i=0;i<nodes_.size();++i) {
+            const auto& a=nodes_[i];const auto& b=other.nodes_[i];
+            if(a.kind()!=b.kind())return false;
+            if(a.kind()==ExpressionKind::Variable && a.variableIndex()!=b.variableIndex())return false;
+            if(a.kind()==ExpressionKind::Constant && std::bit_cast<std::uint64_t>(a.constantValue())!=std::bit_cast<std::uint64_t>(b.constantValue()))return false;
+        }
+        return true;
     }
     static Expression constant(double value, std::size_t variables = 0, ExpressionLimits limits = {}) {
         const auto node = ExpressionNode::constant(value);

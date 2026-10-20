@@ -33,6 +33,7 @@ if(GENETIK_BUILD_EXAMPLES)
         -DSEARCH=$<TARGET_FILE:genetik_regression_search>
         -DWORKSPACE=${CMAKE_CURRENT_BINARY_DIR}/regression-cli
         -P ${CMAKE_CURRENT_SOURCE_DIR}/regression_cli.cmake)
+    # Cadence CLI smoke uses 64/128 calls; full comparisons run outside CTest.
     set_tests_properties(genetik_regression_cli PROPERTIES TIMEOUT 60)
     add_test(NAME genetik_expression_example COMMAND genetik_expression_demo)
     set_tests_properties(genetik_expression_example PROPERTIES TIMEOUT 30
@@ -90,3 +91,6 @@ if(GENETIK_BUILD_EXAMPLES)
         -P ${CMAKE_CURRENT_SOURCE_DIR}/prime_cli.cmake)
     set_tests_properties(genetik_prime_cli PROPERTIES TIMEOUT 60)
 endif()
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header_ScopedTiming.cpp "#include <detail/ScopedTiming.hpp>\n")
+add_library(header_ScopedTiming OBJECT ${CMAKE_CURRENT_BINARY_DIR}/header_ScopedTiming.cpp)
+target_link_libraries(header_ScopedTiming PRIVATE genetik_lib)

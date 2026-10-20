@@ -274,14 +274,97 @@ static void searches() {
     throws<std::invalid_argument>([&]{symbolicRegression(problem,config,rejectReused,fault);});
     config.fitting=ConstantFitConfig{};config.maxTrainingLossAttempts=7;
     RandomContext initialFailure(12);const auto empty=symbolicRegression(problem,config,initialFailure);
-    check(!empty.best && empty.trainingWork.lossAttempts==7 && empty.stoppingReason==SearchStop::EvaluationBudget,"initial global exhaustion publishes no partial initial population");
+    check(!empty.best && empty.trainingWork.lossAttempts==7 && empty.initialWork.lossAttempts==7 && empty.unpublishedLossAttempts==7 && empty.unpublishedRowAttempts==empty.trainingWork.rowAttempts && empty.stoppingReason==SearchStop::EvaluationBudget,"initial global exhaustion publishes no partial initial population");
     config.fitting->maxLossAttempts=2;config.maxTrainingLossAttempts=15;
     RandomContext partial(12);const auto stopped=symbolicRegression(problem,config,partial);
     check(stopped.trainingWork.lossAttempts<=15 && stopped.stoppingReason==SearchStop::EvaluationBudget &&
           stopped.publishedGenerations==0 && stopped.bestGeneration==0,"driver global cap preserves committed boundary");
 }
+static void cadence() {
+    const auto problem=RegressionProblem::create({{{0},3.5},{{1},3.5}},{31,6,8});
+    ConstantFitConfig fit;fit.maxLossAttempts=2;
+    // Repeating a bounded fit can legitimately improve an already-fitted value.
+    TrainingObjective standalone(problem);
+    const auto once=fitConstants(c(0),standalone,fit),twice=fitConstants(once.expression,standalone,fit);
+    check(once.expression.nodes()[0].constantValue()==1 && twice.expression.nodes()[0].constantValue()==2 && twice.improved,"bounded refitting can improve again");
+    using P=Population<ExpressionCandidate,RegressionOrdering>;
+    for(std::uint64_t interval:{1u,4u}) {
+        auto objective=std::make_shared<ThrowingObjective>(problem);
+        auto preparation=std::make_shared<ConstantRefinement>(objective,fit,interval);
+        ExpressionCandidate parent(c(0),problem,preparation);RandomContext random(17);
+        P population(std::vector{parent,parent},random,ObjectiveDirection::Minimize);
+        preparation->initializing=false;
+        check(population.bestSeen()->expression().nodes()[0].constantValue()==1 && objective->work().lossAttempts==4,"both cadences refine initialization identically");
+        ExpressionVariation variation(problem,{},preparation);
+        GeneticAlgorithm<P,ExpressionCandidate,ExpressionVariation> ga(0,0,random,variation,1);
+        const unsigned beforeBoundary=interval==4?3:0;
+        for(unsigned i=0;i<beforeBoundary;++i) {
+            const auto fits=objective->work().fittingInvocations;
+            check(ga.evolve(population)==GenerationOutcome::Committed && objective->work().fittingInvocations==fits,"unscheduled generation still scores without fitting");
+        }
+        const auto saved=population.creatures();const auto best=population.bestSeen();const auto generation=population.generation();
+        const auto before=objective->work();const auto engine=random.engine();
+        objective->throwAt=before.lossAttempts+2;
+        bool cause=false;try{ga.evolve(population);}catch(const std::exception& e){cause=hasCause(e);}
+        check(cause && population.generation()==generation && population.bestSeen()->text()==best->text() && population.bestSeen()->evaluation()==best->evaluation(),"scheduled partial failure preserves committed archive and cause");
+        for(std::size_t i=0;i<saved->size();++i)check((*saved)[i].text()==(*population.creatures())[i].text() && (*saved)[i].evaluation()==(*population.creatures())[i].evaluation(),"scheduled failure preserves parents and fitness");
+        check(objective->work().lossAttempts==before.lossAttempts+2 && random.engine()!=engine,"partial scheduled work and RNG remain consumed");
+        objective->throwAt=0;const auto fits=objective->work().fittingInvocations;
+        check(ga.evolve(population)==GenerationOutcome::Committed && population.generation()==*generation+1 && objective->work().fittingInvocations==fits+2,"retry same prospective generation remains scheduled");
+        check(population.bestSeen()->expression().nodes()[0].constantValue()==2,"scheduled inherited elite refines previously fitted value");
+        if(interval==4) {
+            check(preparation->statistics().origins[3].fits>=2 && preparation->statistics().origins[2].fits>=1,"elites and unchanged offspring both eligible at boundary");
+            const auto count=objective->work().fittingInvocations,ordinary=objective->work().ordinaryLossAttempts;
+            check(ga.evolve(population)==GenerationOutcome::Committed && population.generation()==5 && objective->work().fittingInvocations==count && objective->work().ordinaryLossAttempts==ordinary+2,"generation immediately after boundary scores without fitting");
+        }
+    }
+    // Unscheduled failure and changed-value score pairing use the same fault seam.
+    auto objective=std::make_shared<ThrowingObjective>(problem);
+    auto preparation=std::make_shared<ConstantRefinement>(objective,fit,4);
+    RandomContext random(8);ExpressionCandidate parent(c(0),problem,preparation);
+    P population(std::vector{parent,parent},random,ObjectiveDirection::Minimize);
+    const auto initial=population.bestSeen();auto changed=*initial;changed.replaceExpression(c(.25));
+    check(changed.fitnessState()==FitnessState::Unevaluated,"changed expression invalidates cached score");
+    objective->throwAt=objective->work().lossAttempts+2;
+    bool cause=false;try{population.publishGeneration(std::vector{changed,changed});}catch(const std::exception& e){cause=hasCause(e);}
+    check(cause && population.generation()==0 && population.bestSeen()->text()==initial->text(),"unscheduled operational failure preserves committed state");
+    objective->throwAt=0;const auto fits=objective->work().fittingInvocations;
+    check(population.publishGeneration(std::vector{changed,changed})==GenerationOutcome::Committed && objective->work().fittingInvocations==fits,"retry unscheduled boundary does not refine");
+    check(population.creatures()->back().fitness()==10.5625 && population.creatures()->back().text()==changed.text(),"unscheduled changed expression receives matching new loss");
+    check(preparation->statistics().skippedBySchedule==4 && objective->work().ordinaryLossAttempts==4,"schedule skips and ordinary work are separate");
+    auto invalid=changed;invalid.replaceExpression(logarithm(c(-1)));
+    check(population.publishGeneration(std::vector{invalid,invalid})==GenerationOutcome::NoViableCandidates && population.generation()==1 && population.bestSeen()->text()==initial->text(),"all-invalid unscheduled attempt preserves archive");
+    for(std::uint64_t interval:{1u,4u}) {
+        auto limited=std::make_shared<TrainingObjective>(problem,5);
+        auto prep=std::make_shared<ConstantRefinement>(limited,fit,interval);
+        ExpressionCandidate seed(c(0),problem,prep);RandomContext r(4);
+        P p(std::vector{seed,seed},r,ObjectiveDirection::Minimize);const auto old=p.bestSeen();
+        throws<std::exception>([&]{p.publishGeneration(*p.creatures());});
+        check(p.generation()==0 && p.bestSeen()->text()==old->text() && p.bestSeen()->evaluation()==old->evaluation() && limited->work().lossAttempts==5,"global cap preserves state in both scheduled and unscheduled preparation");
+        check(limited->work().ordinaryLossAttempts==(interval==4?1:0),"discarded work charged to correct category");
+    }
+    SymbolicRegressionConfig config;config.population=4;config.elites=1;config.maxGenerationAttempts=5;
+    config.maxEvaluations=24;config.maxTrainingLossAttempts=256;config.fitting=fit;
+    auto workload=RegressionProblem::create(rows(2.5,-1.75,.625),{31,6,8});
+    RandomContext a(29),b(29),d(29);
+    const auto omitted=symbolicRegression(workload,config,a);config.fitEveryGenerations=1;
+    const auto explicitOne=symbolicRegression(workload,config,b);
+    check(omitted.best->text()==explicitOne.best->text() && omitted.best->evaluation()==explicitOne.best->evaluation() && omitted.trainingWork==explicitOne.trainingWork && omitted.preparationWork==explicitOne.preparationWork && a.engine()==b.engine(),"omitted and explicit one match including RNG");
+    config.fitEveryGenerations=4;const auto fourth=symbolicRegression(workload,config,d);
+    check(fourth.rawInitialExpressions==omitted.rawInitialExpressions && fourth.preparedInitialExpressions==omitted.preparedInitialExpressions && fourth.preparedInitialFitness==omitted.preparedInitialFitness && fourth.initialWork==omitted.initialWork,"paired complete initialization identical");
+    RandomContext observed(29);config.diagnostics=std::make_shared<RefinementDiagnostics>(1);
+    const auto profiled=symbolicRegression(workload,config,observed);
+    check(profiled.best->text()==fourth.best->text() && profiled.best->evaluation()==fourth.best->evaluation() && profiled.trainingWork==fourth.trainingWork && profiled.preparationWork==fourth.preparationWork && profiled.variation==fourth.variation && observed.engine()==d.engine(),"bounded diagnostics preserve numerical work and RNG");
+    check(config.diagnostics->expressions.size()<=1 && config.diagnostics->capacityDrops>0,"diagnostic storage has a hard capacity");
+    check(profiled.trainingWork.lossAttempts==profiled.trainingWork.ordinaryLossAttempts+profiled.trainingWork.fittingBaselineAttempts+profiled.trainingWork.fittingProbeAttempts,"disjoint actual-loss accounting");
+    check(!c(0).sameRepresentation(c(-0.)) && c(1).sameRepresentation(c(1)),"exact constant representations include signed zero");
+    config.diagnostics.reset();config.fitting.reset();config.fitEveryGenerations=4;RandomContext off(29);
+    const auto disabled=symbolicRegression(workload,config,off);check(disabled.trainingWork.fittingInvocations==0 && disabled.preparationWork.skippedBySchedule==0 && disabled.trainingWork.ordinaryLossAttempts==disabled.trainingWork.lossAttempts,"fitting disabled is distinct from a policy skip");
+    config.fitEveryGenerations=0;RandomContext bad(29);throws<std::invalid_argument>([&]{symbolicRegression(workload,config,bad);});
+    throws<std::invalid_argument>([&]{ConstantRefinement invalidCadence(objective,fit,0);});
+}
 int main() {
     std::cout << std::setprecision(17);
-    try {fixtures();boundaries();integration();domainTrials();sampling();searches();std::cout<<"constant fitting contracts passed\n";}
+    try {fixtures();boundaries();integration();domainTrials();sampling();searches();cadence();std::cout<<"constant fitting contracts passed\n";}
     catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}
 }

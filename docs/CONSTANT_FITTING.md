@@ -189,3 +189,21 @@ domain fixtures and reused log/div fault/global-cap/publication tests are descri
 in [STRICT_ARITHMETIC.md](STRICT_ARITHMETIC.md). Same-build repeatability now also
 requires the same runtime math library for logarithms. No new fitting algorithm,
 rescue optimization or randomness was introduced.
+
+## Optional generation cadence and diagnostics
+
+`SymbolicRegressionConfig::fitEveryGenerations` defaults to 1. A positive interval
+4 refines initialization (generation 0) and prospective generations 4,8,12,...;
+other generations receive fresh ordinary scores. All slots, including elites and
+unchanged offspring, keep the existing treatment on scheduled generations. No
+cache or convergence flag is used. Local bounds/coordinate order/acceptance are
+unchanged; an inherited fitted value may improve on another bounded invocation.
+A failed attempt does not advance the prospective committed generation. Actual
+attempts/rows remain counted, and unpublished values never replace committed best.
+The standalone `fitConstants` function has no generation schedule.
+
+See [FITTING_CADENCE.md](FITTING_CADENCE.md) for public context/diagnostic APIs,
+disjoint counters, exact repeated-input observation and timing limitations, and
+[FITTING_CADENCE_RESULTS.md](FITTING_CADENCE_RESULTS.md) for both problem profiles
+and all twenty comparisons. Interval 1 remains default: interval 4 explored more
+generations but reduced arithmetic recovery reliability and was not a broad speedup.

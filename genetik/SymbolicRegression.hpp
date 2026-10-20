@@ -14,6 +14,8 @@ struct SymbolicRegressionConfig {
     std::optional<ConstantFitConfig> fitting; // disabled retains discrete mode
     std::uint64_t maxTrainingLossAttempts = std::numeric_limits<std::uint64_t>::max();
     double trainingLossThreshold = 0;
+    std::uint64_t fitEveryGenerations=1; // positive; generation zero always eligible
+    std::shared_ptr<RefinementDiagnostics> diagnostics; // optional, fresh bounded observer
 };
 enum class SearchStop { ExactTrainingFit, GenerationLimit, EvaluationBudget, NoViableCandidates, TrainingLossThreshold };
 inline const char* searchStopName(SearchStop stop) {
@@ -33,6 +35,11 @@ struct SymbolicRegressionResult {
     std::uint64_t attemptedGenerations = 0, publishedGenerations = 0, candidateEvaluations = 0;
     VariationStatistics variation;
     TrainingWork trainingWork;
+    PreparationStatistics preparationWork;
+    TrainingWork initialWork;
+    std::vector<std::string> preparedInitialExpressions;
+    std::vector<Fitness> preparedInitialFitness;
+    std::uint64_t unpublishedLossAttempts=0,unpublishedRowAttempts=0,unpublishedCandidateRequests=0;
     std::optional<double> rawInitialBestMSE;
     std::vector<std::string> rawInitialExpressions; // exact pre-refinement audit, in slot order
     struct Improvement { std::uint64_t lossAttempts, generation; double mse; };
@@ -45,17 +52,17 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
                               const SymbolicRegressionConfig& config, RandomContext& random,
                               std::shared_ptr<TrainingObjective> objective = {}) {
     if (random.evaluationAttempts() != 0) throw std::invalid_argument("symbolic search requires a fresh run context");
-    if (config.population == 0 || config.population > std::numeric_limits<unsigned int>::max() ||
+    if (config.fitEveryGenerations==0 || config.population == 0 || config.population > std::numeric_limits<unsigned int>::max() ||
         config.elites >= config.population || !std::isfinite(config.crossoverRate) ||
         !std::isfinite(config.mutationRate) || config.crossoverRate < 0 || config.crossoverRate > 1 ||
         config.mutationRate < 0 || config.mutationRate > 1 ||
         !std::isfinite(config.trainingLossThreshold) || config.trainingLossThreshold < 0)
         throw std::invalid_argument("invalid symbolic search configuration");
-    if (!objective) objective = std::make_shared<TrainingObjective>(problem, config.maxTrainingLossAttempts);
-    if (objective->problem() != problem || objective->maximum() != config.maxTrainingLossAttempts ||
+    if (!objective) objective = std::make_shared<TrainingObjective>(problem, config.maxTrainingLossAttempts,config.diagnostics);
+    if (objective->problem() != problem || objective->maximum() != config.maxTrainingLossAttempts || objective->diagnostics()!=config.diagnostics ||
         objective->work() != TrainingWork{})
         throw std::invalid_argument("symbolic search requires a fresh objective with matching problem and loss allowance");
-    auto preparation = std::make_shared<ConstantRefinement>(objective, config.fitting);
+    auto preparation = std::make_shared<ConstantRefinement>(objective, config.fitting,config.fitEveryGenerations);
     ExpressionVariation variation(problem, config.grammar, preparation);
     SymbolicRegressionResult result;
     if (config.maxEvaluations < config.population || config.maxTrainingLossAttempts < config.population) {
@@ -63,9 +70,12 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
     }
     std::vector<ExpressionCandidate> initial;
     initial.reserve(config.population);
+    {
+    genetik_detail::ScopedTiming timer(config.diagnostics ? &config.diagnostics->generationSeconds:nullptr);
     for (std::size_t i = 0; i < config.population; ++i) {
         initial.push_back(variation.initialize(random.engine()));
         result.rawInitialExpressions.push_back(initial.back().text());
+    }
     }
     using P = Population<ExpressionCandidate, RegressionOrdering>;
     // Recognize only the explicit allowance stop, through the engine's nested context.
@@ -82,16 +92,35 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
         return false;
     };
     std::unique_ptr<P> storage;
-    try { storage = std::make_unique<P>(initial, random, ObjectiveDirection::Minimize); }
+    try {
+        genetik_detail::ScopedTiming timer(config.diagnostics ? &config.diagnostics->generationSeconds:nullptr);
+        storage = std::make_unique<P>(initial, random, ObjectiveDirection::Minimize,static_cast<bool>(config.diagnostics));
+    }
     catch (...) {
         if (!budgetFailure(std::current_exception())) throw;
         result.stoppingReason = SearchStop::EvaluationBudget;
         result.candidateEvaluations = random.evaluationAttempts(); result.trainingWork = objective->work();
+        result.initialWork=result.trainingWork;
         result.variation = variation.statistics(); result.rawInitialBestMSE = preparation->rawInitialBest;
+        result.preparationWork=preparation->statistics();
+        result.unpublishedLossAttempts=result.trainingWork.lossAttempts;
+        result.unpublishedRowAttempts=result.trainingWork.rowAttempts;
+        result.unpublishedCandidateRequests=result.candidateEvaluations;
         return result; // no initial generation committed
     }
     auto& population = *storage;
     preparation->initializing = false;
+    result.initialWork=objective->work();
+    if(population.generation()) {
+        const auto prepared=population.creatures(); // retain detached snapshot through iteration in C++20
+        for(const auto& candidate:*prepared) {
+            result.preparedInitialExpressions.push_back(candidate.text());
+            result.preparedInitialFitness.push_back(candidate.evaluation());
+        }
+    }
+    auto committedLosses=population.generation() ? objective->work().lossAttempts:0;
+    auto committedRows=population.generation() ? objective->work().rowAttempts:0;
+    auto committedRequests=population.generation() ? random.evaluationAttempts():0;
     result.rawInitialBestMSE = preparation->rawInitialBest;
     GeneticAlgorithm<P, ExpressionCandidate, ExpressionVariation> ga(config.crossoverRate, config.mutationRate,
                                                                     random, std::move(variation), config.elites);
@@ -112,6 +141,7 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
             result.stoppingReason = SearchStop::EvaluationBudget; break;
         }
         try {
+            genetik_detail::ScopedTiming timer(config.diagnostics ? &config.diagnostics->generationSeconds:nullptr);
             if (ga.evolve(population) == GenerationOutcome::NoViableCandidates) {
                 result.stoppingReason = SearchStop::NoViableCandidates; break;
             }
@@ -119,6 +149,8 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
             if (!budgetFailure(std::current_exception())) throw;
             result.stoppingReason = SearchStop::EvaluationBudget; break;
         }
+        committedLosses=objective->work().lossAttempts;committedRows=objective->work().rowAttempts;
+        committedRequests=random.evaluationAttempts();
         const auto current = population.bestSeen();
         if (current && (!previous || current->text() != previous->text() || current->fitness() != previous->fitness()))
             result.improvements.push_back({objective->work().lossAttempts, *population.generation(), current->fitness()});
@@ -127,6 +159,11 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
     result.best = population.bestSeen(); result.bestGeneration = population.bestGeneration();
     result.attemptedGenerations = ga.attempts(); result.publishedGenerations = ga.evolutions();
     result.trainingWork = objective->work();
+    result.preparationWork=preparation->statistics();
+    result.unpublishedLossAttempts=result.trainingWork.lossAttempts-committedLosses;
+    result.unpublishedRowAttempts=result.trainingWork.rowAttempts-committedRows;
+    result.unpublishedCandidateRequests=random.evaluationAttempts()-committedRequests;
+    if(config.diagnostics)config.diagnostics->publicationSeconds=population.publicationSeconds();
     result.candidateEvaluations = random.evaluationAttempts(); result.variation = ga.variation().statistics();
     return result;
 }

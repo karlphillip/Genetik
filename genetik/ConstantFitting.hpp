@@ -2,6 +2,9 @@
 #include "Regression.hpp"
 #include <exception>
 #include <set>
+#include <array>
+#include <map>
+#include "detail/ScopedTiming.hpp"
 
 inline void countTrainingWork(std::uint64_t& counter) {
     if (counter == std::numeric_limits<std::uint64_t>::max()) throw std::overflow_error("training work counter exhausted");
@@ -11,7 +14,43 @@ struct TrainingWork {
     std::uint64_t lossAttempts = 0, rowAttempts = 0, fittingInvocations = 0, fittingLossAttempts = 0;
     std::uint64_t proposals = 0, accepted = 0, invalid = 0, infeasible = 0, duplicates = 0;
     std::uint64_t invalidLosses = 0; // all invalid objective results, including starting losses
+    // Disjoint subsets of lossAttempts; legacy fittingLossAttempts remains baseline+probe.
+    std::uint64_t ordinaryLossAttempts=0, fittingBaselineAttempts=0, fittingProbeAttempts=0;
+    std::uint64_t fittingImproved=0; // invocations accepting >=1 step, including abandoned fits
     bool operator==(const TrainingWork&) const = default;
+};
+enum class TrainingLossKind { Ordinary, FittingBaseline, FittingProbe };
+struct PreparationWork {
+    std::uint64_t requests=0,fits=0,skipped=0,ordinary=0,baselines=0,probes=0,rows=0,improved=0;
+    bool operator==(const PreparationWork&) const = default;
+};
+struct PreparationStatistics {
+    std::array<PreparationWork,5> origins{}; // Initialization, Changed, Unchanged, Elite, Unspecified
+    std::uint64_t skippedBySchedule=0,completedImproved=0,completedUnchanged=0,noConstants=0,invalidStarts=0,abortedFits=0;
+    std::array<std::uint64_t,7> terminations{}; // ConstantFitStop enum order
+    bool operator==(const PreparationStatistics&) const = default;
+};
+// Optional bounded, run-owned observation. It NEVER supplies fitness or avoids computation.
+struct RefinementDiagnostics {
+    struct Entry {Expression expression;std::uint64_t requests=0;bool priorOutput=false;};
+    explicit RefinementDiagnostics(std::size_t capacity=1024):capacity(capacity) {
+        if(capacity==0 || capacity>4096)throw std::invalid_argument("diagnostic capacity must be 1..4096");
+    }
+    const std::size_t capacity;
+    bool bound=false;
+    std::map<std::string,Entry> expressions;
+    std::uint64_t observed=0,untracked=0,capacityDrops=0,repeated=0,repeatLosses=0,repeatNoChangeLosses=0,repeatImproved=0;
+    std::uint64_t previousOutput=0,previousOutputImproved=0,previousOutputUnchanged=0,previousOutputLosses=0;
+    double datasetSeconds=0,fittingDatasetSeconds=0,fittingSeconds=0,preparationSeconds=0,generationSeconds=0,publicationSeconds=0;
+    Entry* findOrInsert(const Expression& expression) {
+        const auto key=expression.toString();auto it=expressions.find(key);
+        if(it!=expressions.end()) {
+            if(!it->second.expression.sameRepresentation(expression))throw std::logic_error("diagnostic expression key collision");
+            return &it->second;
+        }
+        if(expressions.size()==capacity){++capacityDrops;return nullptr;}
+        return &expressions.emplace(key,Entry{expression}).first->second;
+    }
 };
 class TrainingLossBudgetExceeded : public std::runtime_error {
 public: TrainingLossBudgetExceeded() : std::runtime_error("global training-loss allowance exhausted") {}
@@ -25,8 +64,9 @@ inline ConstantFitResult fitConstants(const Expression&, TrainingObjective&, con
 class TrainingObjective {
 public:
     explicit TrainingObjective(std::shared_ptr<const RegressionProblem> problem,
-                              std::uint64_t maximum = std::numeric_limits<std::uint64_t>::max())
-        : problem_(std::move(problem)), maximum_(maximum) {
+                              std::uint64_t maximum = std::numeric_limits<std::uint64_t>::max(),
+                              std::shared_ptr<RefinementDiagnostics> diagnostics = {})
+        : problem_(std::move(problem)), maximum_(maximum), diagnostics_(std::move(diagnostics)) {
         if (!problem_) throw std::invalid_argument("training objective requires a problem");
     }
     TrainingObjective(const TrainingObjective&) = delete;
@@ -35,9 +75,20 @@ public:
     TrainingObjective& operator=(TrainingObjective&&) = delete;
     virtual ~TrainingObjective() = default;
     RegressionMetrics measure(const Expression& expression, bool fitting = false) {
+        return measure(expression,fitting ? TrainingLossKind::FittingBaseline:TrainingLossKind::Ordinary);
+    }
+    RegressionMetrics measure(const Expression& expression,TrainingLossKind kind) {
+        if(kind!=TrainingLossKind::Ordinary && kind!=TrainingLossKind::FittingBaseline && kind!=TrainingLossKind::FittingProbe)
+            throw std::invalid_argument("unknown training loss kind");
         if (work_.lossAttempts >= maximum_) throw TrainingLossBudgetExceeded();
         countTrainingWork(work_.lossAttempts);
-        if (fitting) countTrainingWork(work_.fittingLossAttempts);
+        if(kind==TrainingLossKind::Ordinary)countTrainingWork(work_.ordinaryLossAttempts);
+        else {
+            countTrainingWork(work_.fittingLossAttempts);
+            countTrainingWork(kind==TrainingLossKind::FittingBaseline ? work_.fittingBaselineAttempts:work_.fittingProbeAttempts);
+        }
+        genetik_detail::ScopedTiming timer(diagnostics_ ? &diagnostics_->datasetSeconds:nullptr,
+            diagnostics_ && kind!=TrainingLossKind::Ordinary ? &diagnostics_->fittingDatasetSeconds:nullptr);
         try {
             auto result = compute(expression);
             if (result.loss.state() == FitnessState::Invalid) countTrainingWork(work_.invalidLosses);
@@ -48,6 +99,7 @@ public:
     const std::shared_ptr<const RegressionProblem>& problem() const noexcept { return problem_; }
     std::uint64_t maximum() const noexcept { return maximum_; }
     std::uint64_t remaining() const noexcept { return maximum_ - work_.lossAttempts; }
+    const std::shared_ptr<RefinementDiagnostics>& diagnostics() const noexcept {return diagnostics_;}
     const TrainingWork& work() const noexcept { return work_; }
 protected:
     virtual RegressionMetrics compute(const Expression& expression) {
@@ -58,6 +110,7 @@ private:
     TrainingWork work_;
     std::shared_ptr<const RegressionProblem> problem_;
     std::uint64_t maximum_;
+    std::shared_ptr<RefinementDiagnostics> diagnostics_;
 };
 struct ConstantFitConfig {
     double lower = -8, upper = 8, initialStep = 1, minimumStep = 1e-8;
@@ -138,10 +191,11 @@ inline ConstantFitResult fitConstants(const Expression& input, TrainingObjective
                 auto trial = result.expression.withConstant(parameter, proposed);
                 if (!visited.insert(trial.toString()).second) { countTrainingWork(objective.work_.duplicates); continue; }
                 if (objective.work_.lossAttempts - begin >= config.maxLossAttempts) return finish(ConstantFitStop::EvaluationLimit);
-                const auto score = objective.measure(trial, true).loss;
+                const auto score = objective.measure(trial, TrainingLossKind::FittingProbe).loss;
                 if (score.state() == FitnessState::Invalid) { countTrainingWork(objective.work_.invalid); continue; }
                 if (score.score() < result.loss.score()) {
                     result.expression.swap(trial); result.loss = score;
+                    if(!result.improved)countTrainingWork(objective.work_.fittingImproved);
                     result.improved = sweepImproved = true; countTrainingWork(objective.work_.accepted);
                     if (reached()) return finish(ConstantFitStop::LossThreshold);
                 }
@@ -160,21 +214,84 @@ inline ConstantFitResult fitConstants(const Expression& input, TrainingObjective
 // elites and unchanged clones; baseline and accepted probes already certify the installed value.
 class ConstantRefinement final : public RegressionPreparation {
 public:
-    ConstantRefinement(std::shared_ptr<TrainingObjective> objective, std::optional<ConstantFitConfig> config = {})
-        : objective_(std::move(objective)), config_(config) {
-        if (!objective_) throw std::invalid_argument("refinement requires an objective");
+    ConstantRefinement(std::shared_ptr<TrainingObjective> objective, std::optional<ConstantFitConfig> config = {},
+                       std::uint64_t fitEveryGenerations=1)
+        : objective_(std::move(objective)), config_(config), interval_(fitEveryGenerations) {
+        if (!objective_ || interval_==0) throw std::invalid_argument("refinement requires objective and positive cadence");
         if (config_) validateConstantFitConfig(*config_, *objective_->problem());
-    }
-    PreparedExpression prepare(const Expression& expression, const RegressionProblem& problem) override {
-        if (&problem != objective_->problem().get()) throw std::invalid_argument("refinement problem identity differs");
-        if (!config_) {
-            const auto loss = objective_->measure(expression).loss;
-            recordInitial(loss); return {expression, loss};
+        if(auto d=objective_->diagnostics()) {
+            if(d->bound)throw std::invalid_argument("refinement diagnostics require a fresh run");
+            d->bound=true;
         }
-        auto result = fitConstants(expression, *objective_, *config_);
-        recordInitial(result.startingLoss);
-        return {std::move(result.expression), result.loss};
     }
+    PreparedExpression prepare(const Expression& expression,const RegressionProblem& problem) override {
+        return prepare(expression,problem,{});
+    }
+    PreparedExpression prepare(const Expression& expression,const RegressionProblem& problem,PreparationContext context) override {
+        if (&problem != objective_->problem().get()) throw std::invalid_argument("refinement problem identity differs");
+        const auto diagnostic=objective_->diagnostics();
+        genetik_detail::ScopedTiming preparationTimer(diagnostic ? &diagnostic->preparationSeconds:nullptr);
+        auto& stage=statistics_.origins.at(static_cast<std::size_t>(context.generation==0 ? PreparationOrigin::Initialization:context.origin));
+        ++stage.requests;
+        const auto before=objective_->work();
+        const auto recordWork=[&] {
+            const auto& after=objective_->work();
+            stage.ordinary+=after.ordinaryLossAttempts-before.ordinaryLossAttempts;
+            stage.baselines+=after.fittingBaselineAttempts-before.fittingBaselineAttempts;
+            stage.probes+=after.fittingProbeAttempts-before.fittingProbeAttempts;
+            stage.rows+=after.rowAttempts-before.rowAttempts;
+            stage.improved+=after.fittingImproved-before.fittingImproved;
+        };
+        if(!config_ || context.generation%interval_!=0) {
+            if(config_){++statistics_.skippedBySchedule;++stage.skipped;}
+            Fitness loss;
+            try{loss=objective_->measure(expression).loss;}catch(...){recordWork();throw;}
+            recordWork();recordInitial(loss);return {expression,loss};
+        }
+        ++stage.fits;
+        RefinementDiagnostics::Entry* entry=nullptr;bool repeat=false,priorOutput=false;
+        if(diagnostic) {
+            ++diagnostic->observed;entry=diagnostic->findOrInsert(expression);
+            if(!entry)++diagnostic->untracked;
+            else {
+                repeat=entry->requests++!=0;priorOutput=entry->priorOutput;
+                if(repeat)++diagnostic->repeated;
+                if(priorOutput)++diagnostic->previousOutput;
+            }
+        }
+        const auto recordDiagnostic=[&](bool completed,bool improved) {
+            if(!diagnostic)return;
+            const auto losses=objective_->work().lossAttempts-before.lossAttempts;
+            if(repeat) {
+                diagnostic->repeatLosses+=losses;
+                if(completed && !improved)diagnostic->repeatNoChangeLosses+=losses;
+                if(improved)++diagnostic->repeatImproved;
+            }
+            if(priorOutput) {
+                diagnostic->previousOutputLosses+=losses;
+                if(improved)++diagnostic->previousOutputImproved;
+                else if(completed)++diagnostic->previousOutputUnchanged;
+            }
+        };
+        auto result=[&] {
+            genetik_detail::ScopedTiming fitTimer(diagnostic ? &diagnostic->fittingSeconds:nullptr);
+            try{return fitConstants(expression,*objective_,*config_);}
+            catch(...) {
+                recordWork();++statistics_.abortedFits;
+                recordDiagnostic(false,objective_->work().fittingImproved!=before.fittingImproved);throw;
+            }
+        }();
+        recordWork();recordDiagnostic(true,result.improved);
+        ++statistics_.terminations[static_cast<std::size_t>(result.stop)];
+        if(result.improved)++statistics_.completedImproved;
+        else if(result.stop==ConstantFitStop::NoConstants)++statistics_.noConstants;
+        else if(result.stop==ConstantFitStop::InvalidStart)++statistics_.invalidStarts;
+        else ++statistics_.completedUnchanged;
+        if(diagnostic)if(auto output=diagnostic->findOrInsert(result.expression))output->priorOutput=true;
+        recordInitial(result.startingLoss);
+        return {std::move(result.expression),result.loss};
+    }
+    const PreparationStatistics& statistics() const noexcept {return statistics_;}
     bool initializing = true;
     std::optional<double> rawInitialBest;
 private:
@@ -184,4 +301,6 @@ private:
     }
     std::shared_ptr<TrainingObjective> objective_;
     const std::optional<ConstantFitConfig> config_;
+    const std::uint64_t interval_;
+    PreparationStatistics statistics_;
 };

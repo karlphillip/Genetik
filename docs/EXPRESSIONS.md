@@ -114,3 +114,10 @@ The following design guided the now-implemented bridge; see [SYMBOLIC_REGRESSION
 Do not add general execution or checkpoint frameworks as part of that bridge. Subsequent milestones still require bounded constant fitting with rollback on worsening, configurable ordinary division/logarithms and domain handling, independent sequence input/reference generation, the one-based index-to-prime mapping, complexity/error separation, frozen validation/extrapolation procedures and CPU profiling before GPU work. The full prime protocol remains in [ROADMAP.md](ROADMAP.md).
 
 Bounded continuous constant fitting is now implemented through the same bridge; see [CONSTANT_FITTING.md](CONSTANT_FITTING.md). It changes only independent constant occurrences and preserves all structural/evaluator/export contracts above. Strict division/logarithms and unary-arity traversal are now implemented; see [STRICT_ARITHMETIC.md](STRICT_ARITHMETIC.md) for domains, feasible grammar selection, runtime libm qualification and tests. Prime regression and profiling remain later work.
+
+`sameRepresentation(other)` compares active values by schema and typed postfix
+content, including bitwise finite constant values (signed zeros differ), without
+simplifying expressions. Structural-limit objects are constraints and are not part
+of this content comparison. It exposes no mutable alias and requires usable values.
+Fitting diagnostics additionally operate within one fixed problem/configuration;
+a future reusable cache must also account for compatible structural constraints.

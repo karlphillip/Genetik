@@ -174,3 +174,21 @@ diagnostics and frozen extrapolation reporting outside the library.
 See [the runnable workflow](docs/PRIME_REGRESSION.md) and
 [all five measured results and prediction tables](docs/PRIME_CAMPAIGN.md).
 Approximation results are empirical; this does not establish a general prime formula.
+
+## Optional fitting cadence
+
+Fitting remains optional. Set `config.fitEveryGenerations = 4` in C++ or append
+`--fit-every 4` to the numerical-file executable to refine generation 0 and then
+generations 4,8,12,...; intervening generations obtain fresh ordinary fitness.
+The default stays 1. Example:
+
+```sh
+../build-release/genetik_multivariate_demo --arithmetic --generate ../arithmetic-data
+../build-release/genetik_regression_search ../arithmetic-data/training.csv --inputs first,second --target target --seed 2 --loss-budget 100000 --operators add,sub,mul,div,log --fit-every 4
+```
+
+[Contracts and profiling](docs/FITTING_CADENCE.md) and
+[the fixed twenty-run comparison](docs/FITTING_CADENCE_RESULTS.md) report more
+structure generations, mixed accuracy, reduced strict-arithmetic recovery and no
+general speedup. The library does not cache fitting results or mark values as
+already optimized.

@@ -1,0 +1,123 @@
+Jetson Orin NX / GCC 13.3 / C++20 strict FP; commands in docs/BASELINE.md.
+
+cadence-ctest-release.txt
+Test project /home/karlphillip/workspaces/primeResearcher/build-release
+      Start  1: genetik_strict_arithmetic
+ 1/16 Test  #1: genetik_strict_arithmetic ........   Passed    0.01 sec
+      Start  2: genetik_multivariate_contracts
+ 2/16 Test  #2: genetik_multivariate_contracts ...   Passed    0.01 sec
+      Start  3: genetik_fitting_contracts
+ 3/16 Test  #3: genetik_fitting_contracts ........   Passed    0.01 sec
+      Start  4: genetik_symbolic_contracts
+ 4/16 Test  #4: genetik_symbolic_contracts .......   Passed    0.00 sec
+      Start  5: genetik_expression_contracts
+ 5/16 Test  #5: genetik_expression_contracts .....   Passed    0.01 sec
+      Start  6: genetik_fitness_publication
+ 6/16 Test  #6: genetik_fitness_publication ......   Passed    0.00 sec
+      Start  7: genetik_contracts
+ 7/16 Test  #7: genetik_contracts ................   Passed    0.00 sec
+      Start  8: genetik_regression_cli
+ 8/16 Test  #8: genetik_regression_cli ...........   Passed    0.08 sec
+      Start  9: genetik_expression_example
+ 9/16 Test  #9: genetik_expression_example .......   Passed    0.00 sec
+      Start 10: genetik_demo_bounded
+10/16 Test #10: genetik_demo_bounded .............   Passed    0.00 sec
+      Start 11: genetik_demo_zero_budget
+11/16 Test #11: genetik_demo_zero_budget .........   Passed    0.00 sec
+      Start 12: genetik_demo_invalid_argument
+12/16 Test #12: genetik_demo_invalid_argument ....   Passed    0.00 sec
+      Start 13: genetik_downstream
+13/16 Test #13: genetik_downstream ...............   Passed    0.08 sec
+      Start 14: genetik_expression_fp_policy
+14/16 Test #14: genetik_expression_fp_policy .....   Passed    1.77 sec
+      Start 15: genetik_prime_contracts
+15/16 Test #15: genetik_prime_contracts ..........   Passed    0.03 sec
+      Start 16: genetik_prime_cli
+16/16 Test #16: genetik_prime_cli ................   Passed    0.04 sec
+
+100% tests passed out of 16
+
+Total Test time (real) =   2.07 sec
+
+cadence-ctest-debug.txt
+Test project /home/karlphillip/workspaces/primeResearcher/build-debug
+      Start  1: genetik_strict_arithmetic
+ 1/16 Test  #1: genetik_strict_arithmetic ........   Passed    0.02 sec
+      Start  2: genetik_multivariate_contracts
+ 2/16 Test  #2: genetik_multivariate_contracts ...   Passed    0.03 sec
+      Start  3: genetik_fitting_contracts
+ 3/16 Test  #3: genetik_fitting_contracts ........   Passed    0.05 sec
+      Start  4: genetik_symbolic_contracts
+ 4/16 Test  #4: genetik_symbolic_contracts .......   Passed    0.01 sec
+      Start  5: genetik_expression_contracts
+ 5/16 Test  #5: genetik_expression_contracts .....   Passed    0.08 sec
+      Start  6: genetik_fitness_publication
+ 6/16 Test  #6: genetik_fitness_publication ......   Passed    0.00 sec
+      Start  7: genetik_contracts
+ 7/16 Test  #7: genetik_contracts ................   Passed    0.02 sec
+      Start  8: genetik_regression_cli
+ 8/16 Test  #8: genetik_regression_cli ...........   Passed    0.09 sec
+      Start  9: genetik_expression_example
+ 9/16 Test  #9: genetik_expression_example .......   Passed    0.00 sec
+      Start 10: genetik_demo_bounded
+10/16 Test #10: genetik_demo_bounded .............   Passed    0.02 sec
+      Start 11: genetik_demo_zero_budget
+11/16 Test #11: genetik_demo_zero_budget .........   Passed    0.00 sec
+      Start 12: genetik_demo_invalid_argument
+12/16 Test #12: genetik_demo_invalid_argument ....   Passed    0.00 sec
+      Start 13: genetik_downstream
+13/16 Test #13: genetik_downstream ...............   Passed    0.08 sec
+      Start 14: genetik_expression_fp_policy
+14/16 Test #14: genetik_expression_fp_policy .....   Passed    1.68 sec
+      Start 15: genetik_prime_contracts
+15/16 Test #15: genetik_prime_contracts ..........   Passed    0.06 sec
+      Start 16: genetik_prime_cli
+16/16 Test #16: genetik_prime_cli ................   Passed    0.09 sec
+
+100% tests passed out of 16
+
+Total Test time (real) =   2.26 sec
+
+cadence-ctest-sanitize.txt
+Test project /home/karlphillip/workspaces/primeResearcher/build-sanitize
+      Start  1: genetik_strict_arithmetic
+ 1/16 Test  #1: genetik_strict_arithmetic ........   Passed    9.62 sec
+      Start  2: genetik_multivariate_contracts
+ 2/16 Test  #2: genetik_multivariate_contracts ...   Passed   10.86 sec
+      Start  3: genetik_fitting_contracts
+ 3/16 Test  #3: genetik_fitting_contracts ........   Passed   25.44 sec
+      Start  4: genetik_symbolic_contracts
+ 4/16 Test  #4: genetik_symbolic_contracts .......   Passed    1.63 sec
+      Start  5: genetik_expression_contracts
+ 5/16 Test  #5: genetik_expression_contracts .....   Passed   43.32 sec
+      Start  6: genetik_fitness_publication
+ 6/16 Test  #6: genetik_fitness_publication ......   Passed    0.03 sec
+      Start  7: genetik_contracts
+ 7/16 Test  #7: genetik_contracts ................   Passed    5.31 sec
+      Start  8: genetik_regression_cli
+ 8/16 Test  #8: genetik_regression_cli ...........   Passed    7.00 sec
+      Start  9: genetik_expression_example
+ 9/16 Test  #9: genetik_expression_example .......   Passed    0.02 sec
+      Start 10: genetik_demo_bounded
+10/16 Test #10: genetik_demo_bounded .............   Passed    7.21 sec
+      Start 11: genetik_demo_zero_budget
+11/16 Test #11: genetik_demo_zero_budget .........   Passed    0.02 sec
+      Start 12: genetik_demo_invalid_argument
+12/16 Test #12: genetik_demo_invalid_argument ....   Passed    0.02 sec
+      Start 13: genetik_downstream
+13/16 Test #13: genetik_downstream ...............   Passed    0.10 sec
+      Start 14: genetik_expression_fp_policy
+14/16 Test #14: genetik_expression_fp_policy .....   Passed    1.68 sec
+      Start 15: genetik_prime_contracts
+15/16 Test #15: genetik_prime_contracts ..........   Passed   14.95 sec
+      Start 16: genetik_prime_cli
+16/16 Test #16: genetik_prime_cli ................   Passed   19.96 sec
+
+100% tests passed out of 16
+
+Total Test time (real) = 147.20 sec
+
+Full -Wall -Wextra -Wpedantic strict-FP syntax check: no diagnostics.
+Character 42/1000: fitness .892, 1000 generations, 100100 calls.
+Historical prime and arithmetic reports/artifacts unchanged.
+All twenty origin/work partitions, bounded committed traces and complete prediction tables verified.

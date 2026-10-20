@@ -1,0 +1,37 @@
+order=prime_then_arithmetic seeds=0,1,2,3,42 even_pair=1_then_4 odd_pair=4_then_1 diagnostics=off budget=100000
+execution=serial_cpu population=64 generation_limit=2000 training_loss_limit=100000 outer_request_limit=100000 nodes_limit=31 depth_limit=6 absolute_constant_limit=8 operators=add,sub,mul,div,log operator_selection=uniform_over_structurally_feasible_entries selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3 full_probability=.5 grow_probability=.65 variation_proposal_limit=8 constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=0 fitting=1 fit_every=1 fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_threshold=0 fit_slots=all_including_elites_and_clones
+execution=serial_cpu population=64 generation_limit=2000 training_loss_limit=100000 outer_request_limit=100000 nodes_limit=31 depth_limit=6 absolute_constant_limit=8 operators=add,sub,mul,div,log operator_selection=uniform_over_structurally_feasible_entries selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3 full_probability=.5 grow_probability=.65 variation_proposal_limit=8 constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=1e-14 fitting=1 fit_every=1 fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_threshold=1e-14 fit_slots=all_including_elites_and_clones
+execution=serial_cpu population=64 generation_limit=2000 training_loss_limit=100000 outer_request_limit=100000 nodes_limit=31 depth_limit=6 absolute_constant_limit=8 operators=add,sub,mul,div,log operator_selection=uniform_over_structurally_feasible_entries selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3 full_probability=.5 grow_probability=.65 variation_proposal_limit=8 constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=0 fitting=1 fit_every=1 fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_threshold=0 fit_slots=all_including_elites_and_clones
+problem=prime seed=0 interval=1
+raw_initial_mse=0.020580668229999998 refined_initial_mse=2.6425241448526163e-05 training_mse=5.3601967624741316e-06 discovery_stage=offspring discovery_generation=8 attempted_generations=9 published_generations=8 candidate_requests=628 training_loss_attempts=100000 unused_allowance=0 row_attempts=99804196 invalid_training_losses=204 fits=628 fitting_loss_attempts=100000 fit_proposals=120591 accepted=19525 invalid_probes=182 infeasible=1080 duplicates=19841 variation_rejections=78 variation_fallbacks=0 mutation_proposals=185 crossover_proposals=338 mutation_changes=157 crossover_changes=462 ordinary_loss_attempts=0 fitting_baselines=628 fitting_probes=99372 fitting_improved=482 schedule_skips=0 unpublished_losses=10649 unpublished_rows=10639010 seconds=8.606405616 stop=evaluation_budget
+nodes=24 depth=6 expression=((x0 / (x0 - ((5.0069351196289062 + (-1.98480224609375)) * (x0 - 1.1793319410959722)))) * ((x0 - log(0.15600989721665748)) + (x0 * (((-2.6280710109623868) + x0) * x0))))
+initial_loss_calls=4163 initial_rows=4144019 completed_improved=481 completed_unchanged=46 no_constants=78 invalid_starts=22 aborted_fits=1 disjoint_check=1
+origin=initialization requests=64 fits=64 skips=0 ordinary=0 baselines=64 probes=4099 rows=4144019 invocations_with_progress=35
+origin=changed_offspring requests=482 fits=482 skips=0 ordinary=0 baselines=482 probes=80790 rows=81101171 invocations_with_progress=396
+origin=unchanged_offspring requests=64 fits=64 skips=0 ordinary=0 baselines=64 probes=10094 rows=10155003 invocations_with_progress=34
+origin=elite requests=18 fits=18 skips=0 ordinary=0 baselines=18 probes=4389 rows=4404003 invocations_with_progress=17
+origin=unspecified requests=0 fits=0 skips=0 ordinary=0 baselines=0 probes=0 rows=0 invocations_with_progress=0
+fit_stop=no_constants count=78
+fit_stop=loss_threshold count=0
+fit_stop=invalid_start count=22
+fit_stop=minimum_step count=230
+fit_stop=sweep_limit count=0
+fit_stop=proposal_limit count=0
+fit_stop=evaluation_limit count=297
+execution=serial_cpu population=64 generation_limit=2000 training_loss_limit=100000 outer_request_limit=100000 nodes_limit=31 depth_limit=6 absolute_constant_limit=8 operators=add,sub,mul,div,log operator_selection=uniform_over_structurally_feasible_entries selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3 full_probability=.5 grow_probability=.65 variation_proposal_limit=8 constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=0 fitting=1 fit_every=4 fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_threshold=0 fit_slots=all_including_elites_and_clones
+problem=prime seed=0 interval=4
+raw_initial_mse=0.020580668229999998 refined_initial_mse=2.6425241448526163e-05 training_mse=2.4190884250155986e-06 discovery_stage=offspring discovery_generation=32 attempted_generations=36 published_generations=35 candidate_requests=2334 training_loss_attempts=100000 unused_allowance=0 row_attempts=99866134 invalid_training_losses=140 fits=606 fitting_loss_attempts=98272 fit_proposals=121704 accepted=22857 invalid_probes=66 infeasible=2602 duplicates=21124 variation_rejections=501 variation_fallbacks=2 mutation_proposals=865 crossover_proposals=1400 mutation_changes=683 crossover_changes=1634 ordinary_loss_attempts=1728 fitting_baselines=606 fitting_probes=97666 fitting_improved=479 schedule_skips=1728 unpublished_losses=5635 unpublished_rows=5634001 seconds=9.3193680190000006 stop=evaluation_budget
+nodes=21 depth=6 expression=(((7.999755859375 * (x0 + (x0 * (-0.84209047625945388)))) / (((x0 * x0) + (x0 + (-2.330572973028783))) + (x0 * (-5.681640625)))) + x0)
+initial_loss_calls=4163 initial_rows=4144019 completed_improved=478 completed_unchanged=17 no_constants=82 invalid_starts=28 aborted_fits=1 disjoint_check=1
+origin=initialization requests=64 fits=64 skips=0 ordinary=0 baselines=64 probes=4099 rows=4144019 invocations_with_progress=35
+origin=changed_offspring requests=1791 fits=427 skips=1364 ordinary=1364 baselines=427 probes=72613 rows=74289115 invocations_with_progress=359
+origin=unchanged_offspring requests=407 fits=97 skips=310 ordinary=310 baselines=97 probes=16658 rows=17065000 invocations_with_progress=69
+origin=elite requests=72 fits=18 skips=54 ordinary=54 baselines=18 probes=4296 rows=4368000 invocations_with_progress=16
+origin=unspecified requests=0 fits=0 skips=0 ordinary=0 baselines=0 probes=0 rows=0 invocations_with_progress=0
+fit_stop=no_constants count=82
+fit_stop=loss_threshold count=0
+fit_stop=invalid_start count=28
+fit_stop=minimum_step count=184
+fit_stop=sweep_limit count=0
+fit_stop=proposal_limit count=0
+fit_stop=evaluation_limit count=311

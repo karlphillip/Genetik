@@ -1,13 +1,13 @@
 # Genetik roadmap
 
-The baseline and fitness/publication contracts are implemented and verified. The bounded expression value and strict CPU evaluator are implemented; bounded polynomial structure evolution is also implemented through the shared engine. Bounded deterministic continuous constant fitting and a verified generic multivariate/file-data workflow are implemented; strict division/natural logarithm and mixed-arity evolution are implemented; prime experiments remain planned capabilities. See [BASELINE.md](BASELINE.md) for evidence and API migration.
+The baseline and fitness/publication contracts are implemented and verified. The bounded expression value and strict CPU evaluator are implemented; bounded polynomial structure evolution is also implemented through the shared engine. Bounded deterministic continuous constant fitting and a verified generic multivariate/file-data workflow are implemented; strict division/natural logarithm and mixed-arity evolution are implemented; the first reproducible prime experiment and optional deterministic fitting cadence are implemented. See [BASELINE.md](BASELINE.md) for evidence and API migration.
 
 Current delivery order:
 
 1. Generic multivariate/data-input milestone — complete; public row API, strict application loader, 2/3-input contracts and all five campaign seeds reported.
-2. Strict ordinary division/natural logarithm throughout typed construction, evaluation, variation, limits, export and domain tests — complete; prime regression is next.
-3. Prime regression as an example of generic indexed-sequence regression using the preserved protocol below.
-4. Profile representative CPU workloads and complete production delivery (packaging, platform qualification, documentation and checkpoint/resume); justify acceleration from measurements.
+2. Strict ordinary division/natural logarithm throughout typed construction, evaluation, variation, limits, export and domain tests — complete; the first prime regression campaign is also complete.
+3. Prime regression as an example of generic indexed-sequence regression — first campaign complete, including all weak results and baselines.
+4. Refinement profiling and optional cadence — complete; keep interval 1 default, preserve mixed twenty-run results. Further profile checked CPU evaluation and complete production delivery (packaging, platform qualification, documentation and checkpoint/resume); justify acceleration from measurements.
 
 ## 1. Baseline, C++20 and first hardening — complete
 
@@ -107,3 +107,29 @@ Install/export targets and headers; version/package config; API and migration do
 ## 7. Profiling and performance — pending
 
 Profile representative CPU runs and evaluator/constant-fitting workloads. Improve measured bottlenecks under correctness/repeatability tests. Consider batching, parallel execution and Jetson GPU acceleration only with a declared execution/random-stream model, measured benefit, numerical qualification and an already correct CPU reference. Do not assume CUDA or threading is justified by this hardware alone.
+
+## Refinement cadence and profiling — complete
+
+Implemented positive/default-one fitEveryGenerations in the shared private
+preparation path, initialization generation zero and prospective committed schedule,
+fresh ordinary scoring between scheduled generations, role/work accounting and
+optional bounded exact-repeat/timing observation. No cache or optimizer replacement.
+All ten controls match accepted numerical results/legacy counters; paired raw and
+prepared initialization and two profile/control RNG/work comparisons match.
+
+See [FITTING_CADENCE_RESULTS.md](FITTING_CADENCE_RESULTS.md): interval 4 publishes
+more generations on every seed, but fitting-MSE wins/losses are 3/2 on both problems,
+strict-arithmetic recovery falls 3/5 to 2/5, and paired median runtime ratios exceed
+one. Keep interval 1 as default. Prime's fitting-selected representative worsens
+with interval 4; all results, including misses, are retained. No evaluation-driven
+tuning was performed; indices 1001–1200 remain an examined benchmark.
+
+Next recommendation: profile checked evaluator workspace/allocation and arithmetic
+inside objective calls (about 97.5% of the prime profile), then qualify a contained
+CPU optimization under unchanged strict semantics, work counts and repeatability.
+Exact input/result reuse is a separate later decision: observed repeat no-change
+work is measurable (~4.5% prime/~6.9% arithmetic calls), but inherited fitted outputs
+can still improve. Any cache needs exact content/constraints/problem/configuration
+identity and explicit budget semantics. No already-optimized flag, cache, new solver,
+algebraic rewrite or GPU execution is implemented. Production packaging/platform
+qualification/documentation and checkpoint/resume remain pending.

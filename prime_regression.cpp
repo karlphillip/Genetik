@@ -7,6 +7,7 @@ int main(int argc,char** argv) {
     std::cout.imbue(std::locale::classic());std::cout<<std::setprecision(17)<<std::unitbuf;
     try {
         std::string mode,prefix;std::filesystem::path directory;std::optional<std::uint64_t> budget;
+        std::uint64_t fitEvery=1;
         std::set<std::string> options;
         for(int i=1;i<argc;++i) {
             const std::string option=argv[i];if(!options.insert(option).second)throw std::invalid_argument("repeated option "+option);
@@ -15,11 +16,15 @@ int main(int argc,char** argv) {
                 mode=option;continue;
             }
             if(option=="--help") {
-                std::cout<<"genetik_prime_regression (--generate | --pilot | --campaign) --output DIR [--prime-file FIRST1000.txt] [--loss-budget 50000|100000]\n";return 0;
+                std::cout<<"genetik_prime_regression (--generate | --pilot | --campaign) --output DIR [--prime-file FIRST1000.txt] [--loss-budget 50000|100000] [--fit-every N]\n";return 0;
             }
-            if(option!="--output" && option!="--prime-file" && option!="--loss-budget")throw std::invalid_argument("unknown option "+option);
+            if(option!="--output" && option!="--prime-file" && option!="--loss-budget" && option!="--fit-every")throw std::invalid_argument("unknown option "+option);
             if(++i==argc)throw std::invalid_argument("missing value for "+option);
             const std::string value=argv[i];
+            if(option=="--fit-every") {
+                auto parsed=std::from_chars(value.data(),value.data()+value.size(),fitEvery);
+                if(parsed.ec!=std::errc{} || parsed.ptr!=value.data()+value.size() || fitEvery==0)throw std::invalid_argument("--fit-every: expected positive integer");
+            }
             if(option=="--output")directory=value;
             if(option=="--prime-file")prefix=value;
             if(option=="--loss-budget") {
@@ -39,7 +44,7 @@ int main(int argc,char** argv) {
         if(mode=="--generate")return 0;
         const auto problem=RegressionProblem::create(rows(ref),{31,6,8});
         if(mode=="--pilot") {
-            const auto c=config(4096);regression_example::printConfig(c);
+            auto c=config(4096);c.fitEveryGenerations=fitEvery;regression_example::printConfig(c);
             RandomContext random(2026);ExpressionVariation variation(problem,c.grammar);TrainingObjective objective(problem,4096);
             const auto start=Clock::now();std::size_t completedFits=0;
             try {
@@ -56,7 +61,7 @@ int main(int argc,char** argv) {
                      <<" completed_fits="<<completedFits<<" conservative_six_run_100000_seconds="<<estimate
                      <<" margin=2 recommended_allowance="<<(estimate<=1800?100000:50000)<<" pilot_models_discarded=1\n";return 0;
         }
-        const auto c=config(*budget);regression_example::printConfig(c);
+        auto c=config(*budget);c.fitEveryGenerations=fitEvery;regression_example::printConfig(c);
         std::cout<<"seeds=0,1,2,3,42 representative_order=fitting_mse,nodes,faithful_text,seed no_configuration_adjustment=1\n";
         // Fit references and select ALL committed models before any later-range predictions.
         const auto references=baselines(rows(ref));

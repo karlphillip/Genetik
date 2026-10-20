@@ -48,7 +48,7 @@ inline void printConfig(const SymbolicRegressionConfig& config) {
               << " selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3"
               << " full_probability=.5 grow_probability=.65 variation_proposal_limit=8"
               << " constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=" << config.trainingLossThreshold
-              << " fitting=" << static_cast<bool>(config.fitting);
+              << " fitting=" << static_cast<bool>(config.fitting) << " fit_every=" << config.fitEveryGenerations;
     if(config.fitting) {
         std::cout<<" fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_threshold=";
         if(config.fitting->lossThreshold)std::cout<<*config.fitting->lossThreshold;
@@ -96,6 +96,9 @@ inline void printResult(const SymbolicRegressionResult& result,std::uint64_t all
              <<" variation_fallbacks="<<result.variation.mutationFallbacks+result.variation.crossoverFallbacks
              <<" mutation_proposals="<<result.variation.mutationProposals<<" crossover_proposals="<<result.variation.crossoverProposals
              <<" mutation_changes="<<result.variation.mutationChanges<<" crossover_changes="<<result.variation.crossoverChanges
+             <<" ordinary_loss_attempts="<<w.ordinaryLossAttempts<<" fitting_baselines="<<w.fittingBaselineAttempts<<" fitting_probes="<<w.fittingProbeAttempts
+             <<" fitting_improved="<<w.fittingImproved<<" schedule_skips="<<result.preparationWork.skippedBySchedule
+             <<" unpublished_losses="<<result.unpublishedLossAttempts<<" unpublished_rows="<<result.unpublishedRowAttempts
              <<" seconds="<<seconds<<" stop="<<searchStopName(result.stoppingReason)<<'\n';
     if(result.best)std::cout<<"nodes="<<result.best->expression().nodeCount()<<" depth="<<result.best->expression().depth()
                             <<" expression="<<result.best->text()<<'\n';

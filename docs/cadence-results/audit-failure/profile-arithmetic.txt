@@ -1,0 +1,18 @@
+problem=arithmetic seed=2 interval=1
+raw_initial_mse=2.1312500000000001 refined_initial_mse=2.0611831791271022 training_mse=1.3197121232313256e-15 discovery_stage=offspring discovery_generation=9 attempted_generations=9 published_generations=9 candidate_requests=640 training_loss_attempts=60044 unused_allowance=39956 row_attempts=1495096 invalid_training_losses=254 fits=640 fitting_loss_attempts=60044 fit_proposals=76888 accepted=8485 invalid_probes=158 infeasible=1710 duplicates=15698 variation_rejections=46 variation_fallbacks=0 mutation_proposals=240 crossover_proposals=272 mutation_changes=218 crossover_changes=454 ordinary_loss_attempts=0 fitting_baselines=640 fitting_probes=59404 fitting_improved=353 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.21288516900000001 stop=training_loss_threshold
+nodes=10 depth=5 expression=(log(x0) + (((4.1999999284744263 + (-3.199999953358553)) * x1) / x0))
+initial_loss_calls=2562 initial_rows=62980 completed_improved=353 completed_unchanged=84 no_constants=107 invalid_starts=96 aborted_fits=0 disjoint_check=1
+origin=initialization requests=64 fits=64 skips=0 ordinary=0 baselines=64 probes=2498 rows=62980 invocations_with_progress=26
+origin=changed_offspring requests=492 fits=492 skips=0 ordinary=0 baselines=492 probes=48742 rows=1226204 invocations_with_progress=313
+origin=unchanged_offspring requests=66 fits=66 skips=0 ordinary=0 baselines=66 probes=5733 rows=144783 invocations_with_progress=11
+origin=elite requests=18 fits=18 skips=0 ordinary=0 baselines=18 probes=2431 rows=61129 invocations_with_progress=3
+origin=unspecified requests=0 fits=0 skips=0 ordinary=0 baselines=0 probes=0 rows=0 invocations_with_progress=0
+fit_stop=no_constants count=107
+fit_stop=loss_threshold count=1
+fit_stop=invalid_start count=96
+fit_stop=minimum_step count=360
+fit_stop=sweep_limit count=0
+fit_stop=proposal_limit count=0
+fit_stop=evaluation_limit count=76
+profile_search_seconds=0.21288516900000001 dataset_seconds=0.11123184299999798 fitting_inclusive_seconds=0.20635799299999971 fitting_dataset_seconds=0.11123184299999798 fitting_overhead_seconds=0.095126150000001727 preparation_inclusive_seconds=0.20825922199999997 generation_inclusive_seconds=0.21278071800000001 publication_seconds=0.00057921700000000003 other_search_seconds=0.005947959000000301
+diagnostic_capacity=1024 stored_expressions=755 observed_fits=640 untracked_requests=0 capacity_drops=0 repeated_input_requests=157 repeat_loss_attempts=6059 repeated_completed_nochange_loss_attempts=4141 repeated_with_progress=19 previous_output_requests=192 previous_output_loss_attempts=10282 previous_output_with_progress=16 previous_output_completed_nochange=176

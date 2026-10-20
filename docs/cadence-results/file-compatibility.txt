@@ -1,0 +1,3 @@
+PASS: accepted omitted default reference preserved; all legacy non-time fields and faithful expression match.
+PASS: file-based arithmetic seed 2 interval 4 matches in-memory expression, score, configuration setting and all printed deterministic counters.
+Separate file reproduction: 32384 actual loss calls, 801514 row attempts.

@@ -1,0 +1,2 @@
+PASS: seed 0; exact expression, configuration, scores and all 26 recorded non-time result fields match; additive counters checked when present.
+Separate reproduction work: 100000 actual loss calls; 99804196 row attempts.

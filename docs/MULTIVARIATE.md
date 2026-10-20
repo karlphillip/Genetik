@@ -193,3 +193,12 @@ thresholds together; default 1e-14 is preserved, and zero requests exact-zero st
 only. Values must be finite and nonnegative. The [prime example](PRIME_REGRESSION.md)
 uses this option to reproduce its normalized one-input experiment through this same
 file executable, with identical numerical input and search counters.
+
+`--fit-every N` is additive (default 1, unsigned positive integer). With fitting
+enabled it refines generation 0 then multiples of N; unscheduled generations still
+score each candidate on training rows. With --no-fit it never causes refinement
+or a policy-skip count. Zero, negative, fractional, overflowing and partially parsed
+values fail before search. Settings output includes fit_every. New output counters
+separate ordinary/baseline/probe calls, fitting progress, schedule skips and
+unpublished work; scripts comparing historical outputs should compare recorded
+fields and recognize additive fields. See FITTING_CADENCE.md for the full contract.

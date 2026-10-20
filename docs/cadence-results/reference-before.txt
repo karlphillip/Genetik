@@ -1,0 +1,10 @@
+execution=serial_cpu population=64 generation_limit=2000 training_loss_limit=4096 outer_request_limit=4096 nodes_limit=31 depth_limit=6 absolute_constant_limit=8 operators=add,sub,mul,div,log operator_selection=uniform_over_structurally_feasible_entries selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3 full_probability=.5 grow_probability=.65 variation_proposal_limit=8 constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=1e-14 fitting=1 fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_threshold=1e-14 fit_slots=all_including_elites_and_clones
+file_byte_limit=16777216 line_byte_limit=16384 file_row_limit=50000 column_limit=64 header_name_byte_limit=128 number_byte_limit=256
+training_file=../cadence-data/training.csv training_rows=25 dimensions=2 target_column=target target_file_column=3 seed=42
+x0=first training_file_column=1
+x1=second training_file_column=2
+search_start
+raw_initial_mse=1.9073039749738052 refined_initial_mse=1.2076509306233403 training_mse=1.2076509306233403 discovery_stage=initialization discovery_generation=0 attempted_generations=1 published_generations=0 candidate_requests=92 training_loss_attempts=4096 unused_allowance=0 row_attempts=101670 invalid_training_losses=31 fits=92 fitting_loss_attempts=4096 fit_proposals=5561 accepted=816 invalid_probes=13 infeasible=73 duplicates=1481 variation_rejections=0 variation_fallbacks=0 mutation_proposals=18 crossover_proposals=31 mutation_changes=18 crossover_changes=52 seconds=0.010945896 stop=evaluation_budget
+nodes=7 depth=3 expression=((x1 + x0) - (x0 * 0.72761958837509155))
+dataset=training max_abs_error=2.8293373863723996 recovery=0 reporting_prediction_rows=25 invalid_predictions_total=0 invalid_errors_total=0
+selection_finalized evaluation_files=0

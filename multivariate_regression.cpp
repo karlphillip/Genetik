@@ -6,19 +6,23 @@ using namespace regression_example;
 int main(int argc,char** argv) {
     std::cout<<std::setprecision(17)<<std::unitbuf;
     try {
-        bool arithmetic=false;
+        bool arithmetic=false;std::uint64_t fitEvery=1;
         std::optional<std::filesystem::path> directory;
         for(int i=1;i<argc;++i) {
             const std::string option=argv[i];
             if(option=="--arithmetic" && !arithmetic)arithmetic=true;
+            else if(option=="--fit-every" && i+1<argc) {
+                const std::string value=argv[++i];auto parsed=std::from_chars(value.data(),value.data()+value.size(),fitEvery);
+                if(parsed.ec!=std::errc{} || parsed.ptr!=value.data()+value.size() || fitEvery==0)throw std::invalid_argument("--fit-every: expected positive integer");
+            }
             else if(option=="--generate" && !directory && i+1<argc)directory=argv[++i];
-            else throw std::invalid_argument("Usage: genetik_multivariate_demo [--arithmetic] [--generate DIRECTORY]");
+            else throw std::invalid_argument("Usage: genetik_multivariate_demo [--arithmetic] [--generate DIRECTORY] [--fit-every N]");
         }
         if(directory){if(arithmetic)writeArithmeticFiles(*directory);else writeMultivariateFiles(*directory);return 0;}
         const auto rows=arithmetic?arithmeticRows:multivariateRows;
         const auto train=rows(0);
         const auto problem=RegressionProblem::create(train,{31,6,8});
-        auto config=searchConfig(100000);
+        auto config=searchConfig(100000);config.fitEveryGenerations=fitEvery;
         if(arithmetic)config.grammar.operators={ExpressionKind::Add,ExpressionKind::Subtract,ExpressionKind::Multiply,ExpressionKind::Divide,ExpressionKind::Log};
         printConfig(config);
         std::cout<<"campaign="<<(arithmetic?"strict_arithmetic":"initial")<<" seeds=0,1,2,3,42 x0=first x1=second target=target training_rows=25"

@@ -39,6 +39,7 @@ public:
                 const auto& elite = (*snapshot)[snapshot->size() - 1 - i];
                 if (elite.fitnessState() != FitnessState::Valid) break;
                 next.push_back(elite);
+                if constexpr(requires {variation_.markElite(next.back());}) variation_.markElite(next.back());
             }
             while (next.size() < snapshot->size()) {
                 const C father = select(*snapshot);
@@ -46,7 +47,11 @@ public:
                 C a = father, b = mother;
                 crossover(father, mother, a, b);
                 next.push_back(mutation(a));
-                if (next.size() < snapshot->size()) next.push_back(mutation(b));
+                if constexpr(requires {variation_.markOffspring(next.back(),father);}) variation_.markOffspring(next.back(),father);
+                if (next.size() < snapshot->size()) {
+                    next.push_back(mutation(b));
+                    if constexpr(requires {variation_.markOffspring(next.back(),mother);}) variation_.markOffspring(next.back(),mother);
+                }
             }
             outcome_ = population.publishGeneration(std::move(next));
             if (outcome_ == GenerationOutcome::Committed) ++this->_evolutions;

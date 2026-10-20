@@ -1,5 +1,6 @@
 #pragma once
 #include "Population_i.hpp"
+#include "detail/ScopedTiming.hpp"
 #include "RandomContext.hpp"
 #include <algorithm>
 #include <exception>
@@ -21,16 +22,17 @@ class Population : public Population_i<T> {
     static_assert(std::is_nothrow_destructible_v<T>);
 public:
     Population(const unsigned int& size, RandomContext& random,
-               ObjectiveDirection direction = ObjectiveDirection::Maximize)
-        : random_(random), direction_(direction) { validateDirection(); setSize(size); }
+               ObjectiveDirection direction = ObjectiveDirection::Maximize, bool profilePublication = false)
+        : random_(random), direction_(direction), profilePublication_(profilePublication) { validateDirection(); setSize(size); }
     Population(const std::vector<T>& initial, RandomContext& random,
-               ObjectiveDirection direction = ObjectiveDirection::Maximize)
-        : random_(random), direction_(direction) { validateDirection(); publishGeneration(initial); }
+               ObjectiveDirection direction = ObjectiveDirection::Maximize, bool profilePublication = false)
+        : random_(random), direction_(direction), profilePublication_(profilePublication) { validateDirection(); publishGeneration(initial); }
     Population(const Population&) = delete;
     Population& operator=(const Population&) = delete;
     Population(Population&&) = delete;
     Population& operator=(Population&&) = delete;
 
+    double publicationSeconds() const noexcept {return publicationSeconds_;}
     RandomContext& randomContext() const noexcept { return random_; }
     ObjectiveDirection direction() const noexcept { return direction_; }
     GenerationOutcome lastOutcome() const noexcept { return outcome_; }
@@ -122,13 +124,18 @@ public:
             if (!problemBound_) { problem_ = identity; problemBound_ = true; }
             for (std::size_t i = 0; i < next.size(); ++i) {
                 random_.recordEvaluationAttempt();
-                try { next[i].calculateFitness(); }
+                try {
+                    if constexpr(requires {next[i].setPreparationGeneration(std::uint64_t{});})
+                        next[i].setPreparationGeneration(committed_ ? committed_->generation+1:0);
+                    next[i].calculateFitness();
+                }
                 catch (...) {
                     std::throw_with_nested(std::runtime_error("evaluation attempt " +
                         std::to_string(random_.evaluationAttempts()) + " at candidate " +
                         std::to_string(i) + " failed"));
                 }
             }
+            genetik_detail::ScopedTiming publicationTimer(profilePublication_ ? &publicationSeconds_:nullptr);
             requireEvaluated(next);
             if (std::none_of(next.begin(), next.end(), valid))
                 return outcome_ = GenerationOutcome::NoViableCandidates;
@@ -192,6 +199,8 @@ private:
     bool problemBound_ = false;
     RandomContext& random_;
     const ObjectiveDirection direction_;
+    bool profilePublication_=false;
+    double publicationSeconds_=0;
     std::unique_ptr<State> committed_;
     std::unique_ptr<std::vector<T>> pending_;
     GenerationOutcome outcome_ = GenerationOutcome::NoViableCandidates;

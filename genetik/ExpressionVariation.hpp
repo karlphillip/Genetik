@@ -87,6 +87,11 @@ public:
             if (!std::isfinite(value) || std::abs(value) > problem_->limits().maxAbsConstant)
                 throw std::invalid_argument("terminal outside problem constant bound");
     }
+    void markElite(ExpressionCandidate& candidate) const {candidate.setPreparationOrigin(PreparationOrigin::Elite);}
+    void markOffspring(ExpressionCandidate& candidate,const ExpressionCandidate& parent) const {
+        candidate.setPreparationOrigin(candidate.expression().sameRepresentation(parent.expression()) ?
+            PreparationOrigin::UnchangedOffspring:PreparationOrigin::ChangedOffspring);
+    }
     VariationStatistics statistics() const noexcept { return statistics_; }
     ExpressionCandidate initialize(std::mt19937& rng) {
         count(statistics_.initializations);

@@ -3,7 +3,10 @@
 The authoritative version is `project(GENETIK VERSION 0.1.0 ...)` in the root
 CMakeLists.txt. Package metadata derives from it. The original checkout already
 declared 0.1.0; there were no local release tags or documented published releases.
-This is an **unreleased development version**, not a claim that 0.1.0 was published.
+Version 0.1.0 was published as a development pre-release at
+`f9299ea2cb5136d06e2de8f68bb83ecf460ca369`. Later local changes are not
+retroactively qualified by that release. Historical preparation statements below
+retain their checkpoint scope; see CLEANUP.md for current local verification.
 See CHANGELOG.md for modernization/migration history.
 
 Before 1.0, a minor change (0.1 to 0.2) may introduce documented public source API
@@ -127,3 +130,12 @@ change those results and require explicit notes. Breaking public API changes req
 a new minor series before 1.0, matching SameMinorVersion's refusal to match another
 minor. This first modernization is not promised source-compatible with the original
 unreleased 2021 interfaces; consult MIGRATION.md. No stable binary ABI is promised.
+
+
+## Phase 1 location/hygiene update
+
+The current suite adds one repository-hygiene case: 25 portable cases, or 26 with
+the qualified Jetson snapshot enabled. Separate TSan still selects only its two
+forced-overlap/OOP cases. The previously executed hosted 24-case results remain
+historical evidence for their recorded SHAs. The changed workflow uses out/build/
+and the updated manifest; no hosted job for this local cleanup is claimed.

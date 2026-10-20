@@ -142,3 +142,8 @@ if(GENETIK_BUILD_EXAMPLES)
     add_test(NAME genetik_character_parallel COMMAND genetik_demo 42 3 --threads 3)
     set_tests_properties(genetik_character_parallel PROPERTIES TIMEOUT 30)
 endif()
+
+# Location-based hygiene; frozen data/evidence remains permitted.
+add_test(NAME genetik_repository_hygiene COMMAND ${Python3_EXECUTABLE}
+    ${PROJECT_SOURCE_DIR}/scripts/check_hygiene.py --source ${PROJECT_SOURCE_DIR} --self-test)
+set_tests_properties(genetik_repository_hygiene PROPERTIES TIMEOUT 30)

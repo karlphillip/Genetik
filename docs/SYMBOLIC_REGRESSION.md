@@ -18,7 +18,7 @@ if (result.best) {
 std::cout << searchStopName(result.stoppingReason) << '\n';
 ```
 
-This is a fit on supplied rows; three fitted observations do not prove a formula on other inputs. Replace the rows with another validated problem and create a new run. Read [POLYNOMIAL_CAMPAIGN.md](POLYNOMIAL_CAMPAIGN.md) for the prescribed 17-row experiment, frozen settings and all five results. Run `../build-release/genetik_polynomial_regression` for that campaign. Full campaigns are deliberately excluded from CTest; routine sanitizer coverage runs a short, bounded search.
+This is a fit on supplied rows; three fitted observations do not prove a formula on other inputs. Replace the rows with another validated problem and create a new run. Read [POLYNOMIAL_CAMPAIGN.md](POLYNOMIAL_CAMPAIGN.md) for the prescribed 17-row experiment, frozen settings and all five results. Run `out/build/release/genetik_polynomial_regression` for that campaign. Full campaigns are deliberately excluded from CTest; routine sanitizer coverage runs a short, bounded search.
 
 ## Integration and compatibility
 

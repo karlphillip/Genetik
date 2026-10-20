@@ -90,7 +90,7 @@ Allocation failures remain operational exceptions. Tests exercise both skew dire
 
 ## Public example and verification
 
-Run `../build-release/genetik_expression_demo`. It explicitly labels the polynomial as **manually constructed**, reports 7 nodes/depth 4, and prints f(-2)=3, f(-1)=1, f(0)=1, f(1)=3, f(2)=7. It also demonstrates explicit invalidity for zero times an overflowing inner product. It performs no optimization or random search.
+Run `out/build/release/genetik_expression_demo`. It explicitly labels the polynomial as **manually constructed**, reports 7 nodes/depth 4, and prints f(-2)=3, f(-1)=1, f(0)=1, f(1)=3, f(2)=7. It also demonstrates explicit invalidity for zero times an overflowing inner product. It performs no optimization or random search.
 
 The dependency-free runtime-check suite covers leaves, multiple variables, unused/non-finite/incorrect bindings, subtraction order/grouping, non-finite constants and arithmetic, first-failure ordering, node rounding/no fusion, signed zeros/subnormals/underflow, inclusive/exceeded node/depth/constant limits, malformed postfix input, SIZE_MAX checks, alias-safe ownership/derived replacement, exact constant export and custom decimal locale independence. There are separate CTest checks for the public example and rejection of unsafe header-compilation modes. Existing evolutionary fault-injection tests remain separate. The downstream CMake consumer constructs, inspects, prints and evaluates the polynomial through the public header/target; it still checks the earlier GA contracts.
 

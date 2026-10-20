@@ -109,11 +109,11 @@ have different trajectories. Within-build repeated searches remain deterministic
 ## File workflow
 
 ```sh
-../build-release/genetik_multivariate_demo --arithmetic --generate ../arithmetic-data
-../build-release/genetik_regression_search ../arithmetic-data/training.csv \
+out/build/release/genetik_multivariate_demo --arithmetic --generate out/data/arithmetic
+out/build/release/genetik_regression_search out/data/arithmetic/training.csv \
   --inputs first,second --target target --seed 42 --loss-budget 100000 \
   --operators add,sub,mul,div,log \
-  --evaluate ../arithmetic-data/interior.csv --evaluate ../arithmetic-data/exterior.csv
+  --evaluate out/data/arithmetic/interior.csv --evaluate out/data/arithmetic/exterior.csv
 ```
 
 `--operators` is optional; absent means add,sub,mul. Names are case-sensitive and

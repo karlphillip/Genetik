@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 PORTABLE = {
+    'genetik_repository_hygiene',
     'genetik_strict_arithmetic', 'genetik_multivariate_contracts',
     'genetik_fitting_contracts', 'genetik_symbolic_contracts',
     'genetik_expression_contracts', 'genetik_fitness_publication',

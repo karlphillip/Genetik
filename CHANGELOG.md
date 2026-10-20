@@ -1,9 +1,16 @@
 # Changelog
 
-## Unreleased — 0.1.0 development package
+## Unreleased — after 0.1.0
 
-No release tag/publication has been made. This initial development package retains
-the existing CMake version value and MIT attribution (Karl Phillip, 2021).
+- Canonical local/CI output directories, parent-workspace archival, location-based
+  hygiene gate and rejection of in-source CMake configuration. Compiled campaign
+  applications moved to apps/campaigns/; executable names and public APIs unchanged.
+- The phased roadmap now separates cleanup from future typed mathematics work.
+
+## 0.1.0 — development pre-release, 2026-10-20
+
+Published at f9299ea2cb5136d06e2de8f68bb83ecf460ca369; the source asset and
+annotated v0.1.0 tag remain unchanged. MIT attribution: Karl Phillip (2021).
 
 - C++20 baseline and explicit, caller-owned RandomContext: custom initialization and
   variation use its engine; implicit/hidden reseeding is removed.

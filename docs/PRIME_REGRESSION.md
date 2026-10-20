@@ -117,12 +117,12 @@ these raw-unit metric calculations are reported separately from training work.
 From the repository after the standard Release build:
 
 ```sh
-../build-release/genetik_prime_regression --generate --output ../prime-data
-../build-release/genetik_prime_regression --pilot --output ../prime-pilot
+out/build/release/genetik_prime_regression --generate --output out/data/prime
+out/build/release/genetik_prime_regression --pilot --output out/runs/prime-pilot
 # Use the pilot-selected common allowance recorded in PRIME_CAMPAIGN.md:
-../build-release/genetik_prime_regression --campaign --output ../prime-results --loss-budget 100000
-../build-release/genetik_prime_regression --campaign --output ../prime-owned --loss-budget 100000 --prime-file ../prime-data/first-1000.txt
-../build-release/genetik_regression_search ../prime-results/fitting.csv --inputs u --target v --seed 0 --loss-budget 100000 --loss-threshold 0 --operators add,sub,mul,div,log
+out/build/release/genetik_prime_regression --campaign --output out/runs/prime-results --loss-budget 100000
+out/build/release/genetik_prime_regression --campaign --output out/runs/prime-owned --loss-budget 100000 --prime-file out/data/prime/first-1000.txt
+out/build/release/genetik_regression_search out/runs/prime-results/fitting.csv --inputs u --target v --seed 0 --loss-budget 100000 --loss-threshold 0 --operators add,sub,mul,div,log
 ```
 
 The additive generic CLI --loss-threshold sets both run and fitting MSE thresholds;

@@ -94,7 +94,7 @@ C++14 sibling. Its global settings and instrumentation remain untouched.
 Reproduce only the fixture without running the complete suite:
 
 ```sh
-python3 tests/package_integration.py --source . --workspace ../delivery-check/genetik-delivery-fixture --cmake "$(command -v cmake)" --cxx "$(command -v g++)"
+python3 tests/package_integration.py --source . --workspace out/consumers/package-check/genetik-delivery-fixture --cmake "$(command -v cmake)" --cxx "$(command -v g++)"
 ```
 
 The fixture is Linux GNU-frontend test tooling, not qualification of every frontend
@@ -120,7 +120,7 @@ for repeated minimum-CMake/relocation/multi-TU consumption with parallel work.
 
 ## Source distribution
 
-The planned first development release ships a Git source archive, not platform
+The v0.1.0 development pre-release ships a Git source archive, not platform
 binaries. It includes the MIT license, public/transitive headers, CMake package
 helpers, compiled quickstarts, external OOP consumer and accepted evidence. Ignored
 build/output trees and .git are absent. From an extracted source root, the same

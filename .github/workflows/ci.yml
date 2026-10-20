@@ -59,36 +59,36 @@ jobs:
           make install
           echo "$RUNNER_TEMP/cmake-min/bin" >> "$GITHUB_PATH"
       - name: Record qualified environment and verify compiler choice
-        run: python3 scripts/ci_command.py --log ../build/environment.log --title "Qualified environment" --report -- bash scripts/ci_environment.sh '${{ matrix.arch }}' '${{ matrix.minimum }}'
+        run: python3 scripts/ci_command.py --log out/build/ci/environment.log --title "Qualified environment" --report -- bash scripts/ci_environment.sh '${{ matrix.arch }}' '${{ matrix.minimum }}'
       - name: Configure
         run: >-
-          cmake -S . -B ../build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          cmake -S . -B out/build/ci -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_SANITIZERS=${{ matrix.sanitizers }}
           -DGENETIK_RECORDED_REFERENCE=OFF -DBUILD_TESTING=ON
           -DGENETIK_BUILD_TESTS=ON -DGENETIK_BUILD_EXAMPLES=ON
           -DGENETIK_THREAD_SANITIZER=OFF
       - name: Compile contracts, standalone headers, and quickstarts
-        run: python3 scripts/ci_command.py --log ../build/compile.log --title "Compilation diagnostics" -- cmake --build ../build -j2
+        run: python3 scripts/ci_command.py --log out/build/ci/compile.log --title "Compilation diagnostics" -- cmake --build out/build/ci -j2
       - name: Verify the portable test manifest
         run: |
-          cmake -E chdir ../build ctest --show-only=json-v1 > ../build/test-manifest.json
-          python3 scripts/check_ci_manifest.py ../build/test-manifest.json
+          cmake -E chdir out/build/ci ctest --show-only=json-v1 > out/build/ci/test-manifest.json
+          python3 scripts/check_ci_manifest.py out/build/ci/test-manifest.json
       - name: Run bounded contracts, installed relocation, and public workflows
         # -E chdir works with CTest 3.16, which predates --test-dir.
-        run: python3 scripts/ci_command.py --log ../build/contracts.log --title "Portable contracts" --report -- cmake -E chdir ../build ctest --output-on-failure
+        run: python3 scripts/ci_command.py --log out/build/ci/contracts.log --title "Portable contracts" --report -- cmake -E chdir out/build/ci ctest --output-on-failure
       - name: Separate ThreadSanitizer concurrency qualification
         if: matrix.name == 'gcc13-arm64'
         run: |
-          cmake -S . -B ../build-tsan -DCMAKE_BUILD_TYPE=Debug -DGENETIK_THREAD_SANITIZER=ON -DGENETIK_SANITIZERS=OFF -DBUILD_TESTING=ON -DGENETIK_BUILD_TESTS=ON -DGENETIK_BUILD_EXAMPLES=OFF -DGENETIK_RECORDED_REFERENCE=OFF -DGENETIK_WARNINGS_AS_ERRORS=ON
-          python3 scripts/ci_command.py --log ../build-tsan/compile.log --title "TSan compilation" -- cmake --build ../build-tsan --target genetik_concurrency_tests genetik_oop_consumer -j2
-          cmake -E chdir ../build-tsan ctest -R 'genetik_concurrency_contracts|genetik_oop_parallel' --show-only=json-v1 > ../build-tsan/test-manifest.json
-          python3 scripts/check_ci_manifest.py ../build-tsan/test-manifest.json --tsan
-          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log ../build-tsan/contracts.log --title "TSan contracts" --report -- cmake -E chdir ../build-tsan ctest -R 'genetik_concurrency_contracts|genetik_oop_parallel' --output-on-failure
+          cmake -S . -B out/build/tsan -DCMAKE_BUILD_TYPE=Debug -DGENETIK_THREAD_SANITIZER=ON -DGENETIK_SANITIZERS=OFF -DBUILD_TESTING=ON -DGENETIK_BUILD_TESTS=ON -DGENETIK_BUILD_EXAMPLES=OFF -DGENETIK_RECORDED_REFERENCE=OFF -DGENETIK_WARNINGS_AS_ERRORS=ON
+          python3 scripts/ci_command.py --log out/build/tsan/compile.log --title "TSan compilation" -- cmake --build out/build/tsan --target genetik_concurrency_tests genetik_oop_consumer -j2
+          cmake -E chdir out/build/tsan ctest -R 'genetik_concurrency_contracts|genetik_oop_parallel' --show-only=json-v1 > out/build/tsan/test-manifest.json
+          python3 scripts/check_ci_manifest.py out/build/tsan/test-manifest.json --tsan
+          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log out/build/tsan/contracts.log --title "TSan contracts" --report -- cmake -E chdir out/build/tsan ctest -R 'genetik_concurrency_contracts|genetik_oop_parallel' --output-on-failure
       - name: Stage diagnostic artifacts
         if: always()
         run: |
           mkdir -p "$RUNNER_TEMP/genetik-qualification"
-          for build in ../build ../build-tsan; do
+          for build in out/build/ci out/build/tsan; do
             if [[ -d "$build" ]]; then
               destination="$RUNNER_TEMP/genetik-qualification/$(basename "$build")"
               mkdir -p "$destination"

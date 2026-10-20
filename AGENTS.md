@@ -5,10 +5,10 @@
   `../.tools/bin/cmake` and `../.tools/bin/ctest` (4.4.4); ordinary `cmake`/`ctest` work when installed.
 - Verified from this repository:
   ```sh
-  ../.tools/bin/cmake -S . -B ../build-release -DCMAKE_BUILD_TYPE=Release
-  ../.tools/bin/cmake --build ../build-release -j2
-  ../.tools/bin/ctest --test-dir ../build-release --output-on-failure
-  timeout 10s ../build-release/genetik_demo 42 1000
+  ../.tools/bin/cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release
+  ../.tools/bin/cmake --build out/build/release -j2
+  ../.tools/bin/ctest --test-dir out/build/release --output-on-failure
+  timeout 10s out/build/release/genetik_demo 42 1000
   ```
 - Use separate Debug and sanitizer directories; sanitizer option is `-DGENETIK_SANITIZERS=ON`.
 - Tests must check outcomes with runtime failures, including with `NDEBUG`; never require stochastic target discovery. Set CTest timeouts and bound examples.
@@ -36,7 +36,7 @@
 
 - Canonical source/installed target: Genetik::Genetik; genetik_lib is retained for source compatibility. Keep CMake >=3.16, header-only C++20/strict-FP requirements, relocatable GNUInstallDirs exports and consumer-frontend flag selection. Development flags must stay private; embedded extras/installation default OFF and the parent owns CTest/global compiler settings. See docs/PACKAGING.md.
 - Packaging checks copy current intended library sources to disposable trees, relocate the prefix and remove only those producer trees. Installed multi-TU consumers and the actual quickstart files must compile/run without source includes or development runtime dependencies. Preserve the MIT license.
-- Captured Jetson/GCC13/libm2.39 bits are opt-in via GENETIK_RECORDED_REFERENCE=ON on the qualified local builds; CI uses portable math/domain and within-build repeatability checks. Do not turn captured trajectories into cross-platform assertions. See docs/SUPPORT.md; configured CI is not verified hosted CI.
+- Captured Jetson/GCC13/libm2.39 bits are opt-in via GENETIK_RECORDED_REFERENCE=ON on the qualified local builds; CI uses portable math/domain and within-build repeatability checks. Do not turn captured trajectories into cross-platform assertions. See docs/SUPPORT.md; qualification claims must identify the actual tested SHA.
 
 - Keep custom representation support through EvaluatedCandidate and public virtual
   algorithm hooks; evolve must dispatch roulette/crossover/mutation. New candidates
@@ -44,7 +44,7 @@
   See docs/ARCHITECTURE.md and tests/oop_consumer; no symbolic dependency in core.
 - Active layout: examples/ (including quickstarts), apps/ for file regression,
   benchmarks/ for evaluation harness/corpus, scripts/ for campaigns/helpers.
-  New run output goes to explicit out/ or build/temp directories. Preserve accepted
+  New output uses out/build/, out/install/, out/consumers/, out/runs/, out/data/, out/logs/ and out/tmp/. Preserve accepted
   docs evidence and historical source locations; do not blanket-ignore logs.
 - Generic concurrency uses an explicitly run-owned ExecutionContext (default 1,
   no workers). Coordinator owns RNG, variation, ordering and publication; workers
@@ -55,3 +55,12 @@
 - Use separate -DGENETIK_THREAD_SANITIZER=ON builds for TSan; never combine with
   ASan. Require forced-overlap tests, not just sanitizer compilation. Do not run
   timing measurements concurrently with development builds or qualification suites.
+
+- Run `python3 scripts/check_hygiene.py --workspace` after local workflows. The
+  parent permits only Genetik/, .tools/, delivery-tools/ and archive/; inspect and
+  manifest unexpected material before archiving. Never move configured CMake caches.
+  The minimum tool remains ../delivery-tools/cmake-min/bin/cmake (3.16.0), and
+  ../.tools/bin/cmake is 4.4.4. Parent archive/genetik/ holds indexed retained records
+  and the authoritative v0.1.0 source asset; preserve the 127 frozen evidence hashes.
+- C++ campaign applications live in apps/campaigns/; scripts/ holds Python/shell
+  helpers. Do not rewrite historical commands or evidence to reflect current paths.

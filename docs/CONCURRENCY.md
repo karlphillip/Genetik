@@ -1,7 +1,7 @@
 # Generic candidate execution (opt-in CPU backend)
 
 Genetik now has a library-owned reusable worker pool. Serial remains the default.
-Version 0.1.0 remains unreleased. No genetic representation, MSE, expression grammar,
+Version 0.1.0 is a development pre-release; later checkout qualification is recorded separately. No genetic representation, MSE, expression grammar,
 prime or file-format knowledge is present in Execution.hpp or the generic dispatch.
 See CONCURRENCY_RESULTS.md for executed qualification/performance evidence.
 

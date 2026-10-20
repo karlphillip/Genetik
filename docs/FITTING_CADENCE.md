@@ -85,10 +85,11 @@ distinguishes ordinary/baseline/probe work explicitly for new callers.
 File and existing campaign commands accept `--fit-every N`; omission is interval 1:
 
 ```sh
-../build-release/genetik_regression_search ../cadence-data/training.csv --inputs first,second --target target --seed 42 --loss-budget 100000 --operators add,sub,mul,div,log --fit-every 4
-../build-release/genetik_multivariate_demo --arithmetic --fit-every 4
-../build-release/genetik_prime_regression --campaign --output ../prime-four --loss-budget 100000 --fit-every 4
-../build-release/genetik_cadence_campaign --output ../cadence-comparison
+out/build/release/genetik_multivariate_demo --arithmetic --generate out/data/arithmetic
+out/build/release/genetik_regression_search out/data/arithmetic/training.csv --inputs first,second --target target --seed 42 --loss-budget 100000 --operators add,sub,mul,div,log --fit-every 4
+out/build/release/genetik_multivariate_demo --arithmetic --fit-every 4
+out/build/release/genetik_prime_regression --campaign --output out/runs/prime-four --loss-budget 100000 --fit-every 4
+out/build/release/genetik_cadence_campaign --output out/runs/cadence-comparison
 ```
 
 The last command runs two detailed seed-2 profiles followed by exactly twenty

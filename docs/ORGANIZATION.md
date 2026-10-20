@@ -1,61 +1,71 @@
-# Source and output organization
+# Source, workspace and output organization
 
-The starting checkpoint 8b633264 was clean. Before moving sources we inventoried
-tracked/untracked files; there was no unrelated local work. Public headers and all
-accepted campaign reports, raw logs, prediction tables and reproduction evidence
-are preserved. The root held nine active demonstration/application/harness .cpp
-files plus one obsolete unbuilt main.cpp sketch. The sketch calls nonexistent
-Settings/GeneticAlgorithm::run APIs and is retained as historical source, not a
-supported example or defect reproduction. No compiled library src directory is
-needed: Genetik is header-only.
+Genetik is header-only. Established public headers stay under `genetik/` and install
+under `include/Genetik`; include spelling, `Genetik::Genetik`, source compatibility
+target `genetik_lib`, executable names and explicit output options remain intact.
 
-| Purpose | Location |
+| Role | Location |
 | --- | --- |
-| Public headers and their detail include | genetik/ (installation remains include/Genetik) |
-| Small runnable demonstrations and application support headers | examples/ |
-| Installed-package compiled quickstarts | examples/quickstarts/ |
-| Generic numerical-file search executable | apps/regression_search.cpp |
-| Contract tests, downstream and installed consumers | tests/ |
-| Evaluation performance/replay harness and corpus | benchmarks/ |
-| Campaign runners and Python development/report helpers | scripts/ |
-| CMake package helpers | cmake/ |
-| Public contracts and immutable accepted experiment evidence | docs/ |
-| Obsolete unbuilt original main sketch | docs/history/main.cpp |
-| New generated output | out/ (ignored) or explicit external/build directories |
+| Public headers, private transitive implementation headers | `genetik/` |
+| Small demonstrations and application support | `examples/` |
+| Installed compiled quickstarts | `examples/quickstarts/` |
+| Generic file regression application | `apps/regression_search.cpp` |
+| Compiled campaign applications | `apps/campaigns/` |
+| Contract tests, data fixtures, external consumers | `tests/` |
+| Performance/replay harnesses | `benchmarks/` |
+| Python/shell development and reporting helpers | `scripts/` |
+| Package helpers | `cmake/` |
+| Contracts, accepted experiment evidence and historical reproductions | `docs/` |
+| Fresh configured builds (never moved caches) | `out/build/{release,debug,sanitize,minimum,tsan}` |
+| Manual installs and external builds | `out/install/`, `out/consumers/` |
+| New experiments, generated data, logs, disposable copies | `out/runs/`, `out/data/`, `out/logs/`, `out/tmp/` |
+| Compact retained parent-workspace history and published assets | `../archive/genetik/` |
 
-The prime generator/search remains examples/prime_regression.cpp: it is an example
-application with explicit --output, not part of the reusable core. Existing
-executable names, command-line options and public includes are unchanged. Only
-source paths changed. Source filenames referenced in historical campaign reports,
-raw evidence and reproduction records describe those historical checkouts; those
-files intentionally remain unchanged. For current compilation use CMake targets.
-Manual historical compilation commands map root *.cpp into the locations above;
-Python helper paths change from examples/ to scripts/.
-
-All tests pass temporary output paths under their build directory, including file
-fixtures and disposable installation/relocation producers. The package integration
-fixture copies only intended header/package sources and tested consumers. It does
-not package application or evidence artifacts. Quickstart/permutation programs
-write stdout only. Regression file search writes stdout; explicit evaluation files
-are inputs. Prime/cadence campaigns require --output DIR; multivariate generation
-uses an explicit output path. Other small demos/campaigns and replay tools write
-stdout/stderr: redirect them explicitly. Avoid overwriting accepted docs results.
-
-Recommended new output destinations:
+Current ordinary-tool commands, from the repository root:
 
 ```sh
-mkdir -p out/prime-new
-../build-release/genetik_prime_regression --generate --output out/prime-new
-../build-release/genetik_demo 42 20 >out/character.txt
+cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
+cmake --build out/build/release -j2
+cmake -E chdir out/build/release ctest --output-on-failure
+mkdir -p out/logs out/data
+out/build/release/genetik_demo 42 20 --threads 2 > out/logs/character.txt
+out/build/release/genetik_prime_regression --generate --output out/data/prime-new
+python3 scripts/check_hygiene.py --workspace
 ```
 
-out/, build directories, and Python bytecode caches are narrowly ignored. We do not
-ignore every .log or .csv: accepted evidence stays visible and new misplaced output
-should remain detectable. Executing a routine build/test must not add files at the
-source root. Use the existing external ../build-* workspaces on the Jetson.
+Ordinary CMake/CTest 3.16 commands remain supported (`cmake -E chdir`, not the newer
+`ctest --test-dir`). On this Jetson use `../.tools/bin/cmake`/`ctest` (4.4.4), or
+`../delivery-tools/cmake-min/bin/cmake`/`ctest` (exact 3.16.0). Tool locations stay
+stable: `delivery-tools/` includes source/build/install material and is not a scratch
+build. No parent/global compiler settings or installed development flags changed.
 
-[The file-by-file checkpoint inventory](qualification-results/starting-inventory.tsv)
-classifies every tracked starting file and records its current path. Initial Git
-status was clean (no untracked files); newly authored qualification files are
-separate from that historical inventory. Historical evidence locations are retained
-intentionally, not mistaken for new generated output.
+Tests write only inside their configured binary directory or explicit OS temporary
+directories. The installation fixture deliberately retains path names containing
+spaces, removes only its own disposable producers, and exercises scalar, symbolic,
+nonmathematical OOP and multi-TU usage. Library-only installation needs no Python.
+
+Prime/cadence applications require an explicit `--output DIR`; multivariate data
+has an explicit generation destination. Other programs write stdout/stderr: redirect
+under `out/logs/` or `out/runs/`. Never overwrite accepted experiment results. Use
+managed Git worktrees for future additional source checkouts; disposable delivery
+fixtures remain temporary copies under a build/output directory.
+
+`check_hygiene.py` checks root roles and generated caches/objects under source roles;
+it permits intentional .txt/.csv/.json evidence and fixtures. `out/` is opaque and
+ignored. `--workspace` additionally checks the local parent entry names (`Genetik/`,
+`.tools/`, `delivery-tools/`, `archive/`); it does not modify anything or follow links.
+The self-test exercises misplaced output and symlink handling. CI runs repository
+mode because a hosted parent workspace is owned by the runner. In-source CMake
+configuration is rejected with an out-of-source command hint. Root entries are an
+explicit allowlist: review and update it when adding a genuine new source role.
+
+All 127 frozen evidence files keep their original bytes and paths. Historical
+transcripts are not rewritten: former build paths and source locations refer to
+those historical checkouts. The mechanical campaign mappings are `scripts/cadence_campaign.cpp` →
+`apps/campaigns/cadence_campaign.cpp` and `scripts/constant_fitting_campaign.cpp` →
+`apps/campaigns/constant_fitting_campaign.cpp`; their executable targets are unchanged.
+The earlier source-only inventory remains
+[qualification-results/starting-inventory.tsv](qualification-results/starting-inventory.tsv).
+The Phase 1 action manifest and old-to-new paths are in `out/cleanup/` and copied
+to `../archive/genetik/`; see [CLEANUP.md](CLEANUP.md) for completed actions/evidence.
+The obsolete original main sketch remains `docs/history/main.cpp`, not an API example.

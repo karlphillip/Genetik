@@ -12,11 +12,10 @@ It is heuristic search, with no guarantee of a good fit, a particular equation o
 extrapolation accuracy. Prime regression is one application example.
 
 The library uses only the C++ standard library and is [MIT licensed](LICENSE),
-copyright Karl Phillip (2021). Package version **0.1.0** is planned as a development
-pre-release. It remains
-**unreleased during this review**; [release proposal](docs/RELEASE_PROPOSAL.md) and
-[release availability](https://github.com/karlphillip/Genetik/releases) are separate
-from successful CI.
+copyright Karl Phillip (2021). Version **0.1.0** is available as a
+[development pre-release](https://github.com/karlphillip/Genetik/releases/tag/v0.1.0).
+This checkout may contain subsequent local development; the published tag and assets
+remain unchanged.
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
 
@@ -34,25 +33,24 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
 
-Obtain the current review branch (the default branch has not yet been integrated):
+Obtain the source (use `--branch v0.1.0` for the published checkpoint):
 
 ```sh
-git clone --branch qualification/hosted-0.1.0 https://github.com/karlphillip/Genetik.git Genetik
+git clone https://github.com/karlphillip/Genetik.git Genetik
 cd Genetik
 ```
 
-After approval, `v0.1.0` is the proposed tag; it does not exist during preparation.
-Alternatively extract the proposed source archive and enter `Genetik-0.1.0/`.
+Alternatively extract the published source archive and enter `Genetik-0.1.0/`.
 From either source root, install and build these exact programs:
 
 ```sh
-cmake -S . -B out/library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/out/prefix"
-cmake --build out/library
-cmake --install out/library
-cmake -S examples/quickstarts -B out/quickstarts -DCMAKE_PREFIX_PATH="$PWD/out/prefix"
-cmake --build out/quickstarts -j2
-out/quickstarts/scalar_quickstart
-out/quickstarts/symbolic_quickstart
+cmake -S . -B out/build/library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/out/install/local"
+cmake --build out/build/library
+cmake --install out/build/library
+cmake -S examples/quickstarts -B out/consumers/quickstarts -DCMAKE_PREFIX_PATH="$PWD/out/install/local"
+cmake --build out/consumers/quickstarts -j2
+out/consumers/quickstarts/scalar_quickstart
+out/consumers/quickstarts/symbolic_quickstart
 ```
 
 The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a complete external
@@ -85,10 +83,11 @@ type, optimization level or C++ standard. See [package details](docs/PACKAGING.m
 ## Develop and verify
 
 ```sh
-cmake -S . -B ../build-release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
-cmake --build ../build-release -j2
-cmake -E chdir ../build-release ctest --output-on-failure
-../build-release/genetik_demo 42 1000
+cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
+cmake --build out/build/release -j2
+cmake -E chdir out/build/release ctest --output-on-failure
+out/build/release/genetik_demo 42 1000
+python3 scripts/check_hygiene.py --workspace # optional local parent-workspace audit
 ```
 
 Top-level tests/examples default ON; development integration checks additionally
@@ -132,7 +131,7 @@ Applications use the same public search path:
 For example, after generating ordinary numerical files as described in the guides:
 
 ```sh
-../build-release/genetik_regression_search training.csv --inputs first,second --target target --seed 42 --loss-budget 4096 --operators add,sub,mul,div,log --fit-every 1
+out/build/release/genetik_regression_search training.csv --inputs first,second --target target --seed 42 --loss-budget 4096 --operators add,sub,mul,div,log --fit-every 1
 ```
 
 Tests and examples use deterministic execution bounds; stochastic recovery is
@@ -146,14 +145,14 @@ application-owned representation, virtual fitness/selection/variation and the sh
 publication lifecycle without symbolic headers. [Architecture and extension contracts](docs/ARCHITECTURE.md).
 
 ```sh
-cmake -S tests/oop_consumer -B out/oop-consumer -DCMAKE_PREFIX_PATH="$PWD/out/prefix"
-cmake --build out/oop-consumer -j2
-out/oop-consumer/permutation_consumer
+cmake -S tests/oop_consumer -B out/consumers/oop -DCMAKE_PREFIX_PATH="$PWD/out/install/local"
+cmake --build out/consumers/oop -j2
+out/consumers/oop/permutation_consumer
 ```
 
 Demos live in examples/, numerical file search in apps/, performance harnesses in
-benchmarks/, campaigns/helpers in scripts/. Executable names and explicit output
-options are unchanged. Put new generated results under out/ or build/temp paths;
+benchmarks/, compiled campaigns in apps/campaigns/ and development helpers in scripts/. Executable names and explicit output
+options are unchanged. Put new generated results under out/build/, out/runs/, out/data/, out/logs/ or out/tmp/;
 accepted evidence remains in docs/. [Layout and historical path mapping](docs/ORGANIZATION.md).
 Population evaluation/refinement has an opt-in library-owned CPU backend. Use
 `RandomContext(42, ExecutionConfig{4})` or `--threads 4` in evolution applications;
@@ -162,9 +161,9 @@ qualification; immutable regression data and independent built-in refiners are
 supported. [Ownership, budgets, cancellation and repeatability](docs/CONCURRENCY.md).
 
 ```sh
-../build-release/genetik_demo 42 20 --threads 4
-out/quickstarts/symbolic_quickstart --threads 4
-out/oop-consumer/permutation_consumer --threads 3
+out/build/release/genetik_demo 42 20 --threads 4
+out/consumers/quickstarts/symbolic_quickstart --threads 4
+out/consumers/oop/permutation_consumer --threads 3
 ```
 
 Genetik::Genetik supplies platform threading requirements through Threads::Threads;
@@ -174,3 +173,8 @@ single-coordinator; only the documented stop controls are concurrently callable.
 Local concurrency [qualification and fixed-work measurements](docs/CONCURRENCY_RESULTS.md)
 include exact serial replays and separate ThreadSanitizer execution. Hosted GCC13 x64/minimum-CMake, Clang18 x64/ASan+UBSan and GCC13 ARM64/TSan
 [qualification has executed](docs/HOSTED_QUALIFICATION.md); version 0.1.0 remains unreleased.
+
+Current output conventions and retained workspace records: [ORGANIZATION.md](docs/ORGANIZATION.md)
+and [Phase 1 cleanup evidence](docs/CLEANUP.md). Use `out/build/` for fresh builds,
+`out/install/` and `out/consumers/` for delivery, and `out/runs/`, `out/data/`,
+`out/logs/`, `out/tmp/` for generated work. Do not move configured CMake caches.

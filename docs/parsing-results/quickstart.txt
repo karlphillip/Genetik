@@ -1,0 +1,4 @@
+(exp(((-1.0) * x0)) + powi(x0,2))
+schema{x0:matrix[2,3],x1:vector[3],x2:vector[2]} -> (matvec(x0,x1) + x2) = vector[2](14.0,8.0)
+matrix[2,3](1.0,2.0,3.0,(-1.0),0.0,4.0)
+rejected: expression byte 1: signs are supported only on numeric literals

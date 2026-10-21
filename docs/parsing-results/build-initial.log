@@ -1,0 +1,16 @@
+[ 50%] Building CXX object CMakeFiles/genetik_parsing_quickstart.dir/examples/quickstarts/parsing.cpp.o
+[100%] Linking CXX executable genetik_parsing_quickstart
+[100%] Built target genetik_parsing_quickstart
+[ 50%] Building CXX object CMakeFiles/genetik_regression_evaluate.dir/apps/regression_evaluate.cpp.o
+/home/karlphillip/workspaces/primeResearcher/Genetik/apps/regression_evaluate.cpp: In function ‘int main(int, char**)’:
+/home/karlphillip/workspaces/primeResearcher/Genetik/apps/regression_evaluate.cpp:21:13: error: this ‘if’ clause does not guard... [-Werror=misleading-indentation]
+   21 |             if(++i==argc)throw std::invalid_argument("missing option value");const std::string value=argv[i];
+      |             ^~
+/home/karlphillip/workspaces/primeResearcher/Genetik/apps/regression_evaluate.cpp:21:78: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   21 |             if(++i==argc)throw std::invalid_argument("missing option value");const std::string value=argv[i];
+      |                                                                              ^~~~~
+cc1plus: all warnings being treated as errors
+gmake[3]: *** [CMakeFiles/genetik_regression_evaluate.dir/build.make:79: CMakeFiles/genetik_regression_evaluate.dir/apps/regression_evaluate.cpp.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:1280: CMakeFiles/genetik_regression_evaluate.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:1287: CMakeFiles/genetik_regression_evaluate.dir/rule] Error 2
+gmake: *** [Makefile:556: genetik_regression_evaluate] Error 2

@@ -1,0 +1,7 @@
+{
+  "starting_checkpoint": "ae2f819b78b544eb34d146f9e8155aef283e2b60",
+  "implementation": "898571a22bde1438c30030b09b5b5fb83f13baef",
+  "branch": "feature/expression-parsing",
+  "qualification": "local; hosted Phase5 pending",
+  "environment_log_commit": "captured before implementation commit; source hashes identify tested prepared files"
+}

@@ -276,3 +276,14 @@ feature report above for audited compiler commands, test mapping and limitations
 These results are subsequent development qualification; published v0.1.0, its
 assets, main and tags remain unchanged. The report commit gets its own full matrix,
 with final SHA/links recorded under out/runs/hosted-typed-scientific/COMPLETION.md.
+
+## Phase 5 parser delivery (local)
+
+The package installs ExpressionParsing.hpp, TypedExpressionParsing.hpp and their
+private transitive lexer/parser header through the existing include/Genetik layout.
+Canonical target, C++20/strict-FP/Threads requirements, minimum CMake3.16 and
+private development instrumentation remain unchanged. Installed/relocated multi-TU
+consumers and the actual parsing quickstart pass in Release/Debug/ASan+UBSan/minimum
+builds. Generic permutation dependency probes exclude parser and mathematical
+headers. See [PARSING_QUALIFICATION.md](PARSING_QUALIFICATION.md) for exact source
+identities, manifests, commands, limits and the pending Phase5 hosted scope.

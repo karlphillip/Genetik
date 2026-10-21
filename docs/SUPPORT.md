@@ -189,3 +189,14 @@ for that identified candidate; earlier reports remain historical. Clang18 uses
 libstdc++14 headers/runtime, not libc++. No release/version change is implied.
 The report update itself receives a final matrix; its tested SHA/links are kept in
 the local completion record rather than creating a self-referential untested tip.
+
+## Phase 5 bounded expression import (local)
+
+ExpressionParsing.hpp/TypedExpressionParsing.hpp add owned scalar/typed text import,
+with no new runtime/parser dependency or existing evaluator/search change. See
+[PARSING_QUALIFICATION.md](PARSING_QUALIFICATION.md): native Jetson GCC13
+Release/Debug/ASan+UBSan/exact-CMake3.16 pass38/38; six focused TSan cases each
+pass three times. Portable manifest37 excludes only the captured Jetson snapshot.
+The new hosted workflow includes parser coverage but has not executed for Phase5.
+Earlier hosted qualification remains scoped to its recorded SHAs. No release,
+version/ABI policy or additional compiler/standard-library qualification is implied.

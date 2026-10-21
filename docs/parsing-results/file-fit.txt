@@ -1,0 +1,6 @@
+mode=supplied_expression evolution=false fitting=1 source_byte_limit=1048576
+x0=x training_file_column=1
+target=y imported_expression=(1.0 * x0)
+fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_sweeps=128 fit_proposals=8192 fit_loss_attempts=56 fit_rows=168 improved=1 fit_stop=minimum_step
+finalized_expression=(1.75 * x0) nodes=3 depth=2
+report=training mse=0 max_abs_error=0 prediction_rows=3 invalid_predictions_total=0 invalid_errors_total=0 reporting_loss_rows=3 reporting_loss_calls=1

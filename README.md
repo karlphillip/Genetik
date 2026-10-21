@@ -37,6 +37,9 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   a model scaffold, restrict an evolving expression to selected original variables
   and operators, optionally fit only its constants, and export the complete model.
   See [template contracts and campaign](docs/SCALAR_TEMPLATES.md).
+- [Bounded scalar partials](examples/quickstarts/derivatives.cpp): ordinary value
+  plus one selected input derivative, parsed scientific expressions, materialized
+  templates and explicit unavailable-derivative diagnostics.
 - [Application-owned permutation consumer](tests/oop_consumer/main.cpp): a non-scalar
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
@@ -229,5 +232,10 @@ Add `--fit --fit-budget 256` for explicit training-only fixed-structure fitting,
 and `--evaluate other.csv` for post-finalization assessment. Formula file reading
 is bounded; column mapping and full invalid-prediction reporting reuse the existing
 numerical file workflow. See [grammar, limits and usage](docs/EXPRESSION_PARSING.md)
-and [local Phase 5 qualification](docs/PARSING_QUALIFICATION.md). Hosted qualification
-of the preceding features does not qualify this new local parser implementation.
+and [local Phase 5 qualification](docs/PARSING_QUALIFICATION.md). The combined
+[parser/template hosted record](docs/PARSER_TEMPLATES_HOSTED_QUALIFICATION.md)
+identifies its executed candidate; later derivative changes remain locally qualified.
+
+Bounded first-order scalar partials are available through the separately included
+`ExpressionDerivative.hpp`; see the [contract and installed quickstart](docs/SCALAR_DERIVATIVES.md).
+This additive capability does not change search grammars or fitting.

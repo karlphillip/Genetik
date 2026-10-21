@@ -23,6 +23,7 @@ including unused ones, must be finite. Allocation failures propagate unchanged.
 
 No mutation, randomness, loss attempt, fitting state, worker creation, callback or
 result cache is involved. Bindings are borrowed synchronously; results own scalars.
+Expression and binding storage must remain alive and unchanged until return.
 Invocation-local operand storage permits independent concurrent calls sharing an
 immutable expression. General engine access rules do not change.
 

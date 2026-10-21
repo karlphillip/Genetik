@@ -138,3 +138,8 @@ Expression API or change its evaluator, variation, fitting or search semantics.
 
 Opt-in scientific scalar operators (Sin, Cos, Exp, Sqrt, Powi), domains,
 metadata, work units and examples are specified in [SCIENTIFIC_OPERATORS.md](SCIENTIFIC_OPERATORS.md).
+
+Bounded first-order input partials are additive in separately includable
+[ExpressionDerivative.hpp](../genetik/ExpressionDerivative.hpp). Ordinary evaluation
+remains unchanged; see [SCALAR_DERIVATIVES.md](SCALAR_DERIVATIVES.md) for activity,
+unavailable derivatives and the independent local resource/work contract.

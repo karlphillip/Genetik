@@ -1,5 +1,9 @@
 # Installable development-package qualification
 
+Current local Phase 7A additive derivative scope is recorded in
+[DERIVATIVE_QUALIFICATION.md](DERIVATIVE_QUALIFICATION.md); prior hosted results
+below do not qualify unexecuted feature changes. Package identity/version is unchanged.
+
 Current parser/template hosted results: [PARSER_TEMPLATES_HOSTED_QUALIFICATION.md](PARSER_TEMPLATES_HOSTED_QUALIFICATION.md).
 Previous feature results: [TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md](TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md).
 Earlier release results: [HOSTED_QUALIFICATION.md](HOSTED_QUALIFICATION.md). The

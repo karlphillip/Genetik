@@ -143,6 +143,22 @@ static void boundaries() {
     check(parsed("sqrt(x1)+x0",std::array{2.,-1.}).status()==S::PrimalInvalidity,"inactive invalid primal retained");
 }
 static void resources() {
+    for(auto kind:{K::Sin,K::Cos,K::Exp,K::Log,K::Sqrt}) {
+        const auto e=Expression::unary(kind,Expression::variable(0,2));
+        const std::array inputs{.5,2.};const auto active=ordinary(e,inputs,0);
+        const auto& w=active.work();
+        check(w.primalOperations==1 && w.derivativeMathCalls==((kind==K::Sin || kind==K::Cos)?1u:0u),"native-call attribution");
+        check(w.derivativeArithmetic==((kind==K::Cos || kind==K::Sqrt)?2u:1u),"unary derivative arithmetic attribution");
+        const auto inactive=ordinary(e,inputs,1);
+        check(inactive.work().derivativeArithmetic==0 && inactive.work().derivativeMathCalls==0 && bits(inactive.derivative())==bits(0.),"inactive path avoids derivative work");
+        for(std::size_t allowance=0;allowance<=w.operations()+1;++allowance) {
+            auto limits=DerivativeLimits{};limits.maxOperations=allowance;
+            const auto r=evaluatePartial(e,inputs,0,limits);
+            check(r.work().operations()<=allowance,"native work admission never exceeds allowance");
+            if(allowance<w.operations())check(r.status()==S::ResourceLimit,"native work boundary");
+            else equal(r,active);
+        }
+    }
     const auto e=parseExpression("sin(x0)+powi(x1,8)",2);const std::array bindings{.5,.5};
     const auto base=ordinary(e,bindings,1);const auto w=base.work();
     DerivativeLimits limits{w.operations(),w.nodesVisited,w.bindingsValidated,w.workspaceBytes};

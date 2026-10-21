@@ -126,3 +126,10 @@ model supplies fitness/complexity, and only inserted constants are optionally fi
 preparation context; the generic OOP engine has no dependency on that context.
 See the compiled installed templates quickstart for parsed supplied expressions
 and a bounded search using the existing worker and publication machinery.
+
+## Scalar numerical partials
+
+[Scalar derivatives](SCALAR_DERIVATIVES.md): optional `ExpressionDerivative.hpp`
+computes an ordinary value and one selected input partial over an existing expression.
+Activity is structural; unavailable derivatives remain distinct from invalid primal
+values and local resource exhaustion. See the compiled installed derivatives quickstart.

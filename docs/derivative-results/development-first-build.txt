@@ -1,0 +1,55 @@
+[ 50%] Building CXX object tests/CMakeFiles/genetik_derivative_tests.dir/derivatives.cpp.o
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp: In function ‘void resources()’:
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp:149:9: error: this ‘if’ clause does not guard... [-Werror=misleading-indentation]
+  149 |         if(k==0)--low.maxOperations;if(k==1)--low.maxNodeVisits;
+      |         ^~
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp:149:37: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+  149 |         if(k==0)--low.maxOperations;if(k==1)--low.maxNodeVisits;
+      |                                     ^~
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp:150:9: error: this ‘if’ clause does not guard... [-Werror=misleading-indentation]
+  150 |         if(k==2)--low.maxBindings;if(k==3)--low.maxWorkspaceBytes;
+      |         ^~
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp:150:35: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+  150 |         if(k==2)--low.maxBindings;if(k==3)--low.maxWorkspaceBytes;
+      |                                   ^~
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp: In lambda function:
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp:164:85: error: class template argument deduction failed:
+  164 |     throws<std::invalid_argument>([&]{(void)evaluatePartial(e,std::array{1.,INFINITY},0);});
+      |                                                                                     ^
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp:164:85: error: no matching function for call to ‘array(double, float)’
+In file included from /usr/include/c++/13/bits/uses_allocator_args.h:38,
+                 from /usr/include/c++/13/bits/memory_resource.h:41,
+                 from /usr/include/c++/13/string:58,
+                 from /usr/include/c++/13/stdexcept:39,
+                 from /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/detail/ScientificScalar.hpp:4,
+                 from /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/Expression.hpp:3,
+                 from /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/ExpressionDerivative.hpp:2,
+                 from /home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp:1:
+/usr/include/c++/13/tuple:2019:45: note: candidate: ‘template<class _Tp, long unsigned int _Nm> array()-> std::array<_Tp, _Nm>’
+ 2019 |   template<typename _Tp, size_t _Nm> struct array;
+      |                                             ^~~~~
+/usr/include/c++/13/tuple:2019:45: note:   template argument deduction/substitution failed:
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp:164:85: note:   candidate expects 0 arguments, 2 provided
+  164 |     throws<std::invalid_argument>([&]{(void)evaluatePartial(e,std::array{1.,INFINITY},0);});
+      |                                                                                     ^
+/usr/include/c++/13/tuple:2019:45: note: candidate: ‘template<class _Tp, long unsigned int _Nm> array(std::array<_Tp, _Nm>)-> std::array<_Tp, _Nm>’
+ 2019 |   template<typename _Tp, size_t _Nm> struct array;
+      |                                             ^~~~~
+/usr/include/c++/13/tuple:2019:45: note:   template argument deduction/substitution failed:
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp:164:85: note:   mismatched types ‘std::array<_Tp, _Nm>’ and ‘double’
+  164 |     throws<std::invalid_argument>([&]{(void)evaluatePartial(e,std::array{1.,INFINITY},0);});
+      |                                                                                     ^
+In file included from /usr/include/c++/13/span:41,
+                 from /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/detail/ScientificScalar.hpp:6:
+/usr/include/c++/13/array:287:5: note: candidate: ‘template<class _Tp, class ... _Up> std::array(_Tp, _Up ...)-> array<typename enable_if<(is_same_v<_Tp, _Up> && ...), _Tp>::type, (1 + sizeof... (_Up))>’
+  287 |     array(_Tp, _Up...)
+      |     ^~~~~
+/usr/include/c++/13/array:287:5: note:   template argument deduction/substitution failed:
+/usr/include/c++/13/array: In substitution of ‘template<class _Tp, class ... _Up> std::array(_Tp, _Up ...)-> array<typename enable_if<(is_same_v<_Tp, _Up> && ...), _Tp>::type, (1 + sizeof... (_Up))> [with _Tp = double; _Up = {float}]’:
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivatives.cpp:164:85:   required from here
+/usr/include/c++/13/array:287:5: error: no type named ‘type’ in ‘struct std::enable_if<false, double>’
+cc1plus: all warnings being treated as errors
+gmake[3]: *** [tests/CMakeFiles/genetik_derivative_tests.dir/build.make:79: tests/CMakeFiles/genetik_derivative_tests.dir/derivatives.cpp.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:3678: tests/CMakeFiles/genetik_derivative_tests.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:3685: tests/CMakeFiles/genetik_derivative_tests.dir/rule] Error 2
+gmake: *** [Makefile:1518: genetik_derivative_tests] Error 2

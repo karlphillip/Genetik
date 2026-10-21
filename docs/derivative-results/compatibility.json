@@ -1,0 +1,47 @@
+{
+  "prime": {
+    "before_sha256": "0d47680a9982db59618960faad168940d6a32bdb50097d02665e2249be17911f",
+    "after_sha256": "0d47680a9982db59618960faad168940d6a32bdb50097d02665e2249be17911f",
+    "comparison": "exact bytes"
+  },
+  "arithmetic": {
+    "before_sha256": "efcb12aa06d061c4703655d1062f470d3004403098ef272dce519faedf3cbc7a",
+    "after_sha256": "efcb12aa06d061c4703655d1062f470d3004403098ef272dce519faedf3cbc7a",
+    "comparison": "exact bytes"
+  },
+  "cadence4": {
+    "before_sha256": "95952db7348798c2f4f5c03107bef71998a8d7286875395b858d017213b1b91e",
+    "after_sha256": "95952db7348798c2f4f5c03107bef71998a8d7286875395b858d017213b1b91e",
+    "comparison": "exact bytes"
+  },
+  "typed/data-0.csv": {
+    "comparison_sha256": "2083ba7bb90f6a5f38618f5980651ea025dba8b8d6edc8ccf2cc17a4f8c847e9",
+    "comparison": "exact bytes",
+    "reference": "accepted templates compatibility typed-after"
+  },
+  "typed/data-1.csv": {
+    "comparison_sha256": "1375157e1b512c1df81f6833dda03a8ac8bc2439ac4fd47bfe7d80570b718a60",
+    "comparison": "exact bytes",
+    "reference": "accepted templates compatibility typed-after"
+  },
+  "typed/data-2.csv": {
+    "comparison_sha256": "0d64164e63a6790a9e9ebdb297276b05edaa83bd60966388cdbcd6de218e1a6f",
+    "comparison": "exact bytes",
+    "reference": "accepted templates compatibility typed-after"
+  },
+  "typed/frozen-models.txt": {
+    "comparison_sha256": "0578ff5e609324d22f9a33ca26aed257bff3226de5847d00f28e3d45874a7a3f",
+    "comparison": "exact bytes",
+    "reference": "accepted templates compatibility typed-after"
+  },
+  "typed/protocol.txt": {
+    "comparison_sha256": "fa49c7459b4f53bca91d4ef577569c33e0bcd6455aec6849c650a15caae907e3",
+    "comparison": "exact bytes",
+    "reference": "accepted templates compatibility typed-after"
+  },
+  "typed/results.txt": {
+    "comparison_sha256": "aab22323b78fabd8c646f3ad09c92464134cadd7f43f19abef84cc450ea970f1",
+    "comparison": "runtime excluded",
+    "reference": "accepted templates compatibility typed-after"
+  }
+}

@@ -40,13 +40,17 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    typed templates, units and general constraints require separate Phase 6B scope.
    The combined parser/template hosted checkpoint is recorded in
    PARSER_TEMPLATES_HOSTED_QUALIFICATION.md; this does not expand the one-site scope.
-7. **Calculus** — separately design and qualify operations, domains and numerical
-   contracts; no implied symbolic algebra capability today.
+7. **Calculus** — Phase 7A implements bounded first-order scalar input partials
+   by forward-mode numerical chain rules, with independent activity, explicit
+   unavailable/resource outcomes and strict primal equivalence. See
+   SCALAR_DERIVATIVES.md and DERIVATIVE_QUALIFICATION.md. Symbolic trees, gradients,
+   higher derivatives, typed Jacobians, derivative objectives/optimization and
+   integration remain separately scoped; no general symbolic algebra is implied.
 8. **Additional model families** — individually scoped proposals and acceptance
    criteria, not a single open-ended rewrite.
 
 Cleanup introduced no mathematical API; Phase 2 added typed evaluation and Phase 3
-now adds typed search/refinement. Phase 5 now adds bounded text import; optional adapters, additional Phase 6 constraints and Phases 7–8 remain future work. Further delivery/platform qualification,
+now adds typed search/refinement. Phase 5 now adds bounded text import; optional adapters, additional Phase 6 constraints, further calculus and Phase 8 remain future work. Further delivery/platform qualification,
 profiling, checkpoint/resume, cache policy and GPU work remain separately scoped.
 The remaining sections preserve the historical engineering and experiment record;
 old “next”/“unreleased” statements describe those checkpoints, not current status.

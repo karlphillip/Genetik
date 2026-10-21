@@ -1,5 +1,10 @@
 # Version, support and release policy
 
+Phase 7A derivative qualification is local and recorded in
+[DERIVATIVE_QUALIFICATION.md](DERIVATIVE_QUALIFICATION.md). Hosted qualification
+for the new derivative feature remains pending; earlier hosted claims below retain
+their explicitly identified commit scopes.
+
 The authoritative version is `project(GENETIK VERSION 0.1.0 ...)` in the root
 CMakeLists.txt. Package metadata derives from it. The original checkout already
 declared 0.1.0; there were no local release tags or documented published releases.

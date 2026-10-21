@@ -97,3 +97,9 @@
   immutable, complete destination limits checked and publication in the shared
   driver/core. Preserve ordinary grammar RNG draws. See SCALAR_TEMPLATES.md;
   include genetik_template_overlap in separate TSan gates.
+
+- Scalar partials are optional ExpressionDerivative.hpp. Reuse checked primal kernels,
+  track structural activity independently of derivative zero, preserve unavailable
+  active paths and continue primal evaluation after derivative failure. Local derivative
+  work is not engine loss work. Include genetik_derivative_overlap in separate TSan.
+  See docs/SCALAR_DERIVATIVES.md.

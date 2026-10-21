@@ -287,3 +287,10 @@ consumers and the actual parsing quickstart pass in Release/Debug/ASan+UBSan/min
 builds. Generic permutation dependency probes exclude parser and mathematical
 headers. See [PARSING_QUALIFICATION.md](PARSING_QUALIFICATION.md) for exact source
 identities, manifests, commands, limits and the pending Phase5 hosted scope.
+
+Phase 6A adds two separately includable scalar-template headers and the installed
+`templates_quickstart`. Package name/target/header layout and version are unchanged.
+The multi-TU, relocated, source-parent and nonmathematical OOP fixtures remain required;
+see [SCALAR_TEMPLATE_QUALIFICATION.md](SCALAR_TEMPLATE_QUALIFICATION.md) for executed
+local evidence. Hosted qualification of parser/template additions is a subsequent
+authorized task, not implied by the historical matrix.

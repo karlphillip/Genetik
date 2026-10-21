@@ -84,3 +84,10 @@ Phase 5 adds apps/regression_evaluate.cpp (supplied-formula evaluation, no searc
 examples/ExpressionTextFile.hpp (bounded application-layer reading) and the compiled
 examples/quickstarts/parsing.cpp. New parser fixtures and evidence follow tests/
 and docs/parsing-results/; generated logs stay under out/logs/parsing/.
+
+Phase 6A follows this layout: public scalar-template headers remain in `genetik/`,
+compiled installed usage is `examples/quickstarts/templates.cpp`, and the bounded
+campaign is `apps/campaigns/scalar_template_campaign.cpp` (target
+`genetik_scalar_template_campaign`). It requires an explicit fresh `--output`
+directory; use `out/runs/templates/…`. Frozen selected new evidence lives in
+`docs/scalar-template-results/`; existing historical evidence is untouched.

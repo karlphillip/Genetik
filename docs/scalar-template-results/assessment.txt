@@ -1,0 +1,15 @@
+seed=0 set=0 mse=0 max_error=0 invalid_predictions=0 rows=25
+seed=0 set=1 mse=0 max_error=0 invalid_predictions=0 rows=20
+seed=0 set=2 mse=0 max_error=0 invalid_predictions=0 rows=6
+seed=1 set=0 mse=0 max_error=0 invalid_predictions=0 rows=25
+seed=1 set=1 mse=0 max_error=0 invalid_predictions=0 rows=20
+seed=1 set=2 mse=0 max_error=0 invalid_predictions=0 rows=6
+seed=2 set=0 mse=0 max_error=0 invalid_predictions=0 rows=25
+seed=2 set=1 mse=0 max_error=0 invalid_predictions=0 rows=20
+seed=2 set=2 mse=0 max_error=0 invalid_predictions=0 rows=6
+seed=3 set=0 mse=0 max_error=0 invalid_predictions=0 rows=25
+seed=3 set=1 mse=0 max_error=0 invalid_predictions=0 rows=20
+seed=3 set=2 mse=0 max_error=0 invalid_predictions=0 rows=6
+seed=42 set=0 mse=0 max_error=0 invalid_predictions=0 rows=25
+seed=42 set=1 mse=0 max_error=0 invalid_predictions=0 rows=20
+seed=42 set=2 mse=0 max_error=0 invalid_predictions=0 rows=6

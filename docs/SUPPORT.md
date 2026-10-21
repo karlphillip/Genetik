@@ -200,3 +200,8 @@ pass three times. Portable manifest37 excludes only the captured Jetson snapshot
 The new hosted workflow includes parser coverage but has not executed for Phase5.
 Earlier hosted qualification remains scoped to its recorded SHAs. No release,
 version/ABI policy or additional compiler/standard-library qualification is implied.
+
+Phase 6A scalar templates have additional local qualification recorded in
+[SCALAR_TEMPLATE_QUALIFICATION.md](SCALAR_TEMPLATE_QUALIFICATION.md). This does not
+extend hosted qualification to the combined parser/template branch. Existing Linux
+hosted evidence and unqualified-platform limitations above retain their original scope.

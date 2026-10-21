@@ -1,0 +1,31 @@
+seed=0 initial=2 published=1 attempts=1 loss_calls=256 rows=6400 unused=9744 discovery=1 seconds=0.0037126189999999999 stop=exact_training_fit mutation_proposals=60 crossover_proposals=61 rejections=12 mutation_changes=50 crossover_changes=82 mutation_fallbacks=0 crossover_fallbacks=0
+hole=(2.0 + ((x1 * x1) - 1.0))
+model=(((-1.0) * (2.0 + ((x1 * x1) - 1.0))) * x0)
+final_loss=0 hole_nodes=7 hole_depth=4 model_nodes=11 model_depth=6
+trace=0,128,0,2
+trace=0,256,1,0
+seed=1 initial=2 published=3 attempts=3 loss_calls=512 rows=12800 unused=9488 discovery=3 seconds=0.0066416629999999999 stop=exact_training_fit mutation_proposals=140 crossover_proposals=172 rejections=9 mutation_changes=128 crossover_changes=274 mutation_fallbacks=0 crossover_fallbacks=0
+hole=(1.0 + (x1 * x1))
+model=(((-1.0) * (1.0 + (x1 * x1))) * x0)
+final_loss=0 hole_nodes=5 hole_depth=3 model_nodes=9 model_depth=5
+trace=1,128,0,2
+trace=1,512,3,0
+seed=2 initial=2 published=9 attempts=9 loss_calls=1280 rows=32000 unused=8720 discovery=9 seconds=0.016738401999999999 stop=exact_training_fit mutation_proposals=436 crossover_proposals=579 rejections=118 mutation_changes=335 crossover_changes=854 mutation_fallbacks=0 crossover_fallbacks=0
+hole=((2.0 + (x1 * x1)) + (-1.0))
+model=(((-1.0) * ((2.0 + (x1 * x1)) + (-1.0))) * x0)
+final_loss=0 hole_nodes=7 hole_depth=4 model_nodes=11 model_depth=6
+trace=2,128,0,2
+trace=2,1280,9,0
+seed=3 initial=2 published=1 attempts=1 loss_calls=256 rows=6400 unused=9744 discovery=1 seconds=0.002621516 stop=exact_training_fit mutation_proposals=35 crossover_proposals=63 rejections=8 mutation_changes=29 crossover_changes=106 mutation_fallbacks=0 crossover_fallbacks=0
+hole=(((x1 - 0.0) * x1) + 1.0)
+model=(((-1.0) * (((x1 - 0.0) * x1) + 1.0)) * x0)
+final_loss=0 hole_nodes=7 hole_depth=4 model_nodes=11 model_depth=6
+trace=3,128,0,2
+trace=3,256,1,0
+seed=42 initial=2 published=9 attempts=9 loss_calls=1280 rows=32000 unused=8720 discovery=9 seconds=0.015064209 stop=exact_training_fit mutation_proposals=426 crossover_proposals=608 rejections=135 mutation_changes=336 crossover_changes=842 mutation_fallbacks=0 crossover_fallbacks=2
+hole=((1.0 + (x1 * x1)) - 0.0)
+model=(((-1.0) * ((1.0 + (x1 * x1)) - 0.0)) * x0)
+final_loss=0 hole_nodes=7 hole_depth=4 model_nodes=11 model_depth=6
+trace=42,128,0,2
+trace=42,1280,9,0
+models_frozen representative_seed=1

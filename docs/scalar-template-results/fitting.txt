@@ -1,0 +1,7 @@
+supplied_structure initial=((1.0 * x1) + 1.0) initial_loss=1.5
+hole=((0.5 * x1) + 1.5)
+model=(((-1.0) * ((0.5 * x1) + 1.5)) * x0)
+loss=0 calls=112 rows=2800 stop=minimum_step
+stage=0 max_error=0
+stage=1 max_error=0
+stage=2 max_error=0

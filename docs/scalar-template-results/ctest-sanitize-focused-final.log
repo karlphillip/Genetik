@@ -1,0 +1,13 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/sanitize
+    Start 39: genetik_template_contracts
+1/4 Test #39: genetik_template_contracts ........   Passed   34.49 sec
+    Start 40: genetik_template_overlap
+2/4 Test #40: genetik_template_overlap ..........   Passed    0.05 sec
+    Start 41: genetik_templates_quickstart
+3/4 Test #41: genetik_templates_quickstart ......   Passed    0.04 sec
+    Start 42: genetik_template_campaign_smoke
+4/4 Test #42: genetik_template_campaign_smoke ...   Passed    3.50 sec
+
+100% tests passed out of 4
+
+Total Test time (real) =  38.08 sec

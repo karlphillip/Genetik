@@ -1,0 +1,7 @@
+x0=v,x1=T; allowed_variables={1}; allowed_ops=add,sub,mul; constants={-2,-1,0,1,2}; continuous=0; fitting=off
+population=128 loss_limit=10000 candidate_limit=same; generation_limit=2000; seed_order=0,1,2,3,42
+local_nodes=9 local_depth=4 full_nodes=13 full_depth=6 abs_constant=2 materialization_bytes=1048576
+rank_selector; elites=2; crossover=.9; mutation=.35; init_depth=4; mutation_depth=3; proposal_limit=8; grow_probability=.65; full_probability=.5; feasible_ops_uniform
+training v,T={-2,-1,0,1,2} Cartesian(25); interior v={-1.5,-.5,0,.5,1.5},T={-1.5,-.5,.5,1.5}(20); exterior v={-3,0,3},T={-3,3}(6); v outer/T inner
+independent target=-(T*T+1)*v; stop training MSE=0; recovery max_error<=1e-6 per set; representative=MSE,nodes,full_text,first_declared_seed; freeze all models before assessment
+threads=1; seeds sequential; no target injection; supplied source subtree discarded

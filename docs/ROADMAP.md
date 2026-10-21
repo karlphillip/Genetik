@@ -31,15 +31,19 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    a supplied-formula file evaluator. See EXPRESSION_PARSING.md and
    PARSING_QUALIFICATION.md. Optional external adapters remain separately scoped;
    parsing and data formats do not enter the generic evolutionary core.
-6. **Constraints and templates** — explicit bounded constraints/templates with
-   honest search-space and initialization reporting.
+6. **Constraints and templates** — Phase 6A implemented locally: one immutable
+   scalar scaffold/site, original-index variable/operator restrictions, constrained
+   structure search, full-model loss and selected-constant fitting through shared
+   preparation/publication. See SCALAR_TEMPLATES.md, SCALAR_TEMPLATE_RESULTS.md and
+   SCALAR_TEMPLATE_QUALIFICATION.md. Multiple/repeated holes, shared parameters,
+   typed templates, units and general constraints require separate Phase 6B scope.
 7. **Calculus** — separately design and qualify operations, domains and numerical
    contracts; no implied symbolic algebra capability today.
 8. **Additional model families** — individually scoped proposals and acceptance
    criteria, not a single open-ended rewrite.
 
 Cleanup introduced no mathematical API; Phase 2 added typed evaluation and Phase 3
-now adds typed search/refinement. Phase 5 now adds bounded text import; optional adapters and Phases 6–8 remain future work. Further delivery/platform qualification,
+now adds typed search/refinement. Phase 5 now adds bounded text import; optional adapters, additional Phase 6 constraints and Phases 7–8 remain future work. Further delivery/platform qualification,
 profiling, checkpoint/resume, cache policy and GPU work remain separately scoped.
 The remaining sections preserve the historical engineering and experiment record;
 old “next”/“unreleased” statements describe those checkpoints, not current status.

@@ -2,6 +2,12 @@
 
 ## Unreleased — after 0.1.0
 
+- Opt-in Sin/Cos/Exp/Sqrt/Powi across scalar and typed construction, checked CPU
+  evaluation, grammars, subtree/discrete variation, continuous fitting and faithful
+  export. Discrete power exponents 0..8 preserve ordered checked multiplication.
+  Default operator sets and qualified disabled-operator replays are unchanged.
+  Scientific campaign and independent references are documented separately.
+
 - Additive owned TypedValue and TypedExpression API for scalar/vector/matrix
   construction, strict evaluation, shape inference, bounded work/payload and faithful
   export. Rectangular matrix/vector operations and an installed typed quickstart;

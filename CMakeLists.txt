@@ -48,6 +48,8 @@ elseif(GENETIK_SANITIZERS OR GENETIK_THREAD_SANITIZER)
 endif()
 if(GENETIK_BUILD_EXAMPLES)
     include_directories(${PROJECT_SOURCE_DIR}) # development application support only
+    add_executable(genetik_scientific_campaign apps/campaigns/scientific_campaign.cpp)
+    target_link_libraries(genetik_scientific_campaign PRIVATE Genetik::Genetik)
     add_executable(genetik_typed_search_quickstart examples/quickstarts/typed_search.cpp)
     target_link_libraries(genetik_typed_search_quickstart PRIVATE Genetik::Genetik)
     add_executable(genetik_typed_regression apps/typed_regression.cpp)

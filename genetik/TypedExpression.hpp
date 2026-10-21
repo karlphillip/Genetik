@@ -1,15 +1,18 @@
 #pragma once
 #include "TypedValue.hpp"
+#include "detail/ScientificScalar.hpp"
 #include <algorithm>
 #include <optional>
 #include <cstdint>
 
 // Operators are explicit; vector products never use an ambiguous Multiply token.
-enum class TypedExpressionKind { Variable, Constant, Add, Subtract, Multiply, Divide, Log, Dot, MatVec, MatMul, Transpose };
+enum class TypedExpressionKind { Variable, Constant, Add, Subtract, Multiply, Divide, Log, Dot, MatVec, MatMul, Transpose, Sin, Cos, Exp, Sqrt, Powi };
 inline std::size_t typedExpressionArity(TypedExpressionKind kind) {
     switch (kind) {
     case TypedExpressionKind::Variable: case TypedExpressionKind::Constant: return 0;
-    case TypedExpressionKind::Log: case TypedExpressionKind::Transpose: return 1;
+    case TypedExpressionKind::Log: case TypedExpressionKind::Transpose:
+    case TypedExpressionKind::Sin: case TypedExpressionKind::Cos: case TypedExpressionKind::Exp:
+    case TypedExpressionKind::Sqrt: case TypedExpressionKind::Powi: return 1;
     case TypedExpressionKind::Add: case TypedExpressionKind::Subtract:
     case TypedExpressionKind::Multiply: case TypedExpressionKind::Divide:
     case TypedExpressionKind::Dot: case TypedExpressionKind::MatVec: case TypedExpressionKind::MatMul: return 2;
@@ -27,7 +30,7 @@ inline std::optional<TypedShape> operationShape(TypedExpressionKind kind,TypedSh
         if (a.kind() == V::Scalar) return b;
         if (b.kind() == V::Scalar) return a;
     }
-    if ((kind == K::Divide || kind == K::Log) && a.kind() == V::Scalar && b.kind() == V::Scalar) return TypedShape::scalar();
+    if ((kind == K::Divide || kind == K::Log || kind == K::Sin || kind == K::Cos || kind == K::Exp || kind == K::Sqrt || kind == K::Powi) && a.kind() == V::Scalar && b.kind() == V::Scalar) return TypedShape::scalar();
     if (kind == K::Dot && a.kind() == V::Vector && a == b) return TypedShape::scalar();
     if (kind == K::MatVec && a.kind() == V::Matrix && b.kind() == V::Vector && a.columns() == b.length()) return TypedShape::vector(a.rows());
     if (kind == K::MatMul && a.kind() == V::Matrix && b.kind() == V::Matrix && a.columns() == b.rows()) return TypedShape::matrix(a.rows(), b.columns());
@@ -40,12 +43,20 @@ public:
     static TypedExpressionNode variable(std::size_t index) { return {TypedExpressionKind::Variable, index, std::nullopt}; }
     static TypedExpressionNode constant(const TypedValue& value) { return {TypedExpressionKind::Constant, 0, value}; }
     static TypedExpressionNode unary(TypedExpressionKind kind) {
-        if (typedExpressionArity(kind) != 1) throw std::invalid_argument("expected unary typed operator");
+        if (kind == TypedExpressionKind::Powi || typedExpressionArity(kind) != 1) throw std::invalid_argument("expected unary typed operator");
         return {kind, 0, std::nullopt};
     }
     static TypedExpressionNode binary(TypedExpressionKind kind) {
         if (typedExpressionArity(kind) != 2) throw std::invalid_argument("expected binary typed operator");
         return {kind, 0, std::nullopt};
+    }
+    static TypedExpressionNode power(unsigned exponent) {
+        genetik_detail::validateExponent(exponent);
+        return {TypedExpressionKind::Powi, exponent, std::nullopt};
+    }
+    unsigned exponent() const {
+        if (kind_ != TypedExpressionKind::Powi) throw std::logic_error("typed node is not integer power");
+        return static_cast<unsigned>(index_);
     }
     TypedExpressionNode(const TypedExpressionNode&) = default;
     TypedExpressionNode(TypedExpressionNode&&) noexcept = default;
@@ -161,7 +172,19 @@ public:
         return TypedExpression(std::span(&node, 1), schema, limits);
     }
     static TypedExpression unary(K kind, const TypedExpression& child, TypedExpressionLimits limits = {}) {
+        (void)TypedExpressionNode::unary(kind);
         return compose(kind, child, nullptr, limits);
+    }
+    static TypedExpression power(const TypedExpression& child, unsigned exponent, TypedExpressionLimits limits = {}) {
+        genetik_detail::validateExponent(exponent);
+        return compose(K::Powi, child, nullptr, limits, exponent);
+    }
+    TypedExpression withExponent(std::size_t index, unsigned exponent) const {
+        genetik_detail::validateExponent(exponent);
+        auto changed = nodes();
+        if (changed.at(index).kind() != K::Powi) throw std::invalid_argument("typed exponent replacement requires Powi");
+        changed[index] = TypedExpressionNode::power(exponent);
+        return TypedExpression(changed, schema_, limits_);
     }
     static TypedExpression binary(K kind, const TypedExpression& left, const TypedExpression& right,
                                   TypedExpressionLimits limits = {}) {
@@ -218,13 +241,16 @@ private:
         stack.reserve(stackValues_);
         std::size_t executed = 0;
         // All operands are finite. Domain checks precede the corresponding primitive.
-        auto primitive = [&executed,arithmetic](K kind, double a, double b) -> std::optional<double> {
-            if ((kind == K::Divide && b == 0.0) || (kind == K::Log && !(a > 0.0))) return {};
+        auto charge = [&executed,arithmetic] {
             if(arithmetic) {
                 if(*arithmetic==std::numeric_limits<std::uint64_t>::max())throw std::overflow_error("typed primitive diagnostic counter exhausted");
                 ++*arithmetic;
             }
-            ++executed; // the checked full plan makes this increment overflow-safe
+            ++executed; // bounded by the validated full plan
+        };
+        auto primitive = [&charge](K kind, double a, double b) -> std::optional<double> {
+            if ((kind == K::Divide && b == 0.0) || (kind == K::Log && !(a > 0.0))) return {};
+            charge();
             volatile double result = 0;
             switch (kind) {
             case K::Add: result = a + b; break;
@@ -254,6 +280,12 @@ private:
             const auto a = left.coefficients(), b = right.coefficients();
             for (std::size_t element = 0; element < output.size(); ++element) {
                 std::optional<double> value;
+                if (isScientific(node.kind())) {
+                    value = genetik_detail::scientificScalar(scientificKind(node.kind()), a[0],
+                        node.kind() == K::Powi ? node.exponent() : 0, charge);
+                    if (!value) return invalid(element);
+                    output[element] = *value; continue;
+                }
                 if (node.kind() == K::Transpose) {
                     const auto row = element / outShape.columns(), col = element % outShape.columns();
                     output[element] = a[col * left.shape().columns() + row];
@@ -309,8 +341,8 @@ public:
             if (node.kind() == K::Constant) { out += node.constantValue().toString(); frames.pop_back(); }
             else if (node.kind() == K::Variable) { out += 'x' + genetik_typed_detail::integerText(node.variableIndex()); frames.pop_back(); }
             else if (typedExpressionArity(node.kind()) == 1) {
-                if (!frame.phase) { out += node.kind() == K::Log ? "log(" : "transpose("; frame.phase = 1; frames.push_back({frame.node - 1, 0}); }
-                else { out += ')'; frames.pop_back(); }
+                if (!frame.phase) { out += node.kind() == K::Log ? "log(" : node.kind() == K::Transpose ? "transpose(" : genetik_detail::scientificName(scientificKind(node.kind())) + "("; frame.phase = 1; frames.push_back({frame.node - 1, 0}); }
+                else { if (node.kind() == K::Powi) out += ',' + genetik_typed_detail::integerText(node.exponent()); out += ')'; frames.pop_back(); }
             } else {
                 const bool infix = node.kind() == K::Add || node.kind() == K::Subtract || node.kind() == K::Multiply || node.kind() == K::Divide;
                 if (!frame.phase) {
@@ -342,8 +374,18 @@ private:
         if(auto shape=genetik_typed_detail::operationShape(kind,a,b))return *shape;
         throw std::invalid_argument("unsupported typed operand kinds or incompatible shapes");
     }
-    static std::size_t cost(K kind, TypedShape a, TypedShape out) {
+    static bool isScientific(K kind) {return kind==K::Sin || kind==K::Cos || kind==K::Exp || kind==K::Sqrt || kind==K::Powi;}
+    static genetik_detail::ScientificKind scientificKind(K kind) {
+        using S=genetik_detail::ScientificKind;
+        switch(kind) {
+        case K::Sin:return S::Sin;case K::Cos:return S::Cos;case K::Exp:return S::Exp;
+        case K::Sqrt:return S::Sqrt;case K::Powi:return S::Powi;
+        default:throw std::logic_error("not scientific typed operator");
+        }
+    }
+    static std::size_t cost(K kind, TypedShape a, TypedShape out, unsigned exponent=0) {
         using namespace genetik_typed_detail;
+        if (kind == K::Powi) { genetik_detail::validateExponent(exponent); return exponent ? exponent-1 : 0; }
         if (kind == K::Transpose) return 0;
         if (kind == K::Dot || kind == K::MatVec || kind == K::MatMul) {
             const auto k = kind == K::Dot ? a.length() : a.columns();
@@ -382,7 +424,7 @@ private:
                 const auto childDepth = std::max(a.depth, b.depth);
                 if (childDepth >= limits_.maxDepth) throw TypedLimitError("typed depth limit");
                 item.depth = childDepth + 1; item.start = a.start;
-                work_ = add(work_, cost(node.kind(), a.shape, item.shape), "typed total work overflow");
+                work_ = add(work_, cost(node.kind(), a.shape, item.shape, node.kind()==K::Powi ? node.exponent() : 0), "typed total work overflow");
                 bound(work_, limits_.maxArithmeticOperations, "typed arithmetic work limit");
                 temporary_ = std::max(temporary_, add(live, item.shape.coefficients(), "typed temporary count overflow"));
                 for (std::size_t n = first; n < stack.size(); ++n) live -= stack[n].shape.coefficients();
@@ -396,7 +438,7 @@ private:
         if (stack.size() != 1) throw std::invalid_argument("typed postfix has unused fragments");
     }
     static TypedExpression compose(K kind, const TypedExpression& left, const TypedExpression* right,
-                                   TypedExpressionLimits limits) {
+                                   TypedExpressionLimits limits, unsigned exponent=0) {
         using namespace genetik_typed_detail;
         left.usable(); if (right) right->usable(); validateLimits(limits);
         if (typedExpressionArity(kind) != (right ? 2u : 1u)) throw std::invalid_argument("incorrect typed composition arity");
@@ -412,7 +454,7 @@ private:
         bound(add(left.constantCoefficients_, right ? right->constantCoefficients_ : 0, "typed coefficient overflow"), limits.maxConstantCoefficients, "typed constant coefficient limit");
         const auto output = infer(kind, left.shape(), right ? right->shape() : left.shape());
         validateShape(output, limits.values);
-        const auto work = add(add(left.work_, right ? right->work_ : 0, "typed total work overflow"), cost(kind, left.shape(), output), "typed total work overflow");
+        const auto work = add(add(left.work_, right ? right->work_ : 0, "typed total work overflow"), cost(kind, left.shape(), output, exponent), "typed total work overflow");
         bound(work, limits.maxArithmeticOperations, "typed arithmetic work limit");
         const auto inputs = add(left.shape().coefficients(), right ? right->shape().coefficients() : 0, "typed temporary overflow");
         const auto peak = std::max({left.temporary_, right ? add(left.shape().coefficients(), right->temporary_, "typed temporary overflow") : 0,
@@ -427,7 +469,7 @@ private:
         bound(count, nodes.max_size(), "typed node storage capacity"); nodes.reserve(count);
         nodes.insert(nodes.end(), left.nodes_.begin(), left.nodes_.end());
         if (right) nodes.insert(nodes.end(), right->nodes_.begin(), right->nodes_.end());
-        nodes.push_back(right ? TypedExpressionNode::binary(kind) : TypedExpressionNode::unary(kind));
+        nodes.push_back(kind==K::Powi ? TypedExpressionNode::power(exponent) : right ? TypedExpressionNode::binary(kind) : TypedExpressionNode::unary(kind));
         return TypedExpression(nodes, left.schema_, limits);
     }
     TypedExpressionLimits limits_;

@@ -197,3 +197,6 @@ See [the public typed-regression guide](docs/TYPED_REGRESSION.md), the compiled
 [operation discovery](docs/TYPED_DISCOVERY_RESULTS.md) and separate
 [coefficient recovery](docs/TYPED_FITTING_RESULTS.md). Typed file syntax is not supported.
 The generic OOP interfaces and existing scalar APIs remain independent/compatible.
+
+Scientific scalar functions are opt-in in both expression APIs and generic search;
+see [scientific operators and file example](docs/SCIENTIFIC_OPERATORS.md).

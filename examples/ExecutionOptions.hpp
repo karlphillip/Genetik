@@ -7,7 +7,7 @@ namespace genetik_example {
 inline ExecutionConfig executionOptions(int& argc,char** argv,bool firstPositional=false,bool generationDirectory=false) {
     ExecutionConfig config;bool seen=false;int out=1;
     const auto takesValue=[&](std::string_view option){
-        for(auto name:{"--inputs","--target","--seed","--loss-budget","--loss-threshold","--fit-every","--operators","--evaluate","--prime-file","--output"})
+        for(auto name:{"--inputs","--target","--seed","--loss-budget","--loss-threshold","--fit-every","--operators","--exponents","--population","--nodes","--depth","--evaluate","--prime-file","--output","--data"})
             if(option==name)return true;
         return generationDirectory && option=="--generate";
     };

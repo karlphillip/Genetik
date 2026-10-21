@@ -142,3 +142,6 @@ change speculative work/RNG relative to serial; nonbinding deterministic callbac
 have stable slot-ordered results. See [CONCURRENCY.md](CONCURRENCY.md) for the full
 capability, lifetime and cancellation contract and
 [CONCURRENCY_RESULTS.md](CONCURRENCY_RESULTS.md) for executed qualification.
+
+Opt-in scientific scalar operators (Sin, Cos, Exp, Sqrt, Powi), domains,
+metadata, work units and examples are specified in [SCIENTIFIC_OPERATORS.md](SCIENTIFIC_OPERATORS.md).

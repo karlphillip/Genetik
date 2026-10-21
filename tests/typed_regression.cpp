@@ -174,7 +174,7 @@ static void overlapContracts(){
     auto p=TypedRegressionProblem::create(schema,TypedShape::vector(2),{{{TypedValue::vector(std::array{1.,2.})},TypedValue::vector(std::array{2.,4.})}});
     auto state=std::make_shared<OverlapState>();auto objective=std::make_shared<OverlapObjective>(p,state);auto fitting=ConstantFitConfig{};fitting.maxLossAttempts=4;
     auto prep=std::make_shared<TypedConstantRefinement>(objective,fitting);
-    auto e=TypedExpression::binary(K::Multiply,TypedExpression::constant(TypedValue::scalar(1),schema),TypedExpression::variable(0,schema));RandomContext random(1,{2});
+    auto e=TypedExpression::binary(K::Multiply,TypedExpression::unary(K::Exp,TypedExpression::constant(TypedValue::scalar(0),schema)),TypedExpression::variable(0,schema));RandomContext random(1,{2});
     Population<TypedExpressionCandidate,TypedRegressionOrdering> population({TypedExpressionCandidate(e,p,prep),TypedExpressionCandidate(e,p,prep)},random,ObjectiveDirection::Minimize);
     check(state->peak==2 && objective->work().fittingInvocations==2 && objective->work().accepted>=2,"typed worker preparation forced overlap");
 }
@@ -252,7 +252,7 @@ static std::string rootCause(std::exception_ptr e){try{std::rethrow_exception(e)
 static void publicationContracts(){
     const std::array schema{TypedShape::scalar()};
     auto p=TypedRegressionProblem::create(schema,TypedShape::scalar(),{{{TypedValue::scalar(1)},TypedValue::scalar(1.2)},{{TypedValue::scalar(2)},TypedValue::scalar(1.2)}});
-    const auto c=[&](double v){return TypedExpression::constant(TypedValue::scalar(v),schema);};
+    const auto c=[&](double v){return TypedExpression::power(TypedExpression::constant(TypedValue::scalar(v),schema),1);};
     for(unsigned threads:{1u,2u})for(unsigned interval:{1u,2u}){
         auto objective=std::make_shared<TypedTrainingObjective>(p,3);auto scoring=std::make_shared<TypedScoring>(objective);
         RandomContext run(3,{threads});using P=Population<TypedExpressionCandidate,TypedRegressionOrdering>;

@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include "detail/ScientificScalar.hpp"
 #include <bit>
 #include <cstdint>
 #include <charconv>
@@ -21,13 +22,14 @@ static_assert(std::numeric_limits<double>::is_iec559 && std::numeric_limits<doub
               std::numeric_limits<double>::max_exponent == 1024 && FLT_EVAL_METHOD == 0,
               "Genetik expression evaluation requires native IEEE binary64 arithmetic");
 
-enum class ExpressionKind { Variable, Constant, Add, Subtract, Multiply, Divide, Log };
+enum class ExpressionKind { Variable, Constant, Add, Subtract, Multiply, Divide, Log, Sin, Cos, Exp, Sqrt, Powi };
 
 // One arity definition for construction, validation, traversal and genetic operators.
 inline std::size_t expressionArity(ExpressionKind kind) {
     switch (kind) {
     case ExpressionKind::Variable: case ExpressionKind::Constant: return 0;
-    case ExpressionKind::Log: return 1;
+    case ExpressionKind::Log: case ExpressionKind::Sin: case ExpressionKind::Cos:
+    case ExpressionKind::Exp: case ExpressionKind::Sqrt: case ExpressionKind::Powi: return 1;
     case ExpressionKind::Add: case ExpressionKind::Subtract:
     case ExpressionKind::Multiply: case ExpressionKind::Divide: return 2;
     }
@@ -45,8 +47,16 @@ public:
         return {kind, 0, 0};
     }
     static ExpressionNode unary(ExpressionKind kind) {
-        if (expressionArity(kind) != 1) throw std::invalid_argument("expected a supported unary expression operator");
+        if (kind == ExpressionKind::Powi || expressionArity(kind) != 1) throw std::invalid_argument("expected a supported unary expression operator");
         return {kind, 0, 0};
+    }
+    static ExpressionNode power(unsigned exponent) {
+        genetik_detail::validateExponent(exponent);
+        return {ExpressionKind::Powi, exponent, 0};
+    }
+    unsigned exponent() const {
+        if (kind_ != ExpressionKind::Powi) throw std::logic_error("node is not integer power");
+        return static_cast<unsigned>(index_);
     }
     ExpressionKind kind() const noexcept { return kind_; }
     std::size_t variableIndex() const {
@@ -68,6 +78,7 @@ struct ExpressionLimits {
     std::size_t maxNodes = 1023;
     std::size_t maxDepth = 64; // leaf depth = 1; count all variable/constant/operator occurrences
     double maxAbsConstant = std::numeric_limits<double>::max();
+    std::size_t maxArithmeticOperations = std::numeric_limits<std::size_t>::max();
 };
 
 enum class ExpressionStatus { Success, MathematicalInvalidity };
@@ -75,6 +86,7 @@ class ExpressionResult {
 public:
     ExpressionStatus status() const noexcept { return failedNode_ ? ExpressionStatus::MathematicalInvalidity : ExpressionStatus::Success; }
     bool valid() const noexcept { return !failedNode_; }
+    std::size_t arithmeticOperations() const noexcept { return work_; }
     double value() const {
         if (!valid()) throw std::logic_error("invalid expression evaluation has no value");
         return value_;
@@ -82,10 +94,11 @@ public:
     std::optional<std::size_t> failedNode() const noexcept { return failedNode_; }
 private:
     friend class Expression;
-    explicit ExpressionResult(double value) : value_(value) {}
-    explicit ExpressionResult(std::size_t failedNode) : value_(0), failedNode_(failedNode) {}
+    explicit ExpressionResult(double value, std::size_t work) : value_(value), work_(work) {}
+    explicit ExpressionResult(std::size_t failedNode, std::size_t work) : value_(0), failedNode_(failedNode), work_(work) {}
     double value_;
     std::optional<std::size_t> failedNode_;
+    std::size_t work_;
 };
 
 namespace genetik_detail { class EvaluationWorkspace; }
@@ -109,6 +122,7 @@ public:
         for(std::size_t i=0;i<nodes_.size();++i) {
             const auto& a=nodes_[i];const auto& b=other.nodes_[i];
             if(a.kind()!=b.kind())return false;
+            if(a.kind()==ExpressionKind::Powi && a.exponent()!=b.exponent())return false;
             if(a.kind()==ExpressionKind::Variable && a.variableIndex()!=b.variableIndex())return false;
             if(a.kind()==ExpressionKind::Constant && std::bit_cast<std::uint64_t>(a.constantValue())!=std::bit_cast<std::uint64_t>(b.constantValue()))return false;
         }
@@ -129,6 +143,18 @@ public:
         if (child.depth_ >= limits.maxDepth) throw std::length_error("expression depth limit exceeded");
         auto nodes = child.nodes(); nodes.push_back(op);
         return Expression(nodes, child.variables_, limits);
+    }
+    static Expression power(const Expression& child, unsigned exponent, ExpressionLimits limits = {}) {
+        genetik_detail::validateExponent(exponent);
+        auto nodes = child.nodes(); nodes.push_back(ExpressionNode::power(exponent));
+        return Expression(nodes, child.variableCount(), limits);
+    }
+    Expression withExponent(std::size_t index, unsigned exponent) const {
+        genetik_detail::validateExponent(exponent);
+        auto changed = nodes();
+        if (changed.at(index).kind() != ExpressionKind::Powi) throw std::invalid_argument("exponent replacement requires Powi");
+        changed[index] = ExpressionNode::power(exponent);
+        return Expression(changed, variables_, limits_);
     }
     static Expression binary(ExpressionKind kind, const Expression& left, const Expression& right,
                              ExpressionLimits limits = {}) {
@@ -154,13 +180,14 @@ public:
     Expression& operator=(Expression other) noexcept { swap(other); return *this; }
     void swap(Expression& other) noexcept {
         nodes_.swap(other.nodes_); subtreeSizes_.swap(other.subtreeSizes_);
-        std::swap(variables_, other.variables_); std::swap(depth_, other.depth_); std::swap(limits_, other.limits_);
+        std::swap(variables_, other.variables_); std::swap(depth_, other.depth_); std::swap(work_, other.work_); std::swap(limits_, other.limits_);
     }
     // Moved-from objects may be assigned/destroyed; all inspection/execution detects emptiness.
     std::vector<ExpressionNode> nodes() const { requireUsable(); return nodes_; }
     std::size_t nodeCount() const { requireUsable(); return nodes_.size(); }
     std::size_t depth() const { requireUsable(); return depth_; }
     std::size_t variableCount() const { requireUsable(); return variables_; }
+    std::size_t arithmeticCost() const { requireUsable(); return work_; }
     ExpressionLimits limits() const { requireUsable(); return limits_; }
     Expression withConstant(std::size_t postfixIndex, double value) const {
         auto changed = nodes();
@@ -187,37 +214,44 @@ private:
             if (!std::isfinite(input)) throw std::invalid_argument("variable bindings must all be finite");
         stack.clear();
         stack.reserve(nodes_.size());
+        std::size_t executed=0;
         for (std::size_t i = 0; i < nodes_.size(); ++i) {
             const auto& node = nodes_[i];
             if (node.kind() == ExpressionKind::Constant) stack.push_back(node.constantValue());
             else if (node.kind() == ExpressionKind::Variable) stack.push_back(bindings[node.variableIndex()]);
-            else if (node.kind() == ExpressionKind::Log) {
+            else if (expressionArity(node.kind()) == 1) {
                 const double argument = stack.back();
-                if (!(argument > 0.0)) return ExpressionResult(i);
-                volatile double result = std::log(argument);
-                if (!std::isfinite(result)) return ExpressionResult(i);
-                stack.back() = result;
+                std::optional<double> value;
+                if (node.kind() == ExpressionKind::Log) {
+                    if (!(argument > 0.0)) return ExpressionResult(i, executed);
+                    ++executed; volatile double result = std::log(argument);
+                    if (std::isfinite(result)) value = result;
+                } else value = genetik_detail::scientificScalar(scientificKind(node.kind()), argument,
+                    node.kind() == ExpressionKind::Powi ? node.exponent() : 0, [&executed]{++executed;});
+                if (!value) return ExpressionResult(i, executed);
+                stack.back() = *value;
             } else {
                 const double right = stack.back(); stack.pop_back();
                 const double left = stack.back();
                 // Each node rounds/stores as binary64 before testing or consuming the next node.
                 // This barrier plus -ffp-contract=off prevents a cross-node fused operation.
-                volatile double result = 0;
+                if (node.kind() == ExpressionKind::Divide && right == 0.0) return ExpressionResult(i, executed);
+                ++executed; volatile double result = 0;
                 switch (node.kind()) {
                 case ExpressionKind::Add: result = left + right; break;
                 case ExpressionKind::Subtract: result = left - right; break;
                 case ExpressionKind::Multiply: result = left * right; break;
                 case ExpressionKind::Divide:
-                    if (right == 0.0) return ExpressionResult(i); // includes either signed zero
+                    if (right == 0.0) return ExpressionResult(i, executed); // includes either signed zero
                     result = left / right; break;
                 default: throw std::logic_error("unreachable validated expression operator");
                 }
                 const double value = result;
-                if (!std::isfinite(value)) return ExpressionResult(i);
+                if (!std::isfinite(value)) return ExpressionResult(i, executed);
                 stack.back() = value;
             }
         }
-        return ExpressionResult(stack.back());
+        return ExpressionResult(stack.back(), executed);
     }
 
 public:
@@ -238,10 +272,10 @@ public:
                 const auto result = std::to_chars(buffer, buffer + sizeof buffer, node.variableIndex());
                 if (result.ec != std::errc{}) throw std::runtime_error("variable export failed");
                 out += 'x'; out.append(buffer, result.ptr); stack.pop_back();
-            } else if (node.kind() == ExpressionKind::Log) {
+            } else if (expressionArity(node.kind()) == 1) {
                 if (frame.phase == 0) {
-                    out += "log("; frame.phase = 1; stack.push_back({frame.root - 1, 0});
-                } else { out += ')'; stack.pop_back(); }
+                    out += node.kind() == ExpressionKind::Log ? "log(" : genetik_detail::scientificName(scientificKind(node.kind())) + "("; frame.phase = 1; stack.push_back({frame.root - 1, 0});
+                } else { if (node.kind() == ExpressionKind::Powi) out += ',' + std::to_string(node.exponent()); out += ')'; stack.pop_back(); }
             } else if (frame.phase == 0) {
                 out += '('; frame.phase = 1;
                 const auto right = frame.root - 1;
@@ -255,6 +289,15 @@ public:
         return out;
     }
 private:
+    static genetik_detail::ScientificKind scientificKind(ExpressionKind kind) {
+        using S = genetik_detail::ScientificKind;
+        switch (kind) {
+        case ExpressionKind::Sin: return S::Sin; case ExpressionKind::Cos: return S::Cos;
+        case ExpressionKind::Exp: return S::Exp; case ExpressionKind::Sqrt: return S::Sqrt;
+        case ExpressionKind::Powi: return S::Powi;
+        default: throw std::logic_error("not scientific scalar operator");
+        }
+    }
     static void validateLimits(ExpressionLimits limits) {
         if (limits.maxNodes == 0 || limits.maxDepth == 0 || !std::isfinite(limits.maxAbsConstant) || limits.maxAbsConstant < 0)
             throw std::invalid_argument("expression limits must be positive counts and a finite nonnegative constant bound");
@@ -280,6 +323,9 @@ private:
                 stack.push_back(item); break;
             default: {
                 const auto arity = expressionArity(node.kind());
+                const std::size_t cost = node.kind()==ExpressionKind::Powi ? (node.exponent() ? node.exponent()-1 : 0) : 1;
+                if (cost > limits_.maxArithmeticOperations - work_) throw std::length_error("expression arithmetic work limit exceeded");
+                work_ += cost;
                 if (stack.size() < arity) throw std::invalid_argument("expression operator lacks operands");
                 auto childDepth = stack.back().depth;
                 if (arity == 2) {
@@ -310,7 +356,7 @@ private:
     std::vector<std::size_t> subtreeSizes_;
     std::size_t variables_;
     ExpressionLimits limits_;
-    std::size_t depth_ = 0;
+    std::size_t depth_ = 0, work_ = 0;
 };
 
 // Internal implementation detail, not a public workspace/lifetime API. Owners keep

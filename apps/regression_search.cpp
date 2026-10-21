@@ -12,7 +12,7 @@ static std::uint64_t integer(const std::string& text,std::uint64_t maximum,const
     return value;
 }
 static void usage() {
-    std::cout<<"Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target --seed N --loss-budget N [--loss-threshold MSE] [--threads N] [--fit-every N] [--no-fit] [--operators add,sub,mul,div,log] [--evaluate FILE ...]\n"
+    std::cout<<"Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target --seed N --loss-budget N [--loss-threshold MSE] [--threads N] [--fit-every N] [--no-fit] [--operators add,sub,mul,div,log,sin,cos,exp,sqrt,powi] [--exponents 0,1,2,3,4,5,6,7,8] [--population N] [--nodes N] [--depth N] [--discrete-only] [--evaluate FILE ...]\n"
              <<"Input order defines x0,x1,...; budget is actual training-loss attempts, 0..10000000.\n";
 }
 int main(int argc,char** argv) {
@@ -20,25 +20,31 @@ int main(int argc,char** argv) {
     std::shared_ptr<TrainingObjective> objective;
     try {
         const auto execution=genetik_example::executionOptions(argc,argv,true);
-        genetik_example::printExecution(execution, 64);
         if(argc==2 && std::string(argv[1])=="--help"){usage();return 0;}
         if(argc<2){usage();return 1;}
         std::vector<std::string> inputs,evaluations;
         std::string target;
         std::optional<std::uint32_t> seed;
         std::optional<std::uint64_t> budget;
+        std::size_t population=64,nodes=31,depth=6;bool discrete=false;
         bool fitting=true;std::uint64_t fitEvery=1;
         std::optional<double> threshold;
         std::optional<std::vector<ExpressionKind>> operators;
+        std::optional<std::vector<unsigned>> exponents;
         std::set<std::string> seen;
         for(int i=2;i<argc;++i) {
             const std::string option=argv[i];
             if(option!="--evaluate" && !seen.insert(option).second)throw std::invalid_argument("repeated option "+option);
+            if(option=="--discrete-only"){discrete=true;continue;}
             if(option=="--no-fit"){fitting=false;continue;}
-            if(option!="--inputs" && option!="--target" && option!="--seed" && option!="--loss-budget" && option!="--evaluate" && option!="--operators" && option!="--loss-threshold" && option!="--fit-every")
+            if(option!="--inputs" && option!="--target" && option!="--seed" && option!="--loss-budget" && option!="--evaluate" && option!="--operators" && option!="--loss-threshold" && option!="--fit-every" && option!="--exponents" && option!="--population" && option!="--nodes" && option!="--depth")
                 throw std::invalid_argument("unknown option "+option);
             if(++i==argc)throw std::invalid_argument("missing value for "+option);
             const std::string value=argv[i];
+            if(option=="--population" || option=="--nodes" || option=="--depth") {
+                const auto v=integer(value,4096,option);if(!v)throw std::invalid_argument(option+" must be positive");
+                if(option=="--population")population=v;else if(option=="--nodes")nodes=v;else depth=v;
+            }
             if(option=="--fit-every") {
                 fitEvery=integer(value,std::numeric_limits<std::uint64_t>::max(),option);
                 if(fitEvery==0)throw std::invalid_argument("--fit-every must be positive");
@@ -47,6 +53,11 @@ int main(int argc,char** argv) {
                 double v=0;auto parsed=std::from_chars(value.data(),value.data()+value.size(),v);
                 if(parsed.ec!=std::errc{} || parsed.ptr!=value.data()+value.size() || !std::isfinite(v) || v<0)throw std::invalid_argument("--loss-threshold: expected finite nonnegative MSE");
                 threshold=v;
+            }
+            if(option=="--exponents") {
+                exponents=std::vector<unsigned>{};
+                for(const auto& text:splitColumns(value))exponents->push_back(static_cast<unsigned>(integer(text,8,option)));
+                genetik_detail::validateExponents(*exponents);
             }
             if(option=="--operators")operators=selectOperators(splitColumns(value));
             if(option=="--inputs")inputs=splitColumns(value);
@@ -63,12 +74,17 @@ int main(int argc,char** argv) {
         std::vector<LoadedData> heldout;
         // Validate all supplied files before starting, but never pass evaluation rows to search.
         for(const auto& path:evaluations)heldout.push_back(loadData(path,inputs,target));
-        const auto problem=RegressionProblem::create(training.rows,{31,6,8});
+        const auto problem=RegressionProblem::create(training.rows,{nodes,depth,8});
         auto config=searchConfig(*budget,fitting);
+        config.population=population;if(discrete)config.grammar.continuousProbability=0;
         config.fitEveryGenerations=fitEvery;
         if (operators) config.grammar.operators=*operators;
+        if (exponents) config.grammar.exponents=*exponents;
         if(threshold){config.trainingLossThreshold=*threshold;if(config.fitting)config.fitting->lossThreshold=*threshold;}
+        if(config.population<=config.elites)throw std::invalid_argument("population must exceed elite count");
+        genetik_example::printExecution(execution,config.population);
         printConfig(config);
+        std::cout<<"nodes_limit="<<nodes<<" depth_limit="<<depth<<" absolute_constant_limit=8 constant_source="<<(discrete?"discrete{-2,-1,0,1,2}":"mixed")<<'\n';
         const TableLimits limits;
         std::cout<<"file_byte_limit="<<limits.maxBytes<<" line_byte_limit="<<limits.maxLineBytes
                  <<" file_row_limit="<<limits.maxRows<<" column_limit="<<limits.maxColumns

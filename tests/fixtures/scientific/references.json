@@ -1,0 +1,86 @@
+{
+  "generator": "mpmath 1.2.1",
+  "precision_decimal": [
+    200,
+    320
+  ],
+  "input_method": "binary64 as_integer_ratio",
+  "comparison": "round to binary64; stability at both precisions",
+  "entries": [
+    {
+      "operator": "sin",
+      "input": "0x1.0000000000000p-3",
+      "expected": "0x1.feaaeee86ee36p-4"
+    },
+    {
+      "operator": "sin",
+      "input": "-0x1.4000000000000p+0",
+      "expected": "-0x1.e5e14fe11418cp-1"
+    },
+    {
+      "operator": "sin",
+      "input": "0x1.5af1d78b58c40p+66",
+      "expected": "-0x1.4a5e605fd6450p-1"
+    },
+    {
+      "operator": "sin",
+      "input": "0x1.249ad2594c37dp+332",
+      "expected": "-0x1.85c5e5b929359p-2"
+    },
+    {
+      "operator": "cos",
+      "input": "0x1.0000000000000p-3",
+      "expected": "0x1.fc015527d5bd3p-1"
+    },
+    {
+      "operator": "cos",
+      "input": "-0x1.4000000000000p+0",
+      "expected": "0x1.42e3dd88bd952p-2"
+    },
+    {
+      "operator": "cos",
+      "input": "0x1.5af1d78b58c40p+66",
+      "expected": "0x1.872720fc60d3dp-1"
+    },
+    {
+      "operator": "cos",
+      "input": "0x1.249ad2594c37dp+332",
+      "expected": "0x1.d9757496841f5p-1"
+    },
+    {
+      "operator": "exp",
+      "input": "-0x1.8000000000000p-1",
+      "expected": "0x1.e3b40ebefcd7ep-2"
+    },
+    {
+      "operator": "exp",
+      "input": "0x1.0000000000000p-3",
+      "expected": "0x1.2216045b6f5cdp+0"
+    },
+    {
+      "operator": "exp",
+      "input": "0x1.c000000000000p+1",
+      "expected": "0x1.08ec721396bdbp+5"
+    },
+    {
+      "operator": "exp",
+      "input": "-0x1.7200000000000p+9",
+      "expected": "0x0.0000000000055p-1022"
+    },
+    {
+      "operator": "sqrt",
+      "input": "0x1.0000000000000p+1",
+      "expected": "0x1.6a09e667f3bcdp+0"
+    },
+    {
+      "operator": "sqrt",
+      "input": "0x1.0000000000000p-3",
+      "expected": "0x1.6a09e667f3bcdp-2"
+    },
+    {
+      "operator": "sqrt",
+      "input": "0x0.0000000000001p-1022",
+      "expected": "0x1.0000000000000p-537"
+    }
+  ]
+}

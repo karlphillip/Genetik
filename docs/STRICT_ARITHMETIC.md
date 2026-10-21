@@ -162,3 +162,6 @@ See [STRICT_ARITHMETIC_CAMPAIGN.md](STRICT_ARITHMETIC_CAMPAIGN.md) for every run
 including misses and discarded budget-limited attempts. Engineering acceptance and
 measured recovery are separate. Next is prime regression as an example of the
 generic module under the preserved protocol; no prime-specific behavior was added.
+
+Opt-in scientific scalar operators (Sin, Cos, Exp, Sqrt, Powi), domains,
+metadata, work units and examples are specified in [SCIENTIFIC_OPERATORS.md](SCIENTIFIC_OPERATORS.md).

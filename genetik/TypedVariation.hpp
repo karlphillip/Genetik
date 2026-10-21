@@ -14,6 +14,7 @@ struct TypedGrammar {
     std::vector<TypedShape> shapes;
     std::vector<TypedShape> constantShapes{TypedShape::scalar()};
     std::vector<double> constants{-1,0,1};
+    std::vector<unsigned> exponents{0,1,2,3,4,5,6,7,8};
     std::size_t initialMaxDepth=4,mutationMaxDepth=3,proposalLimit=8;
     double operationProbability=.65;
 };
@@ -56,7 +57,8 @@ public:
         // Planning is bounded independently of user expression limits.
         if(grammar_.initialMaxDepth>64 || grammar_.mutationMaxDepth>64 || grammar_.proposalLimit>4096)
             throw std::invalid_argument("typed grammar planner limits exceeded");
-        if(grammar_.operators.size()>9)throw std::invalid_argument("typed grammar has too many operator kinds");
+        genetik_detail::validateExponents(grammar_.exponents);
+        if(grammar_.operators.size()>14)throw std::invalid_argument("typed grammar has too many operator kinds");
         for(std::size_t i=0;i<grammar_.operators.size();++i) {
             if(!typedExpressionArity(grammar_.operators[i]))throw std::invalid_argument("typed grammar operator is terminal");
             if(std::find(grammar_.operators.begin(),grammar_.operators.begin()+i,grammar_.operators[i])!=grammar_.operators.begin()+i)
@@ -127,6 +129,12 @@ public:
         for(std::size_t i=0;i<grammar_.proposalLimit;++i) {
             countTrainingWork(statistics_.mutationProposals);
             const auto root=index(parent.expression().nodeCount(),random);
+            if(std::find(grammar_.operators.begin(),grammar_.operators.end(),K::Powi)!=grammar_.operators.end() && parent.expression().nodes()[root].kind()==K::Powi && std::bernoulli_distribution(.5)(random)) {
+                std::optional<TypedExpression> next;
+                try{next=problem_->checkedExpression(parent.expression().withExponent(root,grammar_.exponents[index(grammar_.exponents.size(),random)]));}
+                catch(const TypedLimitError&){countTrainingWork(statistics_.structuralRejections);continue;}
+                child.replaceExpression(*next);if(child.text()!=parent.text())countTrainingWork(statistics_.mutationChanges);return child;
+            }
             const auto shape=parent.expression().nodeShape(root);
             const auto depth=std::min(grammar_.mutationMaxDepth,witnesses_.size()-1);
             if(!witnesses_[depth][shapeIndex(shape)]){countTrainingWork(statistics_.structuralRejections);continue;}
@@ -176,7 +184,7 @@ private:
         return TypedValue::matrix(shape.rows(),shape.columns(),data,problem_->limits().values);
     }
     std::optional<TypedExpression> compose(K op,const TypedExpression& a,const TypedExpression* b) const {
-        try{return b?TypedExpression::binary(op,a,*b,problem_->limits()):TypedExpression::unary(op,a,problem_->limits());}
+        try{return op==K::Powi ? TypedExpression::power(a,*std::min_element(grammar_.exponents.begin(),grammar_.exponents.end()),problem_->limits()) : b?TypedExpression::binary(op,a,*b,problem_->limits()):TypedExpression::unary(op,a,problem_->limits());}
         catch(const std::invalid_argument&){return {};}
         catch(const TypedLimitError&){return {};}
     }
@@ -206,11 +214,11 @@ private:
         const auto depth=depths[index(depths.size(),random)];
         for(std::size_t attempt=0;attempt<grammar_.proposalLimit;++attempt) {
             countTrainingWork(statistics_.constructionProposals);
-            struct Task{std::size_t shape,depth,budget;std::optional<K> emit;};
+            struct Task{std::size_t shape,depth,budget;std::optional<K> emit;unsigned exponent=0;};
             std::vector<Task> tasks{{s,depth,problem_->limits().maxNodes,{}}};std::vector<TypedExpressionNode> nodes;
             while(!tasks.empty()) {
                 const auto task=tasks.back();tasks.pop_back();
-                if(task.emit){nodes.push_back(typedExpressionArity(*task.emit)==1?TypedExpressionNode::unary(*task.emit):TypedExpressionNode::binary(*task.emit));continue;}
+                if(task.emit){nodes.push_back(*task.emit==K::Powi ? TypedExpressionNode::power(task.exponent) : typedExpressionArity(*task.emit)==1?TypedExpressionNode::unary(*task.emit):TypedExpressionNode::binary(*task.emit));continue;}
                 std::vector<std::size_t> variables;
                 for(std::size_t v=0;v<problem_->schema().size();++v)if(problem_->schema()[v]==grammar_.shapes[task.shape])variables.push_back(v);
                 const bool constants=isConstantShape(task.shape) && problem_->limits().maxConstantNodes>0 && grammar_.shapes[task.shape].coefficients()<=problem_->limits().maxConstantCoefficients;
@@ -222,7 +230,7 @@ private:
                 }
                 if(!options.empty() && (!terminal || std::bernoulli_distribution(grammar_.operationProbability)(random))) {
                     const auto p=options[index(options.size(),random)];const auto arity=typedExpressionArity(p.kind);
-                    tasks.push_back({0,0,0,p.kind});
+                    tasks.push_back({0,0,0,p.kind,p.kind==K::Powi ? grammar_.exponents[index(grammar_.exponents.size(),random)] : 0});
                     if(arity==1)tasks.push_back({p.left,task.depth-1,task.budget-1,{}});
                     else {
                         const auto minLeft=witnesses_[task.depth-1][p.left]->nodeCount(),minRight=witnesses_[task.depth-1][p.right]->nodeCount();

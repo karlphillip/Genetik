@@ -193,3 +193,6 @@ Executed local checks and remaining platform scope are recorded in
 Phase 3 adds an optional evaluateWithWork diagnostic sharing this same interpreter;
 its exclusive counter retains executed primitive counts on thrown calls. The
 original evaluate API and arithmetic traversal are unchanged.
+
+Opt-in scientific scalar operators (Sin, Cos, Exp, Sqrt, Powi), domains,
+metadata, work units and examples are specified in [SCIENTIFIC_OPERATORS.md](SCIENTIFIC_OPERATORS.md).

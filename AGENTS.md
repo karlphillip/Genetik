@@ -77,3 +77,8 @@
   generic staging; typed shape/complexity rules remain specialization policies. Typed
   and scalar fitting share the coordinate kernel; qualify shared changes with accepted
   serial replays. See docs/TYPED_REGRESSION.md. Include typed preparation overlap in TSan.
+
+- Scientific Sin/Cos/Exp/Sqrt/Powi are opt-in scalar productions in both APIs. Keep
+  default lists/draws unchanged; power metadata is discrete [0,8], never a fitted
+  constant. Use shared checked kernels, repeated multiplication in order and qualified
+  native libm. See docs/SCIENTIFIC_OPERATORS.md; preserve independent references.

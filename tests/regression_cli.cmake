@@ -77,7 +77,7 @@ foreach(expected "operators=log operator_selection=uniform_over_structurally_fea
         message(FATAL_ERROR "missing expanded workflow evidence ${expected}: ${output}")
     endif()
 endforeach()
-foreach(operators IN ITEMS "" "add,,log" "div,div" "sqrt")
+foreach(operators IN ITEMS "" "add,,log" "div,div" "tangent")
     execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/training.csv" ${args} --operators "${operators}"
         RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
     if(NOT result EQUAL 1 OR output MATCHES "search_start")
@@ -147,3 +147,14 @@ execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/flag-column.csv" --inputs --th
 if(NOT status EQUAL 0 OR NOT output MATCHES "x0=--threads" OR NOT output MATCHES "threads_requested=2 threads_effective=2")
     message(FATAL_ERROR "flag-looking input name misparsed: ${output} ${error}")
 endif()
+
+execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/training.csv" --inputs first,second --target target --seed 2 --loss-budget 32 --no-fit --discrete-only --population 8 --nodes 15 --depth 5 --operators add,mul,sin,cos,exp,sqrt,powi --exponents 0,2,8 --threads 2 RESULT_VARIABLE result OUTPUT_VARIABLE scientific ERROR_VARIABLE error)
+if(NOT result EQUAL 0 OR NOT scientific MATCHES "exponents=0,2,8" OR NOT scientific MATCHES "search_start")
+    message(FATAL_ERROR "scientific CLI failed: ${scientific} ${error}")
+endif()
+foreach(exponents IN ITEMS "" "-1" "9" "2,2" "1.5" "0,,2" "0,2," "999999999999999999999")
+    execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/training.csv" ${args} --exponents "${exponents}" RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+    if(result EQUAL 0 OR output MATCHES "search_start")
+        message(FATAL_ERROR "invalid exponent configuration started search: ${exponents}")
+    endif()
+endforeach()

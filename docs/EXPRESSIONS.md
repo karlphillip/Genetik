@@ -135,3 +135,6 @@ The additive scalar/vector/matrix evaluator is now in
 [TypedExpression.hpp](../genetik/TypedExpression.hpp), documented in
 [TYPED_EXPRESSIONS.md](TYPED_EXPRESSIONS.md). This does not replace this scalar
 Expression API or change its evaluator, variation, fitting or search semantics.
+
+Opt-in scientific scalar operators (Sin, Cos, Exp, Sqrt, Powi), domains,
+metadata, work units and examples are specified in [SCIENTIFIC_OPERATORS.md](SCIENTIFIC_OPERATORS.md).

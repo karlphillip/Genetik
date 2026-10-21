@@ -20,6 +20,8 @@ inline const char* operatorName(ExpressionKind kind) {
     case ExpressionKind::Multiply: return "mul";
     case ExpressionKind::Divide: return "div";
     case ExpressionKind::Log: return "log";
+    case ExpressionKind::Sin:return "sin";case ExpressionKind::Cos:return "cos";
+    case ExpressionKind::Exp:return "exp";case ExpressionKind::Sqrt:return "sqrt";case ExpressionKind::Powi:return "powi";
     default: throw std::invalid_argument("expected an operator kind");
     }
 }
@@ -30,7 +32,7 @@ inline std::vector<ExpressionKind> selectOperators(const std::vector<std::string
     for (const auto& name : names) {
         if (name.empty() || !seen.insert(name).second) throw std::invalid_argument("--operators requires nonempty unique names");
         bool found = false;
-        for (auto kind : {ExpressionKind::Add, ExpressionKind::Subtract, ExpressionKind::Multiply, ExpressionKind::Divide, ExpressionKind::Log})
+        for (auto kind : {ExpressionKind::Add, ExpressionKind::Subtract, ExpressionKind::Multiply, ExpressionKind::Divide, ExpressionKind::Log, ExpressionKind::Sin, ExpressionKind::Cos, ExpressionKind::Exp, ExpressionKind::Sqrt, ExpressionKind::Powi})
             if (name == operatorName(kind)) { kinds.push_back(kind); found = true; break; }
         if (!found) throw std::invalid_argument("--operators: unsupported operator '" + name + "'");
     }
@@ -39,7 +41,7 @@ inline std::vector<ExpressionKind> selectOperators(const std::vector<std::string
 inline void printConfig(const SymbolicRegressionConfig& config) {
     std::cout << "population=" << config.population << " generation_limit=" << config.maxGenerationAttempts
               << " training_loss_limit=" << config.maxTrainingLossAttempts << " outer_request_limit=" << config.maxEvaluations
-              << " nodes_limit=31 depth_limit=6 absolute_constant_limit=8 operators=";
+              << " operators=";
     for (std::size_t i=0;i<config.grammar.operators.size();++i) {
         if (i) std::cout << ',';
         std::cout << operatorName(config.grammar.operators[i]);
@@ -47,7 +49,7 @@ inline void printConfig(const SymbolicRegressionConfig& config) {
     std::cout << " operator_selection=uniform_over_structurally_feasible_entries"
               << " selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3"
               << " full_probability=.5 grow_probability=.65 variation_proposal_limit=8"
-              << " constants=half_discrete{-2,-1,0,1,2},half_uniform[-8,8) training_threshold=" << config.trainingLossThreshold
+              << " constants_discrete={-2,-1,0,1,2} continuous_probability=" << config.grammar.continuousProbability << " continuous_interval=[-8,8) training_threshold=" << config.trainingLossThreshold
               << " fitting=" << static_cast<bool>(config.fitting) << " fit_every=" << config.fitEveryGenerations;
     if(config.fitting) {
         std::cout<<" fit_bounds=[-8,8] fit_step=1 fit_min_step=1e-8 fit_loss_limit=256 fit_sweeps=128 fit_proposals=8192 fit_threshold=";
@@ -55,6 +57,8 @@ inline void printConfig(const SymbolicRegressionConfig& config) {
         else std::cout<<"disabled";
         std::cout<<" fit_slots=all_including_elites_and_clones";
     }
+    std::cout << " exponents=";
+    for(std::size_t i=0;i<config.grammar.exponents.size();++i){if(i)std::cout<<',';std::cout<<config.grammar.exponents[i];}
     std::cout<<'\n';
 }
 // Prediction-only diagnostics: never recompute training MSE outside its allowance.

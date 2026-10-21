@@ -3,6 +3,8 @@
 bool symbolic_check() {
     const auto problem=RegressionProblem::create({{{1,2},3},{{2,1},3},{{0,0},0}},{15,5,8});
     const auto x=Expression::variable(0,2),y=Expression::variable(1,2);
+    if(Expression::unary(ExpressionKind::Exp,x).evaluate(std::array{0.,0.}).value()!=1)return false;
+    if(Expression::power(x,3).evaluate(std::array{-2.,0.}).value()!=-8)return false;
     if(problem->measure(Expression::binary(ExpressionKind::Add,x,y)).loss.score()!=0)return false;
     TrainingObjective objective(problem,32);
     ConstantFitConfig fit;fit.maxLossAttempts=8;
@@ -16,6 +18,10 @@ bool symbolic_check() {
 }
 
 bool typed_check() {
+    const std::array scalarSchema{TypedShape::scalar()};
+    const auto scalar=TypedExpression::variable(0,scalarSchema);
+    const auto root=TypedExpression::unary(TypedExpressionKind::Sqrt,TypedExpression::power(scalar,2));
+    if(root.evaluate(std::array{TypedValue::scalar(-3)}).value().scalarValue()!=3)return false;
     const std::array schema{TypedShape::matrix(2,3),TypedShape::vector(3)};
     const auto f=TypedExpression::binary(TypedExpressionKind::MatVec,
         TypedExpression::variable(0,schema),TypedExpression::variable(1,schema));

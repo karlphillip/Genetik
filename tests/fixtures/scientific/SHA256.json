@@ -1,0 +1,13 @@
+{
+  "decay-exterior.csv": "a6eed952bcc4ef3515e4b766c06fd281fe6f0b45eb155ef75caf4b74c7759b27",
+  "decay-interior.csv": "c3dfb8a84478659de69ee235b65a13fab41289275dd8f1429c79ed777137eae0",
+  "decay-training.csv": "3cd9037095c58dbc40288b1f37c7c4b3d4484e805a66a1fdc81faa9a5b029102",
+  "oscillation-exterior.csv": "ebd908a26fb7eb328e6a0595de0ecb47c4d134bf5f2437325b15d5c4573db68d",
+  "oscillation-interior.csv": "9eeb4f225c8bb7c96362988dbaba16bff54476a3a37b74690c0c61377a29ec38",
+  "oscillation-training.csv": "49f5ed222c6fb7e8fe09808e1a616fa89e87d9b46810263339616995e2af97c3",
+  "references.hpp": "1e57006a1ec65c8da903838d01bd06be6498b24f5bd2f623ea11609a56cdb257",
+  "references.json": "9f137121df13938da6700a783afbd6a973990e1b686a809970c66bb9e2a41c3b",
+  "root-exterior.csv": "d7c3ed1abc17f09c93ca2beeea617b7fbf82450ed8999f561c522da0a20a71a0",
+  "root-interior.csv": "6cd5a3ae8635a4b0669593686a9f73d3038850afb11eda15c02162a4b4d6aa48",
+  "root-training.csv": "589d3c33b8fa3fe6009037ef5e3ded9d6dee23b7e4fd2133312848bda2211028"
+}

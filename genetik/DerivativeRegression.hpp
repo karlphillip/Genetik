@@ -138,6 +138,7 @@ private:
         auto arithmetic=[&](ExpressionKind kind,double a,double b) {return genetik_detail::scalarBinary(kind,a,b,charge);};
         auto nonzeroUnderflow=[](double before,double after){return before!=0 && after==0;};
         double combined=0;
+        genetik_detail::EvaluationWorkspace valueWorkspace; // lexical, empty until first charged value row
         try {
             for(currentChannel=0;currentChannel<channels_.size();++currentChannel) {
                 const auto& channel=channels_[currentChannel];auto& report=result.channels[currentChannel];
@@ -168,7 +169,7 @@ private:
                             ++report.resourceStops;countTrainingWork(w.resourceStops);mark(ObservationStatus::ResourceLimit);result.resource=ObservationResource::ValuePlan;
                         } else {
                             countTrainingWork(w.valueEvaluations);
-                            const auto p=e.evaluate(row.inputs);
+                            const auto p=valueWorkspace.evaluate(e,row.inputs);
                             bool overflow=false;mergeTrainingCounter(w.primalOperations,p.arithmeticOperations(),overflow);
                             if(overflow)throw std::overflow_error("observation primal work counter exhausted");
                             if(!p.valid()){++report.primalInvalid;countTrainingWork(w.primalInvalidObservations);mark(ObservationStatus::PrimalInvalidity);}else prediction=p.value();

@@ -55,6 +55,8 @@ static void lossAndIdentity() {
     check(exact->measure(multivariate).loss==Fitness::valid(0),"two original-index partial channels");
     auto root=parseExpression("sqrt(x0)",1);auto okay=D::create(1,{{std::nullopt,{{{0},0}},1,1},{0,{{{1},.5}},1,1}});
     check(okay->measure(root).loss==Fitness::valid(0),"unrequested singular derivative does not affect value");
+    const auto alternating=D::create(1,{{std::nullopt,{{{1},1},{{-1},0},{{4},2}},1,1}})->assess(root);
+    check(alternating.complete && alternating.channels[0].primalInvalid==1 && alternating.work.valueEvaluations==3 && alternating.work.primalOperations==2,"lexical value workspace resets after invalid row");
     auto bad=D::create(1,{{0,{{{1},.5},{{0},0},{{-1},0},{{4},.25}},1,1}});
     const auto first=bad->measureObservations(root),all=bad->assess(root);
     check(first.status==O::DerivativeUnavailable && first.work.observations==2 && !first.complete,"first unscorable observation stops training");

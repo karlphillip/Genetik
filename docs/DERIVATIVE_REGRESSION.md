@@ -42,6 +42,10 @@ partial primal work is not a second attempt. Supplemental counters separate valu
 and partial calls, primal operations, derivative arithmetic/native calls and
 objective arithmetic. Private worker deltas merge after draining even on failure.
 No mutable scratch/data aliases, RNG, cache, or nested executor is introduced.
+Value rows reuse one invocation-local ordinary operand workspace, growing only
+after row admission; partial calls retain their existing independent scratch.
+The separate per-value and per-partial payload bounds can coexist, and are not
+a single total-memory cap.
 
 Training may stop at its first unscorable row. `assess` uses a separate bounded
 allowance and inspects all rows unless its traversal/aggregation allowance ends;
@@ -132,8 +136,8 @@ a constrained constructor preserves legacy braced-row constructor resolution.
 Ordinary RegressionProblem keeps exactly its previous MSE implementation. A sliced
 schema-only adapter rejects ordinary base measurement instead of scoring fake rows.
 Recompile dependent translation units consistently: no stable binary ABI is promised.
-The generic GA includes no observation/derivative headers. Existing user objective
-noexcept merge overrides remain valid; worker accounting merges may now report overflow.
+The generic GA includes no observation/derivative headers. The original noexcept worker-merge hook is preserved; a separate post-merge
+validation hook reports supplemental accounting errors through normal failure handling.
 
 `ExpressionCandidate` validates immutable problem identity, calls the virtual measure
 and requires problem concurrency qualification. `DerivativeTrainingObjective` adds

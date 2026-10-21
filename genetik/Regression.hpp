@@ -1,5 +1,6 @@
 #pragma once
 #include <typeinfo>
+#include <type_traits>
 #include "EvaluatedCandidate.hpp"
 #include "Expression.hpp"
 #include <memory>
@@ -14,7 +15,7 @@ struct RegressionMetrics {
 };
 
 // Immutable, copied inputs and configuration. Replacing the problem requires a new population/run.
-class RegressionProblem final {
+class RegressionProblem {
 public:
     RegressionProblem(const std::vector<RegressionRow>& rows, ExpressionLimits limits = {31, 6, 2},
                       RegressionLoss loss = RegressionLoss::MeanSquaredError)
@@ -26,15 +27,18 @@ public:
              ExpressionLimits limits = {31, 6, 2}, RegressionLoss loss = RegressionLoss::MeanSquaredError) {
         return std::make_shared<const RegressionProblem>(rows, limits, loss);
     }
+    virtual ~RegressionProblem() = default;
+    virtual bool parallelEvaluationSafe() const noexcept {return typeid(*this)==typeid(RegressionProblem);}
     std::size_t dimensions() const noexcept { return dimensions_; }
-    std::size_t sampleCount() const noexcept { return rows_.size(); }
+    virtual std::size_t sampleCount() const noexcept { return rows_.size(); }
     ExpressionLimits limits() const noexcept { return limits_; }
     Expression checkedExpression(const Expression& expression) const {
         if (expression.variableCount() != dimensions_) throw std::invalid_argument("expression/problem dimensions differ");
         return Expression(expression.nodes(), dimensions_, limits_);
     }
-    RegressionMetrics measure(const Expression& expression, std::uint64_t* rowAttempts = nullptr) const {
+    virtual RegressionMetrics measure(const Expression& expression, std::uint64_t* rowAttempts = nullptr) const {
         if (expression.variableCount() != dimensions_) throw std::invalid_argument("expression/problem dimensions differ");
+        if(rows_.empty())throw std::logic_error("schema-only problem requires a measurement override");
         double sum = 0, maximum = 0;
         std::size_t attempted = 0;
         // Empty construction cannot allocate. First growth stays after the first
@@ -61,6 +65,18 @@ public:
         volatile double mse = sum / static_cast<double>(rows_.size());
         if (!std::isfinite(mse)) return {Fitness::invalid(), {}, attempted};
         return {Fitness::valid(mse), maximum, attempted};
+    }
+protected:
+    // Mathematical objective adapter: no fictitious value labels. Derived problems
+    // override measure and explicitly qualify concurrent immutable measurement.
+    struct MeasurementSchema {std::size_t dimensions;ExpressionLimits limits;};
+    // A constrained single-argument constructor does not participate in existing
+    // braced row-list calls: its Schema cannot be deduced from a bare {}.
+    template<class Schema> requires std::is_same_v<Schema,MeasurementSchema>
+    explicit RegressionProblem(Schema schema)
+        : dimensions_(schema.dimensions), limits_(schema.limits) {
+        if(!dimensions_)throw std::invalid_argument("objective schema must be positive");
+        (void)Expression::constant(0, dimensions_, limits_);
     }
 private:
     static std::vector<RegressionRow> validate(const std::vector<RegressionRow>& input) {
@@ -132,7 +148,7 @@ public:
         swapEvaluation(other); contextOwner_.swap(other.contextOwner_); problem_.swap(other.problem_); expression_.swap(other.expression_); text_.swap(other.text_); preparation_.swap(other.preparation_); parentPreparation_.swap(other.parentPreparation_); std::swap(context_,other.context_);
     }
     bool parallelEvaluationSafe() const noexcept override {
-        return typeid(*this)==typeid(ExpressionCandidate) && (!contextOwner_ || contextOwner_->parallelEvaluationSafe()) && (!preparation_ || preparation_->parallelEvaluationSafe());
+        return typeid(*this)==typeid(ExpressionCandidate) && problem_ && problem_->parallelEvaluationSafe() && (!contextOwner_ || contextOwner_->parallelEvaluationSafe()) && (!preparation_ || preparation_->parallelEvaluationSafe());
     }
     void beginParallelEvaluation(ExecutionContext& execution) override {
         if(preparation_){

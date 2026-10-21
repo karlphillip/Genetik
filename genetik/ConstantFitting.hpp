@@ -101,7 +101,7 @@ public:
     TrainingObjective& operator=(TrainingObjective&&) = delete;
     virtual ~TrainingObjective() = default;
     virtual bool parallelEvaluationSafe() const noexcept {
-        return typeid(*this)==typeid(TrainingObjective) && !diagnostics_;
+        return typeid(*this)==typeid(TrainingObjective) && !diagnostics_ && problem_->parallelEvaluationSafe();
     }
     std::shared_ptr<TrainingObjective> forkParallel(ExecutionContext& execution) {
         if(!parallelEvaluationSafe())throw std::invalid_argument("objective requires an independent parallel factory");
@@ -157,7 +157,9 @@ protected:
         if(typeid(*this)!=typeid(TrainingObjective))throw std::invalid_argument("derived objective must override cloneForParallel");
         return std::make_shared<TrainingObjective>(problem_,maximum_);
     }
-    virtual void mergeWorker(const TrainingObjective&) noexcept {}
+    virtual void mergeWorker(const TrainingObjective&) {}
+    // Narrow trusted compute seam: count observations without exposing fitness/genome state.
+    std::uint64_t& rowAttemptsCounter() noexcept {return work_.rowAttempts;}
     virtual RegressionMetrics compute(const Expression& expression) {
         return problem_->measure(expression, &work_.rowAttempts);
     }

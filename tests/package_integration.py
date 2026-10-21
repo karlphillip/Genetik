@@ -89,7 +89,7 @@ def inspect(prefix,consumer_build):
         elif token not in ['-c','-MD','-MMD','-MP']:
             dependency_command.append(token)
     text=run([*dependency_command,'-M'])
-    if any('/'+name+'.hpp' in text for name in ['ScalarExpressionTemplate','ScalarTemplateRegression','ExpressionParsing','TypedExpressionParsing','Expression','Regression','SymbolicRegression','ConstantFitting','TypedValue','TypedExpression','TypedRegression','TypedVariation','TypedSymbolicRegression','TypedConstantFitting']):
+    if any('/'+name+'.hpp' in text for name in ['ExpressionDerivative','ScalarExpressionTemplate','ScalarTemplateRegression','ExpressionParsing','TypedExpressionParsing','Expression','Regression','SymbolicRegression','ConstantFitting','TypedValue','TypedExpression','TypedRegression','TypedVariation','TypedSymbolicRegression','TypedConstantFitting']):
         raise RuntimeError('symbolic dependency in generic consumer')
     installed={p.relative_to(prefix).as_posix() for p in prefix.rglob('*') if p.is_file()}
     if not any(x.endswith('detail/ScopedTiming.hpp') for x in installed):raise RuntimeError('transitive header omitted')
@@ -104,9 +104,9 @@ def consume(prefix,name,extra=(),build_it=True,fail=False):
     if fail:return output
     if build_it:
         run([a.cmake,'--build',directory,'-j2'])
-        for exe in ['installed_consumer','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart','quickstarts/typed_quickstart','quickstarts/typed_search_quickstart','quickstarts/parsing_quickstart','quickstarts/templates_quickstart','oop_consumer/permutation_consumer']:
+        for exe in ['installed_consumer','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart','quickstarts/typed_quickstart','quickstarts/typed_search_quickstart','quickstarts/parsing_quickstart','quickstarts/templates_quickstart','quickstarts/derivatives_quickstart','oop_consumer/permutation_consumer']:
             run([directory/exe])
-            run([directory/exe,'--threads','2']) if exe not in ['installed_consumer','quickstarts/typed_quickstart','quickstarts/parsing_quickstart'] else None
+            run([directory/exe,'--threads','2']) if exe not in ['installed_consumer','quickstarts/typed_quickstart','quickstarts/parsing_quickstart','quickstarts/derivatives_quickstart'] else None
             dependencies=run(['ldd',directory/exe])
             if any(x in dependencies for x in ['libasan','libubsan','libtsan','libclang_rt']):
                 raise RuntimeError('development runtime dependency leaked')

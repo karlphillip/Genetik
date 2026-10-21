@@ -28,8 +28,10 @@ inline std::string scientificName(ScientificKind kind) {
     }
     throw std::logic_error("unsupported scientific operator");
 }
-template<class Charge>
-std::optional<double> scientificScalar(ScientificKind kind, double base, unsigned exponent, Charge charge) {
+struct IgnorePowerStep { void operator()(double, double) const noexcept {} };
+template<class Charge, class PowerStep = IgnorePowerStep>
+std::optional<double> scientificScalar(ScientificKind kind, double base, unsigned exponent, Charge charge,
+                                       PowerStep step = {}) {
     if (kind == ScientificKind::Powi) {
         validateExponent(exponent);
         if (!exponent) return 1.0;
@@ -37,6 +39,7 @@ std::optional<double> scientificScalar(ScientificKind kind, double base, unsigne
         for (unsigned i=1;i<exponent;++i) {
             charge(); volatile double next = value * base;
             if (!std::isfinite(next)) return {};
+            step(value, next);
             value = next;
         }
         return value;

@@ -10,3 +10,5 @@ bool symbolic_check();
 bool typed_check();
 
 #include <ScalarTemplateRegression.hpp>
+
+#include <ExpressionDerivative.hpp>

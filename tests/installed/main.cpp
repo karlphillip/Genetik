@@ -11,6 +11,7 @@ protected:
     double mutatedGene(unsigned int,std::mt19937& rng) const override{return std::uniform_real_distribution<double>(-1,1)(rng);}
 };
 int main() {
+    if(evaluatePartial(parseExpression("sin(x0)",1),std::array{0.},0).derivative()!=1)return 1;
     if(parseExpression("powi(2,3)",0).evaluate({}).value()!=8)return 1;
     const ScalarExpressionTemplate rootTemplate(Expression::constant(0,1),0,{3,2,8},{3,2,8});
     if(rootTemplate.materialize(parseExpression("x0+1",1)).evaluate(std::array{2.}).value()!=3)return 1;

@@ -36,6 +36,45 @@ inline std::size_t expressionArity(ExpressionKind kind) {
     throw std::invalid_argument("unsupported expression node kind");
 }
 
+// Checked primal kernels shared by ordinary and partial-derivative evaluation.
+namespace genetik_detail {
+inline ScientificKind scientificKind(ExpressionKind kind) {
+    switch (kind) {
+    case ExpressionKind::Sin: return ScientificKind::Sin;
+    case ExpressionKind::Cos: return ScientificKind::Cos;
+    case ExpressionKind::Exp: return ScientificKind::Exp;
+    case ExpressionKind::Sqrt: return ScientificKind::Sqrt;
+    case ExpressionKind::Powi: return ScientificKind::Powi;
+    default: throw std::logic_error("not a scientific scalar operation");
+    }
+}
+template<class Charge>
+std::optional<double> scalarBinary(ExpressionKind kind, double left, double right, Charge charge) {
+    if (kind == ExpressionKind::Divide && right == 0.0) return {};
+    charge(); volatile double result = 0;
+    switch (kind) {
+    case ExpressionKind::Add: result = left + right; break;
+    case ExpressionKind::Subtract: result = left - right; break;
+    case ExpressionKind::Multiply: result = left * right; break;
+    case ExpressionKind::Divide: result = left / right; break;
+    default: throw std::logic_error("not a binary scalar operation");
+    }
+    if (!std::isfinite(result)) return {};
+    return result;
+}
+template<class Charge, class PowerStep = IgnorePowerStep>
+std::optional<double> scalarUnary(ExpressionKind kind, double argument, unsigned exponent,
+                                  Charge charge, PowerStep step = {}) {
+    if (kind == ExpressionKind::Log) {
+        if (!(argument > 0.0)) return {};
+        charge(); volatile double result = std::log(argument);
+        if (!std::isfinite(result)) return {};
+        return result;
+    }
+    return scientificScalar(scientificKind(kind), argument, exponent, charge, step);
+}
+}
+
 // Typed postfix tokens. Only an Expression validates/completes a token sequence.
 class ExpressionNode {
 public:
@@ -101,7 +140,7 @@ private:
     std::size_t work_;
 };
 
-namespace genetik_detail { class EvaluationWorkspace; }
+namespace genetik_detail { class EvaluationWorkspace; class DerivativeEvaluation; }
 
 class Expression {
 public:
@@ -204,6 +243,7 @@ public:
 
 private:
     friend class genetik_detail::EvaluationWorkspace;
+    friend class genetik_detail::DerivativeEvaluation;
     // One interpreter for convenience calls and invocation-local batch evaluation.
     // Validate before allocating, retain capacity, and reset logical contents even
     // after an invalid prior row. reserve does not initialize or index raw capacity.
@@ -221,34 +261,16 @@ private:
             else if (node.kind() == ExpressionKind::Variable) stack.push_back(bindings[node.variableIndex()]);
             else if (expressionArity(node.kind()) == 1) {
                 const double argument = stack.back();
-                std::optional<double> value;
-                if (node.kind() == ExpressionKind::Log) {
-                    if (!(argument > 0.0)) return ExpressionResult(i, executed);
-                    ++executed; volatile double result = std::log(argument);
-                    if (std::isfinite(result)) value = result;
-                } else value = genetik_detail::scientificScalar(scientificKind(node.kind()), argument,
+                const auto value = genetik_detail::scalarUnary(node.kind(), argument,
                     node.kind() == ExpressionKind::Powi ? node.exponent() : 0, [&executed]{++executed;});
                 if (!value) return ExpressionResult(i, executed);
                 stack.back() = *value;
             } else {
                 const double right = stack.back(); stack.pop_back();
                 const double left = stack.back();
-                // Each node rounds/stores as binary64 before testing or consuming the next node.
-                // This barrier plus -ffp-contract=off prevents a cross-node fused operation.
-                if (node.kind() == ExpressionKind::Divide && right == 0.0) return ExpressionResult(i, executed);
-                ++executed; volatile double result = 0;
-                switch (node.kind()) {
-                case ExpressionKind::Add: result = left + right; break;
-                case ExpressionKind::Subtract: result = left - right; break;
-                case ExpressionKind::Multiply: result = left * right; break;
-                case ExpressionKind::Divide:
-                    if (right == 0.0) return ExpressionResult(i, executed); // includes either signed zero
-                    result = left / right; break;
-                default: throw std::logic_error("unreachable validated expression operator");
-                }
-                const double value = result;
-                if (!std::isfinite(value)) return ExpressionResult(i, executed);
-                stack.back() = value;
+                const auto value = genetik_detail::scalarBinary(node.kind(), left, right, [&executed]{++executed;});
+                if (!value) return ExpressionResult(i, executed);
+                stack.back() = *value;
             }
         }
         return ExpressionResult(stack.back(), executed);
@@ -274,7 +296,7 @@ public:
                 out += 'x'; out.append(buffer, result.ptr); stack.pop_back();
             } else if (expressionArity(node.kind()) == 1) {
                 if (frame.phase == 0) {
-                    out += node.kind() == ExpressionKind::Log ? "log(" : genetik_detail::scientificName(scientificKind(node.kind())) + "("; frame.phase = 1; stack.push_back({frame.root - 1, 0});
+                    out += node.kind() == ExpressionKind::Log ? "log(" : genetik_detail::scientificName(genetik_detail::scientificKind(node.kind())) + "("; frame.phase = 1; stack.push_back({frame.root - 1, 0});
                 } else { if (node.kind() == ExpressionKind::Powi) out += ',' + std::to_string(node.exponent()); out += ')'; stack.pop_back(); }
             } else if (frame.phase == 0) {
                 out += '('; frame.phase = 1;
@@ -289,15 +311,6 @@ public:
         return out;
     }
 private:
-    static genetik_detail::ScientificKind scientificKind(ExpressionKind kind) {
-        using S = genetik_detail::ScientificKind;
-        switch (kind) {
-        case ExpressionKind::Sin: return S::Sin; case ExpressionKind::Cos: return S::Cos;
-        case ExpressionKind::Exp: return S::Exp; case ExpressionKind::Sqrt: return S::Sqrt;
-        case ExpressionKind::Powi: return S::Powi;
-        default: throw std::logic_error("not scientific scalar operator");
-        }
-    }
     static void validateLimits(ExpressionLimits limits) {
         if (limits.maxNodes == 0 || limits.maxDepth == 0 || !std::isfinite(limits.maxAbsConstant) || limits.maxAbsConstant < 0)
             throw std::invalid_argument("expression limits must be positive counts and a finite nonnegative constant bound");

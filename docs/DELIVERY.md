@@ -1,6 +1,7 @@
 # Installable development-package qualification
 
-Current feature hosted results: [TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md](TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md).
+Current parser/template hosted results: [PARSER_TEMPLATES_HOSTED_QUALIFICATION.md](PARSER_TEMPLATES_HOSTED_QUALIFICATION.md).
+Previous feature results: [TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md](TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md).
 Earlier release results: [HOSTED_QUALIFICATION.md](HOSTED_QUALIFICATION.md). The
 original packaging and preflight sections below are historical checkpoint records.
 
@@ -294,3 +295,11 @@ The multi-TU, relocated, source-parent and nonmathematical OOP fixtures remain r
 see [SCALAR_TEMPLATE_QUALIFICATION.md](SCALAR_TEMPLATE_QUALIFICATION.md) for executed
 local evidence. Hosted qualification of parser/template additions is a subsequent
 authorized task, not implied by the historical matrix.
+
+The combined Phase 5/6A implementation passed all three hosted jobs at
+`c9080e2a0d1d3a00f10319379375284d6dd2bd28`:41 portable tests per job, seven
+separate ARM64 TSan selections repeated three times, ordinary/relocated multi-TU
+consumers and installed parser/template quickstarts. See the new report above for
+exact environments and links. Its documentation tip receives the same matrix; the
+final SHA/links are recorded in ignored completion output to avoid an untested tip.
+This supersedes the earlier pending statement for that candidate, not older history.

@@ -30,13 +30,16 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    locally, with canonical round trips, explicit schemas/limits, installed usage and
    a supplied-formula file evaluator. See EXPRESSION_PARSING.md and
    PARSING_QUALIFICATION.md. Optional external adapters remain separately scoped;
-   parsing and data formats do not enter the generic evolutionary core.
+   parsing and data formats do not enter the generic evolutionary core. Selected hosted
+   qualification of Phases 5/6A is recorded in PARSER_TEMPLATES_HOSTED_QUALIFICATION.md.
 6. **Constraints and templates** — Phase 6A implemented locally: one immutable
    scalar scaffold/site, original-index variable/operator restrictions, constrained
    structure search, full-model loss and selected-constant fitting through shared
    preparation/publication. See SCALAR_TEMPLATES.md, SCALAR_TEMPLATE_RESULTS.md and
    SCALAR_TEMPLATE_QUALIFICATION.md. Multiple/repeated holes, shared parameters,
    typed templates, units and general constraints require separate Phase 6B scope.
+   The combined parser/template hosted checkpoint is recorded in
+   PARSER_TEMPLATES_HOSTED_QUALIFICATION.md; this does not expand the one-site scope.
 7. **Calculus** — separately design and qualify operations, domains and numerical
    contracts; no implied symbolic algebra capability today.
 8. **Additional model families** — individually scoped proposals and acceptance

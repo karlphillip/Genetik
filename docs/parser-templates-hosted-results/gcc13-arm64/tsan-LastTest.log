@@ -1,0 +1,345 @@
+Start testing: Oct 21 19:38 UTC
+----------------------------------------------------------
+14/25 Testing: genetik_concurrency_contracts
+14/25 Test: genetik_concurrency_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_concurrency_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_concurrency_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+concurrent contracts passed
+<end of output>
+Test time =   0.33 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_concurrency_contracts" end time: Oct 21 19:38 UTC
+"genetik_concurrency_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/25 Testing: genetik_concurrency_contracts
+14/25 Test: genetik_concurrency_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_concurrency_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_concurrency_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+concurrent contracts passed
+<end of output>
+Test time =   0.20 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_concurrency_contracts" end time: Oct 21 19:38 UTC
+"genetik_concurrency_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/25 Testing: genetik_concurrency_contracts
+14/25 Test: genetik_concurrency_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_concurrency_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_concurrency_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+concurrent contracts passed
+<end of output>
+Test time =   0.20 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_concurrency_contracts" end time: Oct 21 19:38 UTC
+"genetik_concurrency_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/25 Testing: genetik_oop_parallel
+15/25 Test: genetik_oop_parallel
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_oop_consumer" "--threads" "3"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_oop_parallel" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+threads_requested=3 threads_effective=3
+parallel permutation contracts passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_oop_parallel" end time: Oct 21 19:38 UTC
+"genetik_oop_parallel" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/25 Testing: genetik_oop_parallel
+15/25 Test: genetik_oop_parallel
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_oop_consumer" "--threads" "3"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_oop_parallel" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+threads_requested=3 threads_effective=3
+parallel permutation contracts passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_oop_parallel" end time: Oct 21 19:38 UTC
+"genetik_oop_parallel" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/25 Testing: genetik_oop_parallel
+15/25 Test: genetik_oop_parallel
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_oop_consumer" "--threads" "3"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_oop_parallel" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+threads_requested=3 threads_effective=3
+parallel permutation contracts passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_oop_parallel" end time: Oct 21 19:38 UTC
+"genetik_oop_parallel" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/25 Testing: genetik_typed_overlap
+18/25 Test: genetik_typed_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_typed_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_typed_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+typed value/expression contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_overlap" end time: Oct 21 19:38 UTC
+"genetik_typed_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/25 Testing: genetik_typed_overlap
+18/25 Test: genetik_typed_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_typed_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_typed_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+typed value/expression contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_overlap" end time: Oct 21 19:38 UTC
+"genetik_typed_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/25 Testing: genetik_typed_overlap
+18/25 Test: genetik_typed_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_typed_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_typed_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+typed value/expression contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_overlap" end time: Oct 21 19:38 UTC
+"genetik_typed_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/25 Testing: genetik_typed_preparation_overlap
+20/25 Test: genetik_typed_preparation_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_typed_regression_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_typed_preparation_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+typed overlap contracts
+typed regression contracts passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_preparation_overlap" end time: Oct 21 19:38 UTC
+"genetik_typed_preparation_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/25 Testing: genetik_typed_preparation_overlap
+20/25 Test: genetik_typed_preparation_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_typed_regression_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_typed_preparation_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+typed overlap contracts
+typed regression contracts passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_preparation_overlap" end time: Oct 21 19:38 UTC
+"genetik_typed_preparation_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/25 Testing: genetik_typed_preparation_overlap
+20/25 Test: genetik_typed_preparation_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_typed_regression_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_typed_preparation_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+typed overlap contracts
+typed regression contracts passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_preparation_overlap" end time: Oct 21 19:38 UTC
+"genetik_typed_preparation_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/25 Testing: genetik_scientific_contracts
+21/25 Test: genetik_scientific_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_scientific_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_scientific_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+scientific contracts passed
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_scientific_contracts" end time: Oct 21 19:38 UTC
+"genetik_scientific_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/25 Testing: genetik_scientific_contracts
+21/25 Test: genetik_scientific_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_scientific_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_scientific_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+scientific contracts passed
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_scientific_contracts" end time: Oct 21 19:38 UTC
+"genetik_scientific_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/25 Testing: genetik_scientific_contracts
+21/25 Test: genetik_scientific_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_scientific_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_scientific_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+scientific contracts passed
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_scientific_contracts" end time: Oct 21 19:38 UTC
+"genetik_scientific_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/25 Testing: genetik_parsing_overlap
+23/25 Test: genetik_parsing_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_parsing_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_parsing_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+parsing contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_parsing_overlap" end time: Oct 21 19:38 UTC
+"genetik_parsing_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/25 Testing: genetik_parsing_overlap
+23/25 Test: genetik_parsing_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_parsing_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_parsing_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+parsing contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_parsing_overlap" end time: Oct 21 19:38 UTC
+"genetik_parsing_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/25 Testing: genetik_parsing_overlap
+23/25 Test: genetik_parsing_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_parsing_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_parsing_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+parsing contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_parsing_overlap" end time: Oct 21 19:38 UTC
+"genetik_parsing_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/25 Testing: genetik_template_overlap
+25/25 Test: genetik_template_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_template_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_template_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+scalar template contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_template_overlap" end time: Oct 21 19:38 UTC
+"genetik_template_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/25 Testing: genetik_template_overlap
+25/25 Test: genetik_template_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_template_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_template_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+scalar template contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_template_overlap" end time: Oct 21 19:38 UTC
+"genetik_template_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/25 Testing: genetik_template_overlap
+25/25 Test: genetik_template_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_template_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/tsan/tests
+"genetik_template_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+scalar template contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_template_overlap" end time: Oct 21 19:38 UTC
+"genetik_template_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 21 19:38 UTC

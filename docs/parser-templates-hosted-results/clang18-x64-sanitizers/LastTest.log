@@ -1,0 +1,744 @@
+Start testing: Oct 21 19:36 UTC
+----------------------------------------------------------
+1/41 Testing: genetik_strict_arithmetic
+1/41 Test: genetik_strict_arithmetic
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_arithmetic_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_strict_arithmetic" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+strict division/log contracts passed
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_strict_arithmetic" end time: Oct 21 19:36 UTC
+"genetik_strict_arithmetic" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/41 Testing: genetik_multivariate_contracts
+2/41 Test: genetik_multivariate_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_multivariate_tests" "/home/runner/work/Genetik/Genetik/out/build/ci/tests/multivariate-data"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_multivariate_contracts" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+multivariate and file-input contracts passed
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_multivariate_contracts" end time: Oct 21 19:36 UTC
+"genetik_multivariate_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/41 Testing: genetik_fitting_contracts
+3/41 Test: genetik_fitting_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_fitting_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_fitting_contracts" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+fixture=2.5,-1.75,0.625 calls=44 mse=0 training_max=0 interior_max=0 exterior_max=0 stop=loss_threshold expression=(((2.5 * (x0 * x0)) + ((-1.75) * x0)) + 0.625)
+fixture=1.7,-0.65000000000000002,2.2999999999999998 calls=324 mse=5.2176947946765299e-21 training_max=1.8626433728741176e-10 interior_max=1.6079848563776977e-10 exterior_max=7.9162276733768522e-10 stop=loss_threshold expression=(((1.6999999999534339 * (x0 * x0)) + ((-0.65000000002328306) * x0)) + 2.3000000000465661)
+constant fitting contracts passed
+<end of output>
+Test time =   0.19 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_fitting_contracts" end time: Oct 21 19:36 UTC
+"genetik_fitting_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/41 Testing: genetik_symbolic_contracts
+4/41 Test: genetik_symbolic_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_symbolic_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_symbolic_contracts" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+Symbolic regression integration/loss/variation/publication/budget contracts passed
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_symbolic_contracts" end time: Oct 21 19:36 UTC
+"genetik_symbolic_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/41 Testing: genetik_expression_contracts
+5/41 Test: genetik_expression_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_expression_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_expression_contracts" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+Expression construction, arithmetic, ownership, export and depth contracts passed
+<end of output>
+Test time =   0.20 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_expression_contracts" end time: Oct 21 19:36 UTC
+"genetik_expression_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/41 Testing: genetik_fitness_publication
+6/41 Test: genetik_fitness_publication
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_generation_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_fitness_publication" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+270 fitness/publication checks passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_fitness_publication" end time: Oct 21 19:36 UTC
+"genetik_fitness_publication" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/41 Testing: genetik_contracts
+7/41 Test: genetik_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_contracts" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+259 contract checks passed
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_contracts" end time: Oct 21 19:36 UTC
+"genetik_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/41 Testing: genetik_regression_cli
+8/41 Test: genetik_regression_cli
+Command: "/usr/local/bin/cmake" "-DGENERATOR=/home/runner/work/Genetik/Genetik/out/build/ci/genetik_multivariate_demo" "-DSEARCH=/home/runner/work/Genetik/Genetik/out/build/ci/genetik_regression_search" "-DWORKSPACE=/home/runner/work/Genetik/Genetik/out/build/ci/tests/regression-cli" "-P" "/home/runner/work/Genetik/Genetik/tests/regression_cli.cmake"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_regression_cli" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.69 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_regression_cli" end time: Oct 21 19:36 UTC
+"genetik_regression_cli" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/41 Testing: genetik_expression_example
+9/41 Test: genetik_expression_example
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_expression_demo"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_expression_example" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+Manually constructed f(x0) = (((x0 * x0) + x0) + 1.0)
+nodes=7 depth=4
+f(-2)=3
+f(-1)=1
+f(0)=1
+f(1)=3
+f(2)=7
+Arithmetic invalidity at postfix node 3; no numerical prediction is available
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[Arithmetic invalidity at postfix node 3]
+"genetik_expression_example" end time: Oct 21 19:36 UTC
+"genetik_expression_example" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/41 Testing: genetik_demo_bounded
+10/41 Test: genetik_demo_bounded
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_demo" "42" "20"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_demo_bounded" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+execution=serial_cpu threads_requested=1 threads_effective=1 effective_definition=task_ceiling_for_population caller_evaluates=1
+seed=42 population=100 crossover=0.5 mutation=0.9 selection=linear_rank objective=maximize max_generations=20 mode=serial
+* Generation #1 avg fitness: 0.016 best fitness: 0.054
+* Generation #2 avg fitness: 0.023 best fitness: 0.054
+* Generation #3 avg fitness: 0.029 best fitness: 0.054
+* Generation #4 avg fitness: 0.037 best fitness: 0.068
+* Generation #5 avg fitness: 0.044 best fitness: 0.068
+* Generation #6 avg fitness: 0.049 best fitness: 0.068
+* Generation #7 avg fitness: 0.054 best fitness: 0.081
+* Generation #8 avg fitness: 0.059 best fitness: 0.095
+* Generation #9 avg fitness: 0.065 best fitness: 0.108
+* Generation #10 avg fitness: 0.069 best fitness: 0.108
+* Generation #11 avg fitness: 0.074 best fitness: 0.108
+* Generation #12 avg fitness: 0.081 best fitness: 0.108
+* Generation #13 avg fitness: 0.088 best fitness: 0.135
+* Generation #14 avg fitness: 0.092 best fitness: 0.135
+* Generation #15 avg fitness: 0.098 best fitness: 0.149
+* Generation #16 avg fitness: 0.102 best fitness: 0.135
+* Generation #17 avg fitness: 0.108 best fitness: 0.149
+* Generation #18 avg fitness: 0.115 best fitness: 0.149
+* Generation #19 avg fitness: 0.123 best fitness: 0.149
+* Generation #20 avg fitness: 0.130 best fitness: 0.162
+best_seen: str=[ Ckz-eP.eWaerT/ts>>t+uAGd<q1/:q4{:T0HL6lV~eG7C7iH_rx7E~hjXL$qY`0J&!zy{Ulk ( ] f=0.162 fP=1.980 rouletteRange=(98.020, 100.000)
+stopping_reason=generation_limit generations=20 evaluation_attempts=2100 elapsed_seconds=0.103
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[stopping_reason=generation_limit generations=20]
+"genetik_demo_bounded" end time: Oct 21 19:36 UTC
+"genetik_demo_bounded" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/41 Testing: genetik_demo_zero_budget
+11/41 Test: genetik_demo_zero_budget
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_demo" "42" "0"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_demo_zero_budget" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+execution=serial_cpu threads_requested=1 threads_effective=1 effective_definition=task_ceiling_for_population caller_evaluates=1
+seed=42 population=100 crossover=0.5 mutation=0.9 selection=linear_rank objective=maximize max_generations=0 mode=serial
+best_seen: str=[ 7&Do;IAvdd<YUzME_zx,eM49"S8/Xo$pOzX.?[iM*@'AeGObaXIK7'm'k a{9 X)B=(lw{,kza ] f=0.068 fP=1.980 rouletteRange=(98.020, 100.000)
+stopping_reason=generation_limit generations=0 evaluation_attempts=100 elapsed_seconds=0.003
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[stopping_reason=generation_limit generations=0]
+"genetik_demo_zero_budget" end time: Oct 21 19:36 UTC
+"genetik_demo_zero_budget" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/41 Testing: genetik_demo_invalid_argument
+12/41 Test: genetik_demo_invalid_argument
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_demo" "invalid"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_demo_invalid_argument" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+execution=serial_cpu threads_requested=1 threads_effective=1 effective_definition=task_ceiling_for_population caller_evaluates=1
+arguments must be unsigned 32-bit integers
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_demo_invalid_argument" end time: Oct 21 19:36 UTC
+"genetik_demo_invalid_argument" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/41 Testing: genetik_downstream
+13/41 Test: genetik_downstream
+Command: "/usr/local/bin/cmake" "-DGENETIK_SOURCE=/home/runner/work/Genetik/Genetik" "-DDOWNSTREAM_BINARY=/home/runner/work/Genetik/Genetik/out/build/ci/tests/downstream" "-DCXX_COMPILER=/usr/bin/clang++-18" "-P" "/home/runner/work/Genetik/Genetik/tests/downstream.cmake"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_downstream" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+-- The CXX compiler identification is Clang 18.1.3
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/clang++-18 - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (0.4s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/runner/work/Genetik/Genetik/out/build/ci/tests/downstream
+[ 50%] Building CXX object CMakeFiles/consumer.dir/main.cpp.o
+[100%] Linking CXX executable consumer
+[100%] Built target consumer
+<end of output>
+Test time =   7.63 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_downstream" end time: Oct 21 19:36 UTC
+"genetik_downstream" time elapsed: 00:00:07
+----------------------------------------------------------
+
+14/41 Testing: genetik_expression_fp_policy
+14/41 Test: genetik_expression_fp_policy
+Command: "/usr/local/bin/cmake" "-DCXX_COMPILER=/usr/bin/clang++-18" "-DGENETIK_SOURCE=/home/runner/work/Genetik/Genetik" "-P" "/home/runner/work/Genetik/Genetik/tests/fp_policy.cmake"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_expression_fp_policy" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =  21.07 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_expression_fp_policy" end time: Oct 21 19:36 UTC
+"genetik_expression_fp_policy" time elapsed: 00:00:21
+----------------------------------------------------------
+
+15/41 Testing: genetik_prime_contracts
+15/41 Test: genetik_prime_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_prime_tests" "/home/runner/work/Genetik/Genetik/out/build/ci/tests/prime-contract-data"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_prime_contracts" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+prime data, scaling, QR, metrics, frozen selection and public search contracts passed
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_prime_contracts" end time: Oct 21 19:36 UTC
+"genetik_prime_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/41 Testing: genetik_prime_cli
+16/41 Test: genetik_prime_cli
+Command: "/usr/local/bin/cmake" "-DPRIME=/home/runner/work/Genetik/Genetik/out/build/ci/genetik_prime_regression" "-DSEARCH=/home/runner/work/Genetik/Genetik/out/build/ci/genetik_regression_search" "-DWORKSPACE=/home/runner/work/Genetik/Genetik/out/build/ci/tests/prime-cli" "-P" "/home/runner/work/Genetik/Genetik/tests/prime_cli.cmake"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_prime_cli" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+reference=bounded_sieve_10000 independent_check=trial_division anchors=OEIS_A000040 data_source=local_generation x0=n/1000.0 target=prime/10000.0 predicted_prime=10000.0*g(x0) fitting_indices=1..1000 extrapolation_indices=1001..1200
+reference=bounded_sieve_10000 independent_check=trial_division anchors=OEIS_A000040 data_source=/home/runner/work/Genetik/Genetik/out/build/ci/tests/prime-cli/first-1000.txt x0=n/1000.0 target=prime/10000.0 predicted_prime=10000.0*g(x0) fitting_indices=1..1000 extrapolation_indices=1001..1200
+<end of output>
+Test time =   0.20 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_prime_cli" end time: Oct 21 19:36 UTC
+"genetik_prime_cli" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/41 Testing: genetik_workspace_contracts
+17/41 Test: genetik_workspace_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_workspace_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_workspace_contracts" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+workspace ownership, growth, reset and allocation-failure accounting passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_workspace_contracts" end time: Oct 21 19:36 UTC
+"genetik_workspace_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/41 Testing: genetik_installed_package
+18/41 Test: genetik_installed_package
+Command: "/usr/bin/python3.12" "/home/runner/work/Genetik/Genetik/tests/package_integration.py" "--source" "/home/runner/work/Genetik/Genetik" "--workspace" "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture" "--cmake" "/usr/local/bin/cmake" "--cxx" "/usr/bin/clang++-18"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_installed_package" start time: Oct 21 19:36 UTC
+Output:
+----------------------------------------------------------
+ordinary + relocated multi-TU consumers, installed quickstarts, metadata/flags, versions/components, C++23 (when available), and source inclusion passed
+evidence=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture
+<end of output>
+Test time =  87.07 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_installed_package" end time: Oct 21 19:38 UTC
+"genetik_installed_package" time elapsed: 00:01:27
+----------------------------------------------------------
+
+19/41 Testing: genetik_scalar_quickstart
+19/41 Test: genetik_scalar_quickstart
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_scalar_quickstart"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_scalar_quickstart" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+threads_requested=1 threads_effective=1
+seed=42 x=0.236772 loss=0.000174979 generations=10 evaluations=176 stopping_reason=generation_limit
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_scalar_quickstart" end time: Oct 21 19:38 UTC
+"genetik_scalar_quickstart" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/41 Testing: genetik_symbolic_quickstart
+20/41 Test: genetik_symbolic_quickstart
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_symbolic_quickstart"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_symbolic_quickstart" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+threads_requested=1 threads_effective=1
+seed=42 binding=x0:first_input_column stop=exact_training_fit loss_calls=253 budget=256
+expression=(((x0 * x0) + 1.0) + (x0 - (2.0 - 2.0))) mse=0 nodes=11
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_symbolic_quickstart" end time: Oct 21 19:38 UTC
+"genetik_symbolic_quickstart" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/41 Testing: genetik_oop_contracts
+21/41 Test: genetik_oop_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_oop_consumer"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_oop_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+threads_requested=1 threads_effective=1
+permutation OOP contracts passed; generations=5 evaluations=59
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_oop_contracts" end time: Oct 21 19:38 UTC
+"genetik_oop_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/41 Testing: genetik_concurrency_contracts
+22/41 Test: genetik_concurrency_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_concurrency_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_concurrency_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+concurrent contracts passed
+<end of output>
+Test time =   0.26 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_concurrency_contracts" end time: Oct 21 19:38 UTC
+"genetik_concurrency_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/41 Testing: genetik_oop_parallel
+23/41 Test: genetik_oop_parallel
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_oop_consumer" "--threads" "3"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_oop_parallel" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+threads_requested=3 threads_effective=3
+parallel permutation contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_oop_parallel" end time: Oct 21 19:38 UTC
+"genetik_oop_parallel" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/41 Testing: genetik_character_parallel
+24/41 Test: genetik_character_parallel
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_demo" "42" "3" "--threads" "3"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_character_parallel" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+execution=parallel_cpu threads_requested=3 threads_effective=3 effective_definition=task_ceiling_for_population caller_evaluates=0
+seed=42 population=100 crossover=0.5 mutation=0.9 selection=linear_rank objective=maximize max_generations=3 mode=parallel
+* Generation #1 avg fitness: 0.016 best fitness: 0.054
+* Generation #2 avg fitness: 0.023 best fitness: 0.054
+* Generation #3 avg fitness: 0.029 best fitness: 0.054
+best_seen: str=[ 7&Do;IAvdd<YUzME_zx,eM49"S8/Xo$pOzX.?[iM*@'AeGObaXIK7'm'k a{9 X)B=(lw{,kza ] f=0.068 fP=1.980 rouletteRange=(98.020, 100.000)
+stopping_reason=generation_limit generations=3 evaluation_attempts=400 elapsed_seconds=0.025
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_character_parallel" end time: Oct 21 19:38 UTC
+"genetik_character_parallel" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/41 Testing: genetik_repository_hygiene
+25/41 Test: genetik_repository_hygiene
+Command: "/usr/bin/python3.12" "/home/runner/work/Genetik/Genetik/scripts/check_hygiene.py" "--source" "/home/runner/work/Genetik/Genetik" "--self-test"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_repository_hygiene" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+Repository hygiene passed
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_repository_hygiene" end time: Oct 21 19:38 UTC
+"genetik_repository_hygiene" time elapsed: 00:00:00
+----------------------------------------------------------
+
+26/41 Testing: genetik_typed_contracts
+26/41 Test: genetik_typed_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_typed_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_typed_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+typed value/expression contracts passed
+<end of output>
+Test time =   0.08 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_contracts" end time: Oct 21 19:38 UTC
+"genetik_typed_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+27/41 Testing: genetik_typed_overlap
+27/41 Test: genetik_typed_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_typed_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_typed_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+typed value/expression contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_overlap" end time: Oct 21 19:38 UTC
+"genetik_typed_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+28/41 Testing: genetik_typed_example
+28/41 Test: genetik_typed_example
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_typed_quickstart"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_typed_example" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+schema{x0:vector[3],x1:vector[2]} -> vector[2]
+(matvec(matrix[2,3](1.0,2.0,3.0,(-1.0),0.0,4.0),x0) + x1)
+vector[2](14.0,8.0) arithmetic=12 temporary_coefficients=11
+A*B=matrix[2,2](1.0,8.0,(-6.0),8.0)
+transpose(A)=matrix[3,2](1.0,(-1.0),2.0,0.0,3.0,4.0)
+dot=scalar(9.0)
+11-operation allowance: resource limit, no value
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_example" end time: Oct 21 19:38 UTC
+"genetik_typed_example" time elapsed: 00:00:00
+----------------------------------------------------------
+
+29/41 Testing: genetik_typed_regression_contracts
+29/41 Test: genetik_typed_regression_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_typed_regression_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_typed_regression_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+typed loss contracts
+typed variation contracts
+typed fitting contracts
+typed publication contracts
+typed overlap contracts
+typed regression contracts passed
+<end of output>
+Test time =   0.81 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_regression_contracts" end time: Oct 21 19:38 UTC
+"genetik_typed_regression_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+30/41 Testing: genetik_typed_preparation_overlap
+30/41 Test: genetik_typed_preparation_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_typed_regression_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_typed_preparation_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+typed overlap contracts
+typed regression contracts passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_preparation_overlap" end time: Oct 21 19:38 UTC
+"genetik_typed_preparation_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+31/41 Testing: genetik_typed_search_quickstart
+31/41 Test: genetik_typed_search_quickstart
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_typed_search_quickstart" "--threads" "2"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_typed_search_quickstart" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+threads_requested=2 stop=exact_training_fit loss_calls=11
+schema{x0:vector[2]} output=vector[2] expression=(x0 * (scalar(2.0) + scalar(0.0))) mse=0
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_search_quickstart" end time: Oct 21 19:38 UTC
+"genetik_typed_search_quickstart" time elapsed: 00:00:00
+----------------------------------------------------------
+
+32/41 Testing: genetik_typed_regression_cli
+32/41 Test: genetik_typed_regression_cli
+Command: "/usr/local/bin/cmake" "-DSEARCH=/home/runner/work/Genetik/Genetik/out/build/ci/genetik_typed_regression" "-DWORKSPACE=/home/runner/work/Genetik/Genetik/out/build/ci/tests/typed-cli" "-P" "/home/runner/work/Genetik/Genetik/tests/typed_cli.cmake"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_typed_regression_cli" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+threads must be 1..256
+<end of output>
+Test time =   0.35 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_typed_regression_cli" end time: Oct 21 19:38 UTC
+"genetik_typed_regression_cli" time elapsed: 00:00:00
+----------------------------------------------------------
+
+33/41 Testing: genetik_scientific_contracts
+33/41 Test: genetik_scientific_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_scientific_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_scientific_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+scientific contracts passed
+<end of output>
+Test time =   0.19 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_scientific_contracts" end time: Oct 21 19:38 UTC
+"genetik_scientific_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+34/41 Testing: genetik_parsing_contracts
+34/41 Test: genetik_parsing_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_parsing_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_parsing_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+parsing contracts passed
+<end of output>
+Test time =   0.17 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_parsing_contracts" end time: Oct 21 19:38 UTC
+"genetik_parsing_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+35/41 Testing: genetik_parsing_overlap
+35/41 Test: genetik_parsing_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_parsing_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_parsing_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+parsing contracts passed
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_parsing_overlap" end time: Oct 21 19:38 UTC
+"genetik_parsing_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+36/41 Testing: genetik_parsing_quickstart
+36/41 Test: genetik_parsing_quickstart
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_parsing_quickstart"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_parsing_quickstart" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+(exp(((-1.0) * x0)) + powi(x0,2))
+schema{x0:matrix[2,3],x1:vector[3],x2:vector[2]} -> (matvec(x0,x1) + x2) = vector[2](14.0,8.0)
+matrix[2,3](1.0,2.0,3.0,(-1.0),0.0,4.0)
+rejected: expression byte 1: signs are supported only on numeric literals
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_parsing_quickstart" end time: Oct 21 19:38 UTC
+"genetik_parsing_quickstart" time elapsed: 00:00:00
+----------------------------------------------------------
+
+37/41 Testing: genetik_expression_file
+37/41 Test: genetik_expression_file
+Command: "/usr/local/bin/cmake" "-DEVALUATE=/home/runner/work/Genetik/Genetik/out/build/ci/genetik_regression_evaluate" "-DWORKSPACE=/home/runner/work/Genetik/Genetik/out/build/ci/tests/expression-file" "-P" "/home/runner/work/Genetik/Genetik/tests/expression_file.cmake"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_expression_file" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_expression_file" end time: Oct 21 19:38 UTC
+"genetik_expression_file" time elapsed: 00:00:00
+----------------------------------------------------------
+
+38/41 Testing: genetik_template_contracts
+38/41 Test: genetik_template_contracts
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_template_tests"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_template_contracts" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+weighted_constant=2.5999999940395355 full_model_mse=1.6000000000000001 loss_calls=71
+scalar template contracts passed
+<end of output>
+Test time =   0.31 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_template_contracts" end time: Oct 21 19:38 UTC
+"genetik_template_contracts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+39/41 Testing: genetik_template_overlap
+39/41 Test: genetik_template_overlap
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik_template_tests" "--overlap"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_template_overlap" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+scalar template contracts passed
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_template_overlap" end time: Oct 21 19:38 UTC
+"genetik_template_overlap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+40/41 Testing: genetik_templates_quickstart
+40/41 Test: genetik_templates_quickstart
+Command: "/home/runner/work/Genetik/Genetik/out/build/ci/genetik_templates_quickstart" "--threads" "2"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_templates_quickstart" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+x0=v x1=T allowed={1}
+supplied=((x1 * x1) + 1.0)
+model=(((-1.0) * ((x1 * x1) + 1.0)) * x0)
+rejected: forbidden substitution variable
+threads_requested=2 threads_effective=2 stop=exact_training_fit loss_calls=20
+evolved=(((x1 + 1.0) - x1) + x1)
+complete=(((-1.0) * (((x1 + 1.0) - x1) + x1)) * x0)
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_templates_quickstart" end time: Oct 21 19:38 UTC
+"genetik_templates_quickstart" time elapsed: 00:00:00
+----------------------------------------------------------
+
+41/41 Testing: genetik_template_campaign_smoke
+41/41 Test: genetik_template_campaign_smoke
+Command: "/usr/local/bin/cmake" "-DCAMPAIGN=/home/runner/work/Genetik/Genetik/out/build/ci/genetik_scalar_template_campaign" "-DWORKSPACE=/home/runner/work/Genetik/Genetik/out/build/ci/tests/template-campaign" "-P" "/home/runner/work/Genetik/Genetik/tests/template_cli.cmake"
+Directory: /home/runner/work/Genetik/Genetik/out/build/ci/tests
+"genetik_template_campaign_smoke" start time: Oct 21 19:38 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.09 sec
+----------------------------------------------------------
+Test Passed.
+"genetik_template_campaign_smoke" end time: Oct 21 19:38 UTC
+"genetik_template_campaign_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 21 19:38 UTC

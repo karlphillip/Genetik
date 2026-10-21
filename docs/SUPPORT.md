@@ -205,3 +205,20 @@ Phase 6A scalar templates have additional local qualification recorded in
 [SCALAR_TEMPLATE_QUALIFICATION.md](SCALAR_TEMPLATE_QUALIFICATION.md). This does not
 extend hosted qualification to the combined parser/template branch. Existing Linux
 hosted evidence and unqualified-platform limitations above retain their original scope.
+
+## Executed Phase 5/6A hosted qualification
+
+The parser/template implementation passed at
+`c9080e2a0d1d3a00f10319379375284d6dd2bd28` in workflow
+[39662713630](https://github.com/karlphillip/Genetik/actions/runs/39662713630).
+[PARSER_TEMPLATES_HOSTED_QUALIFICATION.md](PARSER_TEMPLATES_HOSTED_QUALIFICATION.md)
+records GCC13 x64 Release/exact CMake3.16.0, Clang18 x64 Debug ASan+UBSan with
+libstdc++14 headers/runtime, and native GCC13 ARM64 Release plus separate Debug
+TSan. Each ran41 portable tests; each of seven named TSan cases ran three times.
+No qualification repair or numerical/instrumentation change was required.
+
+This supersedes local-only/pending Phase 5/6A statements above for that precise
+implementation candidate. The report commit itself receives a final complete matrix;
+its exact tested SHA and links are recorded in the ignored completion record.
+Clang's GNU headers/runtime do not qualify libc++; Windows/MSVC and macOS/AppleClang
+also remain unqualified. Published version/assets and historical evidence stay fixed.

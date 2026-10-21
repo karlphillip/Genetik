@@ -123,6 +123,7 @@ public:
 #undef GENETIK_ADD_WORK
         mergeWorker(local);
         if(overflow)throw std::overflow_error("parallel training accounting exceeded uint64 range");
+        validateMergedObjectiveWork();
     }
     RegressionMetrics measure(const Expression& expression, bool fitting = false) {
         return measure(expression,fitting ? TrainingLossKind::FittingBaseline:TrainingLossKind::Ordinary);
@@ -157,7 +158,8 @@ protected:
         if(typeid(*this)!=typeid(TrainingObjective))throw std::invalid_argument("derived objective must override cloneForParallel");
         return std::make_shared<TrainingObjective>(problem_,maximum_);
     }
-    virtual void mergeWorker(const TrainingObjective&) {}
+    virtual void mergeWorker(const TrainingObjective&) noexcept {}
+    virtual void validateMergedObjectiveWork() {}
     // Narrow trusted compute seam: count observations without exposing fitness/genome state.
     std::uint64_t& rowAttemptsCounter() noexcept {return work_.rowAttempts;}
     virtual RegressionMetrics compute(const Expression& expression) {

@@ -8,8 +8,8 @@
 #include <new>
 #include <cstdlib>
 
-namespace fault {thread_local bool next=false;}
-void* operator new(std::size_t n){if(fault::next){fault::next=false;throw std::bad_alloc();}if(auto p=std::malloc(n?n:1))return p;throw std::bad_alloc();}
+namespace fault {thread_local bool next=false;thread_local long after=-1;}
+void* operator new(std::size_t n){if(fault::after==0){fault::after=-1;throw std::bad_alloc();}if(fault::after>0)--fault::after;if(fault::next){fault::next=false;throw std::bad_alloc();}if(auto p=std::malloc(n?n:1))return p;throw std::bad_alloc();}
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__((noinline))
 #endif
@@ -74,6 +74,12 @@ static void lossAndIdentity() {
     RandomContext rng(4);P pop({b},rng,ObjectiveDirection::Minimize);const auto before=snapshot(pop);
     check(cause(failure([&]{pop.publishGeneration({a});})).find("problem changed")!=std::string::npos && snapshot(pop)==before,"problem identity retained at publication");
 }
+class LegacyMergeProbe final:public TrainingObjective {
+public:
+    using TrainingObjective::TrainingObjective;
+    bool preserved() {return noexcept(TrainingObjective::mergeWorker(*this));}
+protected:void mergeWorker(const TrainingObjective&) noexcept override {}
+};
 static void validationAndResources() {
     rejects<std::invalid_argument>([]{RegressionProblem empty({},{});});
     rejects<std::invalid_argument>([]{RegressionProblem empty({}, {}, {});});
@@ -98,7 +104,8 @@ static void validationAndResources() {
     check(under.loss==Fitness::valid(1) && !under.channels[0].rawMSE,"raw underflow is a diagnostic limitation");
     auto bad=D::create(1,{value(tiny)});check(bad->measureObservations(Expression::constant(1,1)).status==O::LossArithmeticFailure,"normalized loss failure separate");
     auto lost=D::create(1,{{std::nullopt,{{{0},0}},huge,1}});check(lost->measureObservations(Expression::constant(tiny,1)).status==O::LossArithmeticFailure,"normalization cannot silently zero a nonzero residual");
-    auto p=anchored();auto e=parseExpression("x0*x0+1",1);auto baseline=p->assess(e);
+    auto p=anchored();check(LegacyMergeProbe(p).preserved(),"legacy noexcept merge hook preserved");
+    auto e=parseExpression("x0*x0+1",1);auto baseline=p->assess(e);
     for(int kind=0;kind<5;++kind) {
         auto config=ObservationEvaluationLimits{};
         if(kind==0)config.maxObservations=9;
@@ -125,6 +132,18 @@ static void validationAndResources() {
     }
     check(allocationCause,"operational allocation cause retained by type");
     check(charged.work().lossAttempts==1 && charged.work().rowAttempts==0 && charged.work().invalidLosses==0,"throwing objective attempt charged before allocation");
+    bool failedAfterProgress=false;
+    for(long allocation=0;allocation<18;++allocation) {
+        DerivativeTrainingObjective probe(p,4);fault::after=allocation;
+        try{(void)probe.measure(e);fault::after=-1;}
+        catch(const std::exception&) {
+            fault::after=-1;
+            check(probe.work().lossAttempts==1 && probe.work().invalidLosses==0 && probe.work().rowAttempts==probe.observationWork().observations,"partial operational work merged before propagation");
+            if(probe.observationWork().partialEvaluations && probe.observationWork().primalOperations)failedAfterProgress=true;
+        }
+    }
+    check(failedAfterProgress,"allocation failure after observation progress exercised");
+
 
     const auto before=e.toString();fault::next=true;rejects<std::bad_alloc>([&]{(void)p->assess(e);});check(e.toString()==before,"operational allocation failure leaves expression owned and unchanged");
 }

@@ -235,13 +235,18 @@ protected:
         if(typeid(*this)!=typeid(DerivativeTrainingObjective))throw std::invalid_argument("derived observation objective needs its own worker factory");
         return std::make_shared<DerivativeTrainingObjective>(observations_,maximum());
     }
-    void mergeWorker(const TrainingObjective& source) override {
-        bool overflow=false;mergeObservationWork(supplemental_,dynamic_cast<const DerivativeTrainingObjective&>(source).supplemental_,overflow);
-        if(overflow)throw std::overflow_error("parallel observation work counter exhausted");
+    void mergeWorker(const TrainingObjective& source) noexcept override {
+        const auto* child=dynamic_cast<const DerivativeTrainingObjective*>(&source);
+        if(!child){workerTypeMismatch_=true;return;}
+        mergeObservationWork(supplemental_,child->supplemental_,accountingOverflow_);
+    }
+    void validateMergedObjectiveWork() override {
+        if(workerTypeMismatch_)throw std::invalid_argument("observation worker factory returned a different objective type");
+        if(accountingOverflow_)throw std::overflow_error("observation work counter exhausted");
     }
     RegressionMetrics compute(const Expression& e) override {
         ObservationWork delta;bool merged=false;
-        auto merge=[&]{merged=true;bool overflow=false;mergeObservationWork(supplemental_,delta,overflow);if(overflow)throw std::overflow_error("observation work counter exhausted");};
+        auto merge=[&]{merged=true;mergeObservationWork(supplemental_,delta,accountingOverflow_);validateMergedObjectiveWork();};
         try {
             auto m=observations_->evaluate(e,observations_->evaluationLimits(),false,delta,&rowAttemptsCounter());merge();
             if(m.status==ObservationStatus::ResourceLimit)throw ObservationResourceExhausted(m);
@@ -251,6 +256,7 @@ protected:
 private:
     const std::shared_ptr<const DerivativeRegressionProblem> observations_;
     ObservationWork supplemental_;
+    bool accountingOverflow_=false,workerTypeMismatch_=false;
 };
 struct DerivativeRegressionResult {SymbolicRegressionResult search;ObservationWork observationWork;};
 inline DerivativeRegressionResult derivativeRegression(std::shared_ptr<const DerivativeRegressionProblem> problem,

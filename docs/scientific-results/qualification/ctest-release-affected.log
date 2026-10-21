@@ -1,0 +1,9 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/release
+    Start 19: genetik_installed_package
+1/2 Test #19: genetik_installed_package ........   Passed  150.67 sec
+    Start 34: genetik_scientific_contracts
+2/2 Test #34: genetik_scientific_contracts .....   Passed    0.01 sec
+
+100% tests passed out of 2
+
+Total Test time (real) = 150.69 sec

@@ -1,0 +1,15 @@
+execution=serial_cpu threads_requested=1 threads_effective=1 effective_definition=task_ceiling_for_population caller_evaluates=1
+population=128 generation_limit=2000 training_loss_limit=10000 outer_request_limit=10000 operators=add,sub,mul,exp operator_selection=uniform_over_structurally_feasible_entries selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3 full_probability=.5 grow_probability=.65 variation_proposal_limit=8 constants_discrete={-2,-1,0,1,2} continuous_probability=0 continuous_interval=[-8,8) training_threshold=9.9999999999999992e-25 fitting=0 fit_every=1 exponents=2,3
+nodes_limit=15 depth_limit=5 absolute_constant_limit=8 constant_source=discrete{-2,-1,0,1,2}
+file_byte_limit=16777216 line_byte_limit=16384 file_row_limit=50000 column_limit=64 header_name_byte_limit=128 number_byte_limit=256
+training_file=tests/fixtures/scientific/decay-training.csv training_rows=33 dimensions=1 target_column=y target_file_column=2 seed=2
+x0=x training_file_column=1
+search_start
+raw_initial_mse=0.034070204407340328 refined_initial_mse=0.034070204407340328 training_mse=0 discovery_stage=offspring discovery_generation=1 attempted_generations=1 published_generations=1 candidate_requests=256 training_loss_attempts=256 unused_allowance=9744 row_attempts=8447 invalid_training_losses=1 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=0 variation_fallbacks=0 mutation_proposals=34 crossover_proposals=55 mutation_changes=31 crossover_changes=88 ordinary_loss_attempts=256 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.0043168169999999997 stop=training_loss_threshold
+nodes=7 depth=4 expression=exp(((0.0 - x0) * exp(0.0)))
+dataset=training max_abs_error=0 recovery=1 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+selection_finalized evaluation_files=2
+evaluation_file=tests/fixtures/scientific/decay-interior.csv target_column=y target_file_column=2 mse=0 max_abs_error=0 recovery=1 postsearch_evaluation_loss_calls=1 reporting_loss_rows=32 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+evaluation_x0=x file_column=1
+evaluation_file=tests/fixtures/scientific/decay-exterior.csv target_column=y target_file_column=2 mse=0 max_abs_error=0 recovery=1 postsearch_evaluation_loss_calls=1 reporting_loss_rows=8 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0
+evaluation_x0=x file_column=1

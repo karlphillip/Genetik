@@ -1,0 +1,1453 @@
+[
+  {
+    "case": "decay",
+    "seed": 0,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "33",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "32",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "8",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0",
+      "refined_initial_mse": "0",
+      "training_mse": "0",
+      "discovery_stage": "initialization",
+      "discovery_generation": "0",
+      "attempted_generations": "0",
+      "published_generations": "0",
+      "candidate_requests": "128",
+      "training_loss_attempts": "128",
+      "unused_allowance": "9872",
+      "row_attempts": "4192",
+      "invalid_training_losses": "1",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "0",
+      "variation_fallbacks": "0",
+      "mutation_proposals": "0",
+      "crossover_proposals": "0",
+      "mutation_changes": "0",
+      "crossover_changes": "0",
+      "ordinary_loss_attempts": "128",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.0013919399999999999",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "4",
+    "depth": "3",
+    "expression": "exp(((-1.0) * x0))",
+    "parameters": {
+      "constant_values": "-1,",
+      "constant_count": "1",
+      "full_valid_expression_work_per_prediction": "2"
+    }
+  },
+  {
+    "case": "decay",
+    "seed": 1,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "33",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "32",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "8",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.085614902811980143"
+      },
+      {
+        "loss_attempts": "256",
+        "generation": "1",
+        "mse": "0"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.085614902811980143",
+      "refined_initial_mse": "0.085614902811980143",
+      "training_mse": "0",
+      "discovery_stage": "offspring",
+      "discovery_generation": "1",
+      "attempted_generations": "1",
+      "published_generations": "1",
+      "candidate_requests": "256",
+      "training_loss_attempts": "256",
+      "unused_allowance": "9744",
+      "row_attempts": "8431",
+      "invalid_training_losses": "1",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "0",
+      "variation_fallbacks": "0",
+      "mutation_proposals": "42",
+      "crossover_proposals": "60",
+      "mutation_changes": "38",
+      "crossover_changes": "104",
+      "ordinary_loss_attempts": "256",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.0026494769999999999",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "4",
+    "depth": "3",
+    "expression": "exp((x0 * (-1.0)))",
+    "parameters": {
+      "constant_values": "-1,",
+      "constant_count": "1",
+      "full_valid_expression_work_per_prediction": "2"
+    }
+  },
+  {
+    "case": "decay",
+    "seed": 2,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "33",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "32",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "8",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.034070204407340328"
+      },
+      {
+        "loss_attempts": "256",
+        "generation": "1",
+        "mse": "0"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.034070204407340328",
+      "refined_initial_mse": "0.034070204407340328",
+      "training_mse": "0",
+      "discovery_stage": "offspring",
+      "discovery_generation": "1",
+      "attempted_generations": "1",
+      "published_generations": "1",
+      "candidate_requests": "256",
+      "training_loss_attempts": "256",
+      "unused_allowance": "9744",
+      "row_attempts": "8447",
+      "invalid_training_losses": "1",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "0",
+      "variation_fallbacks": "0",
+      "mutation_proposals": "34",
+      "crossover_proposals": "55",
+      "mutation_changes": "31",
+      "crossover_changes": "88",
+      "ordinary_loss_attempts": "256",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.0026036840000000002",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "7",
+    "depth": "4",
+    "expression": "exp(((0.0 - x0) * exp(0.0)))",
+    "parameters": {
+      "constant_values": "0,0,",
+      "constant_count": "2",
+      "full_valid_expression_work_per_prediction": "4"
+    }
+  },
+  {
+    "case": "decay",
+    "seed": 3,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "33",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "32",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "8",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0",
+      "refined_initial_mse": "0",
+      "training_mse": "0",
+      "discovery_stage": "initialization",
+      "discovery_generation": "0",
+      "attempted_generations": "0",
+      "published_generations": "0",
+      "candidate_requests": "128",
+      "training_loss_attempts": "128",
+      "unused_allowance": "9872",
+      "row_attempts": "4203",
+      "invalid_training_losses": "2",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "0",
+      "variation_fallbacks": "0",
+      "mutation_proposals": "0",
+      "crossover_proposals": "0",
+      "mutation_changes": "0",
+      "crossover_changes": "0",
+      "ordinary_loss_attempts": "128",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.0010063299999999999",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "4",
+    "depth": "3",
+    "expression": "exp((0.0 - x0))",
+    "parameters": {
+      "constant_values": "0,",
+      "constant_count": "1",
+      "full_valid_expression_work_per_prediction": "2"
+    }
+  },
+  {
+    "case": "decay",
+    "seed": 42,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "33",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "32",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "8",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.085614902811980143"
+      },
+      {
+        "loss_attempts": "256",
+        "generation": "1",
+        "mse": "0.020165580086493318"
+      },
+      {
+        "loss_attempts": "384",
+        "generation": "2",
+        "mse": "0"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.085614902811980143",
+      "refined_initial_mse": "0.085614902811980143",
+      "training_mse": "0",
+      "discovery_stage": "offspring",
+      "discovery_generation": "2",
+      "attempted_generations": "2",
+      "published_generations": "2",
+      "candidate_requests": "384",
+      "training_loss_attempts": "384",
+      "unused_allowance": "9616",
+      "row_attempts": "12672",
+      "invalid_training_losses": "0",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "1",
+      "variation_fallbacks": "0",
+      "mutation_proposals": "90",
+      "crossover_proposals": "109",
+      "mutation_changes": "85",
+      "crossover_changes": "184",
+      "ordinary_loss_attempts": "384",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.003832804",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "8",
+    "depth": "4",
+    "expression": "exp(((x0 - x0) - (1.0 * x0)))",
+    "parameters": {
+      "constant_values": "1,",
+      "constant_count": "1",
+      "full_valid_expression_work_per_prediction": "4"
+    }
+  },
+  {
+    "case": "oscillation",
+    "seed": 0,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "33",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "32",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "16",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.44349786595002727"
+      },
+      {
+        "loss_attempts": "384",
+        "generation": "2",
+        "mse": "0.44349786595002727"
+      },
+      {
+        "loss_attempts": "2176",
+        "generation": "16",
+        "mse": "0.3973423524790225"
+      },
+      {
+        "loss_attempts": "3200",
+        "generation": "24",
+        "mse": "0.24273786385286758"
+      },
+      {
+        "loss_attempts": "3328",
+        "generation": "25",
+        "mse": "0.18320099906206178"
+      },
+      {
+        "loss_attempts": "3584",
+        "generation": "27",
+        "mse": "7.071979191742662e-33"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.44349786595002727",
+      "refined_initial_mse": "0.44349786595002727",
+      "training_mse": "7.071979191742662e-33",
+      "discovery_stage": "offspring",
+      "discovery_generation": "27",
+      "attempted_generations": "27",
+      "published_generations": "27",
+      "candidate_requests": "3584",
+      "training_loss_attempts": "3584",
+      "unused_allowance": "6416",
+      "row_attempts": "118272",
+      "invalid_training_losses": "0",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "608",
+      "variation_fallbacks": "2",
+      "mutation_proposals": "1211",
+      "crossover_proposals": "2082",
+      "mutation_changes": "1048",
+      "crossover_changes": "2788",
+      "ordinary_loss_attempts": "3584",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.038972826000000002",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "12",
+    "depth": "5",
+    "expression": "(sin((sin(0.0) + (1.0 * x0))) + cos((x0 + x0)))",
+    "parameters": {
+      "constant_values": "0,1,",
+      "constant_count": "2",
+      "full_valid_expression_work_per_prediction": "7"
+    }
+  },
+  {
+    "case": "oscillation",
+    "seed": 1,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "1.0732917348442226",
+        "recovery": "0",
+        "reporting_prediction_rows": "33",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "1.0776272202511765",
+        "recovery": "0",
+        "reporting_prediction_rows": "32",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "1.080817908270433",
+        "recovery": "0",
+        "reporting_prediction_rows": "16",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.313997446509448"
+      },
+      {
+        "loss_attempts": "512",
+        "generation": "3",
+        "mse": "0.30879433446390503"
+      },
+      {
+        "loss_attempts": "1280",
+        "generation": "9",
+        "mse": "0.30879433446390503"
+      },
+      {
+        "loss_attempts": "7168",
+        "generation": "55",
+        "mse": "0.14900367938249551"
+      },
+      {
+        "loss_attempts": "8960",
+        "generation": "69",
+        "mse": "0.14816829414366453"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.313997446509448",
+      "refined_initial_mse": "0.313997446509448",
+      "training_mse": "0.14816829414366453",
+      "discovery_stage": "offspring",
+      "discovery_generation": "69",
+      "attempted_generations": "77",
+      "published_generations": "77",
+      "candidate_requests": "9984",
+      "training_loss_attempts": "9984",
+      "unused_allowance": "16",
+      "row_attempts": "329472",
+      "invalid_training_losses": "0",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "3348",
+      "variation_fallbacks": "46",
+      "mutation_proposals": "3761",
+      "crossover_proposals": "7306",
+      "mutation_changes": "3109",
+      "crossover_changes": "7126",
+      "ordinary_loss_attempts": "9984",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.100497087",
+      "stop": "evaluation_budget"
+    },
+    "nodes": "9",
+    "depth": "5",
+    "expression": "sin(((sin(1.0) + sin(x0)) + sin(x0)))",
+    "parameters": {
+      "constant_values": "1,",
+      "constant_count": "1",
+      "full_valid_expression_work_per_prediction": "6"
+    }
+  },
+  {
+    "case": "oscillation",
+    "seed": 2,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "33",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "32",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "16",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.44349786595002727"
+      },
+      {
+        "loss_attempts": "256",
+        "generation": "1",
+        "mse": "0.44349786595002727"
+      },
+      {
+        "loss_attempts": "1152",
+        "generation": "8",
+        "mse": "0.39734235247902239"
+      },
+      {
+        "loss_attempts": "1280",
+        "generation": "9",
+        "mse": "0.313997446509448"
+      },
+      {
+        "loss_attempts": "1536",
+        "generation": "11",
+        "mse": "0.24273786385286758"
+      },
+      {
+        "loss_attempts": "3456",
+        "generation": "26",
+        "mse": "0.16667494560801205"
+      },
+      {
+        "loss_attempts": "4480",
+        "generation": "34",
+        "mse": "0.16667494560801205"
+      },
+      {
+        "loss_attempts": "6272",
+        "generation": "48",
+        "mse": "0.10541481380487269"
+      },
+      {
+        "loss_attempts": "7040",
+        "generation": "54",
+        "mse": "0.10503754590173739"
+      },
+      {
+        "loss_attempts": "8320",
+        "generation": "64",
+        "mse": "0.0064159209768888592"
+      },
+      {
+        "loss_attempts": "8704",
+        "generation": "67",
+        "mse": "7.071979191742662e-33"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.44349786595002727",
+      "refined_initial_mse": "0.44349786595002727",
+      "training_mse": "7.071979191742662e-33",
+      "discovery_stage": "offspring",
+      "discovery_generation": "67",
+      "attempted_generations": "67",
+      "published_generations": "67",
+      "candidate_requests": "8704",
+      "training_loss_attempts": "8704",
+      "unused_allowance": "1296",
+      "row_attempts": "287232",
+      "invalid_training_losses": "0",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "3012",
+      "variation_fallbacks": "47",
+      "mutation_proposals": "3313",
+      "crossover_proposals": "6433",
+      "mutation_changes": "2722",
+      "crossover_changes": "6126",
+      "ordinary_loss_attempts": "8704",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.089337211",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "7",
+    "depth": "4",
+    "expression": "(sin(x0) + cos((x0 + x0)))",
+    "parameters": {
+      "constant_count": "0",
+      "full_valid_expression_work_per_prediction": "4"
+    }
+  },
+  {
+    "case": "oscillation",
+    "seed": 3,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "33",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "32",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "16",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.47750510656789269"
+      },
+      {
+        "loss_attempts": "256",
+        "generation": "1",
+        "mse": "0.45106968660736002"
+      },
+      {
+        "loss_attempts": "384",
+        "generation": "2",
+        "mse": "0.44349786595002727"
+      },
+      {
+        "loss_attempts": "640",
+        "generation": "4",
+        "mse": "0.313997446509448"
+      },
+      {
+        "loss_attempts": "2816",
+        "generation": "21",
+        "mse": "0.30879433446390503"
+      },
+      {
+        "loss_attempts": "4352",
+        "generation": "33",
+        "mse": "0.10541481380487269"
+      },
+      {
+        "loss_attempts": "4864",
+        "generation": "37",
+        "mse": "0.017565281941705937"
+      },
+      {
+        "loss_attempts": "5120",
+        "generation": "39",
+        "mse": "7.071979191742662e-33"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.47750510656789269",
+      "refined_initial_mse": "0.47750510656789269",
+      "training_mse": "7.071979191742662e-33",
+      "discovery_stage": "offspring",
+      "discovery_generation": "39",
+      "attempted_generations": "39",
+      "published_generations": "39",
+      "candidate_requests": "5120",
+      "training_loss_attempts": "5120",
+      "unused_allowance": "4880",
+      "row_attempts": "168960",
+      "invalid_training_losses": "0",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "1107",
+      "variation_fallbacks": "11",
+      "mutation_proposals": "1800",
+      "crossover_proposals": "3195",
+      "mutation_changes": "1535",
+      "crossover_changes": "3876",
+      "ordinary_loss_attempts": "5120",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.048621236999999998",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "7",
+    "depth": "4",
+    "expression": "(sin(x0) + cos((x0 + x0)))",
+    "parameters": {
+      "constant_count": "0",
+      "full_valid_expression_work_per_prediction": "4"
+    }
+  },
+  {
+    "case": "oscillation",
+    "seed": 42,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "33",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "32",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "2.2204460492503131e-16",
+        "recovery": "1",
+        "reporting_prediction_rows": "16",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.44349786595002727"
+      },
+      {
+        "loss_attempts": "384",
+        "generation": "2",
+        "mse": "7.071979191742662e-33"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.44349786595002727",
+      "refined_initial_mse": "0.44349786595002727",
+      "training_mse": "7.071979191742662e-33",
+      "discovery_stage": "offspring",
+      "discovery_generation": "2",
+      "attempted_generations": "2",
+      "published_generations": "2",
+      "candidate_requests": "384",
+      "training_loss_attempts": "384",
+      "unused_allowance": "9616",
+      "row_attempts": "12672",
+      "invalid_training_losses": "0",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "4",
+      "variation_fallbacks": "0",
+      "mutation_proposals": "85",
+      "crossover_proposals": "119",
+      "mutation_changes": "78",
+      "crossover_changes": "208",
+      "ordinary_loss_attempts": "384",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.0027512719999999999",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "7",
+    "depth": "4",
+    "expression": "(cos((x0 + x0)) + sin(x0))",
+    "parameters": {
+      "constant_count": "0",
+      "full_valid_expression_work_per_prediction": "4"
+    }
+  },
+  {
+    "case": "root",
+    "seed": 0,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "25",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "24",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "16",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.5023319804618871"
+      },
+      {
+        "loss_attempts": "256",
+        "generation": "1",
+        "mse": "0.19148946390745317"
+      },
+      {
+        "loss_attempts": "3968",
+        "generation": "30",
+        "mse": "0.015456804912527178"
+      },
+      {
+        "loss_attempts": "4480",
+        "generation": "34",
+        "mse": "0"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.5023319804618871",
+      "refined_initial_mse": "0.5023319804618871",
+      "training_mse": "0",
+      "discovery_stage": "offspring",
+      "discovery_generation": "34",
+      "attempted_generations": "34",
+      "published_generations": "34",
+      "candidate_requests": "4480",
+      "training_loss_attempts": "4480",
+      "unused_allowance": "5520",
+      "row_attempts": "103420",
+      "invalid_training_losses": "371",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "85",
+      "variation_fallbacks": "0",
+      "mutation_proposals": "1530",
+      "crossover_proposals": "2005",
+      "mutation_changes": "1365",
+      "crossover_changes": "2908",
+      "ordinary_loss_attempts": "4480",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.027163428999999999",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "5",
+    "depth": "4",
+    "expression": "sqrt((powi(x0,2) + 1.0))",
+    "parameters": {
+      "constant_values": "1,",
+      "constant_count": "1",
+      "exponent_values": "2,",
+      "full_valid_expression_work_per_prediction": "3"
+    }
+  },
+  {
+    "case": "root",
+    "seed": 1,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "25",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "24",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "16",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.5023319804618871"
+      },
+      {
+        "loss_attempts": "1280",
+        "generation": "9",
+        "mse": "0.19148946390745317"
+      },
+      {
+        "loss_attempts": "1408",
+        "generation": "10",
+        "mse": "0.19148946390745317"
+      },
+      {
+        "loss_attempts": "3968",
+        "generation": "30",
+        "mse": "0"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.5023319804618871",
+      "refined_initial_mse": "0.5023319804618871",
+      "training_mse": "0",
+      "discovery_stage": "offspring",
+      "discovery_generation": "30",
+      "attempted_generations": "30",
+      "published_generations": "30",
+      "candidate_requests": "3968",
+      "training_loss_attempts": "3968",
+      "unused_allowance": "6032",
+      "row_attempts": "93264",
+      "invalid_training_losses": "257",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "54",
+      "variation_fallbacks": "0",
+      "mutation_proposals": "1305",
+      "crossover_proposals": "1729",
+      "mutation_changes": "1199",
+      "crossover_changes": "2500",
+      "ordinary_loss_attempts": "3968",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.023149724",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "5",
+    "depth": "4",
+    "expression": "sqrt((powi(x0,2) - (-1.0)))",
+    "parameters": {
+      "constant_values": "-1,",
+      "constant_count": "1",
+      "exponent_values": "2,",
+      "full_valid_expression_work_per_prediction": "3"
+    }
+  },
+  {
+    "case": "root",
+    "seed": 2,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "25",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "24",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "16",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.5023319804618871"
+      },
+      {
+        "loss_attempts": "256",
+        "generation": "1",
+        "mse": "0.19148946390745317"
+      },
+      {
+        "loss_attempts": "4096",
+        "generation": "31",
+        "mse": "0.17058305370708521"
+      },
+      {
+        "loss_attempts": "4352",
+        "generation": "33",
+        "mse": "0.079328295893597203"
+      },
+      {
+        "loss_attempts": "4992",
+        "generation": "38",
+        "mse": "0"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.5023319804618871",
+      "refined_initial_mse": "0.5023319804618871",
+      "training_mse": "0",
+      "discovery_stage": "offspring",
+      "discovery_generation": "38",
+      "attempted_generations": "38",
+      "published_generations": "38",
+      "candidate_requests": "4992",
+      "training_loss_attempts": "4992",
+      "unused_allowance": "5008",
+      "row_attempts": "115627",
+      "invalid_training_losses": "399",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "94",
+      "variation_fallbacks": "1",
+      "mutation_proposals": "1738",
+      "crossover_proposals": "2250",
+      "mutation_changes": "1567",
+      "crossover_changes": "3348",
+      "ordinary_loss_attempts": "4992",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.029978446999999998",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "5",
+    "depth": "4",
+    "expression": "sqrt((1.0 + powi(x0,2)))",
+    "parameters": {
+      "constant_values": "1,",
+      "constant_count": "1",
+      "exponent_values": "2,",
+      "full_valid_expression_work_per_prediction": "3"
+    }
+  },
+  {
+    "case": "root",
+    "seed": 3,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "25",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "24",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "16",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.079328295893597203"
+      },
+      {
+        "loss_attempts": "1408",
+        "generation": "10",
+        "mse": "0"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.079328295893597203",
+      "refined_initial_mse": "0.079328295893597203",
+      "training_mse": "0",
+      "discovery_stage": "offspring",
+      "discovery_generation": "10",
+      "attempted_generations": "10",
+      "published_generations": "10",
+      "candidate_requests": "1408",
+      "training_loss_attempts": "1408",
+      "unused_allowance": "8592",
+      "row_attempts": "31935",
+      "invalid_training_losses": "146",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "42",
+      "variation_fallbacks": "0",
+      "mutation_proposals": "447",
+      "crossover_proposals": "589",
+      "mutation_changes": "390",
+      "crossover_changes": "980",
+      "ordinary_loss_attempts": "1408",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.0092078560000000004",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "7",
+    "depth": "4",
+    "expression": "sqrt((powi(x0,2) - ((-2.0) - (-1.0))))",
+    "parameters": {
+      "constant_values": "-2,-1,",
+      "constant_count": "2",
+      "exponent_values": "2,",
+      "full_valid_expression_work_per_prediction": "4"
+    }
+  },
+  {
+    "case": "root",
+    "seed": 42,
+    "metrics": {
+      "training": {
+        "dataset": "training",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "25",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "interior": {
+        "dataset": "interior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "24",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      },
+      "exterior": {
+        "dataset": "exterior",
+        "max_abs_error": "0",
+        "recovery": "1",
+        "reporting_prediction_rows": "16",
+        "invalid_predictions_total": "0",
+        "invalid_errors_total": "0"
+      }
+    },
+    "trace": [
+      {
+        "loss_attempts": "128",
+        "generation": "0",
+        "mse": "0.19148946390745317"
+      },
+      {
+        "loss_attempts": "512",
+        "generation": "3",
+        "mse": "0.19148946390745317"
+      },
+      {
+        "loss_attempts": "1152",
+        "generation": "8",
+        "mse": "0.14972798494105391"
+      },
+      {
+        "loss_attempts": "3200",
+        "generation": "24",
+        "mse": "0.079328295893597203"
+      },
+      {
+        "loss_attempts": "3712",
+        "generation": "28",
+        "mse": "0.079328295893597203"
+      },
+      {
+        "loss_attempts": "3840",
+        "generation": "29",
+        "mse": "0"
+      }
+    ],
+    "search": {
+      "raw_initial_mse": "0.19148946390745317",
+      "refined_initial_mse": "0.19148946390745317",
+      "training_mse": "0",
+      "discovery_stage": "offspring",
+      "discovery_generation": "29",
+      "attempted_generations": "29",
+      "published_generations": "29",
+      "candidate_requests": "3840",
+      "training_loss_attempts": "3840",
+      "unused_allowance": "6160",
+      "row_attempts": "85283",
+      "invalid_training_losses": "466",
+      "fits": "0",
+      "fitting_loss_attempts": "0",
+      "fit_proposals": "0",
+      "accepted": "0",
+      "invalid_probes": "0",
+      "infeasible": "0",
+      "duplicates": "0",
+      "variation_rejections": "1038",
+      "variation_fallbacks": "32",
+      "mutation_proposals": "1350",
+      "crossover_proposals": "2591",
+      "mutation_changes": "1157",
+      "crossover_changes": "2760",
+      "ordinary_loss_attempts": "3840",
+      "fitting_baselines": "0",
+      "fitting_probes": "0",
+      "fitting_improved": "0",
+      "schedule_skips": "0",
+      "unpublished_losses": "0",
+      "unpublished_rows": "0",
+      "seconds": "0.02783615",
+      "stop": "training_loss_threshold"
+    },
+    "nodes": "6",
+    "depth": "4",
+    "expression": "sqrt((1.0 + (x0 * x0)))",
+    "parameters": {
+      "constant_values": "1,",
+      "constant_count": "1",
+      "full_valid_expression_work_per_prediction": "3"
+    }
+  }
+]

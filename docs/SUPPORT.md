@@ -163,3 +163,17 @@ cases (33 with the qualified captured snapshot), separate TSan selection4. Hoste
 jobs are updated but have not executed for this feature. Earlier Linux hosted
 qualification does not automatically qualify these new APIs; other platforms remain
 as documented above. No dependency, ABI promise or release/version policy changed.
+
+## Phase 4 scientific scalar operators
+
+Sin/Cos/Exp/Sqrt/Powi are locally qualified on the native Jetson/GCC13 configuration
+in [SCIENTIFIC_QUALIFICATION.md](SCIENTIFIC_QUALIFICATION.md). The current suite has
+33 portable tests (34 with the qualified captured snapshot), with five separate
+TSan selections. Release/Debug/ASan+UBSan/exact-CMake3.16 and repeated TSan execution
+passed; see retained source/log identities. New math references qualify selected
+runtime results within documented tolerances, not cross-platform bitwise libm
+behavior. Optional reference regeneration uses development-only mpmath1.2.1;
+consumers and ordinary builds do not require it. Hosted jobs have not executed for
+the accumulated cleanup/typed/scientific features. Earlier hosted Linux support
+remains evidence for its recorded revisions; libc++ and other untested environments
+remain unqualified. Published v0.1.0 assets/version policy are unchanged.

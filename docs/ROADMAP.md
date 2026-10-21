@@ -19,8 +19,12 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    coefficients and finite search budgets. Five operation-discovery seeds and the
    separate eight-coefficient fixture are in TYPED_DISCOVERY_RESULTS.md and
    TYPED_FITTING_RESULTS.md. Qualification in TYPED_REGRESSION_QUALIFICATION.md.
-4. **Scientific functions** — individually specified domains, numerical semantics,
-   export, structural typing and portable deterministic tests for each addition.
+4. **Scientific functions** — implemented locally: opt-in scalar Sin/Cos/Exp/Sqrt
+   and unary Powi exponent metadata0..8, shared checked kernels, scalar/typed
+   grammars, bounded discrete exponent variation, fitting exclusion and faithful
+   export. See SCIENTIFIC_OPERATORS.md, SCIENTIFIC_RESULTS.md and
+   SCIENTIFIC_QUALIFICATION.md. Existing defaults/replays remain unchanged;
+   hosted qualification of accumulated feature work remains pending.
 5. **Text input and adapters** — validated public input/model adapters, with parsing
    and data formats outside the generic evolutionary core.
 6. **Constraints and templates** — explicit bounded constraints/templates with
@@ -31,7 +35,7 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    criteria, not a single open-ended rewrite.
 
 Cleanup introduced no mathematical API; Phase 2 added typed evaluation and Phase 3
-now adds typed search/refinement. Phases 4–8 remain future work. Further delivery/platform qualification,
+now adds typed search/refinement. Phases 5–8 remain future work. Further delivery/platform qualification,
 profiling, checkpoint/resume, cache policy and GPU work remain separately scoped.
 The remaining sections preserve the historical engineering and experiment record;
 old “next”/“unreleased” statements describe those checkpoints, not current status.

@@ -1,0 +1,71 @@
+case=oscillation data=tests/fixtures/scientific nodes_limit=15 depth_limit=5
+population=128 generation_limit=2000 training_loss_limit=10000 outer_request_limit=10000 operators=add,sub,mul,sin,cos operator_selection=uniform_over_structurally_feasible_entries selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3 full_probability=.5 grow_probability=.65 variation_proposal_limit=8 constants_discrete={-2,-1,0,1,2} continuous_probability=0 continuous_interval=[-8,8) training_threshold=9.9999999999999992e-25 fitting=0 fit_every=1 exponents=2,3
+execution=serial_cpu threads_requested=1 threads_effective=1 effective_definition=task_ceiling_for_population caller_evaluates=1
+training_mean_baseline=0.11300426809994532 mse=0.90823300790911576
+seed=0
+raw_initial_mse=0.44349786595002727 refined_initial_mse=0.44349786595002727 training_mse=7.071979191742662e-33 discovery_stage=offspring discovery_generation=27 attempted_generations=27 published_generations=27 candidate_requests=3584 training_loss_attempts=3584 unused_allowance=6416 row_attempts=118272 invalid_training_losses=0 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=608 variation_fallbacks=2 mutation_proposals=1211 crossover_proposals=2082 mutation_changes=1048 crossover_changes=2788 ordinary_loss_attempts=3584 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.038972826000000002 stop=training_loss_threshold
+nodes=12 depth=5 expression=(sin((sin(0.0) + (1.0 * x0))) + cos((x0 + x0)))
+constant_values=0,1, constant_count=2 exponent_values= full_valid_expression_work_per_prediction=7
+dataset=training max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+dataset=interior max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+dataset=exterior max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=16 invalid_predictions_total=0 invalid_errors_total=0
+trace loss_attempts=128 generation=0 mse=0.44349786595002727
+trace loss_attempts=384 generation=2 mse=0.44349786595002727
+trace loss_attempts=2176 generation=16 mse=0.3973423524790225
+trace loss_attempts=3200 generation=24 mse=0.24273786385286758
+trace loss_attempts=3328 generation=25 mse=0.18320099906206178
+trace loss_attempts=3584 generation=27 mse=7.071979191742662e-33
+seed=1
+raw_initial_mse=0.313997446509448 refined_initial_mse=0.313997446509448 training_mse=0.14816829414366453 discovery_stage=offspring discovery_generation=69 attempted_generations=77 published_generations=77 candidate_requests=9984 training_loss_attempts=9984 unused_allowance=16 row_attempts=329472 invalid_training_losses=0 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=3348 variation_fallbacks=46 mutation_proposals=3761 crossover_proposals=7306 mutation_changes=3109 crossover_changes=7126 ordinary_loss_attempts=9984 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.100497087 stop=evaluation_budget
+nodes=9 depth=5 expression=sin(((sin(1.0) + sin(x0)) + sin(x0)))
+constant_values=1, constant_count=1 exponent_values= full_valid_expression_work_per_prediction=6
+dataset=training max_abs_error=1.0732917348442226 recovery=0 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+dataset=interior max_abs_error=1.0776272202511765 recovery=0 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+dataset=exterior max_abs_error=1.080817908270433 recovery=0 reporting_prediction_rows=16 invalid_predictions_total=0 invalid_errors_total=0
+trace loss_attempts=128 generation=0 mse=0.313997446509448
+trace loss_attempts=512 generation=3 mse=0.30879433446390503
+trace loss_attempts=1280 generation=9 mse=0.30879433446390503
+trace loss_attempts=7168 generation=55 mse=0.14900367938249551
+trace loss_attempts=8960 generation=69 mse=0.14816829414366453
+seed=2
+raw_initial_mse=0.44349786595002727 refined_initial_mse=0.44349786595002727 training_mse=7.071979191742662e-33 discovery_stage=offspring discovery_generation=67 attempted_generations=67 published_generations=67 candidate_requests=8704 training_loss_attempts=8704 unused_allowance=1296 row_attempts=287232 invalid_training_losses=0 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=3012 variation_fallbacks=47 mutation_proposals=3313 crossover_proposals=6433 mutation_changes=2722 crossover_changes=6126 ordinary_loss_attempts=8704 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.089337211 stop=training_loss_threshold
+nodes=7 depth=4 expression=(sin(x0) + cos((x0 + x0)))
+constant_values= constant_count=0 exponent_values= full_valid_expression_work_per_prediction=4
+dataset=training max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+dataset=interior max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+dataset=exterior max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=16 invalid_predictions_total=0 invalid_errors_total=0
+trace loss_attempts=128 generation=0 mse=0.44349786595002727
+trace loss_attempts=256 generation=1 mse=0.44349786595002727
+trace loss_attempts=1152 generation=8 mse=0.39734235247902239
+trace loss_attempts=1280 generation=9 mse=0.313997446509448
+trace loss_attempts=1536 generation=11 mse=0.24273786385286758
+trace loss_attempts=3456 generation=26 mse=0.16667494560801205
+trace loss_attempts=4480 generation=34 mse=0.16667494560801205
+trace loss_attempts=6272 generation=48 mse=0.10541481380487269
+trace loss_attempts=7040 generation=54 mse=0.10503754590173739
+trace loss_attempts=8320 generation=64 mse=0.0064159209768888592
+trace loss_attempts=8704 generation=67 mse=7.071979191742662e-33
+seed=3
+raw_initial_mse=0.47750510656789269 refined_initial_mse=0.47750510656789269 training_mse=7.071979191742662e-33 discovery_stage=offspring discovery_generation=39 attempted_generations=39 published_generations=39 candidate_requests=5120 training_loss_attempts=5120 unused_allowance=4880 row_attempts=168960 invalid_training_losses=0 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=1107 variation_fallbacks=11 mutation_proposals=1800 crossover_proposals=3195 mutation_changes=1535 crossover_changes=3876 ordinary_loss_attempts=5120 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.048621236999999998 stop=training_loss_threshold
+nodes=7 depth=4 expression=(sin(x0) + cos((x0 + x0)))
+constant_values= constant_count=0 exponent_values= full_valid_expression_work_per_prediction=4
+dataset=training max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+dataset=interior max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+dataset=exterior max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=16 invalid_predictions_total=0 invalid_errors_total=0
+trace loss_attempts=128 generation=0 mse=0.47750510656789269
+trace loss_attempts=256 generation=1 mse=0.45106968660736002
+trace loss_attempts=384 generation=2 mse=0.44349786595002727
+trace loss_attempts=640 generation=4 mse=0.313997446509448
+trace loss_attempts=2816 generation=21 mse=0.30879433446390503
+trace loss_attempts=4352 generation=33 mse=0.10541481380487269
+trace loss_attempts=4864 generation=37 mse=0.017565281941705937
+trace loss_attempts=5120 generation=39 mse=7.071979191742662e-33
+seed=42
+raw_initial_mse=0.44349786595002727 refined_initial_mse=0.44349786595002727 training_mse=7.071979191742662e-33 discovery_stage=offspring discovery_generation=2 attempted_generations=2 published_generations=2 candidate_requests=384 training_loss_attempts=384 unused_allowance=9616 row_attempts=12672 invalid_training_losses=0 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=4 variation_fallbacks=0 mutation_proposals=85 crossover_proposals=119 mutation_changes=78 crossover_changes=208 ordinary_loss_attempts=384 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.0027512719999999999 stop=training_loss_threshold
+nodes=7 depth=4 expression=(cos((x0 + x0)) + sin(x0))
+constant_values= constant_count=0 exponent_values= full_valid_expression_work_per_prediction=4
+dataset=training max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+dataset=interior max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+dataset=exterior max_abs_error=2.2204460492503131e-16 recovery=1 reporting_prediction_rows=16 invalid_predictions_total=0 invalid_errors_total=0
+trace loss_attempts=128 generation=0 mse=0.44349786595002727
+trace loss_attempts=384 generation=2 mse=7.071979191742662e-33

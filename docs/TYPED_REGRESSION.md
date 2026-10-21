@@ -198,3 +198,18 @@ Operation recovery and supplied-structure coefficient recovery are separate evid
 [TYPED_DISCOVERY_RESULTS.md](TYPED_DISCOVERY_RESULTS.md),
 [TYPED_FITTING_RESULTS.md](TYPED_FITTING_RESULTS.md). No broader mathematical-equivalence
 claim follows solely from sample metrics.
+
+## Scientific scalar productions (Phase 4)
+
+TypedGrammar may opt into Sin, Cos, Exp, Sqrt and Powi; all require scalar
+operands/results. For example set `config.grammar.operators` to
+`{TypedExpressionKind::Multiply, TypedExpressionKind::MatVec,
+TypedExpressionKind::Exp, TypedExpressionKind::Powi}` and
+`config.grammar.exponents = {2,3}` on a TypedSymbolicRegressionConfig. The finite
+shape vocabulary must contain the operand/result shapes needed by those productions.
+A scalar exp result can scale matvec(A,x); there is no elementwise exponential.
+Complete-plan work and temporary bounds still apply. Each fitted coefficient remains
+independent; integer exponents are discrete metadata and never fit coordinates.
+The existing typed application keeps its declared operation-discovery fixture;
+custom scientific typed problems use these public controls. No typed file parser
+is added. See [SCIENTIFIC_OPERATORS.md](SCIENTIFIC_OPERATORS.md).

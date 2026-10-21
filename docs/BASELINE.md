@@ -990,3 +990,13 @@ with zero sample error in617 actual calls; this is separate from operation disco
 Qualification repairs prevent double-counting post-score copy failure and permit
 unused input shapes larger than operand scratch while excluding infeasible terminals.
 See TYPED_REGRESSION_QUALIFICATION.md for executed gates and retained evidence.
+
+## Phase 4 scientific scalar operators
+
+Additive Sin/Cos/Exp/Sqrt/Powi use shared checked kernels, scalar-only typed
+productions and discrete power metadata, with default grammars preserved. The
+scientific campaign and independent references are separate from all historical
+polynomial/multivariate/strict-arithmetic/prime reports. See SCIENTIFIC_OPERATORS.md,
+SCIENTIFIC_RESULTS.md and SCIENTIFIC_QUALIFICATION.md for public contracts, all15
+outcomes, qualified source identities and executed gates. No generic GA/publication,
+randomness, executor, coordinate optimizer or loss-admission policy was replaced.

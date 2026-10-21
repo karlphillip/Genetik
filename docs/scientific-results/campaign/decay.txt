@@ -1,0 +1,48 @@
+case=decay data=tests/fixtures/scientific nodes_limit=15 depth_limit=5
+population=128 generation_limit=2000 training_loss_limit=10000 outer_request_limit=10000 operators=add,sub,mul,exp operator_selection=uniform_over_structurally_feasible_entries selector=linear_rank elites=2 crossover=.9 mutation=.35 init_depth=4 mutation_depth=3 full_probability=.5 grow_probability=.65 variation_proposal_limit=8 constants_discrete={-2,-1,0,1,2} continuous_probability=0 continuous_interval=[-8,8) training_threshold=9.9999999999999992e-25 fitting=0 fit_every=1 exponents=2,3
+execution=serial_cpu threads_requested=1 threads_effective=1 effective_definition=task_ceiling_for_population caller_evaluates=1
+training_mean_baseline=0.25372290682112475 mse=0.072583188477104932
+seed=0
+raw_initial_mse=0 refined_initial_mse=0 training_mse=0 discovery_stage=initialization discovery_generation=0 attempted_generations=0 published_generations=0 candidate_requests=128 training_loss_attempts=128 unused_allowance=9872 row_attempts=4192 invalid_training_losses=1 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=0 variation_fallbacks=0 mutation_proposals=0 crossover_proposals=0 mutation_changes=0 crossover_changes=0 ordinary_loss_attempts=128 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.0013919399999999999 stop=training_loss_threshold
+nodes=4 depth=3 expression=exp(((-1.0) * x0))
+constant_values=-1, constant_count=1 exponent_values= full_valid_expression_work_per_prediction=2
+dataset=training max_abs_error=0 recovery=1 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+dataset=interior max_abs_error=0 recovery=1 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+dataset=exterior max_abs_error=0 recovery=1 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0
+trace loss_attempts=128 generation=0 mse=0
+seed=1
+raw_initial_mse=0.085614902811980143 refined_initial_mse=0.085614902811980143 training_mse=0 discovery_stage=offspring discovery_generation=1 attempted_generations=1 published_generations=1 candidate_requests=256 training_loss_attempts=256 unused_allowance=9744 row_attempts=8431 invalid_training_losses=1 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=0 variation_fallbacks=0 mutation_proposals=42 crossover_proposals=60 mutation_changes=38 crossover_changes=104 ordinary_loss_attempts=256 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.0026494769999999999 stop=training_loss_threshold
+nodes=4 depth=3 expression=exp((x0 * (-1.0)))
+constant_values=-1, constant_count=1 exponent_values= full_valid_expression_work_per_prediction=2
+dataset=training max_abs_error=0 recovery=1 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+dataset=interior max_abs_error=0 recovery=1 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+dataset=exterior max_abs_error=0 recovery=1 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0
+trace loss_attempts=128 generation=0 mse=0.085614902811980143
+trace loss_attempts=256 generation=1 mse=0
+seed=2
+raw_initial_mse=0.034070204407340328 refined_initial_mse=0.034070204407340328 training_mse=0 discovery_stage=offspring discovery_generation=1 attempted_generations=1 published_generations=1 candidate_requests=256 training_loss_attempts=256 unused_allowance=9744 row_attempts=8447 invalid_training_losses=1 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=0 variation_fallbacks=0 mutation_proposals=34 crossover_proposals=55 mutation_changes=31 crossover_changes=88 ordinary_loss_attempts=256 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.0026036840000000002 stop=training_loss_threshold
+nodes=7 depth=4 expression=exp(((0.0 - x0) * exp(0.0)))
+constant_values=0,0, constant_count=2 exponent_values= full_valid_expression_work_per_prediction=4
+dataset=training max_abs_error=0 recovery=1 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+dataset=interior max_abs_error=0 recovery=1 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+dataset=exterior max_abs_error=0 recovery=1 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0
+trace loss_attempts=128 generation=0 mse=0.034070204407340328
+trace loss_attempts=256 generation=1 mse=0
+seed=3
+raw_initial_mse=0 refined_initial_mse=0 training_mse=0 discovery_stage=initialization discovery_generation=0 attempted_generations=0 published_generations=0 candidate_requests=128 training_loss_attempts=128 unused_allowance=9872 row_attempts=4203 invalid_training_losses=2 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=0 variation_fallbacks=0 mutation_proposals=0 crossover_proposals=0 mutation_changes=0 crossover_changes=0 ordinary_loss_attempts=128 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.0010063299999999999 stop=training_loss_threshold
+nodes=4 depth=3 expression=exp((0.0 - x0))
+constant_values=0, constant_count=1 exponent_values= full_valid_expression_work_per_prediction=2
+dataset=training max_abs_error=0 recovery=1 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+dataset=interior max_abs_error=0 recovery=1 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+dataset=exterior max_abs_error=0 recovery=1 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0
+trace loss_attempts=128 generation=0 mse=0
+seed=42
+raw_initial_mse=0.085614902811980143 refined_initial_mse=0.085614902811980143 training_mse=0 discovery_stage=offspring discovery_generation=2 attempted_generations=2 published_generations=2 candidate_requests=384 training_loss_attempts=384 unused_allowance=9616 row_attempts=12672 invalid_training_losses=0 fits=0 fitting_loss_attempts=0 fit_proposals=0 accepted=0 invalid_probes=0 infeasible=0 duplicates=0 variation_rejections=1 variation_fallbacks=0 mutation_proposals=90 crossover_proposals=109 mutation_changes=85 crossover_changes=184 ordinary_loss_attempts=384 fitting_baselines=0 fitting_probes=0 fitting_improved=0 schedule_skips=0 unpublished_losses=0 unpublished_rows=0 seconds=0.003832804 stop=training_loss_threshold
+nodes=8 depth=4 expression=exp(((x0 - x0) - (1.0 * x0)))
+constant_values=1, constant_count=1 exponent_values= full_valid_expression_work_per_prediction=4
+dataset=training max_abs_error=0 recovery=1 reporting_prediction_rows=33 invalid_predictions_total=0 invalid_errors_total=0
+dataset=interior max_abs_error=0 recovery=1 reporting_prediction_rows=32 invalid_predictions_total=0 invalid_errors_total=0
+dataset=exterior max_abs_error=0 recovery=1 reporting_prediction_rows=8 invalid_predictions_total=0 invalid_errors_total=0
+trace loss_attempts=128 generation=0 mse=0.085614902811980143
+trace loss_attempts=256 generation=1 mse=0.020165580086493318
+trace loss_attempts=384 generation=2 mse=0

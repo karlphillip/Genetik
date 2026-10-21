@@ -74,3 +74,8 @@ The obsolete original main sketch remains `docs/history/main.cpp`, not an API ex
 Typed discovery and fixed-structure fitting use explicit `--output out/runs/NEW_DIR`;
 retained small Phase 3 reports/data live in docs/typed-regression-results/. No old
 evidence path or output convention changed. See TYPED_REGRESSION.md.
+
+The scientific campaign lives in apps/campaigns/scientific_campaign.cpp. Its
+required --data and new --output directory keep generation/reporting under caller
+control; recommended output is out/runs/. Independent fixtures live under
+tests/fixtures/scientific; accepted new reports under docs/scientific-results/.

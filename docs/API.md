@@ -103,6 +103,11 @@ infers shapes, exports faithful text and evaluates with explicit arithmetic/payl
 limits. See [TYPED_EXPRESSIONS.md](TYPED_EXPRESSIONS.md) and the compiled installed
 [typed quickstart](../examples/quickstarts/typed.cpp). The generic GA and existing
 scalar symbolic-regression APIs do not include or require typed mathematical headers.
-Typed datasets, aggregate losses, evolution and fitting are future work.
+Typed datasets, aggregate loss, shape-preserving evolution and coefficient fitting
+are implemented; see the linked typed-regression guide below.
 
 Typed mathematical search: [TYPED_REGRESSION.md](TYPED_REGRESSION.md), owned aggregate datasets, shape-aware evolution and optional coefficient fitting.
+
+Scientific scalar functions in either API: [SCIENTIFIC_OPERATORS.md](SCIENTIFIC_OPERATORS.md).
+Sin/Cos/Exp/Sqrt and discrete Powi are opt-in, scalar-only productions that may
+compose with aggregate scaling; default grammars are unchanged.

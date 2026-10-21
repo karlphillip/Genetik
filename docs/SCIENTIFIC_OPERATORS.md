@@ -101,3 +101,9 @@ ULPs around the retained reference, with a denormal floor, for qualified runtime
 calls. Large trigonometric inputs are exact binary64 values, not rounded decimal
 phases. These are selected independent checks, not a universal libm accuracy bound.
 See scientific-results/PROTOCOL.md for the frozen campaign and data identities.
+
+Existing enum values are preserved, with new kinds appended. Consumer code using
+exhaustive enum switches must handle the added kinds when updating. Existing
+ExpressionLimits aggregate initializers keep their meanings; the added final work
+field defaults to SIZE_MAX. There is no stable binary ABI promise for this header-only
+pre-1.0 development interface. The published v0.1.0 tag/assets remain unchanged.

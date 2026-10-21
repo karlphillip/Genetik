@@ -1,0 +1,18 @@
+decay seed=0 mse=0 expression=exp(((-1.0) * x0))
+decay seed=1 mse=0 expression=exp((x0 * (-1.0)))
+decay seed=2 mse=0 expression=exp(((0.0 - x0) * exp(0.0)))
+decay seed=3 mse=0 expression=exp((0.0 - x0))
+decay seed=42 mse=0 expression=exp(((x0 - x0) - (1.0 * x0)))
+representative decay seed=0
+oscillation seed=0 mse=7.071979191742662e-33 expression=(sin((sin(0.0) + (1.0 * x0))) + cos((x0 + x0)))
+oscillation seed=1 mse=0.14816829414366453 expression=sin(((sin(1.0) + sin(x0)) + sin(x0)))
+oscillation seed=2 mse=7.071979191742662e-33 expression=(sin(x0) + cos((x0 + x0)))
+oscillation seed=3 mse=7.071979191742662e-33 expression=(sin(x0) + cos((x0 + x0)))
+oscillation seed=42 mse=7.071979191742662e-33 expression=(cos((x0 + x0)) + sin(x0))
+representative oscillation seed=42
+root seed=0 mse=0 expression=sqrt((powi(x0,2) + 1.0))
+root seed=1 mse=0 expression=sqrt((powi(x0,2) - (-1.0)))
+root seed=2 mse=0 expression=sqrt((1.0 + powi(x0,2)))
+root seed=3 mse=0 expression=sqrt((powi(x0,2) - ((-2.0) - (-1.0))))
+root seed=42 mse=0 expression=sqrt((1.0 + (x0 * x0)))
+representative root seed=2

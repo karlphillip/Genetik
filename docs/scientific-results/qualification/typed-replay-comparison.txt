@@ -1,0 +1,2 @@
+discovery all common result fields, exact scores, metrics, work and histories match; out/runs/typed-discovery-qualified/results.txt
+fitting all common result fields, exact scores, metrics, work and histories match; out/runs/typed-fitting-qualified/results.txt

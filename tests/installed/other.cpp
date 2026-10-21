@@ -23,8 +23,10 @@ bool typed_check() {
     const auto root=TypedExpression::unary(TypedExpressionKind::Sqrt,TypedExpression::power(scalar,2));
     if(root.evaluate(std::array{TypedValue::scalar(-3)}).value().scalarValue()!=3)return false;
     const std::array schema{TypedShape::matrix(2,3),TypedShape::vector(3)};
-    const auto f=TypedExpression::binary(TypedExpressionKind::MatVec,
+    const auto product=TypedExpression::binary(TypedExpressionKind::MatVec,
         TypedExpression::variable(0,schema),TypedExpression::variable(1,schema));
+    const auto f=TypedExpression::binary(TypedExpressionKind::Multiply,
+        TypedExpression::unary(TypedExpressionKind::Exp,TypedExpression::constant(TypedValue::scalar(0),schema)),product);
     const std::array bindings{TypedValue::matrix(2,3,std::array{1.,2.,3.,-1.,0.,4.}),
                               TypedValue::vector(std::array{2.,-1.,3.})};
     const auto value=f.evaluate(bindings);
@@ -34,5 +36,5 @@ bool typed_check() {
     RandomContext random(8,{2});auto result=typedSymbolicRegression(p,config,random);
     if(!result.best || p->measure(result.best->expression()).loss!=result.best->evaluation())return false;
     return value.valid() && value.value().at(0)==9 && value.value().at(1)==10 &&
-        value.arithmeticOperations()==10 && f.schemaString()=="schema{x0:matrix[2,3],x1:vector[3]}";
+        value.arithmeticOperations()==13 && f.schemaString()=="schema{x0:matrix[2,3],x1:vector[3]}";
 }

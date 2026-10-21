@@ -1,0 +1,16 @@
+Predeclared decay seed2 file expression, fitness and every deterministic printResult field match.
+decay 0 exp(((-1.0) * x0)) 0 0 0 0
+decay 1 exp((x0 * (-1.0))) 0 0 0 0
+decay 2 exp(((0.0 - x0) * exp(0.0))) 0 0 0 0
+decay 3 exp((0.0 - x0)) 0 0 0 0
+decay 42 exp(((x0 - x0) - (1.0 * x0))) 0 0 0 0
+oscillation 0 (sin((sin(0.0) + (1.0 * x0))) + cos((x0 + x0))) 7.071979191742662e-33 2.2204460492503131e-16 2.2204460492503131e-16 2.2204460492503131e-16
+oscillation 1 sin(((sin(1.0) + sin(x0)) + sin(x0))) 0.14816829414366453 1.0732917348442226 1.0776272202511765 1.080817908270433
+oscillation 2 (sin(x0) + cos((x0 + x0))) 7.071979191742662e-33 2.2204460492503131e-16 2.2204460492503131e-16 2.2204460492503131e-16
+oscillation 3 (sin(x0) + cos((x0 + x0))) 7.071979191742662e-33 2.2204460492503131e-16 2.2204460492503131e-16 2.2204460492503131e-16
+oscillation 42 (cos((x0 + x0)) + sin(x0)) 7.071979191742662e-33 2.2204460492503131e-16 2.2204460492503131e-16 2.2204460492503131e-16
+root 0 sqrt((powi(x0,2) + 1.0)) 0 0 0 0
+root 1 sqrt((powi(x0,2) - (-1.0))) 0 0 0 0
+root 2 sqrt((1.0 + powi(x0,2))) 0 0 0 0
+root 3 sqrt((powi(x0,2) - ((-2.0) - (-1.0)))) 0 0 0 0
+root 42 sqrt((1.0 + (x0 * x0))) 0 0 0 0

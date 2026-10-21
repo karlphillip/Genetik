@@ -1,0 +1,10 @@
+Preserved ancestor b444bdd
+Preserved ancestor e906cbd
+Preserved ancestor d63f06c
+Preserved ancestor 5770b1c
+Preserved ancestor ef0f580f838d430b0c5d6d18ce5bbfb277329f4b
+Unchanged frozen artifacts 127
+main f9299ea2cb5136d06e2de8f68bb83ecf460ca369
+v0.1.0^{} f9299ea2cb5136d06e2de8f68bb83ecf460ca369
+Genetik-0.1.0-source.tar.gz 7f632489e45abb97385d98c9c2f703664386e358b22f3f73baa8a72c99b6b992
+SHA256SUMS a12d576eedc38b80af11f118d82d086a992f3d8930b89bda743b91191663353b

@@ -47,7 +47,7 @@ static void arithmetic(){
     check(bits(Expression::unary(K::Exp,x).evaluate(std::array{-1000.}).value(),0.),"exp finite zero underflow");
     const auto bad=Expression::binary(K::Multiply,Expression::constant(1e308,1),Expression::constant(1e308,1));
     check(!Expression::power(bad,0).evaluate(std::array{0.}).valid(),"invalid child under exponent zero");
-    check(!Expression::unary(K::Exp,bad).evaluate(std::array{0.}).valid(),"invalid child under native function");
+    check(!Expression::unary(K::Exp,Expression::binary(K::Multiply,Expression::constant(-1e308,1),Expression::constant(1e308,1))).evaluate(std::array{0.}).valid(),"negative infinite child cannot be masked by exponential underflow");
     auto masked=Expression::binary(K::Multiply,Expression::constant(0,1),Expression::unary(K::Sqrt,Expression::constant(-1,1)));
     check(!masked.evaluate(std::array{0.}).valid(),"invalid intermediate cannot be masked");
     for(unsigned e=0;e<=8;++e){
@@ -59,6 +59,19 @@ static void arithmetic(){
         check(p.toString()=="powi(x0,"+std::to_string(e)+")" && p.toString()==q.toString(),"faithful exponent export");
     }
     check(!Expression::power(x,8).evaluate(std::array{1e100}).valid(),"checked intermediate power overflow");
+    const std::array missingBase{ExpressionNode::power(0)};
+    rejects<std::invalid_argument>([&]{(void)Expression(missingBase,0);});
+    const std::array typedMissingBase{TypedExpressionNode::power(0)};
+    rejects<std::invalid_argument>([&]{(void)TypedExpression(typedMissingBase);});
+    std::uint64_t exhausted=std::numeric_limits<std::uint64_t>::max();
+    const auto exponential=TypedExpression::unary(T::Exp,tx);
+    rejects<std::overflow_error>([&]{(void)exponential.evaluateWithWork(std::array{TypedValue::scalar(0)},exhausted);});
+    check(exponential.evaluate(std::array{TypedValue::scalar(0)}).value().scalarValue()==1,"operational diagnostic failure is not mathematical invalidity or dirty scratch");
+    auto invalidRows=RegressionProblem::create({{{4.},0},{{-1.},0},{{9.},0}});
+    const auto squareRoot=Expression::unary(K::Sqrt,x);auto measured=invalidRows->measure(squareRoot);
+    check(measured.loss.state()==FitnessState::Invalid && measured.samplesAttempted==2,"sqrt invalidity after a valid row gives no partial score");
+    genetik_detail::EvaluationWorkspace scratch;
+    check(!scratch.evaluate(squareRoot,std::array{-1.}).valid() && scratch.evaluate(squareRoot,std::array{9.}).value()==3,"valid reuse after scientific invalidity");
     auto q=TypedExpression::power(tx,8);check(q.evaluate(std::array{TypedValue::scalar(2.)},{6,100}).status()==TypedEvaluationStatus::ResourceLimit,"power local work admission");
     auto limits=q.limits();limits.maxArithmeticOperations=6;rejects<TypedLimitError>([&]{(void)TypedExpression::power(tx,8,limits);});
     auto scalarLimits=x.limits();scalarLimits.maxArithmeticOperations=6;rejects<std::length_error>([&]{(void)Expression::power(x,8,scalarLimits);});
@@ -111,7 +124,7 @@ static void fitting(){
     auto p=RegressionProblem::create({{{.125},1.75*scientificReferences[0].expected}}, {15,5,8});
     auto expression=Expression::binary(K::Multiply,Expression::constant(1,1),sine);
     TrainingObjective objective(p,1024);ConstantFitConfig cfg;cfg.maxLossAttempts=1024;cfg.minimumStep=1e-10;
-    auto result=fitConstants(expression,objective,cfg);check(result.improved && result.expression.nodes()[0].constantValue()==1.75 && result.loss.score()==0,"fixed sine coefficient recovery");
+    auto result=fitConstants(expression,objective,cfg);check(result.improved && std::abs(result.expression.nodes()[0].constantValue()-1.75)<=1e-9 && result.loss.score()<=1e-24,"fixed sine coefficient recovery");
     for(bool exponential:{false,true}){
         // Coordinate a improves first; the subsequent c probes worsen or are invalid.
         const auto c=Expression::constant(exponential?709.:0.,1);

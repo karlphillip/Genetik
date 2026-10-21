@@ -61,9 +61,11 @@ scalar expression candidates; public replacements invalidate fitness even if equ
 `TypedGrammar` declares enabled operators, finite admissible shapes, constant shapes,
 coefficient terminal choices, depth ceilings, operation probability and proposal cap.
 Default operators are add/subtract/scalar multiply/dot/matvec/matmul/transpose. Strict
-scalar Divide/Log can be enabled explicitly. Empty shapes resolves distinct ordered
+scalar Divide/Log and scientific Sin/Cos/Exp/Sqrt/Powi can be enabled explicitly.
+Empty shapes resolves distinct ordered
 schema/output/scalar shapes. Each input shape must occur in the vocabulary. Planner
-bounds are 16 shapes, 64 initial/mutation levels, nine distinct operator kinds and
+bounds are 16 shapes, 64 initial/mutation levels, fourteen distinct operator kinds
+(nine original kinds plus the five scientific additions) and
 4096 proposals. Constants sample each coefficient independently from declared doubles.
 
 The planner builds one least-node validated witness per shape and allowed depth,

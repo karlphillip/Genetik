@@ -89,3 +89,14 @@ and execution mode. Deterministic independent callbacks with nonbinding limits
 preserve completed results across tested worker counts; budget/failure/cancellation
 boundaries can change speculative work/RNG. No cross-libm or cross-stdlib identity
 is promised. See [fitness/API contracts](API.md) and [support](SUPPORT.md).
+
+## Additive one-site scalar templates (Phase 6A)
+
+Existing scalar, typed and generic OOP callers require no migration. Opt in with
+`ScalarTemplateRegression.hpp`; `ScalarTemplateProblem` retains original variable
+indices and binds a specific scaffold/data/preparation context. Its candidate stores
+the complete model, not an unresolved hole. Extract the evolving part with
+`problem->substitution(candidate.expression())`. `fitScalarTemplateConstants` also
+returns the complete accepted model/score; only the inserted constants are selected.
+The ordinary `symbolicRegression`, all-constant fitter, grammar defaults and execution
+controls retain their behavior. See [SCALAR_TEMPLATES.md](SCALAR_TEMPLATES.md).

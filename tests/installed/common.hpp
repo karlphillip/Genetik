@@ -8,3 +8,5 @@ static_assert(__cplusplus >= 202002L, "Genetik target must request C++20");
 bool symbolic_check();
 
 bool typed_check();
+
+#include <ScalarTemplateRegression.hpp>

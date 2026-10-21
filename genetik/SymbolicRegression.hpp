@@ -48,26 +48,12 @@ struct SymbolicRegressionResult {
     SearchStop stoppingReason = SearchStop::GenerationLimit;
 };
 
-// Only controls generation-boundary budgets/stopping; evolution/publication stays in the shared GA.
-inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const RegressionProblem> problem,
-                              const SymbolicRegressionConfig& config, RandomContext& random,
-                              std::shared_ptr<TrainingObjective> objective = {}) {
-    if (random.evaluationAttempts() != 0) throw std::invalid_argument("symbolic search requires a fresh run context");
-    if (config.fitEveryGenerations==0 || config.population == 0 || config.population > std::numeric_limits<unsigned int>::max() ||
-        config.elites >= config.population || !std::isfinite(config.crossoverRate) ||
-        !std::isfinite(config.mutationRate) || config.crossoverRate < 0 || config.crossoverRate > 1 ||
-        config.mutationRate < 0 || config.mutationRate > 1 ||
-        !std::isfinite(config.trainingLossThreshold) || config.trainingLossThreshold < 0)
-        throw std::invalid_argument("invalid symbolic search configuration");
-    if (!objective) objective = std::make_shared<TrainingObjective>(problem, config.maxTrainingLossAttempts,config.diagnostics);
-    if (objective->problem() != problem || objective->maximum() != config.maxTrainingLossAttempts || objective->diagnostics()!=config.diagnostics ||
-        objective->work() != TrainingWork{})
-        throw std::invalid_argument("symbolic search requires a fresh objective with matching problem and loss allowance");
-    if(random.execution().requested()>1 && (!objective->parallelEvaluationSafe() || config.diagnostics))
-        throw std::invalid_argument("parallel search requires independent objective factories and no detailed refinement diagnostics");
-    if(random.execution().requested()>1)(void)objective->forkParallel(random.execution()); // validate factory before initialization
-    auto preparation = std::make_shared<ConstantRefinement>(objective, config.fitting,config.fitEveryGenerations);
-    ExpressionVariation variation(problem, config.grammar, preparation);
+namespace genetik_detail {
+template<class Variation>
+inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const RegressionProblem> problem,
+        const SymbolicRegressionConfig& config,RandomContext& random,std::shared_ptr<TrainingObjective> objective,
+        std::shared_ptr<ConstantRefinement> preparation,Variation variation) {
+    (void)problem;
     SymbolicRegressionResult result;
     if (config.maxEvaluations < config.population || config.maxTrainingLossAttempts < config.population) {
         result.stoppingReason = SearchStop::EvaluationBudget; return result;
@@ -127,7 +113,7 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
     auto committedRows=population.generation() ? objective->work().rowAttempts:0;
     auto committedRequests=population.generation() ? random.evaluationAttempts():0;
     result.rawInitialBestMSE = preparation->rawInitialBest;
-    GeneticAlgorithm<P, ExpressionCandidate, ExpressionVariation> ga(config.crossoverRate, config.mutationRate,
+    GeneticAlgorithm<P, ExpressionCandidate, Variation> ga(config.crossoverRate, config.mutationRate,
                                                                     random, std::move(variation), config.elites);
     if (population.bestSeen()) {
         result.initialBestMSE = population.bestSeen()->fitness();
@@ -172,4 +158,28 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
     if(config.diagnostics)config.diagnostics->publicationSeconds=population.publicationSeconds();
     result.candidateEvaluations = random.evaluationAttempts(); result.variation = ga.variation().statistics();
     return result;
+}
+}
+
+// Ordinary configuration retains the original construction and random draw order.
+inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const RegressionProblem> problem,
+                              const SymbolicRegressionConfig& config, RandomContext& random,
+                              std::shared_ptr<TrainingObjective> objective = {}) {
+    if (random.evaluationAttempts() != 0) throw std::invalid_argument("symbolic search requires a fresh run context");
+    if (config.fitEveryGenerations==0 || config.population == 0 || config.population > std::numeric_limits<unsigned int>::max() ||
+        config.elites >= config.population || !std::isfinite(config.crossoverRate) ||
+        !std::isfinite(config.mutationRate) || config.crossoverRate < 0 || config.crossoverRate > 1 ||
+        config.mutationRate < 0 || config.mutationRate > 1 ||
+        !std::isfinite(config.trainingLossThreshold) || config.trainingLossThreshold < 0)
+        throw std::invalid_argument("invalid symbolic search configuration");
+    if (!objective) objective = std::make_shared<TrainingObjective>(problem, config.maxTrainingLossAttempts,config.diagnostics);
+    if (objective->problem() != problem || objective->maximum() != config.maxTrainingLossAttempts || objective->diagnostics()!=config.diagnostics ||
+        objective->work() != TrainingWork{})
+        throw std::invalid_argument("symbolic search requires a fresh objective with matching problem and loss allowance");
+    if(random.execution().requested()>1 && (!objective->parallelEvaluationSafe() || config.diagnostics))
+        throw std::invalid_argument("parallel search requires independent objective factories and no detailed refinement diagnostics");
+    if(random.execution().requested()>1)(void)objective->forkParallel(random.execution()); // validate factory before initialization
+    auto preparation = std::make_shared<ConstantRefinement>(objective, config.fitting,config.fitEveryGenerations);
+    ExpressionVariation variation(problem, config.grammar, preparation);
+    return genetik_detail::runSymbolicSearch(problem,config,random,objective,preparation,std::move(variation));
 }

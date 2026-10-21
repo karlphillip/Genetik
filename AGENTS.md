@@ -90,3 +90,10 @@
   errors, bad_alloc remains operational. See docs/EXPRESSION_PARSING.md. Include
   genetik_parsing_overlap in separate TSan gates. New file formula evaluation is
   synchronous and never implicitly starts evolution.
+
+- One-site scalar templates use an explicitly selected owned subtree occurrence,
+  full-schema restriction indices and full-model MSE/complexity. Only inserted
+  constants may fit; never divide observations by the scaffold. Keep contexts
+  immutable, complete destination limits checked and publication in the shared
+  driver/core. Preserve ordinary grammar RNG draws. See SCALAR_TEMPLATES.md;
+  include genetik_template_overlap in separate TSan gates.

@@ -12,6 +12,8 @@ protected:
 };
 int main() {
     if(parseExpression("powi(2,3)",0).evaluate({}).value()!=8)return 1;
+    const ScalarExpressionTemplate rootTemplate(Expression::constant(0,1),0,{3,2,8},{3,2,8});
+    if(rootTemplate.materialize(parseExpression("x0+1",1)).evaluate(std::array{2.}).value()!=3)return 1;
     RandomContext rng(7,{3});
     Population<Scalar> p(8,rng,ObjectiveDirection::Minimize);
     GeneticAlgorithm<decltype(p),Scalar> ga(.9f,.3f,rng);

@@ -101,20 +101,38 @@ public:
     }
 };
 
+// Optional immutable mathematical context. Implementations validate without editing;
+// explicit parallel opt-in covers validation only, not the preparation service.
+class RegressionCandidateContext {
+public:
+    virtual ~RegressionCandidateContext() = default;
+    virtual std::shared_ptr<const RegressionProblem> problem() const = 0;
+    virtual std::shared_ptr<RegressionPreparation> preparation() const = 0;
+    virtual void validate(const Expression&) const = 0;
+    virtual bool parallelEvaluationSafe() const noexcept {return false;}
+};
+
 class ExpressionCandidate : public EvaluatedCandidate {
 public:
     ExpressionCandidate(const Expression& expression, std::shared_ptr<const RegressionProblem> problem,
                         std::shared_ptr<RegressionPreparation> preparation = {})
         : problem_(requireProblem(std::move(problem))), expression_(problem_->checkedExpression(expression)),
           text_(expression_.toString()), preparation_(std::move(preparation)) {}
+    static ExpressionCandidate constrained(const Expression& expression,
+                          std::shared_ptr<const RegressionCandidateContext> context) {
+        if(!context)throw std::invalid_argument("candidate context is required");
+        ExpressionCandidate candidate(expression,context->problem(),context->preparation());
+        candidate.contextOwner_=std::move(context);candidate.contextOwner_->validate(candidate.expression_);
+        return candidate;
+    }
     ExpressionCandidate(const ExpressionCandidate&) = default;
     ExpressionCandidate(ExpressionCandidate&&) noexcept = default;
     ExpressionCandidate& operator=(ExpressionCandidate other) noexcept { swap(other); return *this; }
     void swap(ExpressionCandidate& other) noexcept {
-        swapEvaluation(other); problem_.swap(other.problem_); expression_.swap(other.expression_); text_.swap(other.text_); preparation_.swap(other.preparation_); parentPreparation_.swap(other.parentPreparation_); std::swap(context_,other.context_);
+        swapEvaluation(other); contextOwner_.swap(other.contextOwner_); problem_.swap(other.problem_); expression_.swap(other.expression_); text_.swap(other.text_); preparation_.swap(other.preparation_); parentPreparation_.swap(other.parentPreparation_); std::swap(context_,other.context_);
     }
     bool parallelEvaluationSafe() const noexcept override {
-        return typeid(*this)==typeid(ExpressionCandidate) && (!preparation_ || preparation_->parallelEvaluationSafe());
+        return typeid(*this)==typeid(ExpressionCandidate) && (!contextOwner_ || contextOwner_->parallelEvaluationSafe()) && (!preparation_ || preparation_->parallelEvaluationSafe());
     }
     void beginParallelEvaluation(ExecutionContext& execution) override {
         if(preparation_){
@@ -131,6 +149,7 @@ public:
     void replaceExpression(const Expression& expression) {
         if (!problem_) throw std::logic_error("moved-from expression candidate");
         auto ready = problem_->checkedExpression(expression);
+        if(contextOwner_)contextOwner_->validate(ready);
         auto text = ready.toString();
         expression_.swap(ready); text_.swap(text); invalidateFitness();
     }
@@ -145,7 +164,7 @@ public:
     const Expression& expression() const noexcept { return expression_; }
     const std::string& text() const noexcept { return text_; }
     std::shared_ptr<const RegressionProblem> problem() const noexcept { return problem_; }
-    std::shared_ptr<const void> problemIdentity() const noexcept final { return problem_; }
+    std::shared_ptr<const void> problemIdentity() const noexcept final { return contextOwner_ ? std::shared_ptr<const void>(contextOwner_):std::shared_ptr<const void>(problem_); }
     std::string stats() override { return text_; }
 protected:
     Fitness prepareEvaluation() override {
@@ -165,6 +184,7 @@ private:
         if (!problem) throw std::invalid_argument("regression problem is required");
         return problem;
     }
+    std::shared_ptr<const RegressionCandidateContext> contextOwner_;
     std::shared_ptr<const RegressionProblem> problem_;
     Expression expression_;
     std::string text_;

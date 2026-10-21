@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 PORTABLE = {
+    'genetik_template_contracts', 'genetik_template_overlap', 'genetik_templates_quickstart', 'genetik_template_campaign_smoke',
     'genetik_parsing_contracts', 'genetik_parsing_overlap', 'genetik_parsing_quickstart', 'genetik_expression_file',
     'genetik_scientific_contracts',
     'genetik_repository_hygiene', 'genetik_typed_regression_contracts', 'genetik_typed_preparation_overlap', 'genetik_typed_search_quickstart', 'genetik_typed_regression_cli', 'genetik_typed_contracts', 'genetik_typed_overlap', 'genetik_typed_example',
@@ -18,7 +19,7 @@ PORTABLE = {
     'genetik_scalar_quickstart', 'genetik_symbolic_quickstart', 'genetik_oop_contracts',
     'genetik_concurrency_contracts', 'genetik_oop_parallel', 'genetik_character_parallel',
 }
-TSAN = {'genetik_parsing_overlap', 'genetik_scientific_contracts', 'genetik_typed_preparation_overlap', 'genetik_concurrency_contracts', 'genetik_oop_parallel', 'genetik_typed_overlap'}
+TSAN = {'genetik_template_overlap', 'genetik_parsing_overlap', 'genetik_scientific_contracts', 'genetik_typed_preparation_overlap', 'genetik_concurrency_contracts', 'genetik_oop_parallel', 'genetik_typed_overlap'}
 
 
 def main():

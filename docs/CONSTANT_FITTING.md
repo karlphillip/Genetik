@@ -234,3 +234,14 @@ capability, lifetime and cancellation contract and
 
 Opt-in scientific scalar operators (Sin, Cos, Exp, Sqrt, Powi), domains,
 metadata, work units and examples are specified in [SCIENTIFIC_OPERATORS.md](SCIENTIFIC_OPERATORS.md).
+
+## Selected constants and scalar templates
+
+`fitSelectedConstants(expression, objective, orderedNodeIndices, config)` is additive:
+indices must be strictly increasing distinct constant node positions. Only those
+coefficients are checked against fitting bounds and probed; other constants remain
+bit-identical under ordinary expression limits. The default all-constant API and
+coordinate kernel are unchanged. `ScalarTemplateRegression.hpp` supplies an immutable
+selection for the one inserted subtree and scores the complete model against the
+original rows. See [SCALAR_TEMPLATES.md](SCALAR_TEMPLATES.md) for the context, budget,
+cadence and concurrency rules, and the independent c=2.6 full-objective fixture.

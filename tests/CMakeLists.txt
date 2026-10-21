@@ -50,7 +50,7 @@ if(GENETIK_BUILD_EXAMPLES)
                         genetik_demo_invalid_argument PROPERTIES TIMEOUT 30)
 endif()
 # Each public header must compile as the first and only include.
-foreach(header ExpressionParsing TypedExpressionParsing TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)
+foreach(header ScalarExpressionTemplate ScalarTemplateRegression ExpressionParsing TypedExpressionParsing TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp "#include <${header}.hpp>\n")
     add_library(header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp)
     target_link_libraries(header_${header} PRIVATE genetik_lib)
@@ -70,7 +70,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # Application support headers also compile without accidental preceding includes.
-foreach(header ExpressionTextFile RegressionData RegressionWorkflow MultivariateData StrictArithmeticData ExecutionOptions)
+foreach(header ScalarTemplateData ExpressionTextFile RegressionData RegressionWorkflow MultivariateData StrictArithmeticData ExecutionOptions)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp "#include <${PROJECT_SOURCE_DIR}/examples/${header}.hpp>\n")
     add_library(example_header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp)
     target_link_libraries(example_header_${header} PRIVATE genetik_lib)
@@ -199,4 +199,19 @@ if(GENETIK_BUILD_EXAMPLES)
         -P ${CMAKE_CURRENT_SOURCE_DIR}/expression_file.cmake)
     set_tests_properties(genetik_parsing_quickstart PROPERTIES TIMEOUT 30)
     set_tests_properties(genetik_expression_file PROPERTIES TIMEOUT 60)
+endif()
+
+add_executable(genetik_template_tests scalar_templates.cpp)
+target_link_libraries(genetik_template_tests PRIVATE Genetik::Genetik)
+add_test(NAME genetik_template_contracts COMMAND genetik_template_tests)
+add_test(NAME genetik_template_overlap COMMAND genetik_template_tests --overlap)
+set_tests_properties(genetik_template_contracts genetik_template_overlap PROPERTIES TIMEOUT 90)
+if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_templates_quickstart COMMAND genetik_templates_quickstart --threads 2)
+    add_test(NAME genetik_template_campaign_smoke COMMAND ${CMAKE_COMMAND}
+        -DCAMPAIGN=$<TARGET_FILE:genetik_scalar_template_campaign>
+        -DWORKSPACE=${CMAKE_CURRENT_BINARY_DIR}/template-campaign
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/template_cli.cmake)
+    set_tests_properties(genetik_templates_quickstart PROPERTIES TIMEOUT 30)
+    set_tests_properties(genetik_template_campaign_smoke PROPERTIES TIMEOUT 90)
 endif()

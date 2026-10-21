@@ -70,28 +70,85 @@ inline std::optional<Expression> replaceExpressionSubtree(const Expression& pare
     return Expression(next, parent.variableCount(), limits);
 }
 
+namespace genetik_detail {
+inline void validateExpressionGrammar(std::size_t dimensions,ExpressionLimits limits,const ExpressionGrammar& grammar) {
+        if ((grammar.constants.empty() && grammar.continuousProbability == 0 && dimensions == 0) || grammar.initialMaxDepth == 0 ||
+            grammar.mutationMaxDepth == 0 || grammar.proposalLimit == 0 ||
+            !std::isfinite(grammar.growBinaryProbability) || grammar.growBinaryProbability < 0 || grammar.growBinaryProbability > 1)
+            throw std::invalid_argument("invalid expression grammar");
+        if (!std::isfinite(grammar.continuousProbability) || grammar.continuousProbability < 0 || grammar.continuousProbability > 1 ||
+            (grammar.continuousProbability > 0 && (!std::isfinite(grammar.continuousLower) || !std::isfinite(grammar.continuousUpper) ||
+             grammar.continuousLower > grammar.continuousUpper || std::abs(grammar.continuousLower) > limits.maxAbsConstant ||
+             std::abs(grammar.continuousUpper) > limits.maxAbsConstant ||
+             !std::isfinite(grammar.continuousUpper - grammar.continuousLower))) ||
+            (grammar.constants.empty() && grammar.continuousProbability > 0 && grammar.continuousProbability < 1))
+            throw std::invalid_argument("invalid continuous constant source");
+        genetik_detail::validateExponents(grammar.exponents);
+        for (auto kind : grammar.operators)
+            if (expressionArity(kind) == 0) throw std::invalid_argument("grammar operator cannot be a terminal");
+        for (double value : grammar.constants)
+            if (!std::isfinite(value) || std::abs(value) > limits.maxAbsConstant)
+                throw std::invalid_argument("terminal outside problem constant bound");
+}
+inline Expression generateExpression(std::mt19937& rng,std::size_t maximumDepth,std::size_t dimensions,
+       ExpressionLimits limits,const ExpressionGrammar& grammar,const std::vector<std::size_t>* allowed=nullptr) {
+        struct Task { std::size_t budget, depth; bool emit; ExpressionKind kind; unsigned exponent=0; std::size_t work=std::numeric_limits<std::size_t>::max(); };
+        const auto variableCount=allowed ? allowed->size():dimensions;
+        const auto index=[](std::size_t n,std::mt19937& engine){return std::uniform_int_distribution<std::size_t>(0,n-1)(engine);};
+        const auto depth = 1 + index(std::min(maximumDepth, limits.maxDepth), rng);
+        const bool full = std::bernoulli_distribution(.5)(rng);
+        std::vector<Task> tasks{{limits.maxNodes, depth, false, ExpressionKind::Add, 0, limits.maxArithmeticOperations}};
+        std::vector<ExpressionNode> nodes;
+        while (!tasks.empty()) {
+            const auto task = tasks.back(); tasks.pop_back();
+            if (task.emit) {
+                nodes.push_back(task.kind==ExpressionKind::Powi ? ExpressionNode::power(task.exponent) : expressionArity(task.kind) == 1 ? ExpressionNode::unary(task.kind) : ExpressionNode::binary(task.kind));
+                continue;
+            }
+            std::vector<ExpressionKind> feasible;
+            if (task.depth > 1) for (auto kind : grammar.operators)
+                if (task.budget > expressionArity(kind) && (kind==ExpressionKind::Powi ?
+                    std::any_of(grammar.exponents.begin(),grammar.exponents.end(),[&](unsigned e){return (e?e-1:0)<=task.work;}) : task.work>0)) feasible.push_back(kind);
+            const bool operation = !feasible.empty() &&
+                (full || std::bernoulli_distribution(grammar.growBinaryProbability)(rng));
+            if (operation) {
+                const auto kind = feasible[index(feasible.size(), rng)];
+                unsigned exponent=0;
+                if(kind==ExpressionKind::Powi) {
+                    std::vector<unsigned> options;for(auto e:grammar.exponents)if((e?e-1:0)<=task.work)options.push_back(e);
+                    exponent=options[index(options.size(),rng)];
+                }
+                const auto cost=kind==ExpressionKind::Powi ? (exponent?exponent-1:0) : 1;
+                const auto remainingWork=task.work-cost;
+                tasks.push_back({0, 0, true, kind, exponent});
+                if (expressionArity(kind) == 1) tasks.push_back({task.budget - 1, task.depth - 1, false, kind, 0, remainingWork});
+                else {
+                    const auto left = 1 + index(task.budget - 2, rng);
+                    const auto leftWork=limits.maxArithmeticOperations==std::numeric_limits<std::size_t>::max() ? remainingWork : remainingWork/2;
+                    const auto rightWork=limits.maxArithmeticOperations==std::numeric_limits<std::size_t>::max() ? remainingWork : remainingWork-leftWork;
+                    tasks.push_back({task.budget - 1 - left, task.depth - 1, false, kind, 0, rightWork});
+                    tasks.push_back({left, task.depth - 1, false, kind, 0, leftWork});
+                }
+            } else if (variableCount && ((grammar.constants.empty() && grammar.continuousProbability == 0) || std::bernoulli_distribution(.5)(rng)))
+                nodes.push_back(ExpressionNode::variable(allowed ? (*allowed)[index(variableCount,rng)]:index(dimensions,rng)));
+            else {
+                const bool continuous = grammar.continuousProbability > 0 && std::bernoulli_distribution(grammar.continuousProbability)(rng);
+                const double value = continuous ? std::uniform_real_distribution<double>(grammar.continuousLower, grammar.continuousUpper)(rng)
+                                                : grammar.constants[index(grammar.constants.size(), rng)];
+                nodes.push_back(ExpressionNode::constant(value));
+            }
+        }
+        return Expression(nodes, dimensions, limits);
+}
+}
+
 class ExpressionVariation {
 public:
     ExpressionVariation(std::shared_ptr<const RegressionProblem> problem, ExpressionGrammar grammar = {},
                         std::shared_ptr<RegressionPreparation> preparation = {})
         : problem_(std::move(problem)), grammar_(std::move(grammar)), preparation_(std::move(preparation)) {
-        if (!problem_ || (grammar_.constants.empty() && grammar_.continuousProbability == 0 && problem_->dimensions() == 0) || grammar_.initialMaxDepth == 0 ||
-            grammar_.mutationMaxDepth == 0 || grammar_.proposalLimit == 0 ||
-            !std::isfinite(grammar_.growBinaryProbability) || grammar_.growBinaryProbability < 0 || grammar_.growBinaryProbability > 1)
-            throw std::invalid_argument("invalid expression grammar");
-        if (!std::isfinite(grammar_.continuousProbability) || grammar_.continuousProbability < 0 || grammar_.continuousProbability > 1 ||
-            (grammar_.continuousProbability > 0 && (!std::isfinite(grammar_.continuousLower) || !std::isfinite(grammar_.continuousUpper) ||
-             grammar_.continuousLower > grammar_.continuousUpper || std::abs(grammar_.continuousLower) > problem_->limits().maxAbsConstant ||
-             std::abs(grammar_.continuousUpper) > problem_->limits().maxAbsConstant ||
-             !std::isfinite(grammar_.continuousUpper - grammar_.continuousLower))) ||
-            (grammar_.constants.empty() && grammar_.continuousProbability > 0 && grammar_.continuousProbability < 1))
-            throw std::invalid_argument("invalid continuous constant source");
-        genetik_detail::validateExponents(grammar_.exponents);
-        for (auto kind : grammar_.operators)
-            if (expressionArity(kind) == 0) throw std::invalid_argument("grammar operator cannot be a terminal");
-        for (double value : grammar_.constants)
-            if (!std::isfinite(value) || std::abs(value) > problem_->limits().maxAbsConstant)
-                throw std::invalid_argument("terminal outside problem constant bound");
+        if(!problem_)throw std::invalid_argument("expression problem required");
+        genetik_detail::validateExpressionGrammar(problem_->dimensions(),problem_->limits(),grammar_);
     }
     void markElite(ExpressionCandidate& candidate) const {candidate.setPreparationOrigin(PreparationOrigin::Elite);}
     void markOffspring(ExpressionCandidate& candidate,const ExpressionCandidate& parent) const {
@@ -167,52 +224,7 @@ private:
         return Expression(std::span(nodes.data() + begin, end - begin), e.variableCount(), e.limits());
     }
     Expression randomExpression(std::mt19937& rng, std::size_t maximumDepth) const {
-        struct Task { std::size_t budget, depth; bool emit; ExpressionKind kind; unsigned exponent=0; std::size_t work=std::numeric_limits<std::size_t>::max(); };
-        const auto limits = problem_->limits();
-        const auto depth = 1 + index(std::min(maximumDepth, limits.maxDepth), rng);
-        const bool full = std::bernoulli_distribution(.5)(rng);
-        std::vector<Task> tasks{{limits.maxNodes, depth, false, ExpressionKind::Add, 0, limits.maxArithmeticOperations}};
-        std::vector<ExpressionNode> nodes;
-        while (!tasks.empty()) {
-            const auto task = tasks.back(); tasks.pop_back();
-            if (task.emit) {
-                nodes.push_back(task.kind==ExpressionKind::Powi ? ExpressionNode::power(task.exponent) : expressionArity(task.kind) == 1 ? ExpressionNode::unary(task.kind) : ExpressionNode::binary(task.kind));
-                continue;
-            }
-            std::vector<ExpressionKind> feasible;
-            if (task.depth > 1) for (auto kind : grammar_.operators)
-                if (task.budget > expressionArity(kind) && (kind==ExpressionKind::Powi ?
-                    std::any_of(grammar_.exponents.begin(),grammar_.exponents.end(),[&](unsigned e){return (e?e-1:0)<=task.work;}) : task.work>0)) feasible.push_back(kind);
-            const bool operation = !feasible.empty() &&
-                (full || std::bernoulli_distribution(grammar_.growBinaryProbability)(rng));
-            if (operation) {
-                const auto kind = feasible[index(feasible.size(), rng)];
-                unsigned exponent=0;
-                if(kind==ExpressionKind::Powi) {
-                    std::vector<unsigned> options;for(auto e:grammar_.exponents)if((e?e-1:0)<=task.work)options.push_back(e);
-                    exponent=options[index(options.size(),rng)];
-                }
-                const auto cost=kind==ExpressionKind::Powi ? (exponent?exponent-1:0) : 1;
-                const auto remainingWork=task.work-cost;
-                tasks.push_back({0, 0, true, kind, exponent});
-                if (expressionArity(kind) == 1) tasks.push_back({task.budget - 1, task.depth - 1, false, kind, 0, remainingWork});
-                else {
-                    const auto left = 1 + index(task.budget - 2, rng);
-                    const auto leftWork=limits.maxArithmeticOperations==std::numeric_limits<std::size_t>::max() ? remainingWork : remainingWork/2;
-                    const auto rightWork=limits.maxArithmeticOperations==std::numeric_limits<std::size_t>::max() ? remainingWork : remainingWork-leftWork;
-                    tasks.push_back({task.budget - 1 - left, task.depth - 1, false, kind, 0, rightWork});
-                    tasks.push_back({left, task.depth - 1, false, kind, 0, leftWork});
-                }
-            } else if (problem_->dimensions() && ((grammar_.constants.empty() && grammar_.continuousProbability == 0) || std::bernoulli_distribution(.5)(rng)))
-                nodes.push_back(ExpressionNode::variable(index(problem_->dimensions(), rng)));
-            else {
-                const bool continuous = grammar_.continuousProbability > 0 && std::bernoulli_distribution(grammar_.continuousProbability)(rng);
-                const double value = continuous ? std::uniform_real_distribution<double>(grammar_.continuousLower, grammar_.continuousUpper)(rng)
-                                                : grammar_.constants[index(grammar_.constants.size(), rng)];
-                nodes.push_back(ExpressionNode::constant(value));
-            }
-        }
-        return Expression(nodes, problem_->dimensions(), limits);
+        return genetik_detail::generateExpression(rng,maximumDepth,problem_->dimensions(),problem_->limits(),grammar_);
     }
     std::shared_ptr<const RegressionProblem> problem_;
     const ExpressionGrammar grammar_;

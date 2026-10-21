@@ -17,6 +17,7 @@ is not a C++ namespace migration.
 | Text import | parseExpression, parseTypedExpression, ExpressionParseLimits, ExpressionParseError | [Bounded grammar/import](EXPRESSION_PARSING.md) |
 | Expression values | Expression, ExpressionNode, ExpressionLimits, ExpressionResult | [Expressions](EXPRESSIONS.md) |
 | Data/loss | RegressionRow, RegressionProblem::create, measure | [Multivariate/data workflow](MULTIVARIATE.md) |
+| Scalar templates | ScalarExpressionTemplate, ScalarTemplateProblem, scalarTemplateRegression | [One-site templates](SCALAR_TEMPLATES.md) |
 | Search | symbolicRegression, SymbolicRegressionConfig/Result | [Symbolic regression](SYMBOLIC_REGRESSION.md) |
 | Fitting/work | TrainingObjective, fitConstants, ConstantFitConfig | [Constant fitting](CONSTANT_FITTING.md) |
 | Scheduling | fitEveryGenerations (default 1) | [Cadence](FITTING_CADENCE.md) |
@@ -66,8 +67,9 @@ Unscheduled candidates still need matching fitness. Interval 1 remains the defau
 
 ## Numerical scope and export
 
-The grammar is variables, finite double constants, +, -, *, strict / and natural
-log. Default operators remain +,-,*; configure extra operators explicitly. Division
+The scalar grammar supports variables, finite double constants, +, -, *, strict /,
+natural log and the opt-in scientific functions linked below. Default operators
+remain +,-,*; configure extra operators explicitly. Division
 rejects either signed-zero denominator; Log requires positive input. Every
 intermediate result must be finite; invalid children cannot be masked by a parent.
 Finite subnormals and signed-zero underflow are valid under the qualified FP
@@ -78,7 +80,9 @@ Checked full-data MSE uses the documented ordered residual/square/sum checks.
 Exact score ties rank smaller node counts then faithful text, not a success tolerance.
 Expression::toString preserves topology, operand/variable identity and full-precision
 constants, including signed zero, with locale-independent spelling. It is a faithful
-text description, not a general serialization/parser/code-generation contract.
+text description. The bounded parser preserves supported canonical exports with
+the required schema/limits; see EXPRESSION_PARSING.md. This is not model archive
+serialization or standalone code generation.
 
 The header target's strict FP options affect consuming C++ translation units.
 Default IEEE rounding, gradual underflow, nontrapping arithmetic and qualified libm
@@ -112,3 +116,13 @@ Typed mathematical search: [TYPED_REGRESSION.md](TYPED_REGRESSION.md), owned agg
 Scientific scalar functions in either API: [SCIENTIFIC_OPERATORS.md](SCIENTIFIC_OPERATORS.md).
 Sin/Cos/Exp/Sqrt and discrete Powi are opt-in, scalar-only productions that may
 compose with aggregate scaling; default grammars are unchanged.
+
+## Constrained scalar models
+
+[Scalar templates](SCALAR_TEMPLATES.md) freeze one owned scaffold and insert one
+restricted expression once. Full-schema variable indices remain stable, the full
+model supplies fitness/complexity, and only inserted constants are optionally fit.
+`ExpressionCandidate::constrained` binds an immutable mathematical validation and
+preparation context; the generic OOP engine has no dependency on that context.
+See the compiled installed templates quickstart for parsed supplied expressions
+and a bounded search using the existing worker and publication machinery.

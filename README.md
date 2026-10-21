@@ -33,6 +33,10 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   rectangular `A*x+b`, checks `[14,8]`, matrix multiplication, transpose and dot product,
   and handles a local resource limit. This additive evaluator is separate from
   scalar regression/search; see [typed contracts](docs/TYPED_EXPRESSIONS.md).
+- [One-site scalar template quickstart](examples/quickstarts/templates.cpp): freeze
+  a model scaffold, restrict an evolving expression to selected original variables
+  and operators, optionally fit only its constants, and export the complete model.
+  See [template contracts and campaign](docs/SCALAR_TEMPLATES.md).
 - [Application-owned permutation consumer](tests/oop_consumer/main.cpp): a non-scalar
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
@@ -59,6 +63,7 @@ cmake --build out/consumers/quickstarts -j2
 out/consumers/quickstarts/scalar_quickstart
 out/consumers/quickstarts/symbolic_quickstart
 out/consumers/quickstarts/typed_quickstart
+out/consumers/quickstarts/templates_quickstart --threads 2
 ```
 
 The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a complete external

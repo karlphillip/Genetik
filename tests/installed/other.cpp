@@ -1,6 +1,10 @@
 #include "common.hpp"
 // Overlapping complete public-header use in a separately compiled translation unit.
 bool symbolic_check() {
+    auto templateData=RegressionProblem::create({{{1},2},{{2},3}},{3,2,8});
+    auto templateDomain=ScalarTemplateProblem::create(ScalarExpressionTemplate(Expression::constant(0,1),0,{3,2,8},{3,2,8}),templateData,{0},{ExpressionKind::Add});
+    SymbolicRegressionConfig tc;tc.grammar.operators={ExpressionKind::Add};tc.population=4;tc.elites=1;tc.maxGenerationAttempts=1;tc.maxEvaluations=8;tc.maxTrainingLossAttempts=32;
+    RandomContext tr(2,{2});if(!scalarTemplateRegression(templateDomain,tc,tr).best)return false;
     const auto problem=RegressionProblem::create({{{1,2},3},{{2,1},3},{{0,0},0}},{15,5,8});
     const auto x=Expression::variable(0,2),y=Expression::variable(1,2);
     if(Expression::unary(ExpressionKind::Exp,x).evaluate(std::array{0.,0.}).value()!=1)return false;

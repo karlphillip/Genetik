@@ -82,6 +82,8 @@ private:
 struct ConstantFitConfig;
 struct ConstantFitResult;
 class TrainingObjective;
+inline ConstantFitResult fitSelectedConstants(const Expression&, TrainingObjective&,
+                     std::span<const std::size_t>, const ConstantFitConfig&);
 inline ConstantFitResult fitConstants(const Expression&, TrainingObjective&, const ConstantFitConfig&);
 // Run-owned accounting and an optional fault/optimizer integration seam. Charge before compute,
 // including invalid results and exceptions. Reporting calls to problem.measure are separate.
@@ -160,6 +162,7 @@ protected:
         return problem_->measure(expression, &work_.rowAttempts);
     }
 private:
+    friend ConstantFitResult fitSelectedConstants(const Expression&,TrainingObjective&,std::span<const std::size_t>,const ConstantFitConfig&);
     friend ConstantFitResult fitConstants(const Expression&, TrainingObjective&, const ConstantFitConfig&);
     std::shared_ptr<TrainingLossAdmission> admission_;
     const ExecutionContext* execution_=nullptr; // worker-local borrow, never installed in committed candidates
@@ -281,13 +284,41 @@ inline ConstantFitResult fitConstants(const Expression& input, TrainingObjective
         [](const Expression& e,std::size_t parameter,double value){return e.withConstant(parameter,value);});
 }
 
+// An explicit ordered subset. No frozen constant is bounds-checked as a fitted
+// parameter; all expression constants still meet the expression's own limits.
+inline ConstantFitResult fitSelectedConstants(const Expression& input,TrainingObjective& objective,
+        std::span<const std::size_t> selected,const ConstantFitConfig& config={}) {
+    validateConstantFitConfig(config,*objective.problem());
+    (void)objective.problem()->checkedExpression(input);
+    auto expression=input;const auto nodes=expression.nodes();
+    if(selected.size()>nodes.size())throw std::invalid_argument("too many selected constants");
+    std::vector<std::size_t> parameters;parameters.reserve(selected.size());
+    for(auto i:selected) {
+        if(i>=nodes.size() || nodes[i].kind()!=ExpressionKind::Constant ||
+           (!parameters.empty() && i<=parameters.back()))
+            throw std::invalid_argument("constant selection must be increasing distinct constant indices");
+        const auto value=nodes[i].constantValue();
+        if(value<config.lower || value>config.upper)throw std::invalid_argument("selected constant outside fitting bounds");
+        parameters.push_back(i);
+    }
+    return genetik_detail::fitCoordinates<ConstantFitResult>(std::move(expression),objective,config,parameters,objective.work_,
+        [](const Expression& e,std::size_t i){return e.nodes()[i].constantValue();},
+        [](const Expression& e,std::size_t i,double v){return e.withConstant(i,v);});
+}
+class ConstantParameterSelection {
+public:
+    virtual ~ConstantParameterSelection()=default;
+    virtual std::vector<std::size_t> parameters(const Expression&) const=0;
+    virtual bool parallelEvaluationSafe() const noexcept {return false;}
+};
+
 // Shared only for run accounting, never for mutable genomes. No loss cache is reused, including
 // elites and unchanged clones; baseline and accepted probes already certify the installed value.
 class ConstantRefinement final : public RegressionPreparation {
 public:
     ConstantRefinement(std::shared_ptr<TrainingObjective> objective, std::optional<ConstantFitConfig> config = {},
-                       std::uint64_t fitEveryGenerations=1)
-        : objective_(std::move(objective)), config_(config), interval_(fitEveryGenerations) {
+                       std::uint64_t fitEveryGenerations=1, std::shared_ptr<const ConstantParameterSelection> selection={})
+        : selection_(std::move(selection)), objective_(std::move(objective)), config_(config), interval_(fitEveryGenerations) {
         if (!objective_ || interval_==0) throw std::invalid_argument("refinement requires objective and positive cadence");
         if (config_) validateConstantFitConfig(*config_, *objective_->problem());
         if(auto d=objective_->diagnostics()) {
@@ -295,9 +326,9 @@ public:
             d->bound=true;
         }
     }
-    bool parallelEvaluationSafe() const noexcept override {return objective_->parallelEvaluationSafe() && !objective_->diagnostics();}
+    bool parallelEvaluationSafe() const noexcept override {return objective_->parallelEvaluationSafe() && !objective_->diagnostics() && (!selection_ || selection_->parallelEvaluationSafe());}
     std::shared_ptr<RegressionPreparation> forkParallel(ExecutionContext& execution) override {
-        auto child=std::make_shared<ConstantRefinement>(objective_->forkParallel(execution),config_,interval_);
+        auto child=std::make_shared<ConstantRefinement>(objective_->forkParallel(execution),config_,interval_,selection_);
         child->initializing=initializing;
         return child;
     }
@@ -371,7 +402,10 @@ public:
         };
         auto result=[&] {
             genetik_detail::ScopedTiming fitTimer(diagnostic ? &diagnostic->fittingSeconds:nullptr);
-            try{return fitConstants(expression,*objective_,*config_);}
+            try{
+                if(selection_)return fitSelectedConstants(expression,*objective_,selection_->parameters(expression),*config_);
+                return fitConstants(expression,*objective_,*config_);
+            }
             catch(...) {
                 recordWork();++statistics_.abortedFits;
                 recordDiagnostic(false,objective_->work().fittingImproved!=before.fittingImproved);throw;
@@ -395,6 +429,7 @@ private:
         if (initializing && loss.state() == FitnessState::Valid && (!rawInitialBest || loss.score() < *rawInitialBest))
             rawInitialBest = loss.score();
     }
+    std::shared_ptr<const ConstantParameterSelection> selection_;
     std::shared_ptr<TrainingObjective> objective_;
     const std::optional<ConstantFitConfig> config_;
     const std::uint64_t interval_;

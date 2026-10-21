@@ -118,7 +118,7 @@ contract. [Support and repeatability policy](docs/SUPPORT.md).
 - [Migration from the original interfaces](docs/MIGRATION.md).
 - [Installation/package requirements](docs/PACKAGING.md).
 - [Concurrency and callback qualification](docs/CONCURRENCY.md).
-- [Support/version policy](docs/SUPPORT.md) and [executed hosted qualification](docs/HOSTED_QUALIFICATION.md).
+- [Support/version policy](docs/SUPPORT.md) and [executed feature hosted qualification](docs/TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md).
 - [Proposed 0.1.0 release notes](docs/releases/0.1.0/NOTES.md) and [integration/publication proposal](docs/RELEASE_PROPOSAL.md).
 
 ## API and examples
@@ -180,7 +180,9 @@ single-coordinator; only the documented stop controls are concurrently callable.
 
 Local concurrency [qualification and fixed-work measurements](docs/CONCURRENCY_RESULTS.md)
 include exact serial replays and separate ThreadSanitizer execution. Hosted GCC13 x64/minimum-CMake, Clang18 x64/ASan+UBSan and GCC13 ARM64/TSan
-[qualification has executed](docs/HOSTED_QUALIFICATION.md); version 0.1.0 remains unreleased.
+[qualification has executed](docs/TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md) for the
+accumulated typed/scientific feature candidate. The published v0.1.0 pre-release
+remains unchanged; this feature branch is subsequent development.
 
 Current output conventions and retained workspace records: [ORGANIZATION.md](docs/ORGANIZATION.md)
 and [Phase 1 cleanup evidence](docs/CLEANUP.md). Use `out/build/` for fresh builds,

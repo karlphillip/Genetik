@@ -24,7 +24,8 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    grammars, bounded discrete exponent variation, fitting exclusion and faithful
    export. See SCIENTIFIC_OPERATORS.md, SCIENTIFIC_RESULTS.md and
    SCIENTIFIC_QUALIFICATION.md. Existing defaults/replays remain unchanged;
-   hosted qualification of accumulated feature work remains pending.
+   hosted qualification of accumulated feature work passed at the identified candidate
+   in [TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md](TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md).
 5. **Text input and adapters** — validated public input/model adapters, with parsing
    and data formats outside the generic evolutionary core.
 6. **Constraints and templates** — explicit bounded constraints/templates with

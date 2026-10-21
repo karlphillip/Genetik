@@ -28,9 +28,9 @@ qualification on arbitrary architectures. Compiler/runtime qualification is sepa
 | --- | --- |
 | Jetson ARM64 Linux, GCC/libstdc++ 13.3.0, glibc/libm 2.39; Release, Debug, ASan+UBSan | Locally verified; delivery results in DELIVERY.md. |
 | CMake 3.16.0 and 4.4.4 on the Jetson | Locally exercised minimum and current tool; install/relocation/consumption. |
-| Ubuntu 24.04 x86-64 GCC 13 Release, CMake 3.16.0 | Hosted verified; see HOSTED_QUALIFICATION.md for exact SHA, jobs and runtimes. |
-| Ubuntu 24.04 x86-64 Clang 18 GNU frontend + libstdc++, Debug ASan+UBSan | Hosted verified; see HOSTED_QUALIFICATION.md for exact SHA, jobs and runtimes. |
-| Native Ubuntu 24.04 ARM64 GCC 13 Release | Hosted verified, including separate TSan; see HOSTED_QUALIFICATION.md. |
+| Ubuntu 24.04 x86-64 GCC 13 Release, CMake 3.16.0 | Hosted verified; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md for the current feature SHA, jobs and runtimes. |
+| Ubuntu 24.04 x86-64 Clang 18 GNU frontend + libstdc++, Debug ASan+UBSan | Hosted verified; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md for the current feature SHA, jobs and runtimes. |
+| Native Ubuntu 24.04 ARM64 GCC 13 Release | Hosted verified, including separate TSan; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md. |
 | Windows/MSVC, clang-cl, AppleClang/macOS, libc++, other compilers/runtimes | Unqualified. Flag-selection logic alone does not qualify them. |
 
 CMake 3.16 remains the minimum; a workspace tool at 4.4.4 does not establish a new
@@ -177,3 +177,15 @@ consumers and ordinary builds do not require it. Hosted jobs have not executed f
 the accumulated cleanup/typed/scientific features. Earlier hosted Linux support
 remains evidence for its recorded revisions; libc++ and other untested environments
 remain unqualified. Published v0.1.0 assets/version policy are unchanged.
+
+## Executed accumulated-feature qualification
+
+The cleanup, typed evaluation/regression/fitting and scientific stack passed the
+three-job hosted matrix at `778a30dd0c05fe74a0755dcadbe59bed7e4ebc32`. See
+[TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md](TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md)
+for exact jobs, runner/runtime versions, the33-test manifest and five TSan cases
+repeated three times. This supersedes the feature-specific pending statements above
+for that identified candidate; earlier reports remain historical. Clang18 uses
+libstdc++14 headers/runtime, not libc++. No release/version change is implied.
+The report update itself receives a final matrix; its tested SHA/links are kept in
+the local completion record rather than creating a self-referential untested tip.

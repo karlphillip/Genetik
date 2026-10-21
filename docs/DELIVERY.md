@@ -1,6 +1,7 @@
 # Installable development-package qualification
 
-Current hosted results: [HOSTED_QUALIFICATION.md](HOSTED_QUALIFICATION.md). The
+Current feature hosted results: [TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md](TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md).
+Earlier release results: [HOSTED_QUALIFICATION.md](HOSTED_QUALIFICATION.md). The
 original packaging and preflight sections below are historical checkpoint records.
 
 Starting point: clean accepted workspace milestone
@@ -262,3 +263,16 @@ consumption remains independent of these mathematical headers. See
 [TYPED_EVALUATION_QUALIFICATION.md](TYPED_EVALUATION_QUALIFICATION.md) for local gates,
 commands, final test-only refinement, and the unexecuted hosted scope. No remote
 release/delivery action occurred in this milestone.
+
+## Accumulated typed/scientific hosted delivery
+
+Workflow39582456985 at `778a30dd0c05fe74a0755dcadbe59bed7e4ebc32` passed
+33/33 portable cases on GCC13 x64/exact-CMake3.16, Clang18 x64/ASan+UBSan,
+and native GCC13 ARM64; separate ARM64 TSan passed five cases three times each.
+All three jobs executed installed/relocated multi-TU, scalar/symbolic/typed/fitting
+and nonmathematical OOP consumers. Exported target/header spelling, strict-FP and
+thread requirements and private development flags remain unchanged. See the new
+feature report above for audited compiler commands, test mapping and limitations.
+These results are subsequent development qualification; published v0.1.0, its
+assets, main and tags remain unchanged. The report commit gets its own full matrix,
+with final SHA/links recorded under out/runs/hosted-typed-scientific/COMPLETION.md.

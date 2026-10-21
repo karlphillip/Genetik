@@ -1,0 +1,35 @@
+Test project /home/runner/work/Genetik/Genetik/out/build/tsan
+    Start 14: genetik_concurrency_contracts
+    Test #14: genetik_concurrency_contracts .......   Passed    0.27 sec
+    Start 14: genetik_concurrency_contracts
+    Test #14: genetik_concurrency_contracts .......   Passed    0.21 sec
+    Start 14: genetik_concurrency_contracts
+1/5 Test #14: genetik_concurrency_contracts .......   Passed    0.20 sec
+    Start 15: genetik_oop_parallel
+    Test #15: genetik_oop_parallel ................   Passed    0.02 sec
+    Start 15: genetik_oop_parallel
+    Test #15: genetik_oop_parallel ................   Passed    0.02 sec
+    Start 15: genetik_oop_parallel
+2/5 Test #15: genetik_oop_parallel ................   Passed    0.02 sec
+    Start 18: genetik_typed_overlap
+    Test #18: genetik_typed_overlap ...............   Passed    0.02 sec
+    Start 18: genetik_typed_overlap
+    Test #18: genetik_typed_overlap ...............   Passed    0.02 sec
+    Start 18: genetik_typed_overlap
+3/5 Test #18: genetik_typed_overlap ...............   Passed    0.02 sec
+    Start 20: genetik_typed_preparation_overlap
+    Test #20: genetik_typed_preparation_overlap ...   Passed    0.02 sec
+    Start 20: genetik_typed_preparation_overlap
+    Test #20: genetik_typed_preparation_overlap ...   Passed    0.02 sec
+    Start 20: genetik_typed_preparation_overlap
+4/5 Test #20: genetik_typed_preparation_overlap ...   Passed    0.02 sec
+    Start 21: genetik_scientific_contracts
+    Test #21: genetik_scientific_contracts ........   Passed    0.13 sec
+    Start 21: genetik_scientific_contracts
+    Test #21: genetik_scientific_contracts ........   Passed    0.13 sec
+    Start 21: genetik_scientific_contracts
+5/5 Test #21: genetik_scientific_contracts ........   Passed    0.13 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =   1.22 sec

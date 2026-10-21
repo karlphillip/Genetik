@@ -50,7 +50,7 @@ if(GENETIK_BUILD_EXAMPLES)
                         genetik_demo_invalid_argument PROPERTIES TIMEOUT 30)
 endif()
 # Each public header must compile as the first and only include.
-foreach(header TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)
+foreach(header ExpressionParsing TypedExpressionParsing TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp "#include <${header}.hpp>\n")
     add_library(header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp)
     target_link_libraries(header_${header} PRIVATE genetik_lib)
@@ -70,7 +70,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # Application support headers also compile without accidental preceding includes.
-foreach(header RegressionData RegressionWorkflow MultivariateData StrictArithmeticData ExecutionOptions)
+foreach(header ExpressionTextFile RegressionData RegressionWorkflow MultivariateData StrictArithmeticData ExecutionOptions)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp "#include <${PROJECT_SOURCE_DIR}/examples/${header}.hpp>\n")
     add_library(example_header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp)
     target_link_libraries(example_header_${header} PRIVATE genetik_lib)
@@ -185,3 +185,18 @@ set_tests_properties(genetik_scientific_contracts PROPERTIES TIMEOUT 180)
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header_ScientificScalar.cpp "#include <detail/ScientificScalar.hpp>\n")
 add_library(header_ScientificScalar OBJECT ${CMAKE_CURRENT_BINARY_DIR}/header_ScientificScalar.cpp)
 target_link_libraries(header_ScientificScalar PRIVATE Genetik::Genetik)
+
+add_executable(genetik_parsing_tests parsing.cpp)
+target_link_libraries(genetik_parsing_tests PRIVATE Genetik::Genetik)
+add_test(NAME genetik_parsing_contracts COMMAND genetik_parsing_tests)
+add_test(NAME genetik_parsing_overlap COMMAND genetik_parsing_tests --overlap)
+set_tests_properties(genetik_parsing_contracts genetik_parsing_overlap PROPERTIES TIMEOUT 60)
+if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_parsing_quickstart COMMAND genetik_parsing_quickstart)
+    add_test(NAME genetik_expression_file COMMAND ${CMAKE_COMMAND}
+        -DEVALUATE=$<TARGET_FILE:genetik_regression_evaluate>
+        -DWORKSPACE=${CMAKE_CURRENT_BINARY_DIR}/expression-file
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/expression_file.cmake)
+    set_tests_properties(genetik_parsing_quickstart PROPERTIES TIMEOUT 30)
+    set_tests_properties(genetik_expression_file PROPERTIES TIMEOUT 60)
+endif()

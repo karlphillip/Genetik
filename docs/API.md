@@ -14,6 +14,7 @@ is not a C++ namespace migration.
 | Scalar candidates | Creature_i<T>, controlled gene edits; Creature<char> demo | [Quickstart](../examples/quickstarts/scalar.cpp) |
 | Evolution | Population, GeneticAlgorithm, GenerationOutcome | [Shared-engine contracts](SYMBOLIC_REGRESSION.md) |
 | Fitness | Fitness, FitnessState, ObjectiveDirection | [Validity/publication](BASELINE.md) |
+| Text import | parseExpression, parseTypedExpression, ExpressionParseLimits, ExpressionParseError | [Bounded grammar/import](EXPRESSION_PARSING.md) |
 | Expression values | Expression, ExpressionNode, ExpressionLimits, ExpressionResult | [Expressions](EXPRESSIONS.md) |
 | Data/loss | RegressionRow, RegressionProblem::create, measure | [Multivariate/data workflow](MULTIVARIATE.md) |
 | Search | symbolicRegression, SymbolicRegressionConfig/Result | [Symbolic regression](SYMBOLIC_REGRESSION.md) |

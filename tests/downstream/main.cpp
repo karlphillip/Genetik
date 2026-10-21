@@ -2,10 +2,12 @@
 #include <Population.hpp>
 #include <Creature.hpp>
 #include <Expression.hpp>
+#include <ExpressionParsing.hpp>
 #include <array>
 #include <SymbolicRegression.hpp>
 static_assert(__cplusplus >= 202002L);
 int main() {
+    if(parseExpression("powi(x0,2)+1",1).evaluate(std::array{2.}).value()!=5)return 1;
     const auto x = Expression::variable(0);
     const auto square = Expression::binary(ExpressionKind::Multiply, x, x);
     const auto polynomial = Expression::binary(ExpressionKind::Add,

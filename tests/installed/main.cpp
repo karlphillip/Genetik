@@ -11,6 +11,7 @@ protected:
     double mutatedGene(unsigned int,std::mt19937& rng) const override{return std::uniform_real_distribution<double>(-1,1)(rng);}
 };
 int main() {
+    if(parseExpression("powi(2,3)",0).evaluate({}).value()!=8)return 1;
     RandomContext rng(7,{3});
     Population<Scalar> p(8,rng,ObjectiveDirection::Minimize);
     GeneticAlgorithm<decltype(p),Scalar> ga(.9f,.3f,rng);

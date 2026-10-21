@@ -26,8 +26,11 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    SCIENTIFIC_QUALIFICATION.md. Existing defaults/replays remain unchanged;
    hosted qualification of accumulated feature work passed at the identified candidate
    in [TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md](TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md).
-5. **Text input and adapters** — validated public input/model adapters, with parsing
-   and data formats outside the generic evolutionary core.
+5. **Text input and adapters** — bounded scalar/typed expression import implemented
+   locally, with canonical round trips, explicit schemas/limits, installed usage and
+   a supplied-formula file evaluator. See EXPRESSION_PARSING.md and
+   PARSING_QUALIFICATION.md. Optional external adapters remain separately scoped;
+   parsing and data formats do not enter the generic evolutionary core.
 6. **Constraints and templates** — explicit bounded constraints/templates with
    honest search-space and initialization reporting.
 7. **Calculus** — separately design and qualify operations, domains and numerical
@@ -36,7 +39,7 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    criteria, not a single open-ended rewrite.
 
 Cleanup introduced no mathematical API; Phase 2 added typed evaluation and Phase 3
-now adds typed search/refinement. Phases 5–8 remain future work. Further delivery/platform qualification,
+now adds typed search/refinement. Phase 5 now adds bounded text import; optional adapters and Phases 6–8 remain future work. Further delivery/platform qualification,
 profiling, checkpoint/resume, cache policy and GPU work remain separately scoped.
 The remaining sections preserve the historical engineering and experiment record;
 old “next”/“unreleased” statements describe those checkpoints, not current status.

@@ -79,3 +79,8 @@ The scientific campaign lives in apps/campaigns/scientific_campaign.cpp. Its
 required --data and new --output directory keep generation/reporting under caller
 control; recommended output is out/runs/. Independent fixtures live under
 tests/fixtures/scientific; accepted new reports under docs/scientific-results/.
+
+Phase 5 adds apps/regression_evaluate.cpp (supplied-formula evaluation, no search),
+examples/ExpressionTextFile.hpp (bounded application-layer reading) and the compiled
+examples/quickstarts/parsing.cpp. New parser fixtures and evidence follow tests/
+and docs/parsing-results/; generated logs stay under out/logs/parsing/.

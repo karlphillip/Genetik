@@ -202,3 +202,27 @@ The generic OOP interfaces and existing scalar APIs remain independent/compatibl
 
 Scientific scalar functions are opt-in in both expression APIs and generic search;
 see [scientific operators and file example](docs/SCIENTIFIC_OPERATORS.md).
+
+### Import mathematical expressions
+
+Use `<ExpressionParsing.hpp>` and `<TypedExpressionParsing.hpp>` to import bounded
+text into the existing owned expressions, with an explicit variable count/schema.
+For example `parseExpression("sin(x0)+powi(x0,2)", 1)` or
+`parseTypedExpression("matvec(x0,x1)+x2", schema, TypedShape::vector(2))`.
+No parser dependency enters generic OOP consumers. The compiled installed
+[parsing quickstart](examples/quickstarts/parsing.cpp) demonstrates both APIs,
+owned aggregate literals, canonical round trips and diagnostics.
+
+Evaluate a supplied expression without evolution:
+
+```sh
+out/build/release/genetik_regression_evaluate training.csv \
+  --expression formula.txt --inputs first,second --target target
+```
+
+Add `--fit --fit-budget 256` for explicit training-only fixed-structure fitting,
+and `--evaluate other.csv` for post-finalization assessment. Formula file reading
+is bounded; column mapping and full invalid-prediction reporting reuse the existing
+numerical file workflow. See [grammar, limits and usage](docs/EXPRESSION_PARSING.md)
+and [local Phase 5 qualification](docs/PARSING_QUALIFICATION.md). Hosted qualification
+of the preceding features does not qualify this new local parser implementation.

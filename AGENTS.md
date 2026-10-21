@@ -82,3 +82,11 @@
   default lists/draws unchanged; power metadata is discrete [0,8], never a fitted
   constant. Use shared checked kernels, repeated multiplication in order and qualified
   native libm. See docs/SCIENTIFIC_OPERATORS.md; preserve independent references.
+
+- ExpressionParsing/TypedExpressionParsing are optional public import boundaries;
+  keep generic GA headers independent. Parse to existing owned postfix values with
+  no folding, signed-zero loss or exponent fitting. Text/schema are borrowed only
+  synchronously, limits apply before allocation, malformed text has byte/category
+  errors, bad_alloc remains operational. See docs/EXPRESSION_PARSING.md. Include
+  genetik_parsing_overlap in separate TSan gates. New file formula evaluation is
+  synchronous and never implicitly starts evolution.

@@ -18,6 +18,7 @@ bool symbolic_check() {
 }
 
 bool typed_check() {
+    if(parseTypedExpression("dot(vector[2](1,2),vector[2](3,4))",{},TypedShape::scalar()).evaluate({}).value().scalarValue()!=11)return false;
     const std::array scalarSchema{TypedShape::scalar()};
     const auto scalar=TypedExpression::variable(0,scalarSchema);
     const auto root=TypedExpression::unary(TypedExpressionKind::Sqrt,TypedExpression::power(scalar,2));

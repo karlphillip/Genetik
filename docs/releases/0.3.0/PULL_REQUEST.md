@@ -14,9 +14,11 @@ files without an unqualified migration. Independent custom candidates/services n
 explicit codecs and immutable context identity, preserving generic OOP isolation.
 
 Review docs/releases/0.3.0/NOTES.md, MIGRATION.md and
-CHECKPOINT_PREFLIGHT_QUALIFICATION.md. Local full-suite/TSan, clean continuation,
+CHECKPOINT_PREFLIGHT_QUALIFICATION.md and CHECKPOINT_HOSTED_QUALIFICATION.md.
+Local full-suite/TSan, clean continuation,
 SIGKILL recovery and extracted-source package evidence accompany the preflight.
-Hosted qualification is pending: replace this preparation status only after reviewing
-actual runs on the exact final tip. Preserve v0.2.0 assets, historical campaigns and
+The operational three-job matrix passed; final report-tip runs and regenerated asset
+identities are recorded in the ignored delivery packet. Review that exact final
+candidate before integration. Preserve v0.2.0 assets, historical campaigns and
 all 127 frozen evidence files. This local file does not open a PR or authorize main,
 tag or release changes. Exact integration/publication requires separate approval.

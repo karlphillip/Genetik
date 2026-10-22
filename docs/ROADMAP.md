@@ -305,6 +305,8 @@ this operational feature remains separate from local evidence.
 
 Operational polish/preflight: presentation precision and readable limits/metrics,
 parent-directory durability, bounded SIGKILL recovery and0.3.0 release preparation
-are locally implemented. Next is approval for hosted qualification of the exact
-preflight candidate, then a separate final development-delivery review. No new
-mathematical implementation phase is introduced. See CHECKPOINT_PREFLIGHT_QUALIFICATION.md.
+are locally implemented and the operational matrix passed on the qualification
+branch. See CHECKPOINT_HOSTED_QUALIFICATION.md for exact scope and final-tip gates.
+Next is approval and execution of the prepared 0.3.0 delivery, after the final
+report tip passes and its source assets are verified. No new mathematical or
+operational feature phase is introduced.

@@ -31,7 +31,8 @@ Since published v0.2.0:
 [compiled scalar/checkpoint quickstart](../../../examples/quickstarts/checkpoint.cpp),
 [prime commands and checkpoint contracts](../../RUN_CHECKPOINTING.md),
 [migration](MIGRATION.md), and
-[local qualification](../../CHECKPOINT_PREFLIGHT_QUALIFICATION.md).
+[local qualification](../../CHECKPOINT_PREFLIGHT_QUALIFICATION.md), and
+[hosted qualification](../../CHECKPOINT_HOSTED_QUALIFICATION.md).
 
 ## Support and limits
 
@@ -39,7 +40,8 @@ The proposed release retains Genetik::Genetik, genetik_lib, established include
 spelling, header-only C++20 delivery, strict FP and Threads::Threads propagation,
 CMake3.16 and SameMinorVersion matching. Existing v0.2.0 platform evidence retains
 its exact SHA scope. Local operational qualification is recorded separately; the
-three-job hosted matrix is configured and awaits upload approval. No new libc++,
+three-job hosted matrix passed for the operational implementation; exact SHA/runtime
+and final-report-tip evidence are recorded in the hosted report. No libc++,
 Windows/MSVC or macOS/AppleClang qualification is claimed.
 
 Checkpoint continuation requires the qualified matching compiler, runtime, FP

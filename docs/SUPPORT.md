@@ -3,9 +3,10 @@
 Current local candidate: **0.3.0, unreleased**, for exact-prime search,
 observability and checkpoint/resume. See
 [local preflight qualification](CHECKPOINT_PREFLIGHT_QUALIFICATION.md) and
-[the proposed release](RELEASE_0.3.0_PROPOSAL.md). Hosted qualification for this
-operational stack awaits explicit upload approval; local results do not extend
-hosted support to the new code.
+[the proposed release](RELEASE_0.3.0_PROPOSAL.md). The three-job hosted matrix
+passed for the operational implementation; see
+[actual hosted scope and final-tip procedure](CHECKPOINT_HOSTED_QUALIFICATION.md).
+Publication remains subject to separate delivery approval.
 
 Published v0.2.0 remains at f9f300ed376370b2f476722e4a92888004d8358d with unchanged
 tag/assets. [Earlier calculus hosted evidence](CALCULUS_HOSTED_QUALIFICATION.md)
@@ -55,9 +56,9 @@ qualification on arbitrary architectures. Compiler/runtime qualification is sepa
 | --- | --- |
 | Jetson ARM64 Linux, GCC/libstdc++ 13.3.0, glibc/libm 2.39; Release, Debug, ASan+UBSan | Locally verified; delivery results in DELIVERY.md. |
 | CMake 3.16.0 and 4.4.4 on the Jetson | Locally exercised minimum and current tool; install/relocation/consumption. |
-| Ubuntu 24.04 x86-64 GCC 13 Release, CMake 3.16.0 | Hosted verified; see CALCULUS_HOSTED_QUALIFICATION.md for the current implementation SHA, jobs and runtimes. |
-| Ubuntu 24.04 x86-64 Clang 18 GNU frontend + libstdc++, Debug ASan+UBSan | Hosted verified; see CALCULUS_HOSTED_QUALIFICATION.md for the current implementation SHA, jobs and runtimes. |
-| Native Ubuntu 24.04 ARM64 GCC 13 Release | Hosted verified, including ten repeated TSan selections and complete integral contracts; see CALCULUS_HOSTED_QUALIFICATION.md. |
+| Ubuntu 24.04 x86-64 GCC 13 Release, CMake 3.16.0 | Hosted verified; see CHECKPOINT_HOSTED_QUALIFICATION.md for exact operational SHA, jobs and runtimes. |
+| Ubuntu 24.04 x86-64 Clang 18 GNU frontend + libstdc++, Debug ASan+UBSan | Hosted verified; see CHECKPOINT_HOSTED_QUALIFICATION.md for exact operational SHA, jobs and runtimes. |
+| Native Ubuntu 24.04 ARM64 GCC 13 Release | Hosted verified, including twelve TSan selections repeated three times and complete integral contracts; see CHECKPOINT_HOSTED_QUALIFICATION.md. |
 | Windows/MSVC, clang-cl, AppleClang/macOS, libc++, other compilers/runtimes | Unqualified. Flag-selection logic alone does not qualify them. |
 
 CMake 3.16 remains the minimum; a workspace tool at 4.4.4 does not establish a new

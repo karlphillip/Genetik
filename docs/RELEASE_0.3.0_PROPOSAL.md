@@ -1,7 +1,8 @@
 # Genetik 0.3.0 development-release proposal
 
-Status: local preparation only, unreleased. No upload, PR, default-branch integration,
-tag or publication is authorized by this preparation task. The completed exact
+Status: unreleased; upload and hosted qualification on qualification/checkpoint-preflight
+are approved and the implementation matrix passed. PR, default-branch integration,
+tag and publication still require final delivery approval. The completed exact
 candidate and archive identities belong in the ignored hosted-preflight packet,
 so this document does not require a commit to record its own SHA.
 
@@ -18,12 +19,12 @@ Genetik-0.3.0-source.tar.gz and SHA256SUMS, generated with git archive/gzip -n f
 the final committed candidate, compared with every committed blob and verified
 without .git through exact CMake3.16 plus installed/relocated consumers.
 
-First approve upload to qualification/checkpoint-preflight and execute/review the
-existing GCC13 x64 exact-minimum, Clang18 x64 ASan+UBSan and GCC13 ARM64 Release/
-separate TSan matrix. Targeted qualification fixes remain on that branch after
-upload approval. Qualify its final report commit, regenerate assets if it changes,
-and record exact runs in ignored completion output. Current local results do not
-establish hosted success for this feature.
+The approved upload and implementation matrix are recorded in
+[hosted qualification](CHECKPOINT_HOSTED_QUALIFICATION.md): GCC13 x64 exact-minimum,
+Clang18 x64 ASan+UBSan and GCC13 ARM64 Release/separate TSan. The final report commit
+must pass that complete matrix too. Regenerate and verify assets from that exact
+commit, then retain its SHA/run/job/asset identities in the ignored completion packet.
+Do not extend a passing earlier SHA or its archive to a later candidate.
 
 Only after hosted success, seek separate delivery approval for a PR titled
 "Prepare Genetik 0.3.0 operational development pre-release", then ordinary fast-forward
@@ -34,4 +35,4 @@ squash, rebase or silently introduce a different tag candidate.
 
 Publish only after approval, from the existing verified tag using prepared notes,
 a temporary draft, asset upload/download/hash verification and explicit pre-release/
-not-latest settings. No such action is part of this local preflight.
+not-latest settings. No such action is part of the hosted-qualification authorization.

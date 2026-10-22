@@ -19,8 +19,9 @@ reporting and generic checkpoint/resume interfaces, building on the existing
 mathematical and OOP modules. See [migration](docs/releases/0.3.0/MIGRATION.md),
 [release proposal](docs/RELEASE_0.3.0_PROPOSAL.md) and
 [local operational qualification](docs/CHECKPOINT_PREFLIGHT_QUALIFICATION.md).
-Hosted qualification for this operational stack is pending; previous hosted runs
-remain scoped to their recorded SHAs.
+[Hosted operational qualification](docs/CHECKPOINT_HOSTED_QUALIFICATION.md) passed
+the three-job matrix; exact tested SHAs and the required final-report-tip check are
+recorded there. Publication still requires separate approval.
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
 
@@ -55,7 +56,7 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
 
-Obtain the source (use `--branch v0.1.0` for the published checkpoint):
+Obtain the source (use `--branch v0.2.0` for the latest published checkpoint):
 
 ```sh
 git clone https://github.com/karlphillip/Genetik.git Genetik

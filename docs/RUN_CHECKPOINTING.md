@@ -1,8 +1,10 @@
 # Run observability and checkpoints (format 1)
 
 Implemented API and persistence contract. Executed local evidence is recorded in
-[RUN_CHECKPOINTING_RESULTS.md](RUN_CHECKPOINTING_RESULTS.md); hosted qualification
-of this operational milestone remains pending.
+[RUN_CHECKPOINTING_RESULTS.md](RUN_CHECKPOINTING_RESULTS.md) and
+[CHECKPOINT_PREFLIGHT_QUALIFICATION.md](CHECKPOINT_PREFLIGHT_QUALIFICATION.md).
+[Hosted operational qualification](CHECKPOINT_HOSTED_QUALIFICATION.md) records the
+executed matrix and exact tested scope; final delivery remains separately approved.
 
 Checkpointing is synchronous and coordinator-owned, only with an idle executor and
 no pending population edits. Generic run snapshots own candidate values; explicit

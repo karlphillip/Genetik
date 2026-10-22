@@ -1,8 +1,11 @@
 # Installable development-package qualification
 
 Current local delivery preparation targets **0.3.0 (unreleased)**; see
-[the operational proposal](RELEASE_0.3.0_PROPOSAL.md). Hosted upload and all delivery
-actions await their respective approvals.
+[the operational proposal](RELEASE_0.3.0_PROPOSAL.md) and
+[executed hosted qualification](CHECKPOINT_HOSTED_QUALIFICATION.md). The approved
+qualification branch is public; PR/main/tag/publication actions still await separate
+approval. Final-tip run and source-asset identities belong in the ignored completion
+packet, avoiding an untested self-referential documentation tip.
 
 The0.2.0 delivery record below retains its historical scope. That preparation targeted **0.2.0 (then unreleased)** and the complete range
 since published v0.1.0. See [CALCULUS_PREFLIGHT.md](CALCULUS_PREFLIGHT.md),

@@ -1,0 +1,373 @@
+{
+  "backtraceGraph" : 
+  {
+    "commands" : 
+    [
+      "add_test"
+    ],
+    "files" : 
+    [
+      "/home/runner/work/Genetik/Genetik/tests/CMakeLists.txt"
+    ],
+    "nodes" : 
+    [
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 137,
+        "parent" : 0
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 139,
+        "parent" : 2
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 154,
+        "parent" : 4
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 168,
+        "parent" : 6
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 183,
+        "parent" : 8
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 192,
+        "parent" : 10
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 207,
+        "parent" : 12
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 222,
+        "parent" : 14
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 232,
+        "parent" : 16
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 249,
+        "parent" : 18
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 263,
+        "parent" : 20
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 273,
+        "parent" : 22
+      }
+    ]
+  },
+  "kind" : "ctestInfo",
+  "tests" : 
+  [
+    {
+      "backtrace" : 1,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_concurrency_tests"
+      ],
+      "name" : "genetik_concurrency_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 3,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_oop_consumer",
+        "--threads",
+        "3"
+      ],
+      "name" : "genetik_oop_parallel",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 5,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_typed_tests",
+        "--overlap"
+      ],
+      "name" : "genetik_typed_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 7,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_typed_regression_tests",
+        "--overlap"
+      ],
+      "name" : "genetik_typed_preparation_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 9,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_scientific_tests"
+      ],
+      "name" : "genetik_scientific_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 11,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_parsing_tests",
+        "--overlap"
+      ],
+      "name" : "genetik_parsing_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 13,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_template_tests",
+        "--overlap"
+      ],
+      "name" : "genetik_template_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 15,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_derivative_tests",
+        "--overlap"
+      ],
+      "name" : "genetik_derivative_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 17,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_derivative_regression_tests",
+        "--overlap"
+      ],
+      "name" : "genetik_derivative_regression_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 19,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_integral_tests",
+        "--overlap"
+      ],
+      "name" : "genetik_integral_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 21,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_prime_exact_tests",
+        "--overlap"
+      ],
+      "name" : "genetik_prime_exact_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 23,
+      "command" : 
+      [
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/genetik_checkpoint_tests",
+        "overlap",
+        "/home/runner/work/Genetik/Genetik/out/build/tsan/tests/checkpoint-overlap/checkpoint-fixture"
+      ],
+      "name" : "genetik_checkpoint_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/runner/work/Genetik/Genetik/out/build/tsan/tests"
+        }
+      ]
+    }
+  ],
+  "version" : 
+  {
+    "major" : 1,
+    "minor" : 0
+  }
+}

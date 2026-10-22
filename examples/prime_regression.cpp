@@ -1,5 +1,6 @@
 #include "examples/ExecutionOptions.hpp"
 #include "examples/PrimeRegression.hpp"
+#include "examples/PrimeExactOptions.hpp"
 #include <chrono>
 using namespace prime_example;
 using Clock=std::chrono::steady_clock;
@@ -7,6 +8,7 @@ static double seconds(Clock::time_point start){return std::chrono::duration<doub
 int main(int argc,char** argv) {
     std::cout.imbue(std::locale::classic());std::cout<<std::setprecision(17)<<std::unitbuf;
     try {
+        if(exactModeRequested(argc,argv))return exactMain(argc,argv);
         const auto execution=genetik_example::executionOptions(argc,argv);
         std::string mode,prefix;std::filesystem::path directory;std::optional<std::uint64_t> budget;
         std::uint64_t fitEvery=1;
@@ -18,7 +20,7 @@ int main(int argc,char** argv) {
                 mode=option;continue;
             }
             if(option=="--help") {
-                std::cout<<"genetik_prime_regression (--generate | --pilot | --campaign) --output DIR [--prime-file FIRST1000.txt] [--loss-budget 50000|100000] [--fit-every N] [--threads N]\n";return 0;
+                std::cout<<"genetik_prime_regression (--generate | --pilot | --campaign) --output DIR [--prime-file FIRST1000.txt] [--loss-budget 50000|100000] [--fit-every N] [--threads N]\n";exactHelp(std::cout);return 0;
             }
             if(option!="--output" && option!="--prime-file" && option!="--loss-budget" && option!="--fit-every")throw std::invalid_argument("unknown option "+option);
             if(++i==argc)throw std::invalid_argument("missing value for "+option);

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 PORTABLE = {
+    'genetik_prime_exact_contracts','genetik_prime_exact_overlap','genetik_prime_exact_cli',
     'genetik_integral_contracts', 'genetik_integral_overlap', 'genetik_integrals_quickstart', 'genetik_integral_cli',
     'genetik_derivative_regression_contracts','genetik_derivative_regression_overlap','genetik_derivative_regression_quickstart','genetik_derivative_regression_cli',
     'genetik_derivative_contracts', 'genetik_derivative_overlap', 'genetik_derivatives_quickstart',
@@ -22,7 +23,7 @@ PORTABLE = {
     'genetik_scalar_quickstart', 'genetik_symbolic_quickstart', 'genetik_oop_contracts',
     'genetik_concurrency_contracts', 'genetik_oop_parallel', 'genetik_character_parallel',
 }
-TSAN = {'genetik_integral_overlap','genetik_derivative_regression_overlap','genetik_derivative_overlap', 'genetik_template_overlap', 'genetik_parsing_overlap', 'genetik_scientific_contracts', 'genetik_typed_preparation_overlap', 'genetik_concurrency_contracts', 'genetik_oop_parallel', 'genetik_typed_overlap'}
+TSAN = {'genetik_prime_exact_overlap','genetik_integral_overlap','genetik_derivative_regression_overlap','genetik_derivative_overlap', 'genetik_template_overlap', 'genetik_parsing_overlap', 'genetik_scientific_contracts', 'genetik_typed_preparation_overlap', 'genetik_concurrency_contracts', 'genetik_oop_parallel', 'genetik_typed_overlap'}
 
 
 def main():

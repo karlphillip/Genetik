@@ -263,3 +263,17 @@ Bounded root integral models: [API and numerical policy](docs/SCALAR_INTEGRALS.m
 [all five integrand-discovery outcomes](docs/INTEGRAL_RESULTS.md), and
 [local qualification](docs/INTEGRAL_QUALIFICATION.md). This completes the agreed
 calculus implementation; combined hosted qualification and final delivery review follow.
+
+## Interactive exact prime-prefix demo
+
+The additive [exact-prefix mode](docs/PRIME_EXACT_SEARCH.md) searches for1,000/1,000
+rounded matches, with committed top-five reports (including duplicates) after roughly
+30 seconds at safe generation boundaries:
+
+```sh
+out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30 --top 5
+```
+
+Ctrl+C cooperatively cancels; loss and generation limits remain finite. The default
+historical approximation modes are unchanged. Exact recovery of this supplied finite
+prefix would not establish a general formula for all primes.

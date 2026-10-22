@@ -1019,3 +1019,13 @@ five runs, including three initialization discoveries, and the independent suppl
 linear-family fit. [INTEGRAL_QUALIFICATION.md](INTEGRAL_QUALIFICATION.md) records
 local numerical, failure, concurrency, package and replay gates. Historical evidence
 is unchanged. Next is combined calculus hosted qualification/final delivery review.
+
+
+## Application-only exact rounded prime-prefix mode
+
+The post-v0.2.0 local branch adds a separate --search-exact prime demo using the
+existing measurement seam and public one-generation GA/const committed-population
+view. No generic/public library header changes; historical modes and frozen evidence
+are preserved. See PRIME_EXACT_SEARCH.md and PRIME_EXACT_RESULTS.md for objective,
+reporting/cancellation contracts and new verification/smoke evidence. This is not a
+revision of the historical MSE prime campaign or a new all-primes formula claim.

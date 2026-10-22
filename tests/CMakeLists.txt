@@ -70,7 +70,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # Application support headers also compile without accidental preceding includes.
-foreach(header ScalarTemplateData ExpressionTextFile RegressionData RegressionWorkflow MultivariateData StrictArithmeticData ExecutionOptions)
+foreach(header PrimeExactOptions PrimeExactSearch ScalarTemplateData ExpressionTextFile RegressionData RegressionWorkflow MultivariateData StrictArithmeticData ExecutionOptions)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp "#include <${PROJECT_SOURCE_DIR}/examples/${header}.hpp>\n")
     add_library(example_header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp)
     target_link_libraries(example_header_${header} PRIVATE genetik_lib)
@@ -255,4 +255,14 @@ if(GENETIK_BUILD_EXAMPLES)
         -DWORKSPACE=${CMAKE_CURRENT_BINARY_DIR}/integral-cli
         -P ${CMAKE_CURRENT_SOURCE_DIR}/integral_cli.cmake)
     set_tests_properties(genetik_integrals_quickstart genetik_integral_cli PROPERTIES TIMEOUT 90)
+endif()
+
+add_executable(genetik_prime_exact_tests prime_exact.cpp)
+target_link_libraries(genetik_prime_exact_tests PRIVATE Genetik::Genetik)
+add_test(NAME genetik_prime_exact_contracts COMMAND genetik_prime_exact_tests)
+add_test(NAME genetik_prime_exact_overlap COMMAND genetik_prime_exact_tests --overlap)
+set_tests_properties(genetik_prime_exact_contracts genetik_prime_exact_overlap PROPERTIES TIMEOUT 90)
+if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_prime_exact_cli COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/prime_exact_cli.py $<TARGET_FILE:genetik_prime_regression> ${CMAKE_CURRENT_BINARY_DIR}/prime-exact-cli)
+    set_tests_properties(genetik_prime_exact_cli PROPERTIES TIMEOUT 60)
 endif()

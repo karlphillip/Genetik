@@ -1,12 +1,16 @@
 # Version, support and release policy
 
-Current candidate: **0.2.0, unreleased**. The complete agreed implementation scope
-passed the hosted matrix at `e30413ab119340a290c7b3c74d229097670fbb74`; see
-[CALCULUS_HOSTED_QUALIFICATION.md](CALCULUS_HOSTED_QUALIFICATION.md) for exact jobs,
-environments and tests. The final report/notes commit receives another complete
-matrix; its exact final SHA and links are in the ignored delivery completion packet.
-Earlier checkpoint sections below retain their original then-current status/counts.
-Main and published v0.1.0 remain unchanged pending final delivery approval.
+Current local candidate: **0.3.0, unreleased**, for exact-prime search,
+observability and checkpoint/resume. See
+[local preflight qualification](CHECKPOINT_PREFLIGHT_QUALIFICATION.md) and
+[the proposed release](RELEASE_0.3.0_PROPOSAL.md). Hosted qualification for this
+operational stack awaits explicit upload approval; local results do not extend
+hosted support to the new code.
+
+Published v0.2.0 remains at f9f300ed376370b2f476722e4a92888004d8358d with unchanged
+tag/assets. [Earlier calculus hosted evidence](CALCULUS_HOSTED_QUALIFICATION.md)
+retains its exact tested-SHA scope. The phase/checkpoint narratives below are
+historical, including their then-current pending status and test counts.
 
 Phase7C bounded root integral models are locally qualified in
 [INTEGRAL_QUALIFICATION.md](INTEGRAL_QUALIFICATION.md). Combined calculus hosted

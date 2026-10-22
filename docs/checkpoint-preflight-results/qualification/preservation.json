@@ -1,0 +1,12 @@
+{
+  "frozen_files": 127,
+  "published_assets": {
+    "v0.1.0/Genetik-0.1.0-source.tar.gz": "7f632489e45abb97385d98c9c2f703664386e358b22f3f73baa8a72c99b6b992",
+    "v0.1.0/SHA256SUMS": "a12d576eedc38b80af11f118d82d086a992f3d8930b89bda743b91191663353b",
+    "v0.2.0/Genetik-0.2.0-source.tar.gz": "0813347b58db3da338f74207e19d65e4b0897c43f059b6a01a4491df4f8afd9e",
+    "v0.2.0/SHA256SUMS": "eef05a54239b7cedd41a8535ac45e45883b9a248dc22494e48e72249a8da9488"
+  },
+  "exact_objective_grammar_evaluator_fitness": "unchanged from 853e1875a67c19365e10a25daff6aa01ec50c6cc",
+  "main": "f9f300ed376370b2f476722e4a92888004d8358d",
+  "tags": "986316039749aedcf20d1c1537bb4c91ded06151 refs/tags/v0.1.0\ne68d10c9989fb0eea265e0d706a4d8823549ae53 refs/tags/v0.2.0\n"
+}

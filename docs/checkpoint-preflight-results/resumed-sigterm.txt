@@ -1,0 +1,86 @@
+Prime exact-prefix search • seed 42 • 4 threads • loss allowance 2,000,000
+Resuming checkpoint
+Generation        3
+Previous attempts 17,044
+Seed              42
+RNG state         restored
+Problem           verified
+Checkpoint        checksum OK
+Continuing with generation 4
+
+Prime Search • Generation 3 / 2,000 • 00:00:00
+Fitness        0.01503092  ↑ +0.00402089
+Exact primes   15 / 1,000  ↑ +4
+RMSE           2,614.29
+Loss           985.954 (search objective, lower is better)
+
+Best formula
+p̂(n) ≈ 10000 · ((n/1000)·(0.4282 + (n/1000)))
+
+Complexity     5 nodes • depth 3 • 1 constants
+Evaluations    17,044 / 2,000,000
+Budget         0.85%
+Seed / threads 42 / 4 requested, 4 effective
+Population     63 valid • 1 invalid • 0 unevaluated
+Generations    3 published / 3 attempted
+Best-ever      0.01503092 fitness • loss 985.954 • generation 3
+Checkpoint     /home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/checkpoint-preflight/crash-qualified/checkpoints/latest.gtkc • generation 3 • 00:00:00 ago
+
+Prime Search • Generation 4 / 2,000 • 00:00:01
+Fitness        0.01503092  = 0.00000000
+Exact primes   15 / 1,000  = 0
+RMSE           2,614.29
+Loss           985.954 (search objective, lower is better)
+
+Best formula
+p̂(n) ≈ 10000 · ((n/1000)·(0.4282 + (n/1000)))
+
+Complexity     5 nodes • depth 3 • 1 constants
+Evaluations    23,628 / 2,000,000
+Budget         1.18%
+Seed / threads 42 / 4 requested, 4 effective
+Population     61 valid • 3 invalid • 0 unevaluated
+Generations    4 published / 4 attempted
+Best-ever      0.01503092 fitness • loss 985.954 • generation 3
+Checkpoint     /home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/checkpoint-preflight/crash-qualified/checkpoints/latest.gtkc • generation 4 • 00:00:00 ago
+
+Prime Search • Generation 5 / 2,000 • 00:00:01
+Fitness        0.01503092  ↑ +0.00000000
+Exact primes   15 / 1,000  = 0
+RMSE           2,614.29
+Loss           985.954 (search objective, lower is better)
+
+Best formula
+p̂(n) ≈ 10000 · ((n/1000)·((n/1000) − 0.2793·(−1.533)))
+
+Complexity     7 nodes • depth 4 • 2 constants
+Evaluations    30,152 / 2,000,000
+Budget         1.51%
+Seed / threads 42 / 4 requested, 4 effective
+Population     61 valid • 3 invalid • 0 unevaluated
+Generations    5 published / 5 attempted
+Best-ever      0.01503092 fitness • loss 985.954 • generation 5
+Checkpoint     /home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/checkpoint-preflight/crash-qualified/checkpoints/latest.gtkc • generation 5 • 00:00:00 ago
+
+Prime Search • Generation 5 / 2,000 • 00:00:01
+Fitness        0.01503092  = 0.00000000
+Exact primes   15 / 1,000  = 0
+RMSE           2,614.29
+Loss           985.954 (search objective, lower is better)
+
+Best formula
+p̂(n) ≈ 10000 · ((n/1000)·((n/1000) − 0.2793·(−1.533)))
+
+Complexity     7 nodes • depth 4 • 2 constants
+Canonical g(x0)  (x0 * (x0 - (0.27926565706729889 * (-1.5333070456981659))))
+LaTeX           \hat{p}(n) \approx 10000 \cdot \left(\left(\frac{n}{1000}\right) \cdot \left(\left(\frac{n}{1000}\right) - 0.2793 \cdot \left(-1.533\right)\right)\right)
+Evaluations    30,539 / 2,000,000
+Budget         1.53%
+Seed / threads 42 / 4 requested, 4 effective
+Population     61 valid • 3 invalid • 0 unevaluated
+Generations    5 published / 6 attempted
+Best-ever      0.01503092 fitness • loss 985.954 • generation 5
+Checkpoint     /home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/checkpoint-preflight/crash-qualified/checkpoints/latest.gtkc • generation 5 • 00:00:00 ago
+Stopping state cancelled
+Search stopped: cancelled • 30539 actual loss attempts • 7000 reporting rows (zero training attempts)
+Saved checkpoint: /home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/checkpoint-preflight/crash-qualified/checkpoints/latest.gtkc

@@ -1,0 +1,122 @@
+{
+  "source_commit": "5a75d2ab04a27ef50022f060d372409f8fe908fe",
+  "executable_sha256": "bd3c86b8495ea30f497e7c0579c4cc5c18036af701f5df5ef6aef0bc47b9cd15",
+  "inspector_sha256": "a9b1aac53dfdb5ca9457badcecdecba58f5bc9a21015bfd44753907bf535dab5",
+  "first_process": {
+    "pid": 873689,
+    "args": [
+      "--search-exact",
+      "--seed",
+      "42",
+      "--threads",
+      "4",
+      "--loss-budget",
+      "1000000",
+      "--report-seconds",
+      ".05",
+      "--checkpoint",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/checkpoint-preflight/crash-qualified/checkpoints",
+      "--checkpoint-seconds",
+      ".05",
+      "--checkpoint-keep",
+      "3",
+      "--metrics-file",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/checkpoint-preflight/crash-qualified/initial.jsonl"
+    ],
+    "signal": "SIGKILL",
+    "exit_status": -9,
+    "elapsed_seconds": 0.8421197079587728,
+    "generations_displayed": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  "killed_numbered_checkpoints": {
+    "generation-00000000000000000001.gtkc": {
+      "sha256": "7c0431d0aa687658c0efcf5c7c80c6d0ca06abbf34511ecce2172c7af048bf77",
+      "bytes": 26238,
+      "restored": {
+        "generation": 1,
+        "loss_attempts": 6715,
+        "attempted_generations": 1,
+        "seed": 42,
+        "threads": 4,
+        "canonical": "(((-0.67155207571330422) * x0) * (-0.8839390684024373))"
+      }
+    },
+    "generation-00000000000000000002.gtkc": {
+      "sha256": "fa6a8d54fbdb45000779b517d46ead61a2d0efe52340b60d765ad17a22b69d19",
+      "bytes": 26878,
+      "restored": {
+        "generation": 2,
+        "loss_attempts": 11215,
+        "attempted_generations": 2,
+        "seed": 42,
+        "threads": 4,
+        "canonical": "(x0 - (3.2168000042438507 * 0.0625))"
+      }
+    },
+    "generation-00000000000000000003.gtkc": {
+      "sha256": "a1a8d030238a771369bbd38531ec4900419f94f44f888eabf93cc709b6e6bfe0",
+      "bytes": 28125,
+      "restored": {
+        "generation": 3,
+        "loss_attempts": 17044,
+        "attempted_generations": 3,
+        "seed": 42,
+        "threads": 4,
+        "canonical": "(x0 * (0.42819999158382416 + x0))"
+      }
+    }
+  },
+  "killed_latest_sha256": "a1a8d030238a771369bbd38531ec4900419f94f44f888eabf93cc709b6e6bfe0",
+  "restored_durable_state": {
+    "generation": 3,
+    "loss_attempts": 17044,
+    "attempted_generations": 3,
+    "seed": 42,
+    "threads": 4,
+    "canonical": "(x0 * (0.42819999158382416 + x0))"
+  },
+  "resumed_process": {
+    "pid": 873698,
+    "args": [
+      "--resume",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/checkpoint-preflight/crash-qualified/checkpoints/latest.gtkc",
+      "--loss-budget",
+      "2000000",
+      "--report-seconds",
+      ".05",
+      "--checkpoint-seconds",
+      ".05",
+      "--checkpoint-keep",
+      "3",
+      "--formula-precision",
+      "4",
+      "--metrics-file",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/checkpoint-preflight/crash-qualified/resumed.jsonl"
+    ],
+    "signal": "SIGTERM",
+    "exit_status": 0,
+    "elapsed_seconds": 0.9703512589912862,
+    "generations_displayed": [
+      3,
+      4,
+      5
+    ]
+  },
+  "final_state": {
+    "generation": 5,
+    "loss_attempts": 30539,
+    "attempted_generations": 6,
+    "seed": 42,
+    "threads": 4,
+    "canonical": "(x0 * (x0 - (0.27926565706729889 * (-1.5333070456981659))))"
+  },
+  "final_latest_sha256": "69a7da83aa018024dba2314715750cf4bc0a4835de6c3a3fdeab08a1d12b6def",
+  "exact_recovery_claim": false,
+  "sigkill_final_save": false,
+  "note": "Work after the durable checkpoint was killed; restored counters cannot include unknown discarded work."
+}

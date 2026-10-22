@@ -1,0 +1,13 @@
+{
+  "seed": 42,
+  "threads": 4,
+  "population": 64,
+  "fitting": "unchanged enabled default",
+  "initial_total_budget": 1000000,
+  "resumed_total_budget": 2000000,
+  "report_seconds": 0.05,
+  "checkpoint_seconds": 0.05,
+  "keep": 3,
+  "stop": "SIGKILL after >=4 snapshots and three retained nonzero generations; fresh process SIGTERM after at least two further committed generations",
+  "recovery_goal": "functionality only; no tuning or exact-prime recovery gate"
+}

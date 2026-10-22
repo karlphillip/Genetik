@@ -1,0 +1,11 @@
+tests/integrals.cpp: In lambda function:
+tests/integrals.cpp:88:72: error: cannot convert ‘std::array<float, 1>’ to ‘std::span<const double>’
+   88 |     rejects<std::invalid_argument>([&]{(void)model("x1").evaluate(std::array{INFINITY});});
+      |                                                                        ^~~~~~~~~~~~~~~
+      |                                                                        |
+      |                                                                        std::array<float, 1>
+In file included from genetik/IntegralRegression.hpp:2,
+                 from tests/integrals.cpp:1:
+genetik/IntegralExpression.hpp:236:76: note:   initializing argument 1 of ‘IntegralResult IntegralExpression::evaluate(std::span<const double>, const ExecutionContext*) const’
+  236 | inline IntegralResult IntegralExpression::evaluate(std::span<const double> inputs,const ExecutionContext* execution) const {
+      |                                                    ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~

@@ -6,7 +6,7 @@ explicit local index must be N. No binder enters Expression or its default gramm
 Copies detach buffers; immutable models support synchronous concurrent evaluation
 with invocation-owned scratch. Inputs are borrowed for the call and never edited.
 
-The planned proper-integral policy evaluates lower then upper, treats signed-zero
+The proper-integral policy evaluates lower then upper, treats signed-zero
 equal bounds as an empty interval (+0/error0/no samples), otherwise checks original
 lower then upper endpoints and uses ascending GK7/15 panels. Reversal negates only
 the complete estimate. Endpoint validity does not establish global domain validity.
@@ -175,8 +175,19 @@ The discovery protocol is fixed in the campaign's PROTOCOL.txt before search:
 seeds0,1,2,3,42, population128,9 nodes/depth4, local slot1 only,+,-,*, discrete
 {-2,-1,0,1,2}, no fitting,10000 objective attempts,2000 generations, training MSE
 threshold1e-20, and the exact policy above. Full configuration and all outcomes
-will be retained in INTEGRAL_RESULTS.md. Training targets are x*x+x, not integrand
+are retained in INTEGRAL_RESULTS.md. Training targets are x*x+x, not integrand
 labels; all models are frozen by training loss/nodes/text before assessment. The
 separate supplied linear-integrand fit uses bounds[-8,8], step1/min1e-8,128 sweeps,
 8192 proposals,512 objective attempts and no early threshold. This supplies F(0)=0
 structurally; it does not recover an arbitrary additive constant.
+
+Sign application, abs, comparisons and container/control bookkeeping are excluded
+from quadrature units and bounded by panel/sample/size limits. The units are not
+hardware-instruction or runtime-cost measurements. The frozen experiment has
+completed; see [INTEGRAL_RESULTS.md](INTEGRAL_RESULTS.md) and the separate local
+[qualification record](INTEGRAL_QUALIFICATION.md).
+
+An optional ExecutionContext pointer passed to evaluate is borrowed only for the
+synchronous call and must outlive it. It is used for cooperative stop checks; the
+model retains no pointer, creates no executor and changes no public engine-access
+contract. Independent runs still require independent mutable run state/RNG.

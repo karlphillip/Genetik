@@ -1,0 +1,34 @@
+{
+  "release": {
+    "attempts": 115,
+    "a": 1.5,
+    "b": -0.5,
+    "verified_MSE": "3.0911175607415135e-32",
+    "fitter_samples": 15640,
+    "verification_samples": 136
+  },
+  "debug": {
+    "attempts": 115,
+    "a": 1.5,
+    "b": -0.5,
+    "verified_MSE": "3.0911175607415135e-32",
+    "fitter_samples": 15640,
+    "verification_samples": 136
+  },
+  "minimum": {
+    "attempts": 115,
+    "a": 1.5,
+    "b": -0.5,
+    "verified_MSE": "3.0911175607415135e-32",
+    "fitter_samples": 15640,
+    "verification_samples": 136
+  },
+  "sanitize": {
+    "attempts": 115,
+    "a": 1.5,
+    "b": -0.5,
+    "verified_MSE": "3.0911175607415135e-32",
+    "fitter_samples": 15640,
+    "verification_samples": 136
+  }
+}

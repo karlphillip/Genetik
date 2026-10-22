@@ -1,5 +1,10 @@
 # Installable development-package qualification
 
+Phase7C bounded root integral models are locally qualified in
+[INTEGRAL_QUALIFICATION.md](INTEGRAL_QUALIFICATION.md). Combined calculus hosted
+qualification and final development-delivery review are next. Earlier hosted
+records cover only their named SHAs, not this later local calculus stack.
+
 Phase 7B supplied value/partial regression is locally qualified in
 [DERIVATIVE_REGRESSION_QUALIFICATION.md](DERIVATIVE_REGRESSION_QUALIFICATION.md).
 Hosted calculus qualification remains pending until the checkpoint after 7C; no

@@ -91,3 +91,8 @@ campaign is `apps/campaigns/scalar_template_campaign.cpp` (target
 `genetik_scalar_template_campaign`). It requires an explicit fresh `--output`
 directory; use `out/runs/templates/…`. Frozen selected new evidence lives in
 `docs/scalar-template-results/`; existing historical evidence is untouched.
+
+Python syntax-only checks should use ast.parse, or set
+`PYTHONPYCACHEPREFIX=out/tmp/python-cache` before `python3 -m py_compile`. Explicit
+py_compile writes bytecode even when ordinary imports are disabled; source-role
+__pycache__ directories are rejected by the hygiene check.

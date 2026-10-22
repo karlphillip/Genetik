@@ -1,0 +1,6 @@
+x1*x1 status=estimated_convergence estimate=0.33333333333333331 reference=0.33333333333333331 absolute_error=0 estimated_error=3.7007434154171879e-15 samples=17 expression_ops=17 quadrature_units=122 panels=1 splits=0
+exp(x1) status=estimated_convergence estimate=1.7182818284590451 reference=1.7182818284590453 absolute_error=2.2204460492503131e-16 estimated_error=1.9076760487502454e-14 samples=17 expression_ops=17 quadrature_units=122 panels=1 splits=0
+1/(1+x1*x1) status=estimated_convergence estimate=0.78539816339744828 reference=0.78539816339744828 absolute_error=0 estimated_error=8.7196712450215798e-15 samples=47 expression_ops=141 quadrature_units=384 panels=3 splits=1
+sqrt(x1) status=estimated_convergence estimate=0.66666666666670216 reference=0.66666666666666663 absolute_error=3.5527136788005009e-14 estimated_error=5.9515188556115134e-11 samples=587 expression_ops=587 quadrature_units=5505 panels=39 splits=19
+log(x1) status=estimated_convergence estimate=0.38629436111989057 reference=0.38629436111989063 absolute_error=5.5511151231257827e-17 estimated_error=1.9678538471091803e-14 samples=17 expression_ops=17 quadrature_units=128 panels=1 splits=0
+independent_full_model_MSE=2.5 expected=2.5 samples=34 objective_arithmetic=7

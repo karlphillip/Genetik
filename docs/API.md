@@ -137,3 +137,8 @@ values and local resource exhaustion. See the compiled installed derivatives qui
 Supplied value and partial observations: [DERIVATIVE_REGRESSION.md](DERIVATIVE_REGRESSION.md).
 Immutable channels have explicit scale/weight, composite fitness identity and bounded
 all-row reporting. Search/fitting use the same weighted normalized objective.
+
+[Root integral models](SCALAR_INTEGRALS.md): optional IntegralExpression.hpp and
+IntegralRegression.hpp own prescribed bounds, appended local binding and ordinary
+integrands. Estimated convergence is not a rigorous error bound; full-model search
+and fitting share existing admission/preparation/publication and run-owned execution.

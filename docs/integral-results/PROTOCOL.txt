@@ -1,0 +1,10 @@
+external x0=x; appended local x1=t; fixed lower0 upperx0; integrand variables ONLY original slot1
+target training F=x*x+x by ordinary dyadic arithmetic, no integrand labels; inputs=-2,-1.5,-1,-.5,.5,1,1.5,2; omit0 (structurally imposed zero)
+seeds=0,1,2,3,42 population128 elites2; generations2000 candidate/objective limits10000; operators add/sub/mul uniform feasible; constants -2,-1,0,1,2; continuous0 fitOFF; nodes9 depth4 constant_bound2
+initial_depth4 mutation_depth3 grow.65 full.5 proposals8 crossover.9 mutation.35 rank_selection; fit_every1 (disabled)
+GK7/15 abs1e-10 rel1e-10 samples4096 panels256 depth32; expression_ops1000000 node_visits1000000 bindings1000000 quadrature_ops1000000 workspace8388608 model_nodes65536 external_max65536
+objective rows<=4096 input_coefficients<=1048576; worst-case samples<=16777216; expression/node/binding/quad allowances<=4294967296 each; one full model objective=one loss attempt
+stop training MSE<=1e-20; select MSE,nodes,faithful text; representative ties first declared seed; freeze ALL models before assessment
+assessment: training inputs(post-selection integrand), interior=-1.75,-1.25,-.75,-.25,.25,.75,1.25,1.75; exterior=-4,-3,3,4; zero point0; reference F=x*x+x and g=2*t+1 independent arithmetic
+recovery max integral AND integrand error<=1e-6 each set; no retries/tuning/injection; seeds sequential threads=1 smoke=0
+separate supplied g=a*x1+b initial1,1 target1.5,-.5 F=.75*x*x-.5*x; cap512; bounds[-8,8] initialstep1 min1e-8 sweeps128 proposals8192 no target; constant_bound8

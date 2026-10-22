@@ -1,0 +1,17 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/sanitize
+    Start 19: genetik_installed_package
+1/6 Test #19: genetik_installed_package ........   Passed  232.44 sec
+    Start 26: genetik_repository_hygiene
+2/6 Test #26: genetik_repository_hygiene .......   Passed    0.09 sec
+    Start 50: genetik_integral_contracts
+3/6 Test #50: genetik_integral_contracts .......   Passed   47.34 sec
+    Start 51: genetik_integral_overlap
+4/6 Test #51: genetik_integral_overlap .........   Passed    7.64 sec
+    Start 52: genetik_integrals_quickstart
+5/6 Test #52: genetik_integrals_quickstart .....   Passed   15.27 sec
+    Start 53: genetik_integral_cli
+6/6 Test #53: genetik_integral_cli .............   Passed   21.95 sec
+
+100% tests passed out of 6
+
+Total Test time (real) = 324.73 sec

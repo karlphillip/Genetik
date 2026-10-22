@@ -108,5 +108,15 @@
   squares within each channel, then combine normalized positive weights; never pool
   rows or invent anchors. Resource stops abort preparation, not invalid fitness.
   Preserve worker-local supplemental accounting and shared objective admission.
-  Include genetik_derivative_regression_overlap in TSan. Only 7C integration remains
-  before final qualification/delivery; see docs/DERIVATIVE_REGRESSION.md.
+  Include genetik_derivative_regression_overlap in TSan; see docs/DERIVATIVE_REGRESSION.md.
+- IntegralExpression/IntegralRegression are optional root models: appended local=N,
+  bounds use only externals, all scores/probes use full integral predictions. Require
+  estimated convergence; retain complete partitions transactionally on split failure.
+  Resources/nonconvergence/resolution abort preparation, never Invalid penalties.
+  Include genetik_integral_overlap in separate TSan. After locally completed7A/7B/7C,
+  proceed to combined calculus hosted qualification and final delivery; no more
+  mathematical feature phases. See docs/SCALAR_INTEGRALS.md.
+
+- Python syntax-only preflight uses ast.parse, or sets
+  PYTHONPYCACHEPREFIX=out/tmp/python-cache for explicit py_compile. Do not create
+  __pycache__ below tests/scripts; hygiene audits ignored output as well as Git status.

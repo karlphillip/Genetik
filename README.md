@@ -43,6 +43,9 @@ and the required strict floating-point options. Newer C++ standards are allowed.
 - [Supplied value/partial regression](examples/quickstarts/derivative_regression.cpp):
   explicit weighted observation channels drive shared search and coordinate fitting;
   a value anchor accompanies derivative observations without supplying extra value labels.
+- [Bounded root integral models](examples/quickstarts/integrals.cpp): prescribed
+  bounds and a local binding, estimated-convergence quadrature, and shared-engine
+  integrand discovery/coordinate fitting against complete integral observations.
 - [Application-owned permutation consumer](tests/oop_consumer/main.cpp): a non-scalar
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
@@ -247,3 +250,8 @@ Supplied value and first-partial observations can drive the same search and coor
 fitter through [DerivativeRegression.hpp](genetik/DerivativeRegression.hpp). See the
 [API/objective contract](docs/DERIVATIVE_REGRESSION.md), [installed quickstart](examples/quickstarts/derivative_regression.cpp)
 and [bounded anchored-antiderivative evidence](docs/DERIVATIVE_REGRESSION_RESULTS.md).
+
+Bounded root integral models: [API and numerical policy](docs/SCALAR_INTEGRALS.md),
+[all five integrand-discovery outcomes](docs/INTEGRAL_RESULTS.md), and
+[local qualification](docs/INTEGRAL_QUALIFICATION.md). This completes the agreed
+calculus implementation; combined hosted qualification and final delivery review follow.

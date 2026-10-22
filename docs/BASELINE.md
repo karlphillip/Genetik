@@ -1009,3 +1009,13 @@ retains all five bounded discovery runs and the separate supplied-structure fit.
 [DERIVATIVE_REGRESSION_QUALIFICATION.md](DERIVATIVE_REGRESSION_QUALIFICATION.md)
 records local contracts, resource/failure/accounting, concurrency, packaging and replay
 evidence. Historical campaigns and their scope remain unchanged. No remote publication.
+
+## Phase7C bounded proper root integrals
+
+[SCALAR_INTEGRALS.md](SCALAR_INTEGRALS.md) defines ownership, appended binding,
+proper endpoint policy, GK7/15 estimated convergence, resource/accounting and
+full-model scoring/fitting. [INTEGRAL_RESULTS.md](INTEGRAL_RESULTS.md) retains all
+five runs, including three initialization discoveries, and the independent supplied
+linear-family fit. [INTEGRAL_QUALIFICATION.md](INTEGRAL_QUALIFICATION.md) records
+local numerical, failure, concurrency, package and replay gates. Historical evidence
+is unchanged. Next is combined calculus hosted qualification/final delivery review.

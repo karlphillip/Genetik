@@ -49,15 +49,20 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    **Phase 7B** now adds supplied value/partial observation channels, weighted
    normalized loss, shared-engine search and coordinate fitting, with the bounded
    anchored-antiderivative campaign in DERIVATIVE_REGRESSION_RESULTS.md.
-   **7C bounded numerical integration is the only remaining agreed implementation
-   milestone**, followed by final calculus qualification and delivery. No additional
-   feature phase is part of that completion scope.
+   **Phase 7C** adds bounded owned root integral models, deterministic proper GK7/15
+   evaluation with estimated convergence and explicit failure/resources, full-model
+   integrand regression and coordinate fitting. See SCALAR_INTEGRALS.md,
+   INTEGRAL_RESULTS.md and INTEGRAL_QUALIFICATION.md. 7A scalar derivatives and
+   7B derivative-observation regression are locally complete; 7C is locally
+   implemented and ready for acceptance after its recorded gates.
+   **Next: combined calculus hosted qualification and final development-delivery
+   review. No further mathematical capabilities or feature phases precede it.**
 8. **Additional model families** — historical backlog only, outside the agreed
    7B/7C then final-qualification/delivery scope; no additional implementation phase
    is scheduled by this roadmap entry.
 
 Cleanup introduced no mathematical API; Phase 2 added typed evaluation and Phase 3
-now adds typed search/refinement. Phase 5 now adds bounded text import; 7C integration and final qualification/delivery remain. Optional adapters, additional constraints and model families are backlog outside this completion scope. Further delivery/platform qualification,
+now adds typed search/refinement. Phase 5 adds bounded text import; 7A/7B/7C calculus implementation is locally complete, with final combined qualification/delivery next. Optional adapters, additional constraints and model families are backlog outside this completion scope. Further delivery/platform qualification,
 profiling, checkpoint/resume, cache policy and GPU work remain separately scoped.
 The remaining sections preserve the historical engineering and experiment record;
 old “next”/“unreleased” statements describe those checkpoints, not current status.

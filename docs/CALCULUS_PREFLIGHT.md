@@ -101,3 +101,38 @@ global function/integrand. Preserve all earlier unsuccessful campaign seeds.
 The prior hosted Linux/GNU-standard-library scope does not yet qualify this calculus
 candidate. Windows/MSVC, AppleClang/macOS and libc++ remain unqualified. New hosted
 compiler/runtime details must be collected from the actual jobs after approval.
+
+## Executed preparation checks
+
+The initial 0.2 package/CI changes are e9a7f19; release/migration preparation is
+8296d08. Archive inspection initially rejected group-write permissions despite
+matching bytes (git archive's tar.umask versus Git's executable-bit-only metadata).
+The independently checked executable-bit repair is abc5cf2; original traceback and
+partial extraction are retained under ignored preflight/review output, not discarded.
+A subsequent documentation-only correction keeps archived0.1 proposal links valid.
+
+The abc5cf2 source archive passed exact-CMake3.16 normal and relocated isolated
+installed consumers, all actual quickstarts (including explicit thread2 where
+supported), generic permutation isolation, versions/components and source embedding.
+No .git or original checkout headers are needed. The current candidate's archive
+and any subsequent hosted-report tip are separately regenerated and verified, with
+exact SHA/blob manifests, hashes and logs in the ignored review packet. Release
+notes use proposed v0.2.0 links that resolve when that approved tag is published.
+
+A clean tracked-source configure derived52 portable names, exactly matching the
+manifest checker; all41 earlier hosted names remain. The eleven additions are
+three derivative tests, four derivative-regression tests and four integral tests.
+Ten current TSan selections each passed three fresh repetitions, followed by the
+complete integral contracts, using existing fully instrumented post-afbb03d binaries
+whose production headers are unchanged by release preparation. Supplemental local
+sanitizer results and the clean minimum-tool build/test results are attached to
+the exact tested source identities in the ignored packet, not claimed as a full
+suite at a later documentation SHA. No discovery campaign was rerun.
+
+Actionlint, cache-safe Python syntax, changed-document local navigation, frozen-file
+and published-asset identities pass. Authenticated read-only repository access works;
+the destination qualification/calculus did not exist remotely and main remains the
+published baseline. No remote write has been made. Approval is still required for
+the new calculus upload and CI/fix loop; a separate final approval is required for
+PR/main/tag/pre-release execution. Local qualification cannot substitute for the
+required clean hosted matrix on the final report tip.

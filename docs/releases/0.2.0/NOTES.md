@@ -25,10 +25,10 @@ Install with ordinary CMake >=3.16 and link `Genetik::Genetik` through
 `find_package(Genetik 0.2 CONFIG REQUIRED)`. C++20, strict FP and Threads requirements
 propagate; development sanitizers and warnings do not. The package remains
 header-only, standard-library/runtime only, with established include spelling and
-source compatibility target `genetik_lib`. See [README](../../../README.md),
-[compiled installed quickstarts](../../../examples/quickstarts),
-[generic OOP example](../../../tests/oop_consumer), and
-[migration guidance](../../MIGRATION.md).
+source compatibility target `genetik_lib`. See [README](https://github.com/karlphillip/Genetik/blob/v0.2.0/README.md),
+[compiled installed quickstarts](https://github.com/karlphillip/Genetik/tree/v0.2.0/examples/quickstarts),
+[generic OOP example](https://github.com/karlphillip/Genetik/tree/v0.2.0/tests/oop_consumer), and
+[migration guidance](https://github.com/karlphillip/Genetik/blob/v0.2.0/docs/MIGRATION.md).
 
 This is a new pre-1.0 minor series. Explicit 0.1 version requests intentionally
 reject a 0.2 installation under SameMinorVersion. Recompile all dependent translation
@@ -37,8 +37,8 @@ layout/vtables. No stable binary ABI or cross-version seeded trajectory is promi
 
 Prior hosted qualification covers cleanup/typed/scientific/parser/template work at
 its recorded SHAs. Combined calculus qualification is pending: consult
-[the current preparation record](../../CALCULUS_PREFLIGHT.md) and
-[support policy](../../SUPPORT.md). Intended Linux matrix: GCC13 x64 with exact
+[the current preparation record](https://github.com/karlphillip/Genetik/blob/v0.2.0/docs/CALCULUS_PREFLIGHT.md) and
+[support policy](https://github.com/karlphillip/Genetik/blob/v0.2.0/docs/SUPPORT.md). Intended Linux matrix: GCC13 x64 with exact
 CMake3.16, Clang18 x64 ASan+UBSan using GNU standard-library headers/runtime, and
 GCC13 ARM64 with separate TSan. Do not infer libc++, Windows or Apple qualification.
 

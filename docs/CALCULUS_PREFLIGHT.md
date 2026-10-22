@@ -85,7 +85,7 @@ with the polymorphic measurement seam. [MIGRATION.md](MIGRATION.md) consolidates
 
 Only release/package/workflow/docs preparation changes are needed; no numerical
 feature or campaign retuning. The source-archive checker now derives its prefix
-from the committed version and verifies every member's blob bytes and mode against
+from the committed version and verifies every member's blob bytes and executable mode against
 that commit before running the existing extracted-source consumer gate. Generated
 assets are bound to the final SHA in ignored output; regenerate if the candidate changes.
 See [full release proposal](RELEASE_PROPOSAL.md) and [notes](releases/0.2.0/NOTES.md).

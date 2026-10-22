@@ -33,7 +33,7 @@ git archive --format=tar --prefix=Genetik-0.2.0/ "$CANDIDATE" | gzip -n > out/ru
 python3 scripts/check_source_archive.py --archive out/runs/hosted-calculus/review/assets/Genetik-0.2.0-source.tar.gz --commit "$CANDIDATE" --workspace out/runs/hosted-calculus/review/archive-check
 ```
 
-The archive checker compares every file/mode to committed Git blobs, excludes
+The archive checker compares every file and executable mode to committed Git blobs, excludes
 output/build trees and unsafe paths, extracts without .git, and executes isolated
 ordinary/relocated installed multi-TU consumers, actual new quickstarts, generic
 OOP consumption, versions/components, public requirements and source inclusion.

@@ -86,7 +86,9 @@ def main():
             relative = str(PurePosixPath(member.name).relative_to(prefix))
             identity, mode = blobs[relative]
             blob = hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
-            if blob != identity or member.mode & 0o777 != mode:
+            # Git tracks executability, not group-write permissions; git archive
+            # applies tar.umask (normally 0002) to regular file modes.
+            if blob != identity or member.mode & 0o111 != mode & 0o111:
                 raise ValueError('archive differs from committed blob: '+relative)
             destination.write_bytes(data)
             destination.chmod(member.mode & 0o777)

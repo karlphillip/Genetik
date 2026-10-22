@@ -1,6 +1,17 @@
 # Changelog
 
-## 0.2.0 — unreleased
+## 0.3.0 — unreleased
+
+- Add opt-in exact-prefix prime search, readable committed-generation reports,
+  presentation fitness, bounded Unicode/LaTeX precision and full raw/JSONL output.
+- Add generic explicit checkpoint codecs/capture/restore, scalar candidate codec,
+  format1 POSIX durable storage, periodic retention and cooperative signal saves.
+- Qualify deterministic continuation and bounded SIGKILL crash recovery separately.
+- Preserve source OOP/mathematical APIs, default historical modes and exact-prime
+  search semantics. Rebuild consumers consistently; request the0.3 package series.
+  See [notes](docs/releases/0.3.0/NOTES.md) and [migration](docs/releases/0.3.0/MIGRATION.md).
+
+## 0.2.0 — published development pre-release
 
 New pre-1.0 minor series; SameMinorVersion rejects older 0.1 package requests.
 Recompile all dependent translation units consistently after the polymorphic

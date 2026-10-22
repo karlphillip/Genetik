@@ -75,6 +75,7 @@ inline void validateExactWork(const ExactSavedRun& s,std::size_t rows) {
 }
 struct ExactRunOptions {
     bool pretty=false;
+    unsigned formulaPrecision=6;
     std::ostream* metrics=nullptr;
     std::filesystem::path checkpointDirectory;
     std::chrono::steady_clock::duration checkpointInterval=std::chrono::seconds(300);

@@ -6,7 +6,7 @@ inline bool exactModeRequested(int argc,char** argv) {
     for(int i=1;i<argc;++i) {
         const std::string_view option=argv[i];
         if(option=="--search-exact"||option=="--resume")return true;
-        for(auto name:{"--output","--prime-file","--loss-budget","--fit-every","--seed","--threads","--top","--report-seconds","--report-format","--metrics-file","--checkpoint","--checkpoint-seconds","--checkpoint-keep","--resume"})
+        for(auto name:{"--output","--prime-file","--loss-budget","--fit-every","--seed","--threads","--top","--report-seconds","--report-format","--formula-precision","--metrics-file","--checkpoint","--checkpoint-seconds","--checkpoint-keep","--resume"})
             if(option==name && i+1<argc){++i;break;}
     }
     return false;
@@ -21,6 +21,7 @@ struct ExactOptions {
     std::uint32_t seed=42;
     std::uint64_t budget=1000000,fitEvery=1;
     std::size_t top=1,checkpointKeep=3;
+    unsigned formulaPrecision=6;
     double reportSeconds=30,checkpointSeconds=300;
     ExecutionConfig execution;
     std::string primeFile;
@@ -38,7 +39,7 @@ inline ExactOptions exactOptions(int argc,char** argv) {
         if(option=="--help"){options.help=true;continue;}
         if(option=="--no-fit"){options.noFit=true;continue;}
         if(option!="--seed" && option!="--threads" && option!="--loss-budget" && option!="--report-seconds" &&
-           option!="--top" && option!="--fit-every" && option!="--prime-file" && option!="--output" && option!="--report-format" && option!="--metrics-file" && option!="--checkpoint" && option!="--checkpoint-seconds" && option!="--checkpoint-keep" && option!="--resume")
+           option!="--top" && option!="--fit-every" && option!="--prime-file" && option!="--output" && option!="--report-format" && option!="--formula-precision" && option!="--metrics-file" && option!="--checkpoint" && option!="--checkpoint-seconds" && option!="--checkpoint-keep" && option!="--resume")
             throw std::invalid_argument("unknown exact-search option "+option);
         if(++i==argc)throw std::invalid_argument("missing value for "+option);
         const std::string_view value=argv[i];
@@ -46,6 +47,7 @@ inline ExactOptions exactOptions(int argc,char** argv) {
         if(option=="--seed")options.seed=exactUnsigned<std::uint32_t>(value,option,false);
         if(option=="--threads")options.execution=ExecutionConfig::parse(value);
         if(option=="--loss-budget")options.budget=exactUnsigned<std::uint64_t>(value,option);
+        if(option=="--formula-precision"){options.formulaPrecision=exactUnsigned<unsigned>(value,option);if(options.formulaPrecision>17)throw std::invalid_argument("--formula-precision requires1..17 significant digits");}
         if(option=="--top")options.top=exactUnsigned<std::size_t>(value,option);
         if(option=="--fit-every")options.fitEvery=exactUnsigned<std::uint64_t>(value,option);
         if(option=="--prime-file")options.primeFile=value;
@@ -70,8 +72,9 @@ inline ExactOptions exactOptions(int argc,char** argv) {
 }
 inline void exactHelp(std::ostream& out) {
     out<<"genetik_prime_regression --search-exact [--seed 42] [--threads N] [--loss-budget 1000000]\n"
-          "  [--report-seconds 30] [--top 1] [--report-format pretty|raw] [--fit-every N] [--no-fit] [--prime-file FIRST1000.txt] [--output DIR]\n"
+          "  [--report-seconds 30] [--top 1] [--formula-precision 6] [--report-format pretty|raw] [--fit-every N] [--no-fit] [--prime-file FIRST1000.txt] [--output DIR]\n"
           "  [--checkpoint DIR] [--checkpoint-seconds 300] [--checkpoint-keep 3] [--resume FILE|DIR] [--metrics-file PATH]\n"
+          "Formula precision1..17 controls display only; rounded equations use approx, canonical/JSONL remain full precision.\n"
           "Pretty output defaults to one best individual; explicit --top adds compact entries. Raw defaults to five.\n"
           "--loss-budget on resume is the TOTAL allowance, including previously consumed work; worker changes are rejected.\n"
           "Checkpoint at safe committed boundaries, including initial/final; SIGINT/SIGTERM drain and save, never serialize in a handler.\n"
@@ -85,7 +88,7 @@ inline void exactHelp(std::ostream& out) {
 inline int exactMain(int argc,char** argv) {
     auto options=exactOptions(argc,argv);
     if(options.help){exactHelp(std::cout);return 0;}
-    ExactRunOptions io;io.pretty=options.reportFormat=="pretty";
+    ExactRunOptions io;io.pretty=options.reportFormat=="pretty";io.formulaPrecision=options.formulaPrecision;
     if(!options.resumePath.empty()){
         if(std::filesystem::is_directory(options.resumePath))options.resumePath/="latest.gtkc";
         io.resume=loadCheckpoint(options.resumePath);const auto saved=decodeExactRun(*io.resume);
@@ -114,7 +117,7 @@ inline int exactMain(int argc,char** argv) {
              <<"x0=double(n)/1000.0 target=double(prime[n])/10000.0 decoded=10000*g(x0) indices=1..1000 rounding=halfway_away_from_zero\n"
              <<"seed="<<options.seed<<" report_seconds="<<options.reportSeconds<<" top="<<options.top<<" cancellation=SIGINT_cooperative\n";
     genetik_example::printExecution(options.execution,cfg.population);regression_example::printConfig(cfg);}
-    else std::cout<<"Prime exact-prefix search • seed "<<options.seed<<" • "<<options.execution.threads<<" threads • loss allowance "<<options.budget<<"\n";
+    else std::cout<<"Prime exact-prefix search • seed "<<options.seed<<" • "<<options.execution.threads<<" threads • loss allowance "<<exactCount(options.budget)<<"\n";
     const auto result=runExactSearch(problem,cfg,random,std::cout,options.top,
         std::chrono::duration_cast<ExactClock::duration>(std::chrono::duration<double>(options.reportSeconds)),true,[] {return ExactClock::now();},io);
     if(!io.pretty)std::cout<<"search_complete stopping_reason="<<searchStopName(result.stop)

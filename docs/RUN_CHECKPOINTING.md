@@ -41,10 +41,11 @@ read/check completion, rename into place, then fsync the directory. A numbered f
 is established before latest.gtkc is replaced; pruning follows successful replacement.
 Failures before rename preserve the old destination. A directory-fsync error after
 rename means durability is uncertain and is reported, not rolled back. Guarantees
-remain qualified by filesystem/hardware fsync/rename behavior. Automatic directory
-creation does not fsync every newly created ancestor: the replacement durability
-contract concerns an established destination directory, not durable creation of a
-whole new directory hierarchy. No final checkpoint
+remain qualified by filesystem/hardware fsync/rename behavior. Each directory created by Genetik is fsynced along with its parent entry, so newly
+created ancestors are covered. Caller-created ancestors must already be established.
+Retention deletion is synced after a good numbered/latest replacement. A crash in
+the cleanup window can leave extra old files or temporary files; it cannot make an
+incomplete staged population resumable. No final checkpoint
 can be triggered by SIGKILL, power loss, kernel failure or a process crash.
 
 Pretty and LaTeX formatting are presentation only, separate from canonical export.
@@ -112,7 +113,7 @@ distro patch differences. This is necessary metadata, not proof that arbitrary
 client callbacks/build flags are identical. Exact continuation requires the same
 qualified revision/build and independently callable deterministic implementations.
 The authoritative package version now lives in `genetik/Version.hpp`; CMake reads
-it. Its value remains0.2.0; package name, target and version matching are unchanged.
+it. The proposed package value is 0.3.0; package name, target and version matching are unchanged.
 No architecture-dependent library binary or new third-party dependency is installed.
 POSIX persistence is qualified locally; other platforms are not newly qualified.
 
@@ -139,7 +140,12 @@ The formatter preserves left-associative infix grouping and explicitly parenthes
 right children of equal precedence. It retains x·2, rather than reordering x*2 into
 2·x. Log becomes ln, multiplication uses · / \\cdot, square root uses √(...) /
 \\sqrt{...}, Powi uses superscripts / ^{n}, functions retain argument grouping.
-Negative literals and signed zero are retained; coefficients use max_digits10.
+Negative literals and signed zero are retained. The reusable formatter defaults to
+max_digits10; an optional fifth argument `ExpressionFormatOptions{6}` selects six
+significant digits (validated range 1..17). Canonical mode always retains full
+precision. Rounded display text is not executable serialization; label equations
+with an approximate relation. The prime application uses six digits by default,
+`≈` in Unicode and `\approx` in LaTeX.
 Scientific numeric literals use mantissa\\times10^{exponent} in LaTeX. Pretty/LaTeX
 are not input languages and do not promise parser round trips. Powi notation still
 means Genetik's checked sequential computational operator, including child validation
@@ -154,7 +160,7 @@ ownership. Concurrent calls share only immutable expression data.
 
 ```sh
 out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 \
-  --loss-budget 1000000 --report-seconds 30 \
+  --loss-budget 1000000 --report-seconds 30 --formula-precision 6 \
   --checkpoint out/runs/prime-exact/seed42/checkpoints --checkpoint-seconds 300 \
   --checkpoint-keep 3 --metrics-file out/runs/prime-exact/seed42/metrics.jsonl
 
@@ -162,7 +168,11 @@ out/build/release/genetik_prime_regression \
   --resume out/runs/prime-exact/seed42/checkpoints/latest.gtkc --loss-budget 2000000
 ```
 
-Default `--report-format pretty` displays one current committed best individual.
+Default `--report-format pretty` displays one current committed best individual,
+with committed generation/generation limit, readable grouped counts and RMSE, elapsed
+time, budget consumption and checkpoint generation/age. `--formula-precision N`
+(default 6,1..17 significant digits) affects only Unicode/LaTeX rendering. Full
+canonical coefficients, checkpoint fields and raw/JSONL records are unchanged.
 Explicit `--top N` adds compact secondary entries without deduplication. The
 optional `--report-format raw` retains dense original fields and defaults to top 5.
 Both use the same RegressionOrdering and cache; normalized presentation is never
@@ -225,3 +235,23 @@ Reproducing all first 1,000 supplied primes would demonstrate an exact fit to th
 finite prefix. It would not establish a general closed-form formula for all prime
 numbers. No mathematical operator, objective, fitting algorithm, grammar or selection
 semantics changed for this milestone. [Qualification and smoke](RUN_CHECKPOINTING_RESULTS.md).
+
+
+## Clean continuation versus crash recovery
+
+Deterministic continuation starts at a fully committed checkpoint under the qualified
+matching build/runtime, worker count and immutable context. The preserved 100 versus
+40/save/destroy/load/100 test compares population/coefficient bits, fitness, archive,
+RNG, histories and search counters; operational output precision may change.
+
+Crash recovery restores the latest complete durable checkpoint. SIGKILL does not
+invoke a handler or save a final file. Work performed since that file may be repeated;
+its unknown counters cannot be reconstructed without a per-attempt journal. Complete
+checksummed files are verified and restored before workers start. Normal cancellation
+instead drains work and records actual post-failure counters/RNG with the last
+committed population. Neither path publishes incomplete staged generations.
+
+Format 1 and the scalar codec remain unchanged for 0.3.0. Strict package/runtime
+validation rejects old 0.2 developmental files; there is no silent trajectory/cache
+migration across library versions. See [0.3 migration](releases/0.3.0/MIGRATION.md)
+and the [polish qualification](CHECKPOINT_PREFLIGHT_QUALIFICATION.md).

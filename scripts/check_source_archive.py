@@ -31,7 +31,12 @@ def main():
         parser.error('selected CMake and C++ compiler must be available')
     # Derive identity from the committed authority, never the current checkout.
     project = subprocess.check_output(['git', 'show', args.commit+':CMakeLists.txt'], text=True)
-    version = re.search(r'project\(GENETIK VERSION ([0-9]+\.[0-9]+\.[0-9]+)', project).group(1)
+    match = re.search(r'project\(GENETIK VERSION ([0-9]+\.[0-9]+\.[0-9]+)', project)
+    if match:
+        version = match.group(1) # historical archives retain their original authority
+    else:
+        header = subprocess.check_output(['git','show',args.commit+':genetik/Version.hpp'],text=True)
+        version = re.search(r'GENETIK_VERSION_STRING \"([0-9]+\.[0-9]+\.[0-9]+)\"',header).group(1)
     prefix = 'Genetik-'+version
     tracked = subprocess.check_output(['git', 'ls-tree', '-r', '-z', args.commit]).split(b'\0')
     blobs = {}

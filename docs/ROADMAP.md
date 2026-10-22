@@ -301,3 +301,10 @@ checkpoint/resume are locally implemented. Qualification is recorded in
 RUN_CHECKPOINTING_RESULTS.md. This adds no mathematical phase; the agreed calculus
 implementation and historical delivery remain complete. Hosted qualification of
 this operational feature remains separate from local evidence.
+
+
+Operational polish/preflight: presentation precision and readable limits/metrics,
+parent-directory durability, bounded SIGKILL recovery and0.3.0 release preparation
+are locally implemented. Next is approval for hosted qualification of the exact
+preflight candidate, then a separate final development-delivery review. No new
+mathematical implementation phase is introduced. See CHECKPOINT_PREFLIGHT_QUALIFICATION.md.

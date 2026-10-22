@@ -125,8 +125,14 @@
   dumps. Capture only idle committed generations; restore fresh objects after
   context/runtime/limits validation. Preserve post-failure RNG and actual work.
   Format1 and codec IDs are explicit compatibility contracts; Version.hpp is the
-  authoritative unchanged package version read by CMake. Checkpoint directories
+  authoritative package version read by CMake. Checkpoint directories
   are run-owned under out/runs/; fsync/rename writes precede retention cleanup.
   SIGINT/SIGTERM handlers only request cancellation. See RUN_CHECKPOINTING.md;
   include genetik_checkpoint_overlap in separate TSan gates. Pretty/LaTeX never
   replace canonical export or affect numerical evaluation and ranking.
+
+- Formula precision is presentation only (prime default6, reusable formatter17).
+  Mark rounded equations approximate; canonical/checkpoint/JSONL coefficients stay
+  full precision. Keep crash recovery distinct from clean deterministic continuation.
+  New checkpoint directories sync their parent entries; preserve format1 and reject
+  incompatible package/runtime state. See CHECKPOINT_PREFLIGHT_QUALIFICATION.md.

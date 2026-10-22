@@ -12,15 +12,15 @@ It is heuristic search, with no guarantee of a good fit, a particular equation o
 extrapolation accuracy. Prime regression is one application example.
 
 The library uses only the C++ standard library and is [MIT licensed](LICENSE),
-copyright Karl Phillip (2021). Version **0.1.0** is available as a
-[development pre-release](https://github.com/karlphillip/Genetik/releases/tag/v0.1.0).
-This checkout prepares **0.2.0 (unreleased)**, including typed mathematics, parsing,
-templates and bounded scalar calculus. See [migration](docs/MIGRATION.md) and
-[delivery proposal](docs/RELEASE_PROPOSAL.md). The previous hosted results cover their
-recorded SHAs; [combined calculus hosted qualification](docs/CALCULUS_HOSTED_QUALIFICATION.md)
-now records the complete implementation candidate. The final report tip also
-receives the full matrix before delivery review. This is subsequent development; the published tag and assets
-remain unchanged.
+copyright Karl Phillip (2021). [0.2.0](https://github.com/karlphillip/Genetik/releases/tag/v0.2.0)
+and 0.1.0 are published development pre-releases with unchanged assets.
+This checkout prepares **0.3.0 (unreleased)**: exact-prefix prime search, human-readable
+reporting and generic checkpoint/resume interfaces, building on the existing
+mathematical and OOP modules. See [migration](docs/releases/0.3.0/MIGRATION.md),
+[release proposal](docs/RELEASE_0.3.0_PROPOSAL.md) and
+[local operational qualification](docs/CHECKPOINT_PREFLIGHT_QUALIFICATION.md).
+Hosted qualification for this operational stack is pending; previous hosted runs
+remain scoped to their recorded SHAs.
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
 
@@ -62,10 +62,10 @@ git clone https://github.com/karlphillip/Genetik.git Genetik
 cd Genetik
 ```
 
-For this 0.2.0 candidate, use its reviewed source archive and enter `Genetik-0.2.0/`
+For this 0.3.0 candidate, use its reviewed source archive and enter `Genetik-0.3.0/`
 when made available. The commands below describe that candidate, not published
 v0.1.0. The older tag contains only the original scalar/symbolic quickstarts and
-requires its own 0.1 package requests. Do not use 0.2 instructions with that archive.
+requires its own 0.1 package requests. Do not use 0.3 instructions with that archive.
 From the corresponding source root, install and build the available programs:
 
 ```sh
@@ -87,7 +87,7 @@ The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a comp
 consumer. In your application, enable CXX and use:
 
 ```cmake
-find_package(Genetik 0.2 CONFIG REQUIRED)
+find_package(Genetik 0.3 CONFIG REQUIRED)
 add_executable(application main.cpp)
 target_link_libraries(application PRIVATE Genetik::Genetik)
 ```
@@ -141,7 +141,7 @@ contract. [Support and repeatability policy](docs/SUPPORT.md).
 - [Installation/package requirements](docs/PACKAGING.md).
 - [Concurrency and callback qualification](docs/CONCURRENCY.md).
 - [Support/version policy](docs/SUPPORT.md) and [executed feature hosted qualification](docs/TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md).
-- [Proposed 0.2.0 release notes](docs/releases/0.2.0/NOTES.md) and [integration/publication proposal](docs/RELEASE_PROPOSAL.md).
+- [Proposed 0.3.0 release notes](docs/releases/0.3.0/NOTES.md) and [integration/publication proposal](docs/RELEASE_0.3.0_PROPOSAL.md).
 
 ## API and examples
 
@@ -271,7 +271,7 @@ rounded matches, with committed top-five reports (including duplicates) after ro
 30 seconds at safe generation boundaries:
 
 ```sh
-out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30
+out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30 --formula-precision 6
 ```
 
 Ctrl+C cooperatively cancels; loss and generation limits remain finite. The default

@@ -36,6 +36,7 @@ struct ExactProgress {
     std::uint32_t seed=0;
     unsigned requested=1,effective=1;
     std::optional<std::uint64_t> bestGeneration{};
+    std::uint64_t generationLimit=0;
 };
 inline void exactSnapshot(std::ostream& out,const std::vector<ExpressionCandidate>& members,
         const std::vector<std::uint32_t>& ref,const ExactProgress& progress,std::size_t top,
@@ -54,7 +55,7 @@ inline void exactSnapshot(std::ostream& out,const std::vector<ExpressionCandidat
     countTrainingWork(work.snapshots);
     out<<"snapshot="<<kind<<" elapsed_seconds="<<elapsed<<" committed_generation=";
     if(progress.generation)out<<*progress.generation;else out<<"none";
-    out<<" attempted_generations="<<progress.attempts<<" published_generations="<<progress.published
+    out<<" generation_limit="<<progress.generationLimit<<" attempted_generations="<<progress.attempts<<" published_generations="<<progress.published
        <<" actual_loss_attempts="<<progress.losses<<" loss_budget="<<progress.allowance<<" remaining_allowance="<<progress.remaining
        <<" unpublished_loss_attempts="<<progress.unpublishedLosses<<" candidate_requests="<<progress.candidateRequests
        <<" threads_requested="<<progress.requested<<" threads_effective="<<progress.effective

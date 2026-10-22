@@ -27,15 +27,34 @@ static void formatTests(){
     for(auto s:{"sin(x0)","cos(x0)","exp(x0)","sqrt(x0)","log(x0)","powi(x0,0)","powi(x0,8)","(-0.0)","1e-300"}){
         const auto value=e(s),copy=value;const auto canonical=value.toString();for(auto f:{ExpressionTextFormat::Canonical,ExpressionTextFormat::Unicode,ExpressionTextFormat::LaTeX})check(!formatExpression(value,f).empty(),"all scientific formats");check(value.sameRepresentation(copy)&&value.toString()==canonical,"formatter does not edit tree");
     }
-    const auto prime=parseExpression("x0+1",1);check(exactEquation(prime,ExpressionTextFormat::Unicode)=="p̂(n) = 10000 · ((n/1000) + 1)","decoded scale groups complete model");
+    const auto prime=parseExpression("x0+1",1);check(exactEquation(prime,ExpressionTextFormat::Unicode)=="p̂(n) ≈ 10000 · ((n/1000) + 1)","decoded scale groups complete model");
     rejects([&]{formatExpression(prime,ExpressionTextFormat::Unicode,{},ExpressionFormatLimits{2,10});});
+    const auto rounded=parseExpression("x0*(0.71259750425815582+log(x0))",1);
+    check(exactEquation(rounded,ExpressionTextFormat::Unicode)=="p̂(n) ≈ 10000 · ((n/1000)·(0.712598 + ln(n/1000)))","six significant digits, approximate equation and grouping");
+    const auto full=rounded.toString();
+    for(unsigned precision:{1U,6U,17U}){
+        for(auto value:{-0.0,std::numeric_limits<double>::denorm_min(),std::numeric_limits<double>::max(),-1e-300,1e20}){
+            const auto c=Expression::constant(value,1,{1,1,std::numeric_limits<double>::max()});
+            for(auto f:{ExpressionTextFormat::Unicode,ExpressionTextFormat::LaTeX}){
+                const auto text=formatExpression(c,f,{}, {},ExpressionFormatOptions{precision});check(!text.empty(),"bounded significant digits across binary64 range");
+                if(std::signbit(value))check(text.starts_with(f==ExpressionTextFormat::Unicode?"−":"-"),"preserve displayed negative zero/sign");
+            }
+            check(formatExpression(c,ExpressionTextFormat::Canonical,{}, {},ExpressionFormatOptions{precision})==c.toString(),"canonical ignores presentation precision");
+        }
+    }
+    check(formatExpression(Expression::constant(1e20,1,{1,1,1e21}),ExpressionTextFormat::LaTeX,{}, {},ExpressionFormatOptions{6})=="1\\times10^{+20}","LaTeX scientific notation");
+    check(exactEquation(rounded,ExpressionTextFormat::LaTeX).find("\\approx")!=std::string::npos&&rounded.toString()==full,"LaTeX marks approximation without edits");
+    rejects([&]{formatExpression(rounded,ExpressionTextFormat::Unicode,{}, {},ExpressionFormatOptions{0});});
+    rejects([&]{formatExpression(rounded,ExpressionTextFormat::Unicode,{}, {},ExpressionFormatOptions{18});});
+    check(exactCount(0)=="0"&&exactCount(10000000)=="10,000,000"&&exactNumber(1234.5)=="1,234.5","locale-independent human grouping");
     // Winning presentation and signed deltas are deterministic engineering fixtures.
     auto p=std::make_shared<const ExactPrefixProblem>(std::vector<std::uint32_t>{10000});ExpressionCandidate c(Expression::constant(1,1),p);c.calculateFitness();
-    ExactProgress progress;progress.generation=7;progress.seed=42;progress.population=1;progress.allowance=100;progress.losses=50;
+    ExactProgress progress;progress.generation=7;progress.seed=42;progress.population=1;progress.allowance=100;progress.losses=50;progress.generationLimit=1000;
     ExactReportingWork work;ExactDisplayState prior;prior.previousLoss=1;prior.previousMatches=0;std::ostringstream text,json;
     exactHumanSnapshot(text,{c},p->referenceValues(),progress,1,90,"winning","exact_training_fit",work,prior,&json,c,"out/example/latest.gtkc",7,2);
     check(text.str().find("EXACT PREFIX RECOVERED")!=std::string::npos&&text.str().find("1 / 1")!=std::string::npos&&text.str().find("↑ +1")!=std::string::npos&&text.str().find("Canonical g(x0)")!=std::string::npos&&text.str().find("LaTeX")!=std::string::npos,"complete success block");
     check(json.str().find("genetik.prime-progress/1")!=std::string::npos&&json.str().find("presentation_fitness")!=std::string::npos,"versioned JSONL record");
+    check(text.str().find("Generation 7 / 1,000")!=std::string::npos&&json.str().find("generation_limit")!=std::string::npos,"human and machine generation limit");
 }
 class Gated final:public ExactPrefixProblem {
     mutable std::atomic<unsigned> starts_{0};mutable std::barrier<> gate_{2};
@@ -53,7 +72,7 @@ static std::string summary(const ExactSearchResult& result,const RandomContext& 
 }
 static std::string phase(const std::filesystem::path& dir,unsigned generations,unsigned threads,std::optional<CheckpointDocument> resume={}){
     auto cfg=fixture(generations);std::shared_ptr<const ExactPrefixProblem> problem=threads>1?std::make_shared<const Gated>():std::make_shared<const ExactPrefixProblem>(std::vector<std::uint32_t>{1,4,13},limits());
-    RandomContext random(2,ExecutionConfig{threads});ExactRunOptions io;std::ostringstream metrics;io.pretty=true;io.metrics=&metrics;io.checkpointDirectory=dir;io.resume=std::move(resume);io.checkpointInterval=std::chrono::hours(24);
+    RandomContext random(2,ExecutionConfig{threads});ExactRunOptions io;std::ostringstream metrics;io.pretty=true;io.formulaPrecision=resume?3:6;io.metrics=&metrics;io.checkpointDirectory=dir;io.resume=std::move(resume);io.checkpointInterval=std::chrono::hours(24);
     std::ostringstream out;const auto result=runExactSearch(problem,cfg,random,out,1,std::chrono::seconds(30),true,[]{return ExactClock::now();},io);
     check(result.published==generations&&result.stop==SearchStop::GenerationLimit,"bounded fixture reaches declared generation without optimum gate");return summary(result,random);
 }
@@ -74,6 +93,7 @@ static void fileTests(const std::filesystem::path& root){
     auto corrupt=bytes;corrupt.back()^=1;rejects([&]{decodeCheckpoint(corrupt);});
     auto checksum=bytes;checksum[21]=checksum[21]=='f'?'0':'f';rejects([&]{decodeCheckpoint(checksum);});
     rejects([&]{decodeCheckpoint(bytes,CheckpointLimits{2,2,2});});
+    rejects([&]{decodeCheckpoint(bytes,CheckpointLimits{bytes.size()-1,1024,2});});
     CheckpointWriter fields;fields.integer(0x0102030405060708ULL);fields.real(-0.0);CheckpointReader values(fields.data());check(values.integer()==0x0102030405060708ULL&&std::signbit(values.real()),"fixed-endian integer and signed binary64 fields");values.finish();
     auto incompatible=d;incompatible.runtime="other-runtime";rejects([&]{decodeCheckpoint(encodeCheckpoint(incompatible));});
     auto scalarProblem=RegressionProblem::create({{{1},1}},{64,16,std::numeric_limits<double>::max()});
@@ -87,6 +107,12 @@ static void fileTests(const std::filesystem::path& root){
     check(loadCheckpoint(file).payload=="first","previous checkpoint survives interrupted replacement");
     rejects([&]{saveCheckpointAtomic(file,replacement,[]{throw std::bad_alloc();});});
     check(loadCheckpoint(file).payload=="first","allocation failure before replacement retains previous checkpoint");
+    rejects([&]{saveCheckpointAtomic(file,replacement,[&]{
+        for(const auto& entry:std::filesystem::directory_iterator(root))if(entry.path().filename().string().starts_with("atomic.gtkc.tmp-"))std::filesystem::remove(entry.path());
+    });});
+    check(loadCheckpoint(file).payload=="first","failed rename preserves verified prior checkpoint");
+    saveCheckpointSeries(root/"new nested"/"level"/"checkpoints",1,d,3);
+    check(loadCheckpoint(root/"new nested/level/checkpoints/latest.gtkc").payload=="first","new directory hierarchy and parent sync");
     rejects([&]{loadCheckpoint(root/"absent.gtkc");});rejects([&]{saveCheckpointAtomic(root/"missing/invalid.gtkc",d);});
     for(unsigned g=0;g<5;++g)saveCheckpointSeries(root/"series",g,d,3);
     std::size_t numbered=0;for(const auto& e:std::filesystem::directory_iterator(root/"series"))if(e.path().filename().string().starts_with("generation-"))++numbered;
@@ -125,6 +151,15 @@ static void interruption(const std::filesystem::path& root){
     incompatible=fixture(100);incompatible.maxTrainingLossAttempts=before.training.lossAttempts-1;rejects([&]{runExactSearch(regular,incompatible,mismatch,text,1,std::chrono::seconds(30),false,[]{return ExactClock::now();},io);});
 }
 int main(int argc,char** argv){try{
+    if(argc==3&&std::string_view(argv[1])=="inspect"){
+        const auto document=loadCheckpoint(argv[2]);const auto saved=decodeExactRun(document);
+        auto c=config(saved.allowance);c.maxGenerationAttempts=saved.algorithm.published;c.fitEveryGenerations=saved.fitEvery;if(!saved.fitting)c.fitting.reset();
+        auto ref=reference();ref.resize(1000);auto problem=std::make_shared<const ExactPrefixProblem>(ref);
+        RandomContext random(saved.seed,ExecutionConfig{saved.threads});ExactRunOptions io;io.resume=document;std::ostringstream sink;
+        const auto restored=runExactSearch(problem,c,random,sink,1,std::chrono::seconds(30),false,[]{return ExactClock::now();},io);
+        check(restored.training==saved.training&&restored.published==saved.algorithm.published&&RunCheckpointAccess::random(random).engine==saved.random.engine,"inspection fully restores without additional work");
+        std::cout<<"{\"generation\":"<<restored.published<<",\"loss_attempts\":"<<saved.training.lossAttempts<<",\"attempted_generations\":"<<saved.algorithm.attempts<<",\"seed\":"<<saved.seed<<",\"threads\":"<<saved.threads<<",\"canonical\":"<<jsonString(restored.best->text())<<"}\n";return 0;
+    }
     if(argc<3)throw std::invalid_argument("mode and output required");
     const auto root=std::filesystem::path(argv[2]);
     // Caller supplies a designated test-owned build/temp directory.

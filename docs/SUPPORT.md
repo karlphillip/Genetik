@@ -23,8 +23,8 @@ Phase 7A derivative qualification is local and recorded in
 for the new derivative feature remains pending; earlier hosted claims below retain
 their explicitly identified commit scopes.
 
-The authoritative version is `project(GENETIK VERSION 0.2.0 ...)` in the root
-CMakeLists.txt. Package metadata derives from it. Version 0.2.0 is unreleased. The original pre-modernization checkout declared 0.1.0
+The authoritative version is `genetik/Version.hpp`; root CMake reads it.
+This checkout prepares 0.3.0 (unreleased); published 0.2.0 is unchanged. The original pre-modernization checkout declared 0.1.0
 before that version was subsequently published.
 Version 0.1.0 was published as a development pre-release at
 `f9299ea2cb5136d06e2de8f68bb83ecf460ca369`. Later local changes are not
@@ -36,8 +36,8 @@ Before 1.0, a minor change (0.1 to 0.2) may introduce documented public source A
 incompatibilities. Patches within a minor series preserve the documented public
 source API while correcting defects. Numerical or seeded-trajectory changes must
 receive explicit release notes, including defect fixes in patches. CMake uses
-SameMinorVersion (ordinary version requests, without EXACT): installed 0.2.x accepts an equal/older request in the 0.2 series,
-not requests from 0.1 or 0.3 and not newer unavailable patches. EXACT requests must
+SameMinorVersion (ordinary version requests, without EXACT): installed 0.3.x accepts an equal/older request in the 0.3 series,
+not requests from 0.2 or 0.4 and not newer unavailable patches. EXACT requests must
 match exactly. Header-only delivery does not provide a stable binary ABI; recompile
 all dependent translation units consistently when changing headers/options.
 

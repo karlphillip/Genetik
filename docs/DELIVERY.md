@@ -1,6 +1,10 @@
 # Installable development-package qualification
 
-Current delivery preparation targets **0.2.0 (unreleased)** and the complete range
+Current local delivery preparation targets **0.3.0 (unreleased)**; see
+[the operational proposal](RELEASE_0.3.0_PROPOSAL.md). Hosted upload and all delivery
+actions await their respective approvals.
+
+The0.2.0 delivery record below retains its historical scope. That preparation targeted **0.2.0 (then unreleased)** and the complete range
 since published v0.1.0. See [CALCULUS_PREFLIGHT.md](CALCULUS_PREFLIGHT.md),
 [release proposal](RELEASE_PROPOSAL.md) and [migration](MIGRATION.md). Earlier sections
 below are historical checkpoint evidence, including then-current unreleased status;

@@ -1,3 +1,8 @@
+# Current operational migration
+
+For proposed0.3.0, see [0.3 migration](releases/0.3.0/MIGRATION.md).
+The0.2 migration record below retains its historical scope.
+
 # Migrating to the 0.2.0 development API
 
 The original repository declared 0.1.0 but had no published release history.

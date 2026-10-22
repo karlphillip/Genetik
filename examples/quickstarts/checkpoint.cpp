@@ -19,6 +19,8 @@ int main(){
     RandomContext resumed(42);RunCheckpointAccess::restoreRandom(resumed,randomState);
     auto restored=RunCheckpointAccess::restorePopulation<ExpressionCandidate,RegressionOrdering>(state,resumed);
     if(restored->generation()!=0||restored->bestSeen()->fitness()!=0||resumed.evaluationAttempts()!=1)return 1;
+    const auto coefficient=Expression::constant(0.71259750425815582,1);
+    std::cout<<"display coefficient ≈ "<<formatExpression(coefficient,ExpressionTextFormat::Unicode,{}, {},ExpressionFormatOptions{6})<<'\n';
     std::cout<<formatExpression(restored->bestSeen()->expression())<<'\n'
              <<formatExpression(restored->bestSeen()->expression(),ExpressionTextFormat::LaTeX)<<"\nowned committed population restored without evaluation\n";
 }

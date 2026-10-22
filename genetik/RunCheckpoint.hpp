@@ -95,6 +95,7 @@ inline std::string encodeCheckpoint(const CheckpointDocument& document,Checkpoin
     return header+payload;
 }
 inline CheckpointDocument decodeCheckpoint(std::string_view bytes,CheckpointLimits limits={}) {
+    if(bytes.size()>limits.maxBytes)throw CheckpointError("checkpoint source byte limit");
     const auto a=bytes.find('\n'),b=a==bytes.npos?a:bytes.find('\n',a+1),c=b==bytes.npos?b:bytes.find('\n',b+1);
     if(a!=20 || b==bytes.npos || c==bytes.npos || c>128 || bytes.substr(0,a)!="GENETIK-CHECKPOINT 1")throw CheckpointError("unsupported or malformed checkpoint format");
     std::uint64_t checksum=0,size=0;auto h=std::from_chars(bytes.data()+a+1,bytes.data()+b,checksum,16);auto n=std::from_chars(bytes.data()+b+1,bytes.data()+c,size);
@@ -113,6 +114,33 @@ inline CheckpointDocument loadCheckpoint(const std::filesystem::path& path,Check
     if(!in.eof())throw CheckpointError("checkpoint read failure");
     return decodeCheckpoint(bytes,limits);
 }
+namespace genetik_detail {
+// Sync directory entries, including the parent entry of each newly created
+// directory. No file-format change; failures remain visible to the coordinator.
+inline void syncCheckpointDirectory(const std::filesystem::path& path){
+#if defined(__unix__) || defined(__APPLE__)
+    const int fd=::open(path.c_str(),O_RDONLY|O_DIRECTORY);
+    if(fd<0)throw std::system_error(errno,std::generic_category(),"checkpoint directory open");
+    const int result=::fsync(fd),error=errno;::close(fd);
+    if(result!=0)throw std::system_error(error,std::generic_category(),"checkpoint directory fsync");
+#else
+    (void)path;throw CheckpointError("durable checkpoint directories require qualified POSIX fsync");
+#endif
+}
+inline void createCheckpointDirectories(const std::filesystem::path& path){
+    std::vector<std::filesystem::path> missing;
+    auto current=std::filesystem::absolute(path);
+    while(!std::filesystem::exists(current)){
+        missing.push_back(current);current=current.parent_path();
+    }
+    if(!std::filesystem::is_directory(current))throw CheckpointError("checkpoint ancestor is not a directory");
+    for(auto i=missing.rbegin();i!=missing.rend();++i){
+        if(!std::filesystem::create_directory(*i)&&!std::filesystem::is_directory(*i))throw CheckpointError("checkpoint directory creation failed");
+        syncCheckpointDirectory(*i);syncCheckpointDirectory(i->parent_path());
+    }
+}
+} // namespace genetik_detail
+
 // POSIX persistence, no unqualified fallback claiming durability elsewhere.
 // beforeRename is an optional fault-injection hook; it runs after validation/fsync.
 inline void saveCheckpointAtomic(const std::filesystem::path& destination,const CheckpointDocument& document,
@@ -132,8 +160,7 @@ inline void saveCheckpointAtomic(const std::filesystem::path& destination,const 
         const auto verified=loadCheckpoint(temporary);if(verified.payload!=document.payload||verified.identity!=document.identity||verified.codec!=document.codec)throw CheckpointError("checkpoint read-back mismatch");
         if(beforeRename)beforeRename();
         std::filesystem::rename(temporary,destination);
-        const int dir=::open(directory.c_str(),O_RDONLY|O_DIRECTORY);if(dir<0)throw std::system_error(errno,std::generic_category(),"checkpoint directory open");
-        const int result=::fsync(dir),error=errno;::close(dir);if(result!=0)throw std::system_error(error,std::generic_category(),"checkpoint directory fsync after rename");
+        genetik_detail::syncCheckpointDirectory(directory);
     }catch(...){if(fd>=0)::close(fd);::unlink(name.data());throw;}
 #else
     (void)destination;(void)document;(void)beforeRename;throw CheckpointError("durable checkpoint writes require qualified POSIX fsync/rename");
@@ -144,7 +171,7 @@ inline void saveCheckpointAtomic(const std::filesystem::path& destination,const 
 inline std::filesystem::path saveCheckpointSeries(const std::filesystem::path& directory,std::uint64_t generation,
         const CheckpointDocument& document,std::size_t keep=3) {
     if(!keep || keep>10000)throw std::invalid_argument("checkpoint keep must be1..10000");
-    std::filesystem::create_directories(directory);
+    genetik_detail::createCheckpointDirectories(directory);
     auto ready=document;if(ready.generation && *ready.generation!=generation)throw CheckpointError("checkpoint generation metadata differs");ready.generation=generation;
     const auto prior=directory/"latest.gtkc";
     if(std::filesystem::exists(prior)){const auto old=loadCheckpoint(prior);if(old.identity!=ready.identity||old.codec!=ready.codec||!old.generation||*old.generation>generation)throw CheckpointError("checkpoint directory identity differs or generation would rewind");}
@@ -157,7 +184,10 @@ inline std::filesystem::path saveCheckpointSeries(const std::filesystem::path& d
         if(!e.is_symlink() && e.is_regular_file() && n.size()==36 && n.starts_with("generation-") && n.ends_with(".gtkc") &&
            std::all_of(n.begin()+11,n.begin()+31,[](char c){return c>='0'&&c<='9';}))files.push_back(e.path());
     }
-    std::sort(files.begin(),files.end());while(files.size()>keep){std::filesystem::remove(files.front());files.erase(files.begin());}return latest;
+    std::sort(files.begin(),files.end());const bool prune=files.size()>keep;
+    while(files.size()>keep){std::filesystem::remove(files.front());files.erase(files.begin());}
+    if(prune)genetik_detail::syncCheckpointDirectory(directory);
+    return latest;
 }
 
 template<class T> struct CommittedPopulationCheckpoint {

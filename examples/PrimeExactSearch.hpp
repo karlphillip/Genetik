@@ -115,6 +115,7 @@ inline ExactSearchResult runExactSearch(std::shared_ptr<const ExactPrefixProblem
         ExactClock::duration interval,bool report=true,
         const std::function<ExactClock::time_point()>& now=[] {return ExactClock::now();},
         const ExactRunOptions& io={}) {
+    if(!io.formulaPrecision || io.formulaPrecision>17)throw std::invalid_argument("formula precision must be1..17");
     if(!problem || !top || random.evaluationAttempts()!=0 || cfg.population==0 ||
        cfg.population>std::numeric_limits<unsigned int>::max() || cfg.elites>=cfg.population || cfg.fitEveryGenerations==0 ||
        !std::isfinite(cfg.crossoverRate) || !std::isfinite(cfg.mutationRate) || cfg.crossoverRate<0 || cfg.crossoverRate>1 ||
@@ -151,7 +152,7 @@ inline ExactSearchResult runExactSearch(std::shared_ptr<const ExactPrefixProblem
         committedLosses=saved.committedLosses;priorElapsed=saved.elapsed;result.history=saved.history;result.reporting=saved.reporting;display.previousLoss=saved.previousDisplayedLoss;display.previousMatches=saved.previousDisplayedMatches;
         if(result.history.empty() || result.history.front().generation!=0 || result.history.back().generation!=state.bestGeneration || result.history.back().canonical!=state.best.text() || result.history.back().loss!=state.best.fitness())throw CheckpointError("checkpoint best/history differs");
         RunCheckpointAccess::restoreRandom(random,saved.random);
-        if(io.pretty)out<<"Resuming checkpoint\nGeneration        "<<state.generation<<"\nPrevious attempts "<<saved.training.lossAttempts<<"\nSeed              "<<saved.seed<<"\nRNG state         restored\nProblem           verified\nCheckpoint        checksum OK\nContinuing with generation "<<state.generation+1<<"\n";
+        if(io.pretty)out<<"Resuming checkpoint\nGeneration        "<<exactCount(state.generation)<<"\nPrevious attempts "<<exactCount(saved.training.lossAttempts)<<"\nSeed              "<<saved.seed<<"\nRNG state         restored\nProblem           verified\nCheckpoint        checksum OK\nContinuing with generation "<<exactCount(state.generation+1)<<"\n";
     }
     const auto elapsed=[&]{return priorElapsed+std::chrono::duration<double>(now()-start).count();};
     const auto recordImprovement=[&]{if(!population||!population->generation())return;const auto best=population->bestSeen();if(result.history.empty()||result.history.back().loss!=best->fitness()||result.history.back().canonical!=best->text())result.history.push_back({objective->work().lossAttempts,*population->generation(),best->fitness(),best->text()});};
@@ -169,12 +170,12 @@ inline ExactSearchResult runExactSearch(std::shared_ptr<const ExactPrefixProblem
         if(!report || !schedule.due(time,kind!="periodic"))return;
         const ExactProgress progress{population?population->generation():std::nullopt,ga.attempts(),ga.evolutions(),
             objective->work().lossAttempts,objective->remaining(),cfg.maxTrainingLossAttempts,random.evaluationAttempts(),
-            objective->work().lossAttempts-committedLosses,cfg.population,random.seed(),random.execution().requested(),random.execution().effective(cfg.population),population?population->bestGeneration():std::nullopt};
+            objective->work().lossAttempts-committedLosses,cfg.population,random.seed(),random.execution().requested(),random.execution().effective(cfg.population),population?population->bestGeneration():std::nullopt,cfg.maxGenerationAttempts};
         const std::vector<ExpressionCandidate> empty;
         exactHumanSnapshot(out,population && population->generation()?population->selectionView():empty,
                       problem->referenceValues(),progress,top,priorElapsed+std::chrono::duration<double>(time-start).count(),kind,state,result.reporting,display,
                       io.metrics,population?population->bestSeen():std::nullopt,result.checkpoint.string(),checkpointGeneration,
-                      elapsed()-lastCheckpointElapsed,!io.pretty);
+                      elapsed()-lastCheckpointElapsed,!io.pretty,io.formulaPrecision);
     };
     try {
         if(problem->cancelled())throw EvaluationCancelled();

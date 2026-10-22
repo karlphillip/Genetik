@@ -8,8 +8,10 @@ import subprocess
 import sys
 import time
 exe=Path(sys.argv[1]).resolve();workspace=Path(sys.argv[2]).resolve();workspace.mkdir(parents=True,exist_ok=True)
+# Unoptimized ASan takes ~65s for the unchanged 256-loss/reporting fixture
+# on the qualified Jetson. Keep its work and instrumentation; allow that cost.
 def run(args,ok=True):
-    p=subprocess.run([str(exe),*args],cwd=workspace,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=25)
+    p=subprocess.run([str(exe),*args],cwd=workspace,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=120)
     if (p.returncode==0)!=ok:raise RuntimeError(p.stdout)
     return p.stdout
 help_text=run(['--search-exact','--help'])
@@ -32,14 +34,14 @@ loss=int(re.search(r'search_complete .*?training_loss_attempts=(\d+)',out).group
 p=subprocess.Popen([str(exe),'--search-exact','--seed','42','--threads','4','--loss-budget','10000000','--no-fit'],cwd=workspace,stdout=subprocess.PIPE,stderr=subprocess.PIPE,bufsize=0)
 selector=selectors.DefaultSelector();selector.register(p.stdout,selectors.EVENT_READ);captured=b''
 try:
-    deadline=time.monotonic()+25
+    deadline=time.monotonic()+60
     while b'snapshot=initial' not in captured:
         remaining=deadline-time.monotonic()
         if remaining<=0 or not selector.select(remaining):raise RuntimeError('initial snapshot timeout')
         chunk=p.stdout.read(65536)
         if not chunk:raise RuntimeError('process ended before initial publication')
         captured+=chunk
-    p.send_signal(signal.SIGINT);tail,err=p.communicate(timeout=20);captured+=tail
+    p.send_signal(signal.SIGINT);tail,err=p.communicate(timeout=60);captured+=tail
     assert p.returncode==0,(p.returncode,err)
     text=captured.decode();assert 'snapshot=final' in text and 'stopping_reason=cancelled' in text
     (workspace/'cancelled.txt').write_text(text)

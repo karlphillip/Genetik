@@ -264,5 +264,5 @@ add_test(NAME genetik_prime_exact_overlap COMMAND genetik_prime_exact_tests --ov
 set_tests_properties(genetik_prime_exact_contracts genetik_prime_exact_overlap PROPERTIES TIMEOUT 90)
 if(GENETIK_BUILD_EXAMPLES)
     add_test(NAME genetik_prime_exact_cli COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/prime_exact_cli.py $<TARGET_FILE:genetik_prime_regression> ${CMAKE_CURRENT_BINARY_DIR}/prime-exact-cli)
-    set_tests_properties(genetik_prime_exact_cli PROPERTIES TIMEOUT 60)
+    set_tests_properties(genetik_prime_exact_cli PROPERTIES TIMEOUT 180)
 endif()

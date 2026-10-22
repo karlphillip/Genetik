@@ -86,6 +86,9 @@ jobs:
           python3 scripts/check_ci_manifest.py out/build/tsan/test-manifest.json --tsan
           # This job uses runner CTest (>=3.17), not the x64-only 3.16 bootstrap.
           TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log out/build/tsan/contracts.log --title "TSan contracts" --report -- cmake -E chdir out/build/tsan ctest -R 'genetik_concurrency_contracts|genetik_oop_parallel|genetik_typed_overlap|genetik_typed_preparation_overlap|genetik_scientific_contracts|genetik_parsing_overlap|genetik_template_overlap|genetik_derivative_overlap|genetik_derivative_regression_overlap|genetik_integral_overlap' --repeat until-fail:3 --output-on-failure
+          # Complete integral contracts include transactional split/failure cases
+          # beyond the forced-overlap selection. Keep the established local gate.
+          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log out/build/tsan/integral-contracts.log --title "TSan complete integral contracts" --report -- cmake -E chdir out/build/tsan ctest -R '^genetik_integral_contracts$' --output-on-failure
       - name: Stage diagnostic artifacts
         if: always()
         run: |

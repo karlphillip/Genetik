@@ -29,7 +29,20 @@ def main():
     cxx = shutil.which(args.cxx)
     if not cmake or not cxx:
         parser.error('selected CMake and C++ compiler must be available')
-    prefix = 'Genetik-0.1.0'
+    # Derive identity from the committed authority, never the current checkout.
+    project = subprocess.check_output(['git', 'show', args.commit+':CMakeLists.txt'], text=True)
+    version = re.search(r'project\(GENETIK VERSION ([0-9]+\.[0-9]+\.[0-9]+)', project).group(1)
+    prefix = 'Genetik-'+version
+    tracked = subprocess.check_output(['git', 'ls-tree', '-r', '-z', args.commit]).split(b'\0')
+    blobs = {}
+    for entry in tracked:
+        if not entry:
+            continue
+        metadata, name = entry.split(b'\t', 1)
+        mode, kind, identity = metadata.split()
+        if kind != b'blob' or mode not in (b'100644', b'100755'):
+            raise ValueError('unsupported tracked distribution entry')
+        blobs[name.decode()] = (identity.decode(), int(mode, 8) & 0o777)
     with tarfile.open(archive, 'r:gz') as source:
         if source.pax_headers.get('comment') != args.commit:
             raise ValueError('archive commit identity differs from --commit')
@@ -57,6 +70,10 @@ def main():
                     'tests/oop_consumer/main.cpp', 'tests/package_integration.py']
         if any(PurePosixPath(prefix, name) not in paths for name in required):
             raise ValueError('source archive omits a required distribution input')
+        files = {str(path.relative_to(prefix)) for path in paths
+                 if source.getmember(str(path)).isfile()}
+        if files != set(blobs):
+            raise ValueError('archive file manifest differs from committed tree')
         workspace.mkdir(parents=True)
         manifest = []
         for member in members:
@@ -66,6 +83,11 @@ def main():
                 continue
             destination.parent.mkdir(parents=True, exist_ok=True)
             data = source.extractfile(member).read()
+            relative = str(PurePosixPath(member.name).relative_to(prefix))
+            identity, mode = blobs[relative]
+            blob = hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+            if blob != identity or member.mode & 0o777 != mode:
+                raise ValueError('archive differs from committed blob: '+relative)
             destination.write_bytes(data)
             destination.chmod(member.mode & 0o777)
             manifest.append({'path': member.name, 'bytes': len(data),

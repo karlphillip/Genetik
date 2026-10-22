@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
     message(FATAL_ERROR "Use an out-of-source build: cmake -S . -B out/build/release")
 endif()
-project(GENETIK VERSION 0.1.0 LANGUAGES CXX)
+project(GENETIK VERSION 0.2.0 LANGUAGES CXX)
 # PROJECT_IS_TOP_LEVEL is newer than our minimum; do not change parent globals.
 set(GENETIK_TOP_LEVEL OFF)
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)

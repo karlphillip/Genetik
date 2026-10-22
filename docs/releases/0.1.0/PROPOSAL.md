@@ -1,14 +1,18 @@
-# First development-release proposal (not published)
+# Historical first development-release proposal
+
+This preserves the earlier preparation record; its publication status and commands
+are historical, not the current delivery proposal. Relative documentation links
+are adjusted for this archival location. v0.1.0 was subsequently published.
 
 Planned package **0.1.0**, annotated tag **v0.1.0**, GitHub **pre-release**, title
 **Genetik 0.1.0 — development pre-release**. No default-branch update, PR, tag or
 GitHub release is created during preparation. Package version remains the root
 CMake project's existing 0.1.0; no published prior version/tag was found.
 
-Review [the release-note body](releases/0.1.0/NOTES.md),
-[proposed PR title/description](releases/0.1.0/PULL_REQUEST.md),
-[migration](MIGRATION.md), [support policy](SUPPORT.md), and
-[executed hosted qualification](HOSTED_QUALIFICATION.md).
+Review [the release-note body](NOTES.md),
+[proposed PR title/description](PULL_REQUEST.md),
+[migration](../../MIGRATION.md), [support policy](../../SUPPORT.md), and
+[executed hosted qualification](../../HOSTED_QUALIFICATION.md).
 
 ## Candidate and integration
 

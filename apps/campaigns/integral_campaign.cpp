@@ -79,10 +79,12 @@ int main(int argc,char** argv) {
             assess(report,*p,g,trainingPoints,"training");assess(report,*p,g,interior,"interior");assess(report,*p,g,exterior,"exterior");assess(report,*p,g,{0},"zero");
         }
         auto fittingProblem=problem(1.5,-.5,8);IntegralTrainingObjective objective(fittingProblem,512);ConstantFitConfig fit;fit.maxLossAttempts=512;const auto initial=parseExpression("1*x1+1",2);
-        auto initialLoss=fittingProblem->measure(initial).loss;auto f=fitConstants(initial,objective,fit); // independent work, no assessment data
+        auto f=fitConstants(initial,objective,fit);const auto initialLoss=f.startingLoss; // independent work, no assessment data
         std::ofstream fitted(output/"fitting.txt");fitted<<std::setprecision(17)<<"initial="<<initial.toString()<<" MSE="<<initialLoss.score()<<"\nfinal="<<f.expression.toString()<<" MSE="<<f.loss.score()<<" a="<<f.expression.nodes()[0].constantValue()<<" b="<<f.expression.nodes()[3].constantValue()
           <<" attempts="<<objective.work().lossAttempts<<" unused="<<512-objective.work().lossAttempts<<" accepted="<<objective.work().accepted<<" stop="<<constantFitStopName(f.stop);work(fitted,objective.integralWork());fitted<<"\nmodel="<<fittingProblem->model(f.expression).toString()<<'\n';
-        if(fittingProblem->measure(f.expression).loss!=f.loss)throw std::logic_error("accepted integral fit/score mismatch");
+        const auto verification=fittingProblem->assess(f.expression); // separate bounded reporting, not a fitter probe
+        if(verification.loss!=f.loss)throw std::logic_error("accepted integral fit/score mismatch");
+        fitted<<"verification_reporting rows="<<verification.rowsAttempted;work(fitted,verification.work);fitted<<'\n';
         assess(fitted,*fittingProblem,f.expression,trainingPoints,"training",1.5,-.5);assess(fitted,*fittingProblem,f.expression,interior,"interior",1.5,-.5);assess(fitted,*fittingProblem,f.expression,exterior,"exterior",1.5,-.5);
     }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
 }

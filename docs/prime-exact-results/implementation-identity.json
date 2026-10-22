@@ -1,0 +1,8 @@
+{
+  "commit": "6cde4e5951b0ef83d6f92962d50142fc30818e8c",
+  "sha256": {
+    "examples/prime_regression.cpp": "1792b0637eacbbf9c603f50b722dc86b83e134a8f47e994ef3d6653f5c2a4a7c",
+    "examples/PrimeExactOptions.hpp": "aa2ab963b886d9b0b1332c094a34fdc657d377339299d1dbf759e86f3d75364f",
+    "examples/PrimeExactSearch.hpp": "1bd00d7add5875ccd40b2ed21d0b60d36a38d2633c43820c6aa07f11463f113a"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "snapshot_count": 14,
+  "periodic_snapshots": 12,
+  "final_snapshot": "snapshot=final elapsed_seconds=3.4427400129999999 committed_generation=12 attempted_generations=13 published_generations=12 actual_loss_attempts=100000 loss_budget=100000 remaining_allowance=0 unpublished_loss_attempts=7455 candidate_requests=879 threads_requested=4 threads_effective=4 seed=42 population=64 committed_size=64 valid=62 invalid=2 unevaluated=0 displayed=5 reporting_prediction_rows=70000 reporting_loss_attempts=0 stopping_state=evaluation_budget",
+  "best_individual": "rank=1 slot=63 exact_prefix_loss=980.93245930047055 exact_matches=20/1000 mismatches=980 raw_rmse=843.60242384613457 raw_mae=448.12885474535716 raw_max_abs=2785.6062761362691 mean_relative=0.089770588651738245 max_relative=1.8844800182082846 duplicates=89 strict_increase_violations=129 raw_increase_violations=113 invalid_predictions=0 unrepresentable_predictions=0 nodes=15 depth=6 constant_count=3 duplicate_formula=0",
+  "canonical_expression": "g(x0) = (x0 * (((((-0.5) * 5.3382963691547651) / (x0 - 6.19957815074509)) + x0) - (x0 * x0)))",
+  "decoded_expression": "p_hat(n) = 10000 * ((x0 * (((((-0.5) * 5.3382963691547651) / (x0 - 6.19957815074509)) + x0) - (x0 * x0)))) [x0 = double(n) / 1000.0]",
+  "completion": "search_complete stopping_reason=evaluation_budget training_loss_attempts=100000 training_rows=99876124 ordinary_loss_attempts=0 fitting_baselines=879 fitting_probes=99121 fits=879 accepted_fit_steps=8072 mutation_changes=265 crossover_changes=684 unpublished_loss_attempts=7455 reporting_snapshots=14 reporting_prediction_rows=70000 reporting_loss_attempts=0 exact_recovered=0"
+}

@@ -1,0 +1,21 @@
+{
+  "seed": 42,
+  "threads": 4,
+  "loss_budget": 100000,
+  "report_seconds": 0.05,
+  "top": 5,
+  "population": 64,
+  "grammar": [
+    "Add",
+    "Subtract",
+    "Multiply",
+    "Divide",
+    "Log"
+  ],
+  "nodes": 31,
+  "depth": 6,
+  "fitting": "unchanged prime config, enabled, cadence 1",
+  "configuration_frozen_before_run": true,
+  "git_base": "f9f300ed376370b2f476722e4a92888004d8358d",
+  "note": "Application changes in working tree; qualification commit recorded separately."
+}

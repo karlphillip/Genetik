@@ -13,21 +13,21 @@ cmake --build out/build/release --target genetik_prime_regression -j2
 out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30 --top 5
 ```
 
-This mode defaults to seed42, one worker,1,000,000 actual loss attempts,30 seconds
-and top5. It retains population64,2,000 generation ceiling,31 nodes/depth6,
+This mode defaults to seed 42, one worker, 1,000,000 actual loss attempts, 30 seconds
+and top 5. It retains population 64, 2,000 generation ceiling, 31 nodes/depth6,
 +,-,*,/,log grammar, the existing mixed discrete/uniform constants and deterministic
 coordinate fitting (including initialization/elites/clones). No known nth-prime
 approximation or target expression is injected. --fit-every retains the positive
 cadence convention; --no-fit explicitly disables optional refinement. --threads uses
-the existing1..256 execution limit, not affinity. No run is unbounded by default.
+the existing 1..256 execution limit, not affinity. No run is unbounded by default.
 
 The existing sieve, independent trial division and exact anchor/prefix validation
 are reused. Inputs are x0=double(n)/1000.0, normalized targets double(p_n)/10000.0,
-n=1..1000; the faithful standalone predictor is10000.0*g(double(n)/1000.0).
+n=1..1000; the faithful standalone predictor is 10000.0*g(double(n)/1000.0).
 Optional --prime-file validates the supplied exact prefix before randomness/search.
 --output DIR explicitly exports the existing reference datasets; without it, this
 mode writes only console output. Redirect logs into out/runs/ or out/logs/ yourself.
-The examined1001..1200 range is neither training nor assessment for this mode.
+The examined 1001..1200 range is neither training nor assessment for this mode.
 
 ## Objective and rounding
 
@@ -36,13 +36,13 @@ with checked int64 representability (-2^63 inclusive,2^63 exclusive). A predicto
 has only expression nodes, constants and x0; it cannot access the reference, test
 primality or repair outputs. The reference belongs only to immutable objective data.
 
-Each wrong rounded prediction contributes1 + (error/(1+error))/1000, where
+Each wrong rounded prediction contributes 1 + (error/(1+error))/1000, where
 error=abs(10000*g(x0)-p_n). Correct rounded predictions contribute zero even when
 raw errors are nonzero. Implementation visits ascending n, counts mismatches as
 integers, checks and sums wrong-error ratios in that order, divides the secondary
-sum by1000, then adds the mismatch count. Bounds on at most1,000 terms keep any
+sum by 1000, then adds the mismatch count. Bounds on at most 1,000 terms keep any
 one-fewer-mismatch individual strictly better; secondary error orders equal counts.
-A large error's ratio may round to1, which still cannot reverse mismatch priority.
+A large error's ratio may round to 1, which still cannot reverse mismatch priority.
 
 Fitness zero iff every required rounded prediction matches. Stop immediately on
 that committed zero, including initialization. Invalid child arithmetic, nonfinite
@@ -60,7 +60,7 @@ existing coordinate fitter scores this same full objective on every probe.
   emit a final empty snapshot (generation=none), not a fictitious initial population.
 - Use steady_clock and deadlines aligned with search start. Initial preparation
   counts in elapsed time. Report at the first successful publication at/after a
-  deadline; a long generation can delay a30-second report. Catch up to the next
+  deadline; a long generation can delay a 30-second report. Catch up to the next
   future aligned deadline without a burst. Formatting time does not reset the phase.
 - No reporter thread, no live-state inspection while workers run. The coordinator
   reads the committed population only; failed/unpublished preparation never appears.
@@ -68,9 +68,9 @@ existing coordinate fitter scores this same full objective on every probe.
   selection/archive. Equivalent display ties retain committed slot order, independent
   of worker completion. Do not deduplicate identical formulas; label duplicates.
 - Top counts valid **individuals**. Report invalid/unevaluated counts and clamp to
-  available valid population members. The fixed population64 bounds expensive
+  available valid population members. The fixed population 64 bounds expensive
   reporting even for a very large --top request. Only displayed expressions are
-  evaluated, at most64*1000 predictions/snapshot (default5*1000).
+  evaluated, at most 64*1000 predictions/snapshot (default 5*1000).
 - Diagnostics use prediction-only existing decode/round/metrics code outside the
   objective. They scan all requested rows and report raw RMSE/MAE/max and relative
   errors, matches/mismatches, duplicate rounded outputs, increase violations and
@@ -83,14 +83,14 @@ existing coordinate fitter scores this same full objective on every probe.
 Snapshot headers include elapsed time, committed generation, attempted/published
 subsequent generations, candidate requests, actual loss work/allowance/remaining,
 unpublished loss attempts, seed/population and requested/effective task ceilings.
-Each rank includes its exact fitness,1000-denominator matches, raw diagnostics,
+Each rank includes its exact fitness, 1000-denominator matches, raw diagnostics,
 node/depth/constant complexity, canonical g(x0), and decoded formula with explicit
 x0 binding. Reporting time is wall time and can affect when the next snapshot is
 seen; it cannot change scoring, RNG or search work within a nonbinding run.
 
---report-seconds accepts finite positive fractional decimal seconds through86,400,
+--report-seconds accepts finite positive fractional decimal seconds through 86,400,
 with at least one representable clock tick. --top is a positive size_t integer;
---loss-budget is a positive uint64 integer; --seed is a uint32 (including0). Signs,
+--loss-budget is a positive uint64 integer; --seed is a uint32 (including 0). Signs,
 overflow, trailing junk, repeated/unknown options and missing values fail before
 search. Use --search-exact --help for the actual syntax.
 

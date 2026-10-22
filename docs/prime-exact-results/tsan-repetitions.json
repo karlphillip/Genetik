@@ -1,0 +1,13 @@
+{
+  "genetik_concurrency_contracts": 3,
+  "genetik_oop_parallel": 3,
+  "genetik_typed_overlap": 3,
+  "genetik_typed_preparation_overlap": 3,
+  "genetik_scientific_contracts": 3,
+  "genetik_parsing_overlap": 3,
+  "genetik_template_overlap": 3,
+  "genetik_derivative_overlap": 3,
+  "genetik_derivative_regression_overlap": 3,
+  "genetik_integral_overlap": 3,
+  "genetik_prime_exact_overlap": 3
+}

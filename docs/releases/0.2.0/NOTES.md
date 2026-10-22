@@ -35,12 +35,15 @@ reject a 0.2 installation under SameMinorVersion. Recompile all dependent transl
 units consistently: the polymorphic regression measurement seam changed class
 layout/vtables. No stable binary ABI or cross-version seeded trajectory is promised.
 
-Prior hosted qualification covers cleanup/typed/scientific/parser/template work at
-its recorded SHAs. Combined calculus qualification is pending: consult
-[the current preparation record](https://github.com/karlphillip/Genetik/blob/v0.2.0/docs/CALCULUS_PREFLIGHT.md) and
-[support policy](https://github.com/karlphillip/Genetik/blob/v0.2.0/docs/SUPPORT.md). Intended Linux matrix: GCC13 x64 with exact
-CMake3.16, Clang18 x64 ASan+UBSan using GNU standard-library headers/runtime, and
-GCC13 ARM64 with separate TSan. Do not infer libc++, Windows or Apple qualification.
+The complete implementation at `e30413ab119340a290c7b3c74d229097670fbb74` passed the three-job hosted matrix:
+GCC13 x64 Release with exact CMake3.16.0; Clang18 x64 Debug ASan+UBSan using GNU
+standard-library headers/runtime; native GCC13 ARM64 Release plus separate Debug
+TSan (ten selections, three repetitions each, and complete integral contracts).
+Every job ran the52 portable tests, including isolated installed/relocated multi-TU
+consumption. See [qualification](https://github.com/karlphillip/Genetik/blob/v0.2.0/docs/CALCULUS_HOSTED_QUALIFICATION.md)
+and [support](https://github.com/karlphillip/Genetik/blob/v0.2.0/docs/SUPPORT.md) for exact
+runtime/revision scope. The final report tip receives its own matrix before review.
+This does not qualify libc++, Windows/MSVC or Apple platforms.
 
 Numerical derivatives implement rounded chain-rule propagation, not symbolic
 proofs; unavailable does not prove nondifferentiability. Observation anchors do

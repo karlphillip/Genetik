@@ -1,6 +1,8 @@
 # Calculus qualification and 0.2.0 delivery preparation
 
-Status: local preparation; no new hosted execution/upload is claimed. Proposed
+Historical local preflight, completed before upload approval. Subsequent authorized
+hosted execution is recorded in [CALCULUS_HOSTED_QUALIFICATION.md](CALCULUS_HOSTED_QUALIFICATION.md).
+Statements below retain their preflight scope and do not describe current authorization. Proposed
 branch qualification/calculus, repository karlphillip/Genetik. The prior hosted tip
 50af98d192ce441f1d5ce5deeddbf9dcf996896e passed
 [matrix39664655065](https://github.com/karlphillip/Genetik/actions/runs/39664655065).

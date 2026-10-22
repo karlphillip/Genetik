@@ -4,7 +4,9 @@ Current delivery preparation targets **0.2.0 (unreleased)** and the complete ran
 since published v0.1.0. See [CALCULUS_PREFLIGHT.md](CALCULUS_PREFLIGHT.md),
 [release proposal](RELEASE_PROPOSAL.md) and [migration](MIGRATION.md). Earlier sections
 below are historical checkpoint evidence, including then-current unreleased status;
-they do not qualify the later calculus candidate. Hosted upload requires new approval.
+they do not qualify the later calculus candidate. The authorized calculus upload
+and executed matrix are recorded in [CALCULUS_HOSTED_QUALIFICATION.md](CALCULUS_HOSTED_QUALIFICATION.md).
+Final delivery still needs separate approval.
 
 Phase7C bounded root integral models are locally qualified in
 [INTEGRAL_QUALIFICATION.md](INTEGRAL_QUALIFICATION.md). Combined calculus hosted

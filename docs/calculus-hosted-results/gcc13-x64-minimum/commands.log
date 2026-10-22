@@ -1,0 +1,1504 @@
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/producer source' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/producer build' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DCMAKE_INSTALL_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A' -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DGENETIK_INSTALL=ON -DGENETIK_SANITIZERS=ON -DGENETIK_WARNINGS_AS_ERRORS=ON
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for C++ include pthread.h
+-- Looking for C++ include pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Configuring done
+-- Generating done
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_C_COMPILER
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/producer build
+/home/runner/work/_temp/cmake-min/bin/cmake --build '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/producer build' -j2
+/home/runner/work/_temp/cmake-min/bin/cmake --install '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/producer build'
+-- Install configuration: "Release"
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/ScalarExpressionTemplate.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/TypedSymbolicRegression.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/Expression.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/Creature.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/EvaluatedCandidate.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/ExpressionVariation.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/TypedConstantFitting.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/Creature_i.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/Regression.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/GeneticAlgorithm.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/TypedVariation.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/ScalarTemplateRegression.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/TypedExpressionParsing.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/Population.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/GeneticAlgorithm_i.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/RandomContext.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/TypedExpression.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/DerivativeRegression.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/IntegralExpression.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/TypedValue.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/detail
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/detail/ScopedTiming.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/detail/ExpressionParser.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/detail/ScientificScalar.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/SymbolicRegression.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/IntegralRegression.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/ScalarVariation.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/TypedRegression.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/ExpressionParsing.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/Fitness.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/Execution.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/Population_i.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/ExpressionDerivative.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik/ConstantFitting.hpp
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/lib/cmake/Genetik/GenetikTargets.cmake
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/lib/cmake/Genetik/GenetikConfig.cmake
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/lib/cmake/Genetik/GenetikConfigVersion.cmake
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/lib/cmake/Genetik/GenetikFloatingPoint.cmake
+-- Installing: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/share/licenses/Genetik/LICENSE
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A' -DCMAKE_BUILD_TYPE=Release
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Configuring done
+-- Generating done
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build
+/home/runner/work/_temp/cmake-min/bin/cmake --build '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build' -j2
+gmake[1]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target derivatives_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target installed_consumer
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[  4%] Building CXX object quickstarts/CMakeFiles/derivatives_quickstart.dir/derivatives.cpp.o
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[  8%] Building CXX object CMakeFiles/installed_consumer.dir/main.cpp.o
+[ 12%] Linking CXX executable derivatives_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 12%] Built target derivatives_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target derivative_regression_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 16%] Building CXX object quickstarts/CMakeFiles/derivative_regression_quickstart.dir/derivative_regression.cpp.o
+[ 20%] Building CXX object CMakeFiles/installed_consumer.dir/other.cpp.o
+[ 25%] Linking CXX executable derivative_regression_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 25%] Built target derivative_regression_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target typed_search_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 29%] Building CXX object quickstarts/CMakeFiles/typed_search_quickstart.dir/typed_search.cpp.o
+[ 33%] Linking CXX executable typed_search_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 33%] Built target typed_search_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target typed_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 37%] Building CXX object quickstarts/CMakeFiles/typed_quickstart.dir/typed.cpp.o
+[ 41%] Linking CXX executable typed_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 41%] Built target typed_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target symbolic_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 45%] Building CXX object quickstarts/CMakeFiles/symbolic_quickstart.dir/symbolic.cpp.o
+[ 50%] Building C object CMakeFiles/installed_consumer.dir/mixed.c.o
+[ 54%] Linking CXX executable installed_consumer
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 54%] Built target installed_consumer
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target templates_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 58%] Building CXX object quickstarts/CMakeFiles/templates_quickstart.dir/templates.cpp.o
+[ 62%] Linking CXX executable symbolic_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 62%] Built target symbolic_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target scalar_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 66%] Building CXX object quickstarts/CMakeFiles/scalar_quickstart.dir/scalar.cpp.o
+[ 70%] Linking CXX executable templates_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 70%] Built target templates_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target parsing_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 75%] Building CXX object quickstarts/CMakeFiles/parsing_quickstart.dir/parsing.cpp.o
+[ 79%] Linking CXX executable scalar_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 79%] Built target scalar_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target integrals_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 83%] Building CXX object quickstarts/CMakeFiles/integrals_quickstart.dir/integrals.cpp.o
+[ 87%] Linking CXX executable parsing_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 87%] Built target parsing_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+Scanning dependencies of target permutation_consumer
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 91%] Building CXX object oop_consumer/CMakeFiles/permutation_consumer.dir/main.cpp.o
+[ 95%] Linking CXX executable permutation_consumer
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[ 95%] Built target permutation_consumer
+[100%] Linking CXX executable integrals_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+[100%] Built target integrals_quickstart
+gmake[1]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build'
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/installed_consumer'
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/installed_consumer'
+	linux-vdso.so.1 (0x00007f2a55d56000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f2a55a00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f2a55917000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f2a558e9000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f2a55600000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f2a55d58000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/integrals_quickstart'
+integral[external=1,local=x1,lower=0.0,upper=x0,integrand=((2.0 * x1) + 1.0)] policy[gk7/15,abs=1e-10,rel=1e-10,samples=4096,panels=256,depth=32,expression_ops=1000000,node_visits=1000000,bindings=1000000,quadrature_ops=1000000,workspace=8388608,model_nodes=65536,external_inputs=65536]
+estimated_convergence value=6 estimated_error=6.66134e-14 samples=17
+fitted=((1.4999999850988388 * x1) + (-0.49999998509883881)) MSE=1.85037e-16 attempts=217
+threads_requested=1 threads_effective=1 stop=generation_limit
+integral[external=1,local=x1,lower=0.0,upper=x0,integrand=x1] policy[gk7/15,abs=1e-10,rel=1e-10,samples=4096,panels=256,depth=32,expression_ops=1000000,node_visits=1000000,bindings=1000000,quadrature_ops=1000000,workspace=8388608,model_nodes=65536,external_inputs=65536]
+Estimated error is heuristic; finite observations do not identify a unique global integrand.
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/integrals_quickstart' --threads 2
+integral[external=1,local=x1,lower=0.0,upper=x0,integrand=((2.0 * x1) + 1.0)] policy[gk7/15,abs=1e-10,rel=1e-10,samples=4096,panels=256,depth=32,expression_ops=1000000,node_visits=1000000,bindings=1000000,quadrature_ops=1000000,workspace=8388608,model_nodes=65536,external_inputs=65536]
+estimated_convergence value=6 estimated_error=6.66134e-14 samples=17
+fitted=((1.4999999850988388 * x1) + (-0.49999998509883881)) MSE=1.85037e-16 attempts=217
+threads_requested=2 threads_effective=2 stop=generation_limit
+integral[external=1,local=x1,lower=0.0,upper=x0,integrand=x1] policy[gk7/15,abs=1e-10,rel=1e-10,samples=4096,panels=256,depth=32,expression_ops=1000000,node_visits=1000000,bindings=1000000,quadrature_ops=1000000,workspace=8388608,model_nodes=65536,external_inputs=65536]
+Estimated error is heuristic; finite observations do not identify a unique global integrand.
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/integrals_quickstart'
+	linux-vdso.so.1 (0x00007f558a2b5000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f5589e00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f558a172000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f558a144000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f5589a00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f558a2b7000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/scalar_quickstart'
+threads_requested=1 threads_effective=1
+seed=42 x=0.236772 loss=0.000174979 generations=10 evaluations=176 stopping_reason=generation_limit
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/scalar_quickstart' --threads 2
+threads_requested=2 threads_effective=2
+seed=42 x=0.236772 loss=0.000174979 generations=10 evaluations=176 stopping_reason=generation_limit
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/scalar_quickstart'
+	linux-vdso.so.1 (0x00007fdfc1ac3000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fdfc1800000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fdfc1717000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fdfc16e9000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fdfc1400000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fdfc1ac5000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/symbolic_quickstart'
+threads_requested=1 threads_effective=1
+seed=42 binding=x0:first_input_column stop=exact_training_fit loss_calls=253 budget=256
+expression=(((x0 * x0) + 1.0) + (x0 - (2.0 - 2.0))) mse=0 nodes=11
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/symbolic_quickstart' --threads 2
+threads_requested=2 threads_effective=2
+seed=42 binding=x0:first_input_column stop=exact_training_fit loss_calls=253 budget=256
+expression=(((x0 * x0) + 1.0) + (x0 - (2.0 - 2.0))) mse=0 nodes=11
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/symbolic_quickstart'
+	linux-vdso.so.1 (0x00007f4dd9210000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f4dd8e00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f4dd90e2000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f4dd90b4000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f4dd8a00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f4dd9212000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/typed_quickstart'
+schema{x0:vector[3],x1:vector[2]} -> vector[2]
+(matvec(matrix[2,3](1.0,2.0,3.0,(-1.0),0.0,4.0),x0) + x1)
+vector[2](14.0,8.0) arithmetic=12 temporary_coefficients=11
+A*B=matrix[2,2](1.0,8.0,(-6.0),8.0)
+transpose(A)=matrix[3,2](1.0,(-1.0),2.0,0.0,3.0,4.0)
+dot=scalar(9.0)
+11-operation allowance: resource limit, no value
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/typed_quickstart'
+	linux-vdso.so.1 (0x00007f2862b6b000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f2862800000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f2862717000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f2862b13000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f2862400000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f2862b6d000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/typed_search_quickstart'
+threads_requested=1 stop=exact_training_fit loss_calls=11
+schema{x0:vector[2]} output=vector[2] expression=(x0 * (scalar(2.0) + scalar(0.0))) mse=0
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/typed_search_quickstart' --threads 2
+threads_requested=2 stop=exact_training_fit loss_calls=11
+schema{x0:vector[2]} output=vector[2] expression=(x0 * (scalar(2.0) + scalar(0.0))) mse=0
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/typed_search_quickstart'
+	linux-vdso.so.1 (0x00007f817c853000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f817c400000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f817c714000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f817c6e6000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f817c000000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f817c855000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/parsing_quickstart'
+(exp(((-1.0) * x0)) + powi(x0,2))
+schema{x0:matrix[2,3],x1:vector[3],x2:vector[2]} -> (matvec(x0,x1) + x2) = vector[2](14.0,8.0)
+matrix[2,3](1.0,2.0,3.0,(-1.0),0.0,4.0)
+rejected: expression byte 1: signs are supported only on numeric literals
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/parsing_quickstart'
+	linux-vdso.so.1 (0x00007f7be1897000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f7be1400000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f7be1780000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f7be1752000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f7be1000000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f7be1899000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/templates_quickstart'
+x0=v x1=T allowed={1}
+supplied=((x1 * x1) + 1.0)
+model=(((-1.0) * ((x1 * x1) + 1.0)) * x0)
+rejected: forbidden substitution variable
+threads_requested=1 threads_effective=1 stop=exact_training_fit loss_calls=20
+evolved=(((x1 + 1.0) - x1) + x1)
+complete=(((-1.0) * (((x1 + 1.0) - x1) + x1)) * x0)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/templates_quickstart' --threads 2
+x0=v x1=T allowed={1}
+supplied=((x1 * x1) + 1.0)
+model=(((-1.0) * ((x1 * x1) + 1.0)) * x0)
+rejected: forbidden substitution variable
+threads_requested=2 threads_effective=2 stop=exact_training_fit loss_calls=20
+evolved=(((x1 + 1.0) - x1) + x1)
+complete=(((-1.0) * (((x1 + 1.0) - x1) + x1)) * x0)
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/templates_quickstart'
+	linux-vdso.so.1 (0x00007feba0588000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007feba0200000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007feba0117000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007feba050c000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007feb9fe00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007feba058a000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/derivative_regression_quickstart'
+supplied=((x0 * x0) + 1.0) weighted_normalized_objective=0
+fitted=((((1.5 * x0) * x0) + ((-0.5) * x0)) + 1.25) objective=0 attempts=173
+threads_requested=1 threads_effective=1 stop=generation_limit objective=0.5
+model=(x0 * x0)
+Note: the anchor is an observation; finite samples do not identify a unique global function.
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/derivative_regression_quickstart' --threads 2
+supplied=((x0 * x0) + 1.0) weighted_normalized_objective=0
+fitted=((((1.5 * x0) * x0) + ((-0.5) * x0)) + 1.25) objective=0 attempts=173
+threads_requested=2 threads_effective=2 stop=generation_limit objective=0.5
+model=(x0 * x0)
+Note: the anchor is an observation; finite samples do not identify a unique global function.
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/derivative_regression_quickstart'
+	linux-vdso.so.1 (0x00007f88500fe000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f884fe00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f884fd17000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f884fce9000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f884fa00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f8850100000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/derivatives_quickstart'
+(((x0 * x0) + (x0 * x1)) + sin(x1)) value=4 dx0=4 dx1=3
+exp(((-1.0) * x0)) value=1 derivative=-1
+x0=v=3 x1=T=2 model=(((-1.0) * (1.0 + (x1 * x1))) * x0) value=-15 d/dv=-5 d/dT=-12
+x0=v=0 x1=T=2 model=(((-1.0) * (1.0 + (x1 * x1))) * x0) value=-0 d/dv=-5 d/dT=-0
+sqrt(x0*x0) at zero: value=0; derivative unavailable: active local sqrt rule is singular (not a global differentiability proof).
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/quickstarts/derivatives_quickstart'
+	linux-vdso.so.1 (0x00007f862eeba000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f862ec00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f862eb17000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f862eae9000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f862e800000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f862eebc000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/oop_consumer/permutation_consumer'
+threads_requested=1 threads_effective=1
+permutation OOP contracts passed; generations=5 evaluations=59
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/oop_consumer/permutation_consumer' --threads 2
+threads_requested=2 threads_effective=2
+parallel permutation contracts passed
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/ordinary consumer build/oop_consumer/permutation_consumer'
+	linux-vdso.so.1 (0x00007f32b2501000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f32b2200000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f32b2117000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f32b24a5000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f32b1e00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f32b2503000)
+/usr/bin/g++-13 -isystem '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix A/include/Genetik' -O3 -DNDEBUG -fno-fast-math -ffp-contract=off -std=gnu++2a '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer/oop_consumer/main.cpp' -M
+main.o: \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external\ consumer/oop_consumer/main.cpp \
+ /usr/include/stdc-predef.h \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix\ A/include/Genetik/EvaluatedCandidate.hpp \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix\ A/include/Genetik/Fitness.hpp \
+ /usr/include/c++/13/cmath /usr/include/c++/13/bits/requires_hosted.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \
+ /usr/include/features.h /usr/include/features-time64.h \
+ /usr/include/x86_64-linux-gnu/bits/wordsize.h \
+ /usr/include/x86_64-linux-gnu/bits/timesize.h \
+ /usr/include/x86_64-linux-gnu/sys/cdefs.h \
+ /usr/include/x86_64-linux-gnu/bits/long-double.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/cpu_defines.h \
+ /usr/include/c++/13/pstl/pstl_config.h \
+ /usr/include/c++/13/bits/cpp_type_traits.h \
+ /usr/include/c++/13/ext/type_traits.h /usr/include/math.h \
+ /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
+ /usr/include/x86_64-linux-gnu/bits/types.h \
+ /usr/include/x86_64-linux-gnu/bits/typesizes.h \
+ /usr/include/x86_64-linux-gnu/bits/time64.h \
+ /usr/include/x86_64-linux-gnu/bits/math-vector.h \
+ /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
+ /usr/include/x86_64-linux-gnu/bits/floatn.h \
+ /usr/include/x86_64-linux-gnu/bits/floatn-common.h \
+ /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
+ /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
+ /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
+ /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
+ /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
+ /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h \
+ /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
+ /usr/include/c++/13/bits/std_abs.h /usr/include/stdlib.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
+ /usr/include/x86_64-linux-gnu/bits/waitflags.h \
+ /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
+ /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
+ /usr/include/x86_64-linux-gnu/sys/types.h \
+ /usr/include/x86_64-linux-gnu/bits/types/clock_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/time_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/timer_t.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-intn.h /usr/include/endian.h \
+ /usr/include/x86_64-linux-gnu/bits/endian.h \
+ /usr/include/x86_64-linux-gnu/bits/endianness.h \
+ /usr/include/x86_64-linux-gnu/bits/byteswap.h \
+ /usr/include/x86_64-linux-gnu/bits/uintn-identity.h \
+ /usr/include/x86_64-linux-gnu/sys/select.h \
+ /usr/include/x86_64-linux-gnu/bits/select.h \
+ /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h \
+ /usr/include/x86_64-linux-gnu/bits/select2.h \
+ /usr/include/x86_64-linux-gnu/bits/select-decl.h \
+ /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
+ /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
+ /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
+ /usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h \
+ /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
+ /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h /usr/include/alloca.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib.h \
+ /usr/include/c++/13/bits/specfun.h \
+ /usr/include/c++/13/bits/stl_algobase.h \
+ /usr/include/c++/13/bits/functexcept.h \
+ /usr/include/c++/13/bits/exception_defines.h \
+ /usr/include/c++/13/ext/numeric_traits.h \
+ /usr/include/c++/13/bits/stl_pair.h /usr/include/c++/13/type_traits \
+ /usr/include/c++/13/bits/move.h /usr/include/c++/13/bits/utility.h \
+ /usr/include/c++/13/compare /usr/include/c++/13/concepts \
+ /usr/include/c++/13/bits/stl_iterator_base_types.h \
+ /usr/include/c++/13/bits/iterator_concepts.h \
+ /usr/include/c++/13/bits/ptr_traits.h \
+ /usr/include/c++/13/bits/ranges_cmp.h \
+ /usr/include/c++/13/bits/stl_iterator_base_funcs.h \
+ /usr/include/c++/13/bits/concept_check.h \
+ /usr/include/c++/13/debug/assertions.h \
+ /usr/include/c++/13/bits/stl_iterator.h /usr/include/c++/13/new \
+ /usr/include/c++/13/bits/exception.h \
+ /usr/include/c++/13/bits/stl_construct.h \
+ /usr/include/c++/13/debug/debug.h \
+ /usr/include/c++/13/bits/predefined_ops.h /usr/include/c++/13/bit \
+ /usr/include/c++/13/limits /usr/include/c++/13/tr1/gamma.tcc \
+ /usr/include/c++/13/tr1/special_function_util.h \
+ /usr/include/c++/13/tr1/bessel_function.tcc \
+ /usr/include/c++/13/tr1/beta_function.tcc \
+ /usr/include/c++/13/tr1/ell_integral.tcc \
+ /usr/include/c++/13/tr1/exp_integral.tcc \
+ /usr/include/c++/13/tr1/hypergeometric.tcc \
+ /usr/include/c++/13/tr1/legendre_function.tcc \
+ /usr/include/c++/13/tr1/modified_bessel_func.tcc \
+ /usr/include/c++/13/tr1/poly_hermite.tcc \
+ /usr/include/c++/13/tr1/poly_laguerre.tcc \
+ /usr/include/c++/13/tr1/riemann_zeta.tcc /usr/include/c++/13/stdexcept \
+ /usr/include/c++/13/exception /usr/include/c++/13/bits/exception_ptr.h \
+ /usr/include/c++/13/bits/cxxabi_init_exception.h \
+ /usr/include/c++/13/typeinfo /usr/include/c++/13/bits/hash_bytes.h \
+ /usr/include/c++/13/bits/nested_exception.h /usr/include/c++/13/string \
+ /usr/include/c++/13/bits/stringfwd.h \
+ /usr/include/c++/13/bits/memoryfwd.h \
+ /usr/include/c++/13/bits/char_traits.h \
+ /usr/include/c++/13/bits/postypes.h /usr/include/c++/13/cwchar \
+ /usr/include/wchar.h /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
+ /usr/include/x86_64-linux-gnu/bits/wchar.h \
+ /usr/include/x86_64-linux-gnu/bits/types/wint_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/types/FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h \
+ /usr/include/x86_64-linux-gnu/bits/wchar2.h \
+ /usr/include/c++/13/bits/allocator.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/c++allocator.h \
+ /usr/include/c++/13/bits/new_allocator.h \
+ /usr/include/c++/13/bits/localefwd.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/c++locale.h \
+ /usr/include/c++/13/clocale /usr/include/locale.h \
+ /usr/include/x86_64-linux-gnu/bits/locale.h /usr/include/c++/13/iosfwd \
+ /usr/include/c++/13/cctype /usr/include/ctype.h \
+ /usr/include/c++/13/bits/ostream_insert.h \
+ /usr/include/c++/13/bits/cxxabi_forced.h \
+ /usr/include/c++/13/bits/stl_function.h \
+ /usr/include/c++/13/backward/binders.h \
+ /usr/include/c++/13/bits/refwrap.h /usr/include/c++/13/bits/invoke.h \
+ /usr/include/c++/13/bits/range_access.h \
+ /usr/include/c++/13/initializer_list \
+ /usr/include/c++/13/bits/basic_string.h \
+ /usr/include/c++/13/ext/alloc_traits.h \
+ /usr/include/c++/13/bits/alloc_traits.h /usr/include/c++/13/string_view \
+ /usr/include/c++/13/bits/functional_hash.h \
+ /usr/include/c++/13/bits/ranges_base.h \
+ /usr/include/c++/13/bits/max_size_type.h /usr/include/c++/13/numbers \
+ /usr/include/c++/13/bits/string_view.tcc \
+ /usr/include/c++/13/ext/string_conversions.h /usr/include/c++/13/cstdlib \
+ /usr/include/c++/13/cstdio /usr/include/stdio.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/types/cookie_io_functions_t.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio2.h /usr/include/c++/13/cerrno \
+ /usr/include/errno.h /usr/include/x86_64-linux-gnu/bits/errno.h \
+ /usr/include/linux/errno.h /usr/include/x86_64-linux-gnu/asm/errno.h \
+ /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
+ /usr/include/x86_64-linux-gnu/bits/types/error_t.h \
+ /usr/include/c++/13/bits/charconv.h \
+ /usr/include/c++/13/bits/basic_string.tcc \
+ /usr/include/c++/13/bits/memory_resource.h /usr/include/c++/13/cstddef \
+ /usr/include/c++/13/bits/uses_allocator.h \
+ /usr/include/c++/13/bits/uses_allocator_args.h /usr/include/c++/13/tuple \
+ /usr/include/c++/13/bits/ranges_util.h \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix\ A/include/Genetik/Execution.hpp \
+ /usr/include/c++/13/algorithm /usr/include/c++/13/bits/stl_algo.h \
+ /usr/include/c++/13/bits/algorithmfwd.h \
+ /usr/include/c++/13/bits/stl_heap.h \
+ /usr/include/c++/13/bits/uniform_int_dist.h \
+ /usr/include/c++/13/bits/stl_tempbuf.h \
+ /usr/include/c++/13/bits/ranges_algo.h \
+ /usr/include/c++/13/bits/ranges_algobase.h \
+ /usr/include/c++/13/pstl/glue_algorithm_defs.h \
+ /usr/include/c++/13/pstl/execution_defs.h /usr/include/c++/13/atomic \
+ /usr/include/c++/13/bits/atomic_base.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h /usr/include/stdint.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
+ /usr/include/c++/13/bits/atomic_lockfree_defines.h \
+ /usr/include/c++/13/bits/atomic_wait.h /usr/include/c++/13/cstdint \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/gthr.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/gthr-default.h \
+ /usr/include/pthread.h /usr/include/sched.h \
+ /usr/include/x86_64-linux-gnu/bits/sched.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h \
+ /usr/include/x86_64-linux-gnu/bits/cpu-set.h /usr/include/time.h \
+ /usr/include/x86_64-linux-gnu/bits/time.h \
+ /usr/include/x86_64-linux-gnu/bits/timex.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
+ /usr/include/x86_64-linux-gnu/bits/setjmp.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
+ /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h \
+ /usr/include/c++/13/climits \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/limits.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/syslimits.h \
+ /usr/include/limits.h /usr/include/x86_64-linux-gnu/bits/posix1_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/local_lim.h \
+ /usr/include/linux/limits.h \
+ /usr/include/x86_64-linux-gnu/bits/posix2_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/xopen_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/uio_lim.h /usr/include/unistd.h \
+ /usr/include/x86_64-linux-gnu/bits/posix_opt.h \
+ /usr/include/x86_64-linux-gnu/bits/environments.h \
+ /usr/include/x86_64-linux-gnu/bits/confname.h \
+ /usr/include/x86_64-linux-gnu/bits/getopt_posix.h \
+ /usr/include/x86_64-linux-gnu/bits/getopt_core.h \
+ /usr/include/x86_64-linux-gnu/bits/unistd.h \
+ /usr/include/x86_64-linux-gnu/bits/unistd-decl.h \
+ /usr/include/x86_64-linux-gnu/bits/unistd_ext.h \
+ /usr/include/linux/close_range.h /usr/include/syscall.h \
+ /usr/include/x86_64-linux-gnu/sys/syscall.h \
+ /usr/include/x86_64-linux-gnu/asm/unistd.h \
+ /usr/include/x86_64-linux-gnu/asm/unistd_64.h \
+ /usr/include/x86_64-linux-gnu/bits/syscall.h \
+ /usr/include/c++/13/bits/std_mutex.h /usr/include/c++/13/cfenv \
+ /usr/include/c++/13/fenv.h /usr/include/fenv.h \
+ /usr/include/x86_64-linux-gnu/bits/fenv.h /usr/include/c++/13/charconv \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/error_constants.h \
+ /usr/include/c++/13/condition_variable /usr/include/c++/13/bits/chrono.h \
+ /usr/include/c++/13/ratio /usr/include/c++/13/ctime \
+ /usr/include/c++/13/bits/parse_numbers.h \
+ /usr/include/c++/13/bits/unique_lock.h \
+ /usr/include/c++/13/bits/shared_ptr.h \
+ /usr/include/c++/13/bits/shared_ptr_base.h \
+ /usr/include/c++/13/bits/allocated_ptr.h \
+ /usr/include/c++/13/bits/unique_ptr.h /usr/include/c++/13/ostream \
+ /usr/include/c++/13/ios /usr/include/c++/13/bits/ios_base.h \
+ /usr/include/c++/13/ext/atomicity.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/atomic_word.h \
+ /usr/include/x86_64-linux-gnu/sys/single_threaded.h \
+ /usr/include/c++/13/bits/locale_classes.h \
+ /usr/include/c++/13/bits/locale_classes.tcc \
+ /usr/include/c++/13/system_error /usr/include/c++/13/streambuf \
+ /usr/include/c++/13/bits/streambuf.tcc \
+ /usr/include/c++/13/bits/basic_ios.h \
+ /usr/include/c++/13/bits/locale_facets.h /usr/include/c++/13/cwctype \
+ /usr/include/wctype.h /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_base.h \
+ /usr/include/c++/13/bits/streambuf_iterator.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_inline.h \
+ /usr/include/c++/13/bits/locale_facets.tcc \
+ /usr/include/c++/13/bits/basic_ios.tcc \
+ /usr/include/c++/13/bits/ostream.tcc \
+ /usr/include/c++/13/ext/aligned_buffer.h \
+ /usr/include/c++/13/ext/concurrence.h /usr/include/c++/13/bits/align.h \
+ /usr/include/c++/13/bits/stl_uninitialized.h \
+ /usr/include/c++/13/stop_token /usr/include/c++/13/bits/std_thread.h \
+ /usr/include/c++/13/semaphore /usr/include/c++/13/bits/semaphore_base.h \
+ /usr/include/c++/13/bits/atomic_timed_wait.h \
+ /usr/include/c++/13/bits/this_thread_sleep.h \
+ /usr/include/x86_64-linux-gnu/sys/time.h /usr/include/semaphore.h \
+ /usr/include/x86_64-linux-gnu/bits/semaphore.h \
+ /usr/include/c++/13/functional /usr/include/c++/13/bits/std_function.h \
+ /usr/include/c++/13/unordered_map \
+ /usr/include/c++/13/bits/unordered_map.h \
+ /usr/include/c++/13/bits/hashtable.h \
+ /usr/include/c++/13/bits/hashtable_policy.h \
+ /usr/include/c++/13/bits/enable_special_members.h \
+ /usr/include/c++/13/bits/node_handle.h \
+ /usr/include/c++/13/bits/erase_if.h /usr/include/c++/13/vector \
+ /usr/include/c++/13/bits/stl_vector.h \
+ /usr/include/c++/13/bits/stl_bvector.h \
+ /usr/include/c++/13/bits/vector.tcc /usr/include/c++/13/array \
+ /usr/include/c++/13/mutex /usr/include/c++/13/thread \
+ /usr/include/c++/13/memory \
+ /usr/include/c++/13/bits/stl_raw_storage_iter.h \
+ /usr/include/c++/13/bits/shared_ptr_atomic.h \
+ /usr/include/c++/13/backward/auto_ptr.h \
+ /usr/include/c++/13/bits/ranges_uninitialized.h \
+ /usr/include/c++/13/pstl/glue_memory_defs.h /usr/include/c++/13/utility \
+ /usr/include/c++/13/bits/stl_relops.h \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix\ A/include/Genetik/Population.hpp \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix\ A/include/Genetik/Population_i.hpp \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix\ A/include/Genetik/detail/ScopedTiming.hpp \
+ /usr/include/c++/13/chrono /usr/include/c++/13/sstream \
+ /usr/include/c++/13/istream /usr/include/c++/13/bits/istream.tcc \
+ /usr/include/c++/13/bits/sstream.tcc \
+ /usr/include/c++/13/bits/chrono_io.h /usr/include/c++/13/iomanip \
+ /usr/include/c++/13/locale \
+ /usr/include/c++/13/bits/locale_facets_nonio.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/time_members.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/messages_members.h \
+ /usr/include/libintl.h /usr/include/c++/13/bits/codecvt.h \
+ /usr/include/c++/13/bits/locale_facets_nonio.tcc \
+ /usr/include/c++/13/bits/locale_conv.h \
+ /usr/include/c++/13/bits/quoted_string.h /usr/include/c++/13/format \
+ /usr/include/c++/13/optional /usr/include/c++/13/span \
+ /usr/include/c++/13/variant \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix\ A/include/Genetik/RandomContext.hpp \
+ /usr/include/c++/13/random /usr/include/c++/13/bits/random.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/opt_random.h \
+ /usr/include/c++/13/bits/random.tcc /usr/include/c++/13/numeric \
+ /usr/include/c++/13/bits/stl_numeric.h \
+ /usr/include/c++/13/pstl/glue_numeric_defs.h \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix\ A/include/Genetik/GeneticAlgorithm.hpp \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix\ A/include/Genetik/GeneticAlgorithm_i.hpp \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/prefix\ A/include/Genetik/ScalarVariation.hpp \
+ /usr/include/c++/13/iostream
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Configuring done
+-- Generating done
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build
+/home/runner/work/_temp/cmake-min/bin/cmake --build '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build' -j2
+gmake[1]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target derivatives_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target installed_consumer
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[  4%] Building CXX object quickstarts/CMakeFiles/derivatives_quickstart.dir/derivatives.cpp.o
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[  8%] Building CXX object CMakeFiles/installed_consumer.dir/main.cpp.o
+[ 12%] Linking CXX executable derivatives_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 12%] Built target derivatives_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target derivative_regression_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 16%] Building CXX object quickstarts/CMakeFiles/derivative_regression_quickstart.dir/derivative_regression.cpp.o
+[ 20%] Building CXX object CMakeFiles/installed_consumer.dir/other.cpp.o
+[ 25%] Linking CXX executable derivative_regression_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 25%] Built target derivative_regression_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target typed_search_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 29%] Building CXX object quickstarts/CMakeFiles/typed_search_quickstart.dir/typed_search.cpp.o
+[ 33%] Linking CXX executable typed_search_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 33%] Built target typed_search_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target typed_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 37%] Building CXX object quickstarts/CMakeFiles/typed_quickstart.dir/typed.cpp.o
+[ 41%] Linking CXX executable typed_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 41%] Built target typed_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target symbolic_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 45%] Building CXX object quickstarts/CMakeFiles/symbolic_quickstart.dir/symbolic.cpp.o
+[ 50%] Building C object CMakeFiles/installed_consumer.dir/mixed.c.o
+[ 54%] Linking CXX executable installed_consumer
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 54%] Built target installed_consumer
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target templates_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 58%] Building CXX object quickstarts/CMakeFiles/templates_quickstart.dir/templates.cpp.o
+[ 62%] Linking CXX executable symbolic_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 62%] Built target symbolic_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target scalar_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 66%] Building CXX object quickstarts/CMakeFiles/scalar_quickstart.dir/scalar.cpp.o
+[ 70%] Linking CXX executable templates_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 70%] Built target templates_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target parsing_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 75%] Building CXX object quickstarts/CMakeFiles/parsing_quickstart.dir/parsing.cpp.o
+[ 79%] Linking CXX executable scalar_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 79%] Built target scalar_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target integrals_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 83%] Building CXX object quickstarts/CMakeFiles/integrals_quickstart.dir/integrals.cpp.o
+[ 87%] Linking CXX executable parsing_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 87%] Built target parsing_quickstart
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+Scanning dependencies of target permutation_consumer
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 91%] Building CXX object oop_consumer/CMakeFiles/permutation_consumer.dir/main.cpp.o
+[ 95%] Linking CXX executable permutation_consumer
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[ 95%] Built target permutation_consumer
+[100%] Linking CXX executable integrals_quickstart
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+[100%] Built target integrals_quickstart
+gmake[1]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build'
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/installed_consumer'
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/installed_consumer'
+	linux-vdso.so.1 (0x00007fbc0bac7000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fbc0b600000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fbc0b92a000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fbc0b8fc000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fbc0b200000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fbc0bac9000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/integrals_quickstart'
+integral[external=1,local=x1,lower=0.0,upper=x0,integrand=((2.0 * x1) + 1.0)] policy[gk7/15,abs=1e-10,rel=1e-10,samples=4096,panels=256,depth=32,expression_ops=1000000,node_visits=1000000,bindings=1000000,quadrature_ops=1000000,workspace=8388608,model_nodes=65536,external_inputs=65536]
+estimated_convergence value=6 estimated_error=6.66134e-14 samples=17
+fitted=((1.4999999850988388 * x1) + (-0.49999998509883881)) MSE=1.85037e-16 attempts=217
+threads_requested=1 threads_effective=1 stop=generation_limit
+integral[external=1,local=x1,lower=0.0,upper=x0,integrand=x1] policy[gk7/15,abs=1e-10,rel=1e-10,samples=4096,panels=256,depth=32,expression_ops=1000000,node_visits=1000000,bindings=1000000,quadrature_ops=1000000,workspace=8388608,model_nodes=65536,external_inputs=65536]
+Estimated error is heuristic; finite observations do not identify a unique global integrand.
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/integrals_quickstart' --threads 2
+integral[external=1,local=x1,lower=0.0,upper=x0,integrand=((2.0 * x1) + 1.0)] policy[gk7/15,abs=1e-10,rel=1e-10,samples=4096,panels=256,depth=32,expression_ops=1000000,node_visits=1000000,bindings=1000000,quadrature_ops=1000000,workspace=8388608,model_nodes=65536,external_inputs=65536]
+estimated_convergence value=6 estimated_error=6.66134e-14 samples=17
+fitted=((1.4999999850988388 * x1) + (-0.49999998509883881)) MSE=1.85037e-16 attempts=217
+threads_requested=2 threads_effective=2 stop=generation_limit
+integral[external=1,local=x1,lower=0.0,upper=x0,integrand=x1] policy[gk7/15,abs=1e-10,rel=1e-10,samples=4096,panels=256,depth=32,expression_ops=1000000,node_visits=1000000,bindings=1000000,quadrature_ops=1000000,workspace=8388608,model_nodes=65536,external_inputs=65536]
+Estimated error is heuristic; finite observations do not identify a unique global integrand.
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/integrals_quickstart'
+	linux-vdso.so.1 (0x00007f9c819c4000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f9c81600000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f9c81881000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f9c815d2000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f9c81200000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f9c819c6000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/scalar_quickstart'
+threads_requested=1 threads_effective=1
+seed=42 x=0.236772 loss=0.000174979 generations=10 evaluations=176 stopping_reason=generation_limit
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/scalar_quickstart' --threads 2
+threads_requested=2 threads_effective=2
+seed=42 x=0.236772 loss=0.000174979 generations=10 evaluations=176 stopping_reason=generation_limit
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/scalar_quickstart'
+	linux-vdso.so.1 (0x00007f2de3802000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f2de3400000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f2de36ea000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f2de36bc000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f2de3000000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f2de3804000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/symbolic_quickstart'
+threads_requested=1 threads_effective=1
+seed=42 binding=x0:first_input_column stop=exact_training_fit loss_calls=253 budget=256
+expression=(((x0 * x0) + 1.0) + (x0 - (2.0 - 2.0))) mse=0 nodes=11
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/symbolic_quickstart' --threads 2
+threads_requested=2 threads_effective=2
+seed=42 binding=x0:first_input_column stop=exact_training_fit loss_calls=253 budget=256
+expression=(((x0 * x0) + 1.0) + (x0 - (2.0 - 2.0))) mse=0 nodes=11
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/symbolic_quickstart'
+	linux-vdso.so.1 (0x00007f5ca4e40000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f5ca4a00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f5ca4d12000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f5ca4ce4000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f5ca4600000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f5ca4e42000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/typed_quickstart'
+schema{x0:vector[3],x1:vector[2]} -> vector[2]
+(matvec(matrix[2,3](1.0,2.0,3.0,(-1.0),0.0,4.0),x0) + x1)
+vector[2](14.0,8.0) arithmetic=12 temporary_coefficients=11
+A*B=matrix[2,2](1.0,8.0,(-6.0),8.0)
+transpose(A)=matrix[3,2](1.0,(-1.0),2.0,0.0,3.0,4.0)
+dot=scalar(9.0)
+11-operation allowance: resource limit, no value
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/typed_quickstart'
+	linux-vdso.so.1 (0x00007f0c3a225000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f0c39e00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f0c3a112000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f0c3a0e4000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f0c39a00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f0c3a227000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/typed_search_quickstart'
+threads_requested=1 stop=exact_training_fit loss_calls=11
+schema{x0:vector[2]} output=vector[2] expression=(x0 * (scalar(2.0) + scalar(0.0))) mse=0
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/typed_search_quickstart' --threads 2
+threads_requested=2 stop=exact_training_fit loss_calls=11
+schema{x0:vector[2]} output=vector[2] expression=(x0 * (scalar(2.0) + scalar(0.0))) mse=0
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/typed_search_quickstart'
+	linux-vdso.so.1 (0x00007fe18d0e3000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fe18ce00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fe18cd17000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fe18cce9000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fe18ca00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fe18d0e5000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/parsing_quickstart'
+(exp(((-1.0) * x0)) + powi(x0,2))
+schema{x0:matrix[2,3],x1:vector[3],x2:vector[2]} -> (matvec(x0,x1) + x2) = vector[2](14.0,8.0)
+matrix[2,3](1.0,2.0,3.0,(-1.0),0.0,4.0)
+rejected: expression byte 1: signs are supported only on numeric literals
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/parsing_quickstart'
+	linux-vdso.so.1 (0x00007f5fc9393000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f5fc9000000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f5fc8f17000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f5fc9337000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f5fc8c00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f5fc9395000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/templates_quickstart'
+x0=v x1=T allowed={1}
+supplied=((x1 * x1) + 1.0)
+model=(((-1.0) * ((x1 * x1) + 1.0)) * x0)
+rejected: forbidden substitution variable
+threads_requested=1 threads_effective=1 stop=exact_training_fit loss_calls=20
+evolved=(((x1 + 1.0) - x1) + x1)
+complete=(((-1.0) * (((x1 + 1.0) - x1) + x1)) * x0)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/templates_quickstart' --threads 2
+x0=v x1=T allowed={1}
+supplied=((x1 * x1) + 1.0)
+model=(((-1.0) * ((x1 * x1) + 1.0)) * x0)
+rejected: forbidden substitution variable
+threads_requested=2 threads_effective=2 stop=exact_training_fit loss_calls=20
+evolved=(((x1 + 1.0) - x1) + x1)
+complete=(((-1.0) * (((x1 + 1.0) - x1) + x1)) * x0)
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/templates_quickstart'
+	linux-vdso.so.1 (0x00007fa90efc0000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fa90ec00000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fa90ee89000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fa90ebd2000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fa90e800000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fa90efc2000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/derivative_regression_quickstart'
+supplied=((x0 * x0) + 1.0) weighted_normalized_objective=0
+fitted=((((1.5 * x0) * x0) + ((-0.5) * x0)) + 1.25) objective=0 attempts=173
+threads_requested=1 threads_effective=1 stop=generation_limit objective=0.5
+model=(x0 * x0)
+Note: the anchor is an observation; finite samples do not identify a unique global function.
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/derivative_regression_quickstart' --threads 2
+supplied=((x0 * x0) + 1.0) weighted_normalized_objective=0
+fitted=((((1.5 * x0) * x0) + ((-0.5) * x0)) + 1.25) objective=0 attempts=173
+threads_requested=2 threads_effective=2 stop=generation_limit objective=0.5
+model=(x0 * x0)
+Note: the anchor is an observation; finite samples do not identify a unique global function.
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/derivative_regression_quickstart'
+	linux-vdso.so.1 (0x00007f28214ba000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f2821000000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f282137d000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f282134f000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f2820c00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f28214bc000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/derivatives_quickstart'
+(((x0 * x0) + (x0 * x1)) + sin(x1)) value=4 dx0=4 dx1=3
+exp(((-1.0) * x0)) value=1 derivative=-1
+x0=v=3 x1=T=2 model=(((-1.0) * (1.0 + (x1 * x1))) * x0) value=-15 d/dv=-5 d/dT=-12
+x0=v=0 x1=T=2 model=(((-1.0) * (1.0 + (x1 * x1))) * x0) value=-0 d/dv=-5 d/dT=-0
+sqrt(x0*x0) at zero: value=0; derivative unavailable: active local sqrt rule is singular (not a global differentiability proof).
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/quickstarts/derivatives_quickstart'
+	linux-vdso.so.1 (0x00007fe9b63a3000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fe9b6000000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fe9b6294000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fe9b5fd2000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fe9b5c00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fe9b63a5000)
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/oop_consumer/permutation_consumer'
+threads_requested=1 threads_effective=1
+permutation OOP contracts passed; generations=5 evaluations=59
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/oop_consumer/permutation_consumer' --threads 2
+threads_requested=2 threads_effective=2
+parallel permutation contracts passed
+ldd '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated consumer build/oop_consumer/permutation_consumer'
+	linux-vdso.so.1 (0x00007fdb543bc000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fdb54000000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fdb542a5000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fdb53fd2000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fdb53c00000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fdb543be000)
+/usr/bin/g++-13 -isystem '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B/include/Genetik' -O3 -DNDEBUG -fno-fast-math -ffp-contract=off -std=gnu++2a '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer/oop_consumer/main.cpp' -M
+main.o: \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external\ consumer/oop_consumer/main.cpp \
+ /usr/include/stdc-predef.h \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated\ prefix\ B/include/Genetik/EvaluatedCandidate.hpp \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated\ prefix\ B/include/Genetik/Fitness.hpp \
+ /usr/include/c++/13/cmath /usr/include/c++/13/bits/requires_hosted.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \
+ /usr/include/features.h /usr/include/features-time64.h \
+ /usr/include/x86_64-linux-gnu/bits/wordsize.h \
+ /usr/include/x86_64-linux-gnu/bits/timesize.h \
+ /usr/include/x86_64-linux-gnu/sys/cdefs.h \
+ /usr/include/x86_64-linux-gnu/bits/long-double.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/cpu_defines.h \
+ /usr/include/c++/13/pstl/pstl_config.h \
+ /usr/include/c++/13/bits/cpp_type_traits.h \
+ /usr/include/c++/13/ext/type_traits.h /usr/include/math.h \
+ /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
+ /usr/include/x86_64-linux-gnu/bits/types.h \
+ /usr/include/x86_64-linux-gnu/bits/typesizes.h \
+ /usr/include/x86_64-linux-gnu/bits/time64.h \
+ /usr/include/x86_64-linux-gnu/bits/math-vector.h \
+ /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
+ /usr/include/x86_64-linux-gnu/bits/floatn.h \
+ /usr/include/x86_64-linux-gnu/bits/floatn-common.h \
+ /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
+ /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
+ /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
+ /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
+ /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
+ /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h \
+ /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
+ /usr/include/c++/13/bits/std_abs.h /usr/include/stdlib.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
+ /usr/include/x86_64-linux-gnu/bits/waitflags.h \
+ /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
+ /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
+ /usr/include/x86_64-linux-gnu/sys/types.h \
+ /usr/include/x86_64-linux-gnu/bits/types/clock_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/time_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/timer_t.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-intn.h /usr/include/endian.h \
+ /usr/include/x86_64-linux-gnu/bits/endian.h \
+ /usr/include/x86_64-linux-gnu/bits/endianness.h \
+ /usr/include/x86_64-linux-gnu/bits/byteswap.h \
+ /usr/include/x86_64-linux-gnu/bits/uintn-identity.h \
+ /usr/include/x86_64-linux-gnu/sys/select.h \
+ /usr/include/x86_64-linux-gnu/bits/select.h \
+ /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h \
+ /usr/include/x86_64-linux-gnu/bits/select2.h \
+ /usr/include/x86_64-linux-gnu/bits/select-decl.h \
+ /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
+ /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
+ /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
+ /usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h \
+ /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
+ /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h /usr/include/alloca.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib.h \
+ /usr/include/c++/13/bits/specfun.h \
+ /usr/include/c++/13/bits/stl_algobase.h \
+ /usr/include/c++/13/bits/functexcept.h \
+ /usr/include/c++/13/bits/exception_defines.h \
+ /usr/include/c++/13/ext/numeric_traits.h \
+ /usr/include/c++/13/bits/stl_pair.h /usr/include/c++/13/type_traits \
+ /usr/include/c++/13/bits/move.h /usr/include/c++/13/bits/utility.h \
+ /usr/include/c++/13/compare /usr/include/c++/13/concepts \
+ /usr/include/c++/13/bits/stl_iterator_base_types.h \
+ /usr/include/c++/13/bits/iterator_concepts.h \
+ /usr/include/c++/13/bits/ptr_traits.h \
+ /usr/include/c++/13/bits/ranges_cmp.h \
+ /usr/include/c++/13/bits/stl_iterator_base_funcs.h \
+ /usr/include/c++/13/bits/concept_check.h \
+ /usr/include/c++/13/debug/assertions.h \
+ /usr/include/c++/13/bits/stl_iterator.h /usr/include/c++/13/new \
+ /usr/include/c++/13/bits/exception.h \
+ /usr/include/c++/13/bits/stl_construct.h \
+ /usr/include/c++/13/debug/debug.h \
+ /usr/include/c++/13/bits/predefined_ops.h /usr/include/c++/13/bit \
+ /usr/include/c++/13/limits /usr/include/c++/13/tr1/gamma.tcc \
+ /usr/include/c++/13/tr1/special_function_util.h \
+ /usr/include/c++/13/tr1/bessel_function.tcc \
+ /usr/include/c++/13/tr1/beta_function.tcc \
+ /usr/include/c++/13/tr1/ell_integral.tcc \
+ /usr/include/c++/13/tr1/exp_integral.tcc \
+ /usr/include/c++/13/tr1/hypergeometric.tcc \
+ /usr/include/c++/13/tr1/legendre_function.tcc \
+ /usr/include/c++/13/tr1/modified_bessel_func.tcc \
+ /usr/include/c++/13/tr1/poly_hermite.tcc \
+ /usr/include/c++/13/tr1/poly_laguerre.tcc \
+ /usr/include/c++/13/tr1/riemann_zeta.tcc /usr/include/c++/13/stdexcept \
+ /usr/include/c++/13/exception /usr/include/c++/13/bits/exception_ptr.h \
+ /usr/include/c++/13/bits/cxxabi_init_exception.h \
+ /usr/include/c++/13/typeinfo /usr/include/c++/13/bits/hash_bytes.h \
+ /usr/include/c++/13/bits/nested_exception.h /usr/include/c++/13/string \
+ /usr/include/c++/13/bits/stringfwd.h \
+ /usr/include/c++/13/bits/memoryfwd.h \
+ /usr/include/c++/13/bits/char_traits.h \
+ /usr/include/c++/13/bits/postypes.h /usr/include/c++/13/cwchar \
+ /usr/include/wchar.h /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
+ /usr/include/x86_64-linux-gnu/bits/wchar.h \
+ /usr/include/x86_64-linux-gnu/bits/types/wint_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/types/FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h \
+ /usr/include/x86_64-linux-gnu/bits/wchar2.h \
+ /usr/include/c++/13/bits/allocator.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/c++allocator.h \
+ /usr/include/c++/13/bits/new_allocator.h \
+ /usr/include/c++/13/bits/localefwd.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/c++locale.h \
+ /usr/include/c++/13/clocale /usr/include/locale.h \
+ /usr/include/x86_64-linux-gnu/bits/locale.h /usr/include/c++/13/iosfwd \
+ /usr/include/c++/13/cctype /usr/include/ctype.h \
+ /usr/include/c++/13/bits/ostream_insert.h \
+ /usr/include/c++/13/bits/cxxabi_forced.h \
+ /usr/include/c++/13/bits/stl_function.h \
+ /usr/include/c++/13/backward/binders.h \
+ /usr/include/c++/13/bits/refwrap.h /usr/include/c++/13/bits/invoke.h \
+ /usr/include/c++/13/bits/range_access.h \
+ /usr/include/c++/13/initializer_list \
+ /usr/include/c++/13/bits/basic_string.h \
+ /usr/include/c++/13/ext/alloc_traits.h \
+ /usr/include/c++/13/bits/alloc_traits.h /usr/include/c++/13/string_view \
+ /usr/include/c++/13/bits/functional_hash.h \
+ /usr/include/c++/13/bits/ranges_base.h \
+ /usr/include/c++/13/bits/max_size_type.h /usr/include/c++/13/numbers \
+ /usr/include/c++/13/bits/string_view.tcc \
+ /usr/include/c++/13/ext/string_conversions.h /usr/include/c++/13/cstdlib \
+ /usr/include/c++/13/cstdio /usr/include/stdio.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/types/cookie_io_functions_t.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio2.h /usr/include/c++/13/cerrno \
+ /usr/include/errno.h /usr/include/x86_64-linux-gnu/bits/errno.h \
+ /usr/include/linux/errno.h /usr/include/x86_64-linux-gnu/asm/errno.h \
+ /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
+ /usr/include/x86_64-linux-gnu/bits/types/error_t.h \
+ /usr/include/c++/13/bits/charconv.h \
+ /usr/include/c++/13/bits/basic_string.tcc \
+ /usr/include/c++/13/bits/memory_resource.h /usr/include/c++/13/cstddef \
+ /usr/include/c++/13/bits/uses_allocator.h \
+ /usr/include/c++/13/bits/uses_allocator_args.h /usr/include/c++/13/tuple \
+ /usr/include/c++/13/bits/ranges_util.h \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated\ prefix\ B/include/Genetik/Execution.hpp \
+ /usr/include/c++/13/algorithm /usr/include/c++/13/bits/stl_algo.h \
+ /usr/include/c++/13/bits/algorithmfwd.h \
+ /usr/include/c++/13/bits/stl_heap.h \
+ /usr/include/c++/13/bits/uniform_int_dist.h \
+ /usr/include/c++/13/bits/stl_tempbuf.h \
+ /usr/include/c++/13/bits/ranges_algo.h \
+ /usr/include/c++/13/bits/ranges_algobase.h \
+ /usr/include/c++/13/pstl/glue_algorithm_defs.h \
+ /usr/include/c++/13/pstl/execution_defs.h /usr/include/c++/13/atomic \
+ /usr/include/c++/13/bits/atomic_base.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h /usr/include/stdint.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
+ /usr/include/c++/13/bits/atomic_lockfree_defines.h \
+ /usr/include/c++/13/bits/atomic_wait.h /usr/include/c++/13/cstdint \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/gthr.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/gthr-default.h \
+ /usr/include/pthread.h /usr/include/sched.h \
+ /usr/include/x86_64-linux-gnu/bits/sched.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h \
+ /usr/include/x86_64-linux-gnu/bits/cpu-set.h /usr/include/time.h \
+ /usr/include/x86_64-linux-gnu/bits/time.h \
+ /usr/include/x86_64-linux-gnu/bits/timex.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
+ /usr/include/x86_64-linux-gnu/bits/setjmp.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
+ /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h \
+ /usr/include/c++/13/climits \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/limits.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/syslimits.h \
+ /usr/include/limits.h /usr/include/x86_64-linux-gnu/bits/posix1_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/local_lim.h \
+ /usr/include/linux/limits.h \
+ /usr/include/x86_64-linux-gnu/bits/posix2_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/xopen_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/uio_lim.h /usr/include/unistd.h \
+ /usr/include/x86_64-linux-gnu/bits/posix_opt.h \
+ /usr/include/x86_64-linux-gnu/bits/environments.h \
+ /usr/include/x86_64-linux-gnu/bits/confname.h \
+ /usr/include/x86_64-linux-gnu/bits/getopt_posix.h \
+ /usr/include/x86_64-linux-gnu/bits/getopt_core.h \
+ /usr/include/x86_64-linux-gnu/bits/unistd.h \
+ /usr/include/x86_64-linux-gnu/bits/unistd-decl.h \
+ /usr/include/x86_64-linux-gnu/bits/unistd_ext.h \
+ /usr/include/linux/close_range.h /usr/include/syscall.h \
+ /usr/include/x86_64-linux-gnu/sys/syscall.h \
+ /usr/include/x86_64-linux-gnu/asm/unistd.h \
+ /usr/include/x86_64-linux-gnu/asm/unistd_64.h \
+ /usr/include/x86_64-linux-gnu/bits/syscall.h \
+ /usr/include/c++/13/bits/std_mutex.h /usr/include/c++/13/cfenv \
+ /usr/include/c++/13/fenv.h /usr/include/fenv.h \
+ /usr/include/x86_64-linux-gnu/bits/fenv.h /usr/include/c++/13/charconv \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/error_constants.h \
+ /usr/include/c++/13/condition_variable /usr/include/c++/13/bits/chrono.h \
+ /usr/include/c++/13/ratio /usr/include/c++/13/ctime \
+ /usr/include/c++/13/bits/parse_numbers.h \
+ /usr/include/c++/13/bits/unique_lock.h \
+ /usr/include/c++/13/bits/shared_ptr.h \
+ /usr/include/c++/13/bits/shared_ptr_base.h \
+ /usr/include/c++/13/bits/allocated_ptr.h \
+ /usr/include/c++/13/bits/unique_ptr.h /usr/include/c++/13/ostream \
+ /usr/include/c++/13/ios /usr/include/c++/13/bits/ios_base.h \
+ /usr/include/c++/13/ext/atomicity.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/atomic_word.h \
+ /usr/include/x86_64-linux-gnu/sys/single_threaded.h \
+ /usr/include/c++/13/bits/locale_classes.h \
+ /usr/include/c++/13/bits/locale_classes.tcc \
+ /usr/include/c++/13/system_error /usr/include/c++/13/streambuf \
+ /usr/include/c++/13/bits/streambuf.tcc \
+ /usr/include/c++/13/bits/basic_ios.h \
+ /usr/include/c++/13/bits/locale_facets.h /usr/include/c++/13/cwctype \
+ /usr/include/wctype.h /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_base.h \
+ /usr/include/c++/13/bits/streambuf_iterator.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_inline.h \
+ /usr/include/c++/13/bits/locale_facets.tcc \
+ /usr/include/c++/13/bits/basic_ios.tcc \
+ /usr/include/c++/13/bits/ostream.tcc \
+ /usr/include/c++/13/ext/aligned_buffer.h \
+ /usr/include/c++/13/ext/concurrence.h /usr/include/c++/13/bits/align.h \
+ /usr/include/c++/13/bits/stl_uninitialized.h \
+ /usr/include/c++/13/stop_token /usr/include/c++/13/bits/std_thread.h \
+ /usr/include/c++/13/semaphore /usr/include/c++/13/bits/semaphore_base.h \
+ /usr/include/c++/13/bits/atomic_timed_wait.h \
+ /usr/include/c++/13/bits/this_thread_sleep.h \
+ /usr/include/x86_64-linux-gnu/sys/time.h /usr/include/semaphore.h \
+ /usr/include/x86_64-linux-gnu/bits/semaphore.h \
+ /usr/include/c++/13/functional /usr/include/c++/13/bits/std_function.h \
+ /usr/include/c++/13/unordered_map \
+ /usr/include/c++/13/bits/unordered_map.h \
+ /usr/include/c++/13/bits/hashtable.h \
+ /usr/include/c++/13/bits/hashtable_policy.h \
+ /usr/include/c++/13/bits/enable_special_members.h \
+ /usr/include/c++/13/bits/node_handle.h \
+ /usr/include/c++/13/bits/erase_if.h /usr/include/c++/13/vector \
+ /usr/include/c++/13/bits/stl_vector.h \
+ /usr/include/c++/13/bits/stl_bvector.h \
+ /usr/include/c++/13/bits/vector.tcc /usr/include/c++/13/array \
+ /usr/include/c++/13/mutex /usr/include/c++/13/thread \
+ /usr/include/c++/13/memory \
+ /usr/include/c++/13/bits/stl_raw_storage_iter.h \
+ /usr/include/c++/13/bits/shared_ptr_atomic.h \
+ /usr/include/c++/13/backward/auto_ptr.h \
+ /usr/include/c++/13/bits/ranges_uninitialized.h \
+ /usr/include/c++/13/pstl/glue_memory_defs.h /usr/include/c++/13/utility \
+ /usr/include/c++/13/bits/stl_relops.h \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated\ prefix\ B/include/Genetik/Population.hpp \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated\ prefix\ B/include/Genetik/Population_i.hpp \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated\ prefix\ B/include/Genetik/detail/ScopedTiming.hpp \
+ /usr/include/c++/13/chrono /usr/include/c++/13/sstream \
+ /usr/include/c++/13/istream /usr/include/c++/13/bits/istream.tcc \
+ /usr/include/c++/13/bits/sstream.tcc \
+ /usr/include/c++/13/bits/chrono_io.h /usr/include/c++/13/iomanip \
+ /usr/include/c++/13/locale \
+ /usr/include/c++/13/bits/locale_facets_nonio.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/time_members.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/messages_members.h \
+ /usr/include/libintl.h /usr/include/c++/13/bits/codecvt.h \
+ /usr/include/c++/13/bits/locale_facets_nonio.tcc \
+ /usr/include/c++/13/bits/locale_conv.h \
+ /usr/include/c++/13/bits/quoted_string.h /usr/include/c++/13/format \
+ /usr/include/c++/13/optional /usr/include/c++/13/span \
+ /usr/include/c++/13/variant \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated\ prefix\ B/include/Genetik/RandomContext.hpp \
+ /usr/include/c++/13/random /usr/include/c++/13/bits/random.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/opt_random.h \
+ /usr/include/c++/13/bits/random.tcc /usr/include/c++/13/numeric \
+ /usr/include/c++/13/bits/stl_numeric.h \
+ /usr/include/c++/13/pstl/glue_numeric_defs.h \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated\ prefix\ B/include/Genetik/GeneticAlgorithm.hpp \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated\ prefix\ B/include/Genetik/GeneticAlgorithm_i.hpp \
+ /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated\ prefix\ B/include/Genetik/ScalarVariation.hpp \
+ /usr/include/c++/13/iostream
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/no version' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_NO_VERSION=ON
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Configuring done
+-- Generating done
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/no version
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/exact version' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=0.2.0 -DREQUEST_EXACT=ON
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Configuring done
+-- Generating done
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/exact version
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/rejected 0.1.0' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=0.1.0
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Could not find a configuration file for package "Genetik" that is
+  compatible with requested version "0.1.0".
+
+  The following configuration files were considered but not accepted:
+
+    /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake, version: 0.2.0
+
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/rejected 0.1.0/CMakeFiles/CMakeOutput.log".
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/rejected 0.1.99' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=0.1.99
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Could not find a configuration file for package "Genetik" that is
+  compatible with requested version "0.1.99".
+
+  The following configuration files were considered but not accepted:
+
+    /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake, version: 0.2.0
+
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/rejected 0.1.99/CMakeFiles/CMakeOutput.log".
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/rejected 0.3.0' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=0.3.0
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Could not find a configuration file for package "Genetik" that is
+  compatible with requested version "0.3.0".
+
+  The following configuration files were considered but not accepted:
+
+    /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake, version: 0.2.0
+
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/rejected 0.3.0/CMakeFiles/CMakeOutput.log".
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/rejected 0.2.1' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=0.2.1
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Could not find a configuration file for package "Genetik" that is
+  compatible with requested version "0.2.1".
+
+  The following configuration files were considered but not accepted:
+
+    /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake, version: 0.2.0
+
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/rejected 0.2.1/CMakeFiles/CMakeOutput.log".
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/rejected 1.0' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_VERSION=1.0
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Could not find a configuration file for package "Genetik" that is
+  compatible with requested version "1.0".
+
+  The following configuration files were considered but not accepted:
+
+    /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake, version: 0.2.0
+
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/rejected 1.0/CMakeFiles/CMakeOutput.log".
+/home/runner/work/_temp/cmake-min/bin/cmake -S '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/external consumer' -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/required component' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON '-DEXPECTED_PREFIX=/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B' -DCMAKE_BUILD_TYPE=Release -DREQUEST_COMPONENT=imaginary
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at CMakeLists.txt:19 (find_package):
+  Found package configuration file:
+
+    /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/relocated prefix B/lib/cmake/Genetik/GenetikConfig.cmake
+
+  but it set Genetik_FOUND to FALSE so package "Genetik" is considered to be
+  NOT FOUND.  Reason given by package:
+
+  Genetik provides one header-only target and no package components
+
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/required component/CMakeFiles/CMakeOutput.log".
+/home/runner/work/_temp/cmake-min/bin/cmake --version
+cmake version 3.16.0
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+/home/runner/work/_temp/cmake-min/bin/cmake -S /home/runner/work/Genetik/Genetik/tests/embedding -B '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build' -DCMAKE_CXX_COMPILER=/usr/bin/g++-13 -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON -DGENETIK_SOURCE=/home/runner/work/Genetik/Genetik -DGENETIK_SANITIZERS=ON -DGENETIK_WARNINGS_AS_ERRORS=ON
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working C compiler: /usr/bin/gcc-13
+-- Check for working C compiler: /usr/bin/gcc-13 -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/g++-13
+-- Check for working CXX compiler: /usr/bin/g++-13 -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Configuring done
+-- Generating done
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+
+
+-- Build files have been written to: /home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build
+/home/runner/work/_temp/cmake-min/bin/cmake --build '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build' -j2
+gmake[1]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build'
+Scanning dependencies of target unrelated
+Scanning dependencies of target parent_app
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build'
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build'
+gmake[2]: Entering directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build'
+[ 25%] Building CXX object CMakeFiles/unrelated.dir/unrelated.cpp.o
+[ 50%] Building CXX object CMakeFiles/parent_app.dir/main.cpp.o
+[ 75%] Linking CXX executable unrelated
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build'
+[ 75%] Built target unrelated
+[100%] Linking CXX executable parent_app
+gmake[2]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build'
+[100%] Built target parent_app
+gmake[1]: Leaving directory '/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build'
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build/parent_app'
+'/home/runner/work/Genetik/Genetik/out/build/ci/tests/genetik-delivery-fixture/parent build/unrelated'

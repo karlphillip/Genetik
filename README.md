@@ -17,7 +17,9 @@ copyright Karl Phillip (2021). Version **0.1.0** is available as a
 This checkout prepares **0.2.0 (unreleased)**, including typed mathematics, parsing,
 templates and bounded scalar calculus. See [migration](docs/MIGRATION.md) and
 [delivery proposal](docs/RELEASE_PROPOSAL.md). The previous hosted results cover their
-recorded SHAs; combined calculus qualification is pending. This is subsequent development; the published tag and assets
+recorded SHAs; [combined calculus hosted qualification](docs/CALCULUS_HOSTED_QUALIFICATION.md)
+now records the complete implementation candidate. The final report tip also
+receives the full matrix before delivery review. This is subsequent development; the published tag and assets
 remain unchanged.
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.

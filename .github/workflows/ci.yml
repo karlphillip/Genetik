@@ -98,6 +98,19 @@ jobs:
               destination="$RUNNER_TEMP/genetik-qualification/$(basename "$build")"
               mkdir -p "$destination"
               cp "$build"/*.log "$build"/test-manifest.json "$build"/CMakeCache.txt "$build"/compile_commands.json "$destination/" 2>/dev/null || true
+              # Retain actual link instrumentation, not just compile flags.
+              for target in "$build"/CMakeFiles/*.dir "$build"/tests/CMakeFiles/*.dir; do
+                if [[ -f "$target/link.txt" ]]; then
+                  relative="${target#"$build/"}"
+                  mkdir -p "$destination/linkage/$relative"
+                  cp "$target/link.txt" "$destination/linkage/$relative/"
+                fi
+              done
+              for executable in genetik_derivative_tests genetik_derivative_regression_tests genetik_integral_tests genetik_concurrency_tests genetik_oop_consumer; do
+                if [[ -f "$build/tests/$executable" ]]; then
+                  ldd "$build/tests/$executable" > "$destination/$executable-runtime.log"
+                fi
+              done
               if [[ -d "$build/Testing/Temporary" ]]; then cp -R "$build/Testing/Temporary" "$destination/"; fi
               if [[ -d "$build/tests/genetik-delivery-fixture" ]]; then
                 cp "$build/tests/genetik-delivery-fixture/commands.log" "$destination/" 2>/dev/null || true

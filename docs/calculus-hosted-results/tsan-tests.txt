@@ -1,0 +1,10 @@
+genetik_concurrency_contracts
+genetik_derivative_overlap
+genetik_derivative_regression_overlap
+genetik_integral_overlap
+genetik_oop_parallel
+genetik_parsing_overlap
+genetik_scientific_contracts
+genetik_template_overlap
+genetik_typed_overlap
+genetik_typed_preparation_overlap

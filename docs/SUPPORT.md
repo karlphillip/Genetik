@@ -1,12 +1,12 @@
 # Version, support and release policy
 
-Current candidate: **0.2.0, unreleased**. The complete implementation scope is locally
-finished; combined calculus hosted qualification awaits the new branch-upload
-approval. [CALCULUS_PREFLIGHT.md](CALCULUS_PREFLIGHT.md) maps the evidence to revisions.
-The latest hosted-qualified tip is `50af98d192ce441f1d5ce5deeddbf9dcf996896e`
-([matrix](https://github.com/karlphillip/Genetik/actions/runs/39664655065));
-its passing Linux combinations do not yet qualify the newer calculus/version stack.
-Historical checkpoint sections below retain their original publication status and counts.
+Current candidate: **0.2.0, unreleased**. The complete agreed implementation scope
+passed the hosted matrix at `e30413ab119340a290c7b3c74d229097670fbb74`; see
+[CALCULUS_HOSTED_QUALIFICATION.md](CALCULUS_HOSTED_QUALIFICATION.md) for exact jobs,
+environments and tests. The final report/notes commit receives another complete
+matrix; its exact final SHA and links are in the ignored delivery completion packet.
+Earlier checkpoint sections below retain their original then-current status/counts.
+Main and published v0.1.0 remain unchanged pending final delivery approval.
 
 Phase7C bounded root integral models are locally qualified in
 [INTEGRAL_QUALIFICATION.md](INTEGRAL_QUALIFICATION.md). Combined calculus hosted
@@ -51,9 +51,9 @@ qualification on arbitrary architectures. Compiler/runtime qualification is sepa
 | --- | --- |
 | Jetson ARM64 Linux, GCC/libstdc++ 13.3.0, glibc/libm 2.39; Release, Debug, ASan+UBSan | Locally verified; delivery results in DELIVERY.md. |
 | CMake 3.16.0 and 4.4.4 on the Jetson | Locally exercised minimum and current tool; install/relocation/consumption. |
-| Ubuntu 24.04 x86-64 GCC 13 Release, CMake 3.16.0 | Hosted verified; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md for its recorded older feature SHA, jobs and runtimes. |
-| Ubuntu 24.04 x86-64 Clang 18 GNU frontend + libstdc++, Debug ASan+UBSan | Hosted verified; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md for its recorded older feature SHA, jobs and runtimes. |
-| Native Ubuntu 24.04 ARM64 GCC 13 Release | Hosted verified, including separate TSan; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md. |
+| Ubuntu 24.04 x86-64 GCC 13 Release, CMake 3.16.0 | Hosted verified; see CALCULUS_HOSTED_QUALIFICATION.md for the current implementation SHA, jobs and runtimes. |
+| Ubuntu 24.04 x86-64 Clang 18 GNU frontend + libstdc++, Debug ASan+UBSan | Hosted verified; see CALCULUS_HOSTED_QUALIFICATION.md for the current implementation SHA, jobs and runtimes. |
+| Native Ubuntu 24.04 ARM64 GCC 13 Release | Hosted verified, including ten repeated TSan selections and complete integral contracts; see CALCULUS_HOSTED_QUALIFICATION.md. |
 | Windows/MSVC, clang-cl, AppleClang/macOS, libc++, other compilers/runtimes | Unqualified. Flag-selection logic alone does not qualify them. |
 
 CMake 3.16 remains the minimum; a workspace tool at 4.4.4 does not establish a new

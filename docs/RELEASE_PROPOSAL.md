@@ -1,6 +1,8 @@
 # Genetik 0.2.0 development-delivery proposal
 
-The complete agreed implementation scope is locally complete. Proposed version
+The complete agreed implementation scope has passed the implementation hosted matrix;
+see [CALCULUS_HOSTED_QUALIFICATION.md](CALCULUS_HOSTED_QUALIFICATION.md). The final
+report tip and its exact source assets must also pass before delivery review. Proposed version
 **0.2.0**, annotated tag **v0.2.0**, title **Genetik 0.2.0 — development pre-release**,
 GitHub pre-release **true**, latest **false**. Version is unreleased. Main, v0.1.0
 and its published assets remain unchanged. The historical first-release proposal
@@ -55,6 +57,6 @@ gh release create v0.2.0 out/runs/hosted-calculus/review/assets/Genetik-0.2.0-so
 
 Verify remote annotated tag resolution and downloaded asset hashes. A temporary
 draft for asset verification may be proposed at final review. None of these remote
-actions is executed during local preflight; qualification-branch upload itself
-also needs the specific calculus-stack approval. No additional mathematical feature
+actions is executed during local preflight; qualification-branch upload and targeted fixes are already authorized. PR/main/tag/
+release actions still require the separate final delivery approval. No additional mathematical feature
 phase precedes the combined qualification and delivery checkpoint.

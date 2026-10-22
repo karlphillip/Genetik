@@ -1,9 +1,10 @@
 # Current phased development plan
 
 **Agreed implementation scope complete locally:** cleanup, typed evaluation/evolution,
-scientific operators, parsing, scalar templates and calculus 7A/7B/7C. The remaining
-actions are combined calculus hosted qualification, review/approval and execution of
-the prepared 0.2.0 development delivery. No new mathematical feature phase precedes
+scientific operators, parsing, scalar templates and calculus 7A/7B/7C. The complete implementation has passed combined calculus hosted qualification;
+see [CALCULUS_HOSTED_QUALIFICATION.md](CALCULUS_HOSTED_QUALIFICATION.md). The final
+report commit also receives the complete matrix. Remaining actions are review/approval
+and execution of the prepared 0.2.0 development delivery. No new mathematical feature phase precedes
 that checkpoint. See [CALCULUS_PREFLIGHT.md](CALCULUS_PREFLIGHT.md) and
 [RELEASE_PROPOSAL.md](RELEASE_PROPOSAL.md). Older future-work entries below are
 historical recommendations or separately scoped possibilities, not delivery gates.

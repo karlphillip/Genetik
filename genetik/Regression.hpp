@@ -129,6 +129,7 @@ public:
 };
 
 class ExpressionCandidate : public EvaluatedCandidate {
+    friend struct CandidateCheckpointCodec<ExpressionCandidate>;
 public:
     ExpressionCandidate(const Expression& expression, std::shared_ptr<const RegressionProblem> problem,
                         std::shared_ptr<RegressionPreparation> preparation = {})

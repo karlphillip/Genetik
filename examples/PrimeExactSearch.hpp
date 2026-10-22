@@ -1,6 +1,8 @@
 #pragma once
 // Prime-demo policy only: shared GA/preparation/evaluator APIs remain unchanged.
 #include "PrimeRegression.hpp"
+#include "PrimeExactDisplay.hpp"
+#include "PrimeExactCheckpoint.hpp"
 #include <atomic>
 #include <chrono>
 #include <csignal>
@@ -12,14 +14,16 @@ static_assert(std::atomic<bool>::is_always_lock_free);
 inline void exactSignal(int) noexcept {exactInterrupt.store(true,std::memory_order_relaxed);}
 class ExactSignalGuard {
     using Handler=void(*)(int);
-    Handler previous_;
+    Handler previous_,previousTerm_;
 public:
-    ExactSignalGuard():previous_(SIG_DFL) {
+    ExactSignalGuard():previous_(SIG_DFL),previousTerm_(SIG_DFL) {
         exactInterrupt.store(false,std::memory_order_relaxed);
         previous_=std::signal(SIGINT,exactSignal);
         if(previous_==SIG_ERR)throw std::runtime_error("cannot install SIGINT handler");
+        previousTerm_=std::signal(SIGTERM,exactSignal);
+        if(previousTerm_==SIG_ERR){(void)std::signal(SIGINT,previous_);throw std::runtime_error("cannot install SIGTERM handler");}
     }
-    ~ExactSignalGuard(){(void)std::signal(SIGINT,previous_);}
+    ~ExactSignalGuard(){(void)std::signal(SIGINT,previous_);(void)std::signal(SIGTERM,previousTerm_);}
     ExactSignalGuard(const ExactSignalGuard&)=delete;
     ExactSignalGuard& operator=(const ExactSignalGuard&)=delete;
 };
@@ -93,124 +97,96 @@ public:
     }
     ExactClock::time_point nextDeadline() const noexcept {return next_;}
 };
-struct ExactRanking {
-    std::vector<std::size_t> indices;
-    std::size_t invalid=0,unevaluated=0,valid=0;
-};
-inline ExactRanking exactRanking(const std::vector<ExpressionCandidate>& members,std::size_t top) {
-    if(!top)throw std::invalid_argument("top must be positive");
-    ExactRanking ranked;
-    for(std::size_t i=0;i<members.size();++i) {
-        if(members[i].fitnessState()==FitnessState::Valid)ranked.indices.push_back(i);
-        else if(members[i].fitnessState()==FitnessState::Invalid)++ranked.invalid;
-        else ++ranked.unevaluated;
-    }
-    ranked.valid=ranked.indices.size();
-    std::stable_sort(ranked.indices.begin(),ranked.indices.end(),[&](auto a,auto b){
-        return RegressionOrdering{}.better(members[a],members[b],ObjectiveDirection::Minimize);
-    });
-    if(ranked.indices.size()>top)ranked.indices.resize(top);
-    return ranked;
-}
-struct ExactReportingWork {std::uint64_t snapshots=0,predictionRows=0;};
-struct ExactProgress {
-    std::optional<std::uint64_t> generation;
-    std::uint64_t attempts=0,published=0,losses=0,remaining=0,allowance=0,candidateRequests=0,unpublishedLosses=0;
-    std::size_t population=0;
-    std::uint32_t seed=0;
-    unsigned requested=1,effective=1;
-};
-inline void exactSnapshot(std::ostream& out,const std::vector<ExpressionCandidate>& members,
-        const std::vector<std::uint32_t>& ref,const ExactProgress& progress,std::size_t top,
-        double elapsed,std::string_view kind,std::string_view state,ExactReportingWork& work) {
-    const auto ranked=exactRanking(members,top);
-    std::vector<Metrics> measurements;measurements.reserve(ranked.indices.size());
-    // Prediction-only all-row diagnostics, never TrainingObjective::measure/fitting.
-    for(auto slot:ranked.indices) {
-        std::vector<Prediction> points;points.reserve(ref.size());
-        for(std::size_t i=0;i<ref.size();++i) {
-            countTrainingWork(work.predictionRows);
-            points.push_back(prediction(i+1,ref[i],decode(members[slot].expression(),i+1)));
-        }
-        measurements.push_back(metrics(points));
-    }
-    countTrainingWork(work.snapshots);
-    out<<"snapshot="<<kind<<" elapsed_seconds="<<elapsed<<" committed_generation=";
-    if(progress.generation)out<<*progress.generation;else out<<"none";
-    out<<" attempted_generations="<<progress.attempts<<" published_generations="<<progress.published
-       <<" actual_loss_attempts="<<progress.losses<<" loss_budget="<<progress.allowance<<" remaining_allowance="<<progress.remaining
-       <<" unpublished_loss_attempts="<<progress.unpublishedLosses<<" candidate_requests="<<progress.candidateRequests
-       <<" threads_requested="<<progress.requested<<" threads_effective="<<progress.effective
-       <<" seed="<<progress.seed<<" population="<<progress.population<<" committed_size="<<members.size()
-       <<" valid="<<ranked.valid<<" invalid="<<ranked.invalid<<" unevaluated="<<ranked.unevaluated
-       <<" displayed="<<ranked.indices.size()<<" reporting_prediction_rows="<<work.predictionRows
-       <<" reporting_loss_attempts=0 stopping_state="<<state<<'\n';
-    std::set<std::string> seen;
-    for(std::size_t i=0;i<ranked.indices.size();++i) {
-        const auto& candidate=members[ranked.indices[i]];const auto& m=measurements[i];
-        std::size_t constants=0;for(auto node:candidate.expression().nodes())if(node.kind()==ExpressionKind::Constant)++constants;
-        out<<"rank="<<i+1<<" slot="<<ranked.indices[i]<<" exact_prefix_loss="<<candidate.fitness()
-           <<" exact_matches="<<m.matches<<'/'<<m.count<<" mismatches="<<m.count-m.matches
-           <<" raw_rmse=";if(m.rmse)out<<*m.rmse;else out<<"invalid";
-        out<<" raw_mae=";if(m.mae)out<<*m.mae;else out<<"invalid";
-        out<<" raw_max_abs=";if(m.maximum)out<<*m.maximum;else out<<"invalid";
-        out<<" mean_relative=";if(m.meanRelative)out<<*m.meanRelative;else out<<"invalid";
-        out<<" max_relative=";if(m.maxRelative)out<<*m.maxRelative;else out<<"invalid";
-        out<<" duplicates="<<m.duplicates<<" strict_increase_violations="<<m.roundedViolations
-           <<" raw_increase_violations="<<m.rawViolations<<" invalid_predictions="<<m.invalid
-           <<" unrepresentable_predictions="<<m.unrepresentable<<" nodes="<<candidate.expression().nodeCount()
-           <<" depth="<<candidate.expression().depth()<<" constant_count="<<constants
-           <<" duplicate_formula="<<!seen.insert(candidate.text()).second<<'\n'
-           <<"g(x0) = "<<candidate.text()<<'\n'
-           <<"p_hat(n) = 10000 * ("<<candidate.text()<<") [x0 = double(n) / 1000.0]\n";
-    }
-    out.flush();
-    if(!out)throw std::runtime_error("exact-prefix snapshot output failed after publication");
-}
 struct ExactSearchResult {
     SearchStop stop=SearchStop::GenerationLimit;
     std::optional<ExpressionCandidate> best;
     std::vector<ExpressionCandidate> population;
     std::uint64_t attempts=0,published=0,candidateRequests=0,unpublishedLosses=0;
+    std::optional<std::uint64_t> bestGeneration;
     TrainingWork training;
     VariationStatistics variation;
     ExactReportingWork reporting;
+    PreparationStatistics preparation;
+    std::vector<ExactImprovement> history;
+    std::filesystem::path checkpoint;
 };
 inline ExactSearchResult runExactSearch(std::shared_ptr<const ExactPrefixProblem> problem,
         const SymbolicRegressionConfig& cfg,RandomContext& random,std::ostream& out,std::size_t top,
         ExactClock::duration interval,bool report=true,
-        const std::function<ExactClock::time_point()>& now=[] {return ExactClock::now();}) {
+        const std::function<ExactClock::time_point()>& now=[] {return ExactClock::now();},
+        const ExactRunOptions& io={}) {
     if(!problem || !top || random.evaluationAttempts()!=0 || cfg.population==0 ||
        cfg.population>std::numeric_limits<unsigned int>::max() || cfg.elites>=cfg.population || cfg.fitEveryGenerations==0 ||
        !std::isfinite(cfg.crossoverRate) || !std::isfinite(cfg.mutationRate) || cfg.crossoverRate<0 || cfg.crossoverRate>1 ||
        cfg.mutationRate<0 || cfg.mutationRate>1 || cfg.diagnostics)
         throw std::invalid_argument("invalid exact-prefix run configuration");
-    const auto start=now();ExactReportSchedule schedule(start,interval);
+    if(!io.resume && !io.checkpointDirectory.empty() && std::filesystem::exists(io.checkpointDirectory/"latest.gtkc"))throw CheckpointError("checkpoint directory already contains a run; use --resume or a fresh directory");
+    const auto start=now();ExactReportSchedule schedule(start,interval),checkpointSchedule(start,io.checkpointInterval);
+    if(!io.checkpointKeep || io.checkpointKeep>10000)throw std::invalid_argument("checkpoint retention must be1..10000");
     auto objective=std::make_shared<TrainingObjective>(problem,cfg.maxTrainingLossAttempts);
     auto preparation=std::make_shared<ConstantRefinement>(objective,cfg.fitting,cfg.fitEveryGenerations);
     ExpressionVariation variation(problem,cfg.grammar,preparation);
     using P=Population<ExpressionCandidate,RegressionOrdering>;
     std::unique_ptr<P> population;
     GeneticAlgorithm<P,ExpressionCandidate,ExpressionVariation> ga(cfg.crossoverRate,cfg.mutationRate,random,std::move(variation),cfg.elites);
-    ExactSearchResult result;std::uint64_t committedLosses=0;
+    ExactSearchResult result;std::uint64_t committedLosses=0;double priorElapsed=0,lastCheckpointElapsed=0;
+    ExactDisplayState display;std::optional<std::uint64_t> checkpointGeneration;
+    const auto identity=(!io.checkpointDirectory.empty()||io.resume)?exactContextIdentity(problem->referenceValues(),problem->limits(),cfg)+";seed="+std::to_string(random.seed())+";threads="+std::to_string(random.execution().requested()):std::string{};
+    if(io.resume){
+        const auto saved=decodeExactRun(*io.resume);
+        if(io.resume->identity!=identity)throw CheckpointError("checkpoint problem/dataset/grammar/configuration identity differs");
+        if(saved.seed!=random.seed()||saved.threads!=random.execution().requested())throw CheckpointError("checkpoint seed/worker setting differs");
+        if(cfg.maxTrainingLossAttempts<saved.training.lossAttempts || cfg.maxEvaluations<saved.random.candidateAttempts)throw CheckpointError("total resumed budget is below consumed work");
+        CheckpointLimits loadLimits;loadLimits.maxCandidates=cfg.population;CheckpointReader reader(saved.populationBytes,loadLimits);auto state=readCommittedPopulation<ExpressionCandidate>(reader,ScalarCheckpointContext{problem,preparation});reader.finish();
+        if(!io.resume->generation || *io.resume->generation!=state.generation || state.members.size()!=cfg.population || state.generation!=saved.algorithm.published || state.direction!=ObjectiveDirection::Minimize || saved.variation.initializations!=cfg.population ||
+           saved.random.candidateAttempts/cfg.population<static_cast<std::uint64_t>(saved.algorithm.published)+1 ||
+           !saved.random.candidateAttempts || (saved.random.candidateAttempts-1)/cfg.population>saved.algorithm.attempts)
+            throw CheckpointError("checkpoint generation/population/candidate counters differ");
+        validateExactWork(saved,problem->sampleCount());
+        for(const auto& candidate:state.members)if(candidate.fitnessState()==FitnessState::Valid)(void)exactPresentationFitness(candidate.fitness());
+        (void)exactPresentationFitness(state.best.fitness());
+        objective->restoreWork(saved.training);preparation->restoreStatistics(saved.preparation,saved.rawInitialBest);
+        ga.variation().restoreStatistics(saved.variation);RunCheckpointAccess::restoreAlgorithm(ga,saved.algorithm);
+        population=RunCheckpointAccess::restorePopulation<ExpressionCandidate,RegressionOrdering>(state,random);
+        committedLosses=saved.committedLosses;priorElapsed=saved.elapsed;result.history=saved.history;result.reporting=saved.reporting;display.previousLoss=saved.previousDisplayedLoss;display.previousMatches=saved.previousDisplayedMatches;
+        if(result.history.empty() || result.history.front().generation!=0 || result.history.back().generation!=state.bestGeneration || result.history.back().canonical!=state.best.text() || result.history.back().loss!=state.best.fitness())throw CheckpointError("checkpoint best/history differs");
+        RunCheckpointAccess::restoreRandom(random,saved.random);
+        if(io.pretty)out<<"Resuming checkpoint\nGeneration        "<<state.generation<<"\nPrevious attempts "<<saved.training.lossAttempts<<"\nSeed              "<<saved.seed<<"\nRNG state         restored\nProblem           verified\nCheckpoint        checksum OK\nContinuing with generation "<<state.generation+1<<"\n";
+    }
+    const auto elapsed=[&]{return priorElapsed+std::chrono::duration<double>(now()-start).count();};
+    const auto recordImprovement=[&]{if(!population||!population->generation())return;const auto best=population->bestSeen();if(result.history.empty()||result.history.back().loss!=best->fitness()||result.history.back().canonical!=best->text())result.history.push_back({objective->work().lossAttempts,*population->generation(),best->fitness(),best->text()});};
+    const auto save=[&](bool force){
+        if(io.checkpointDirectory.empty()||!population||!population->generation()||!checkpointSchedule.due(now(),force))return;
+        ExactSavedRun saved;saved.seed=random.seed();saved.threads=random.execution().requested();saved.allowance=cfg.maxTrainingLossAttempts;saved.fitEvery=cfg.fitEveryGenerations;saved.fitting=cfg.fitting.has_value();
+        saved.random=RunCheckpointAccess::random(random);saved.algorithm=RunCheckpointAccess::algorithm(ga);saved.training=objective->work();saved.preparation=preparation->statistics();saved.variation=ga.variation().statistics();saved.rawInitialBest=preparation->rawInitialBest;
+        saved.lastStop=force?searchStopName(result.stop):"running";saved.committedLosses=committedLosses;saved.elapsed=elapsed();saved.history=result.history;saved.reporting=result.reporting;saved.previousDisplayedLoss=display.previousLoss;saved.previousDisplayedMatches=display.previousMatches;
+        CheckpointWriter writer;writeCommittedPopulation(writer,RunCheckpointAccess::population(*population));saved.populationBytes=writer.data();
+        result.checkpoint=saveCheckpointSeries(io.checkpointDirectory,*population->generation(),encodeExactRun(saved,identity),io.checkpointKeep);
+        checkpointGeneration=population->generation();lastCheckpointElapsed=saved.elapsed;
+    };
     const auto snapshot=[&](std::string_view kind,std::string_view state) {
         const auto time=now();
         if(!report || !schedule.due(time,kind!="periodic"))return;
         const ExactProgress progress{population?population->generation():std::nullopt,ga.attempts(),ga.evolutions(),
             objective->work().lossAttempts,objective->remaining(),cfg.maxTrainingLossAttempts,random.evaluationAttempts(),
-            objective->work().lossAttempts-committedLosses,cfg.population,random.seed(),random.execution().requested(),random.execution().effective(cfg.population)};
+            objective->work().lossAttempts-committedLosses,cfg.population,random.seed(),random.execution().requested(),random.execution().effective(cfg.population),population?population->bestGeneration():std::nullopt};
         const std::vector<ExpressionCandidate> empty;
-        exactSnapshot(out,population && population->generation()?population->selectionView():empty,
-                      problem->referenceValues(),progress,top,std::chrono::duration<double>(time-start).count(),kind,state,result.reporting);
+        exactHumanSnapshot(out,population && population->generation()?population->selectionView():empty,
+                      problem->referenceValues(),progress,top,priorElapsed+std::chrono::duration<double>(time-start).count(),kind,state,result.reporting,display,
+                      io.metrics,population?population->bestSeen():std::nullopt,result.checkpoint.string(),checkpointGeneration,
+                      elapsed()-lastCheckpointElapsed,!io.pretty);
     };
     try {
         if(problem->cancelled())throw EvaluationCancelled();
-        if(cfg.maxEvaluations<cfg.population || objective->remaining()<cfg.population)throw TrainingLossBudgetExceeded();
-        std::vector<ExpressionCandidate> initial;initial.reserve(cfg.population);
-        for(std::size_t i=0;i<cfg.population;++i)initial.push_back(ga.variation().initialize(random.engine()));
-        population=std::make_unique<P>(initial,random,ObjectiveDirection::Minimize);
-        preparation->initializing=false;
-        if(population->generation()){committedLosses=objective->work().lossAttempts;snapshot("initial","running");}
+        if(!population){
+            if(cfg.maxEvaluations<cfg.population || objective->remaining()<cfg.population)throw TrainingLossBudgetExceeded();
+            std::vector<ExpressionCandidate> initial;initial.reserve(cfg.population);
+            for(std::size_t i=0;i<cfg.population;++i)initial.push_back(ga.variation().initialize(random.engine()));
+            population=std::make_unique<P>(initial,random,ObjectiveDirection::Minimize);
+            preparation->initializing=false;
+            if(population->generation())committedLosses=objective->work().lossAttempts;
+        }
+        if(population->generation()){recordImprovement();save(false);snapshot(io.resume?"resumed":"initial","running");}
         for(;;) {
             const auto best=population->bestSeen();
             if(!best){result.stop=SearchStop::NoViableCandidates;break;}
@@ -220,7 +196,7 @@ inline ExactSearchResult runExactSearch(std::shared_ptr<const ExactPrefixProblem
             if(cfg.maxEvaluations-random.evaluationAttempts()<cfg.population || objective->remaining()<cfg.population)
                 throw TrainingLossBudgetExceeded();
             if(ga.evolve(*population)==GenerationOutcome::NoViableCandidates){result.stop=SearchStop::NoViableCandidates;break;}
-            committedLosses=objective->work().lossAttempts;
+            committedLosses=objective->work().lossAttempts;recordImprovement();save(false);
             if(population->bestSeen()->fitness()==0){result.stop=SearchStop::ExactTrainingFit;break;}
             snapshot("periodic","running");
         }
@@ -230,11 +206,14 @@ inline ExactSearchResult runExactSearch(std::shared_ptr<const ExactPrefixProblem
         else if(isEvaluationCancelled(failure))result.stop=SearchStop::Cancelled;
         else throw;
     }
+    try{save(true);}catch(...){out<<"CHECKPOINT FAILURE: final checkpoint could not be written; previous known-good checkpoint retained if replacement had not committed.\n";out.flush();throw;}
     snapshot(result.stop==SearchStop::ExactTrainingFit?"winning":"final",searchStopName(result.stop));
+    try{save(true);}catch(...){out<<"CHECKPOINT FAILURE after final report: "<<result.checkpoint.string()<<" may still name the previous known-good checkpoint.\n";out.flush();throw;}
     result.best=population?population->bestSeen():std::nullopt;
     if(population && population->generation())result.population=population->selectionView();
+    result.bestGeneration=population?population->bestGeneration():std::nullopt;
     result.attempts=ga.attempts();result.published=ga.evolutions();result.candidateRequests=random.evaluationAttempts();
-    result.training=objective->work();result.variation=ga.variation().statistics();
+    result.training=objective->work();result.variation=ga.variation().statistics();result.preparation=preparation->statistics();
     result.unpublishedLosses=result.training.lossAttempts-committedLosses;
     return result;
 }

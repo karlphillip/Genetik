@@ -271,9 +271,17 @@ rounded matches, with committed top-five reports (including duplicates) after ro
 30 seconds at safe generation boundaries:
 
 ```sh
-out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30 --top 5
+out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30
 ```
 
 Ctrl+C cooperatively cancels; loss and generation limits remain finite. The default
 historical approximation modes are unchanged. Exact recovery of this supplied finite
 prefix would not establish a general formula for all primes.
+
+Run-owned [checkpoint/resume and human progress](docs/RUN_CHECKPOINTING.md) are
+available for this exact-prime application. Add `--checkpoint out/runs/prime-exact/seed42/checkpoints`
+and optionally `--metrics-file out/runs/prime-exact/seed42/metrics.jsonl`. Continue with
+`--resume out/runs/prime-exact/seed42/checkpoints/latest.gtkc --loss-budget 2000000`
+(the **total**, including prior work). `--report-format raw` retains dense diagnostics.
+The installed [checkpoint/formatter quickstart](examples/quickstarts/checkpoint.cpp)
+uses the generic state seams and scalar-expression codec without prime dependencies.

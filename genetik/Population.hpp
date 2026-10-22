@@ -18,6 +18,7 @@ template<class T> struct FitnessOrdering {
 
 template <typename T, typename Ordering = FitnessOrdering<T>>
 class Population : public Population_i<T> {
+    friend struct RunCheckpointAccess;
     static_assert(std::is_base_of_v<EvaluatedCandidate, T>,
                   "candidates must share the EvaluatedCandidate contract");
     static_assert(std::is_nothrow_destructible_v<T>);
@@ -195,6 +196,8 @@ public:
         } catch (...) { outcome_ = GenerationOutcome::OperationalFailure; throw; }
     }
 private:
+    Population(RandomContext& random,ObjectiveDirection direction,std::nullptr_t)
+        :random_(random),direction_(direction){validateDirection();}
     struct State { std::vector<T> members; T best; std::uint64_t generation; std::uint64_t bestGeneration; };
     static bool valid(const T& c) { return c.fitnessState() == FitnessState::Valid; }
     static void requireEvaluated(const std::vector<T>& members) {

@@ -24,6 +24,9 @@ int main() {
     Population<Scalar> p(8,rng,ObjectiveDirection::Minimize);
     GeneticAlgorithm<decltype(p),Scalar> ga(.9f,.3f,rng);
     for(int i=0;i<3;++i)if(ga.evolve(p)!=GenerationOutcome::Committed)return 1;
+    const auto state=RunCheckpointAccess::population(p);RandomContext fresh(7,{3});RunCheckpointAccess::restoreRandom(fresh,RunCheckpointAccess::random(rng));
+    auto restored=RunCheckpointAccess::restorePopulation<Scalar>(state,fresh);
+    if(restored->generation()!=p.generation()||fresh.engine()!=rng.engine()||fresh.evaluationAttempts()!=rng.evaluationAttempts())return 1;
     const auto typedScalar=TypedExpression::constant(TypedValue::scalar(-0.0)).evaluate({});
     if(!typedScalar.valid() || !std::signbit(typedScalar.value().scalarValue()))return 1;
     const auto x=Expression::variable(0);

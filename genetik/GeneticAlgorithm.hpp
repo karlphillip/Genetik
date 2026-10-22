@@ -10,6 +10,7 @@
 // One evolve() call is one bounded generation; callers own the stopping policy.
 template <typename P, typename C, typename Variation = ScalarVariation<C>>
 class GeneticAlgorithm : public GeneticAlgorithm_i<P, C> {
+    friend struct RunCheckpointAccess;
 public:
     GeneticAlgorithm(const float& crossoverRate, const float& mutationRate, RandomContext& random,
                      Variation variation = {}, std::size_t eliteCount = 0)

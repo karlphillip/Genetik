@@ -5,8 +5,11 @@
 #include <string>
 #include <utility>
 
+template<class C> struct CandidateCheckpointCodec;
+
 // Shared evaluation/cache contract; representations own their genomes separately.
 class EvaluatedCandidate {
+    template<class C> friend struct CandidateCheckpointCodec;
 protected:
     EvaluatedCandidate() = default;
     EvaluatedCandidate(const EvaluatedCandidate&) = default;

@@ -2,19 +2,20 @@
 
 `genetik_prime_regression --search-exact` is separate from the frozen historical
 normalized-MSE campaign. Existing --generate/--pilot/--campaign forms, budget
-restrictions and defaults are unchanged. No generic GA, symbolic-regression public
-header, measurement/fitting API or observer was changed. The demo controls one
+restrictions and defaults are unchanged. The current observability/checkpoint extension adds explicit fresh-state restore
+seams without changing ordinary evolution, objectives or an observer. The demo controls one
 existing `GeneticAlgorithm::evolve()` at a time and inspects the existing const
 `Population::selectionView()` only after synchronous preparation/publication drains.
 
 ```sh
 cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
 cmake --build out/build/release --target genetik_prime_regression -j2
-out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30 --top 5
+out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30
 ```
 
 This mode defaults to seed 42, one worker, 1,000,000 actual loss attempts, 30 seconds
-and top 5. It retains population 64, 2,000 generation ceiling, 31 nodes/depth6,
+and the single current best. Use --top N for compact additional candidates and
+--report-format raw for the previous dense diagnostic form (raw defaults to top5). It retains population 64, 2,000 generation ceiling, 31 nodes/depth6,
 +,-,*,/,log grammar, the existing mixed discrete/uniform constants and deterministic
 coordinate fitting (including initialization/elites/clones). No known nth-prime
 approximation or target expression is injected. --fit-every retains the positive
@@ -96,7 +97,7 @@ search. Use --search-exact --help for the actual syntax.
 
 ## Cancellation and limits
 
-Ctrl+C sets a lock-free atomic flag in a signal-safe handler. The coordinator and
+Ctrl+C and SIGTERM set a lock-free atomic flag in a signal-safe handler. The coordinator and
 per-row objective checks observe it; workers request existing cooperative batch
 cancellation and all admitted work drains. No mutex, formatting, allocation or
 ExecutionContext::requestStop call occurs inside the signal handler. The previous
@@ -117,3 +118,7 @@ This is heuristic search. Rounding creates plateaus and coordinate fitting can m
 useful coefficients; no exact recovery, global optimum or extrapolation is promised.
 Historical campaign results (including misses), published tags/assets and the
 approximately fourfold fixed-work benchmark retain their original measured scope.
+
+The current human formatter, JSONL sink and durable checkpoint/resume APIs are
+documented in [RUN_CHECKPOINTING.md](RUN_CHECKPOINTING.md). The original smoke and
+qualification record describes the preceding dense-output milestone unchanged.

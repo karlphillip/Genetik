@@ -120,3 +120,13 @@
 - Python syntax-only preflight uses ast.parse, or sets
   PYTHONPYCACHEPREFIX=out/tmp/python-cache for explicit py_compile. Do not create
   __pycache__ below tests/scripts; hygiene audits ignored output as well as Git status.
+
+- RunCheckpoint/ScalarExpressionCheckpoint use explicit codecs, never raw object
+  dumps. Capture only idle committed generations; restore fresh objects after
+  context/runtime/limits validation. Preserve post-failure RNG and actual work.
+  Format1 and codec IDs are explicit compatibility contracts; Version.hpp is the
+  authoritative unchanged package version read by CMake. Checkpoint directories
+  are run-owned under out/runs/; fsync/rename writes precede retention cleanup.
+  SIGINT/SIGTERM handlers only request cancellation. See RUN_CHECKPOINTING.md;
+  include genetik_checkpoint_overlap in separate TSan gates. Pretty/LaTeX never
+  replace canonical export or affect numerical evaluation and ranking.

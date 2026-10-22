@@ -1,6 +1,7 @@
 #include "common.hpp"
 // Overlapping complete public-header use in a separately compiled translation unit.
 bool symbolic_check() {
+    if(formatExpression(parseExpression("log(x0)",1),ExpressionTextFormat::LaTeX)!="\\ln\\left(x_{0}\\right)")return false;
     auto ip=IntegralRegressionProblem::create(1,parseExpression("0",1),parseExpression("x0",1),{{{1},1.25},{{2},4}}, {9,4,8});
     IntegralTrainingObjective io(ip,32);ConstantFitConfig iff;iff.maxLossAttempts=8;
     auto ifit=fitConstants(parseExpression("1*x1+1",2),io,iff);

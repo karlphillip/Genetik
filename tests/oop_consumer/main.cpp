@@ -1,3 +1,4 @@
+#include <RunCheckpoint.hpp>
 // Application-owned permutation scheduling. No symbolic-regression headers.
 #include <EvaluatedCandidate.hpp>
 #include <Population.hpp>
@@ -165,6 +166,10 @@ int main(int argc,char** argv) {
     Algorithm algorithm(1,1,random,PermutationVariation{},1);
     GeneticAlgorithm_i<Pool,Schedule>& interface=algorithm;
     const auto before=state(pool);
+    const auto committed=RunCheckpointAccess::population(pool);RandomContext imported(42,execution);
+    RunCheckpointAccess::restoreRandom(imported,RunCheckpointAccess::random(random));
+    auto restored=RunCheckpointAccess::restorePopulation<Schedule>(committed,imported);
+    require(state(*restored)==before && imported.engine()==random.engine() && imported.evaluationAttempts()==random.evaluationAttempts());
     auto snapshot=pool.creatures();
     snapshot->front().replace({3,2,1,0});
     require(state(pool)==before);

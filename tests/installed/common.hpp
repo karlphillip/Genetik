@@ -15,3 +15,6 @@ bool typed_check();
 #include <ExpressionDerivative.hpp>
 
 #include <DerivativeRegression.hpp>
+#include <RunCheckpoint.hpp>
+#include <ScalarExpressionCheckpoint.hpp>
+#include <ExpressionFormatting.hpp>

@@ -156,6 +156,12 @@ public:
             PreparationOrigin::UnchangedOffspring:PreparationOrigin::ChangedOffspring);
     }
     VariationStatistics statistics() const noexcept { return statistics_; }
+    void restoreStatistics(const VariationStatistics& state) {
+        if(statistics_!=VariationStatistics{} || state.mutationChanges>state.mutationProposals ||
+           state.crossoverProposals>std::numeric_limits<std::uint64_t>::max()/2 || state.crossoverChanges>state.crossoverProposals*2)
+            throw std::invalid_argument("invalid variation checkpoint state");
+        statistics_=state;
+    }
     ExpressionCandidate initialize(std::mt19937& rng) {
         count(statistics_.initializations);
         return ExpressionCandidate(randomExpression(rng, grammar_.initialMaxDepth), problem_, preparation_);

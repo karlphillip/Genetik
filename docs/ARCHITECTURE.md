@@ -120,3 +120,14 @@ statistics after draining. Threads::Threads is now a public platform dependency;
 there is still no third-party mathematical dependency or installed compiled binary.
 See [CONCURRENCY.md](CONCURRENCY.md) for callback qualification, execution ownership,
 limits and failure contracts, and CONCURRENCY_RESULTS.md for executed evidence.
+
+## Explicit run-state persistence
+
+RunCheckpoint.hpp contains generic owned state snapshots, fresh-object restoration,
+codec customization, bounded field/envelope encoding and POSIX atomic persistence;
+it includes no symbolic-regression headers. ScalarExpressionCheckpoint.hpp provides
+the first mathematical codec and objective/refinement accounting adapters. Candidate
+codecs are trusted cache-restoration boundaries after immutable context validation,
+not writable genome access. Arbitrary subclasses and custom virtual-hook state need
+explicit codecs/adapters. See RUN_CHECKPOINTING.md for ownership, idle-access and
+qualified continuation contracts. ExpressionFormatting.hpp is separate presentation.

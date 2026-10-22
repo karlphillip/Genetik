@@ -8,6 +8,7 @@
 // Own one per serial run. It must outlive every population and algorithm using it.
 // Deliberately not copyable/movable: consumers borrow its engine.
 class RandomContext {
+    friend struct RunCheckpointAccess;
 public:
     explicit RandomContext(std::uint32_t seed, ExecutionConfig execution={})
         : seed_(seed), engine_(seed), ownedExecution_(execution), execution_(&ownedExecution_) {}

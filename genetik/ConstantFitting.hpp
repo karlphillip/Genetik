@@ -153,6 +153,17 @@ public:
     std::uint64_t remaining() const { return admission_ ? admission_->remaining():maximum_ - work_.lossAttempts; }
     const std::shared_ptr<RefinementDiagnostics>& diagnostics() const noexcept {return diagnostics_;}
     const TrainingWork& work() const noexcept { return work_; }
+    // Fresh, idle objective only; context identity is verified by the checkpoint adapter.
+    void restoreWork(const TrainingWork& w) {
+        if(work_!=TrainingWork{} || admission_ || execution_ || diagnostics_ || w.lossAttempts>maximum_ ||
+           w.ordinaryLossAttempts>w.lossAttempts || w.fittingBaselineAttempts>w.lossAttempts-w.ordinaryLossAttempts ||
+           w.fittingProbeAttempts!=w.lossAttempts-w.ordinaryLossAttempts-w.fittingBaselineAttempts ||
+           w.fittingLossAttempts!=w.lossAttempts-w.ordinaryLossAttempts || w.invalidLosses>w.lossAttempts ||
+           w.accepted>w.proposals || w.fittingImproved>w.fittingInvocations)
+            throw std::invalid_argument("invalid training checkpoint counters/fresh objective");
+        work_=w;
+    }
+
 protected:
     virtual std::shared_ptr<TrainingObjective> cloneForParallel() const {
         if(typeid(*this)!=typeid(TrainingObjective))throw std::invalid_argument("derived objective must override cloneForParallel");
@@ -427,6 +438,12 @@ public:
         return {std::move(result.expression),result.loss};
     }
     const PreparationStatistics& statistics() const noexcept {return statistics_;}
+    void restoreStatistics(const PreparationStatistics& state,std::optional<double> initial) {
+        if(statistics_!=PreparationStatistics{} || !initializing || (initial && !std::isfinite(*initial)))
+            throw std::invalid_argument("refinement restore requires fresh state");
+        statistics_=state;rawInitialBest=initial;initializing=false;
+    }
+
     bool initializing = true;
     std::optional<double> rawInitialBest;
 private:

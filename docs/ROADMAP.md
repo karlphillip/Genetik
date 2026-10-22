@@ -292,3 +292,12 @@ HOSTED_QUALIFICATION.md for failure repairs, exact environments and test account
 Proceed to development-release review and broader supported-platform qualification;
 no tag/publication is implied. Preserve recorded benchmark scope and keep caching,
 new optimizers, rewriting, compilation and GPU execution separately scoped.
+
+## Post-delivery operational milestone: run observability and checkpointing
+
+Human prime progress, separate Unicode/LaTeX formatting, JSONL diagnostics, explicit
+generic committed-state capture/restore, scalar-expression codec and durable POSIX
+checkpoint/resume are locally implemented. Qualification is recorded in
+RUN_CHECKPOINTING_RESULTS.md. This adds no mathematical phase; the agreed calculus
+implementation and historical delivery remain complete. Hosted qualification of
+this operational feature remains separate from local evidence.

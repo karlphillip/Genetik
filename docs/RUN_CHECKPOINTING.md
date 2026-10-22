@@ -1,6 +1,8 @@
 # Run observability and checkpoints (format 1)
 
-Design contract, implemented and qualified below as this milestone completes.
+Implemented API and persistence contract. Executed local evidence is recorded in
+[RUN_CHECKPOINTING_RESULTS.md](RUN_CHECKPOINTING_RESULTS.md); hosted qualification
+of this operational milestone remains pending.
 
 Checkpointing is synchronous and coordinator-owned, only with an idle executor and
 no pending population edits. Generic run snapshots own candidate values; explicit
@@ -16,7 +18,7 @@ preparation origin/generation and selection data. The application must verify it
 problem/configuration identity before trusting cached fitness. Checksums detect
 accidental corruption, not malicious forgery. Do not resume untrusted files.
 
-The envelope is GENETIK-CHECKPOINT format1 with payload length and FNV-1a64 checksum;
+The envelope is GENETIK-CHECKPOINT format 1 with payload length and FNV-1a64 checksum;
 the payload uses big-endian unsigned integers, IEEE coefficient bit patterns and
 length-prefixed strings. Reader/writer limits cap source and fields before allocation.
 Library compatibility, codec ID and runtime fingerprint are explicit. The initial
@@ -39,7 +41,10 @@ read/check completion, rename into place, then fsync the directory. A numbered f
 is established before latest.gtkc is replaced; pruning follows successful replacement.
 Failures before rename preserve the old destination. A directory-fsync error after
 rename means durability is uncertain and is reported, not rolled back. Guarantees
-remain qualified by filesystem/hardware fsync/rename behavior. No final checkpoint
+remain qualified by filesystem/hardware fsync/rename behavior. Automatic directory
+creation does not fsync every newly created ancestor: the replacement durability
+contract concerns an established destination directory, not durable creation of a
+whole new directory hierarchy. No final checkpoint
 can be triggered by SIGKILL, power loss, kernel failure or a process crash.
 
 Pretty and LaTeX formatting are presentation only, separate from canonical export.
@@ -97,7 +102,7 @@ the configured population. These bounds do not cap allocator overhead or process
 memory. Every integer field is an explicit unsigned64 big-endian value. Binary64
 and binary32 fields encode IEEE bit patterns, not object padding. Strings are
 unsigned64 byte length followed by bytes. MT19937 uses its classic-locale logical
-stream state (624 words and index, validated), not engine memory. Files are version1;
+stream state (624 words and index, validated), not engine memory. Files are version 1;
 older/newer formats and unknown codecs require an explicit migration, never guesswork.
 
 The runtime fingerprint records package version, compiler, GNU header release,
@@ -140,7 +145,7 @@ are not input languages and do not promise parser round trips. Powi notation sti
 means Genetik's checked sequential computational operator, including child validation
 under exponent zero. Formatting does not evaluate or simplify anything.
 
-Default output/workspace text budget is1MiB, node limit100,000; traversal is iterative.
+Default output/workspace text budget is 1 MiB, node limit 100,000; traversal is iterative.
 Temporary concatenation/callback allocation is not a total-memory guarantee.
 Operational errors propagate; expressions and returned strings have independent
 ownership. Concurrent calls share only immutable expression data.
@@ -159,7 +164,7 @@ out/build/release/genetik_prime_regression \
 
 Default `--report-format pretty` displays one current committed best individual.
 Explicit `--top N` adds compact secondary entries without deduplication. The
-optional `--report-format raw` retains dense original fields and defaults to top5.
+optional `--report-format raw` retains dense original fields and defaults to top 5.
 Both use the same RegressionOrdering and cache; normalized presentation is never
 used for ranking, fitting or stopping. Human deltas compare successive displayed
 current bests, using up/down/equality accurately. Best-ever fitness/loss/generation
@@ -169,7 +174,7 @@ winning displays contain canonical text and LaTeX. Winning pretty output starts
 
 Actual binary64 loss can reach1001 when the secondary ratios/sum round upward,
 despite the strict mathematical upper bound. The pre-existing objective is unchanged;
-that valid endpoint displays fitness0. For real nonzero exact-prefix losses (>=1),
+that valid endpoint displays fitness 0. For real nonzero exact-prefix losses (>=1),
 presentation is native1-loss/1001. Adjacent scores may merge in presentation rounding;
 full loss remains authoritative. For tiny synthetic positive inputs which would
 round the presentation to1, the helper uses nextafter(1,0) to retain the zero-loss
@@ -199,7 +204,8 @@ directory already containing latest.gtkc; resume it or use a fresh directory.
 Elapsed time accumulates active run wall time, excluding time between processes.
 Reporting counters/prior display state persist; a final save after rendering captures
 shutdown diagnostics as well. Cancellation flags, live workers and scratch do not
-persist. Extending a budget which previously interrupted preparation continues from
+persist. Cancellation before initialization commits leaves no resumable population;
+no checkpoint is fabricated for an incomplete initial population. Extending a budget which previously interrupted preparation continues from
 post-failure RNG/work; it is not promised identical to starting with a larger budget.
 After an unclean crash, work after the last durable checkpoint is unknown and cannot
 be recovered/accounted; budget enforcement resumes from the durable counters. No

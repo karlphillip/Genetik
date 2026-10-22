@@ -1,0 +1,1 @@
+CXX_FLAGS = -O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -Wpedantic -Werror -fno-fast-math -ffp-contract=off

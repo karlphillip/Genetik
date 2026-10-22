@@ -1,0 +1,21 @@
+Linux skynet-jr 6.8.12-1021-tegra #1 SMP PREEMPT Thu Jun 18 10:18:54 CST 2026 aarch64 aarch64 aarch64 GNU/Linux
+c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Copyright (C) 2023 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ldd (Ubuntu GLIBC 2.39-0ubuntu8.8) 2.39
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Written by Roland McGrath and Ulrich Drepper.
+cmake version 4.4.4
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+cmake version 3.16.0
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+#define _PSTL_CPP11_STD_ROTATE_BROKEN ((__GLIBCXX__ && __GLIBCXX__ < 20150716) || (_MSC_VER && _MSC_VER < 1800))
+#define __GLIBCXX__ 20240904
+#define _GLIBCXX_RELEASE 13
+/usr/lib/aarch64-linux-gnu/libstdc++.so.6.0.33

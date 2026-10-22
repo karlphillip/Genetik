@@ -1,0 +1,78 @@
+Prime exact-prefix search • seed 42 • 4 threads • loss allowance 1000000
+
+Prime Search • Generation 0 • 00:00:00
+Fitness        0.00501434
+Exact primes   5 / 1000
+RMSE           517.63963458313845
+Loss           995.98064929965255487 (search objective, lower is better)
+
+Best formula
+p̂(n) = 10000 · (0.67314540314944082·(n/1000))
+
+Complexity     3 nodes • depth 2 • 1 constants
+Evaluations    2793 / 1000000
+Budget         0.28%
+Seed / threads 42 / 4 requested, 4 effective
+Population     53 valid • 11 invalid • 0 unevaluated
+Generations    0 published / 0 attempted
+Best-ever      0.00501434 fitness • loss 995.98064929965255487 • generation 0
+Checkpoint     out/runs/checkpoint/smoke/checkpoints/latest.gtkc • generation 0 • 00:00:00 ago
+
+Prime Search • Generation 1 • 00:00:00
+Fitness        0.00801062  ↑ +0.00299629
+Exact primes   8 / 1000  ↑ +3
+RMSE           954.65666131698924
+Loss           992.98136580462698930 (search objective, lower is better)
+
+Best formula
+p̂(n) = 10000 · (−0.67155207571330422·(n/1000)·(−0.8839390684024373))
+
+Complexity     5 nodes • depth 3 • 2 constants
+Evaluations    6715 / 1000000
+Budget         0.67%
+Seed / threads 42 / 4 requested, 4 effective
+Population     61 valid • 3 invalid • 0 unevaluated
+Generations    1 published / 1 attempted
+Best-ever      0.00801062 fitness • loss 992.98136580462698930 • generation 1
+Checkpoint     out/runs/checkpoint/smoke/checkpoints/latest.gtkc • generation 1 • 00:00:00 ago
+
+Prime Search • Generation 2 • 00:00:00
+Fitness        0.01101003  ↑ +0.00299941
+Exact primes   11 / 1000  ↑ +3
+RMSE           885.47459006564918
+Loss           989.97895545852577470 (search objective, lower is better)
+
+Best formula
+p̂(n) = 10000 · ((n/1000) − 3.2168000042438507·0.0625)
+
+Complexity     5 nodes • depth 3 • 2 constants
+Evaluations    11215 / 1000000
+Budget         1.12%
+Seed / threads 42 / 4 requested, 4 effective
+Population     62 valid • 2 invalid • 0 unevaluated
+Generations    2 published / 2 attempted
+Best-ever      0.01101003 fitness • loss 989.97895545852577470 • generation 2
+Checkpoint     out/runs/checkpoint/smoke/checkpoints/latest.gtkc • generation 2 • 00:00:00 ago
+
+Prime Search • Generation 2 • 00:00:00
+Fitness        0.01101003  = 0.00000000
+Exact primes   11 / 1000  = 0
+RMSE           885.47459006564918
+Loss           989.97895545852577470 (search objective, lower is better)
+
+Best formula
+p̂(n) = 10000 · ((n/1000) − 3.2168000042438507·0.0625)
+
+Complexity     5 nodes • depth 3 • 2 constants
+Canonical g(x0)  (x0 - (3.2168000042438507 * 0.0625))
+LaTeX           \hat{p}(n) = 10000 \cdot \left(\left(\frac{n}{1000}\right) - 3.2168000042438507 \cdot 0.0625\right)
+Evaluations    13195 / 1000000
+Budget         1.32%
+Seed / threads 42 / 4 requested, 4 effective
+Population     62 valid • 2 invalid • 0 unevaluated
+Generations    2 published / 3 attempted
+Best-ever      0.01101003 fitness • loss 989.97895545852577470 • generation 2
+Checkpoint     out/runs/checkpoint/smoke/checkpoints/latest.gtkc • generation 2 • 00:00:00 ago
+Stopping state cancelled
+Search stopped: cancelled • 13195 actual loss attempts • 4000 reporting rows (zero training attempts)
+Saved checkpoint: out/runs/checkpoint/smoke/checkpoints/latest.gtkc

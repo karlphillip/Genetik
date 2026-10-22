@@ -1,0 +1,7 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/checkpoint-tsan
+    Start 35: genetik_checkpoint_overlap
+1/1 Test #35: genetik_checkpoint_overlap .......   Passed   29.73 sec
+
+100% tests passed out of 1
+
+Total Test time (real) =  29.74 sec

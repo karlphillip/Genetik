@@ -1,0 +1,24 @@
+In file included from genetik/ScalarExpressionCheckpoint.hpp:2,
+                 from out/tmp/checkpoint-headers.cpp:1:
+genetik/RunCheckpoint.hpp: In function ‘CheckpointDocument decodeCheckpoint(std::string_view, CheckpointLimits)’:
+genetik/RunCheckpoint.hpp:75:5: error: this ‘if’ clause does not guard... [-Werror=misleading-indentation]
+   75 |     if(d.runtime!=checkpointRuntime())throw CheckpointError("checkpoint runtime/FP environment differs");return d;
+      |     ^~
+genetik/RunCheckpoint.hpp:75:106: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   75 |     if(d.runtime!=checkpointRuntime())throw CheckpointError("checkpoint runtime/FP environment differs");return d;
+      |                                                                                                          ^~~~~~
+genetik/RunCheckpoint.hpp: In function ‘CheckpointDocument loadCheckpoint(const std::filesystem::__cxx11::path&, CheckpointLimits)’:
+genetik/RunCheckpoint.hpp:81:5: error: this ‘if’ clause does not guard... [-Werror=misleading-indentation]
+   81 |     if(!in.eof())throw CheckpointError("checkpoint read failure");return decodeCheckpoint(bytes,limits);
+      |     ^~
+genetik/RunCheckpoint.hpp:81:67: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   81 |     if(!in.eof())throw CheckpointError("checkpoint read failure");return decodeCheckpoint(bytes,limits);
+      |                                                                   ^~~~~~
+genetik/RunCheckpoint.hpp: In static member function ‘static void RunCheckpointAccess::restoreRandom(RandomContext&, const RandomCheckpoint&)’:
+genetik/RunCheckpoint.hpp:139:9: error: this ‘if’ clause does not guard... [-Werror=misleading-indentation]
+  139 |         if(!(in>>engine))throw CheckpointError("invalid MT19937 state");in>>std::ws;if(!in.eof())throw CheckpointError("trailing MT19937 state");
+      |         ^~
+genetik/RunCheckpoint.hpp:139:73: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+  139 |         if(!(in>>engine))throw CheckpointError("invalid MT19937 state");in>>std::ws;if(!in.eof())throw CheckpointError("trailing MT19937 state");
+      |                                                                         ^~
+cc1plus: all warnings being treated as errors

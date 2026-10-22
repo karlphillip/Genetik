@@ -245,3 +245,20 @@ implementation candidate. The report commit itself receives a final complete mat
 its exact tested SHA and links are recorded in the ignored completion record.
 Clang's GNU headers/runtime do not qualify libc++; Windows/MSVC and macOS/AppleClang
 also remain unqualified. Published version/assets and historical evidence stay fixed.
+
+
+## Local run-observability and checkpoint qualification
+
+The post-0.2.0 operational implementation at
+`f7f98f1ddc37c692eedeaef4d6d0d8a33ff23405` passed 62/62 tests on native Jetson
+GCC13.3/libstdc++13 headers/GNU runtime6.0.33/glibc2.39 in Release, Debug,
+ASan+UBSan and exact CMake3.16.0. Separate TSan passed 12 named selections three
+times each, plus complete integral contracts. See
+[RUN_CHECKPOINTING_RESULTS.md](RUN_CHECKPOINTING_RESULTS.md) for exact manifests,
+flags, failures, replay equality and the SIGINT/resume/SIGTERM demonstration.
+
+Checkpoint persistence is qualified for this POSIX environment and same-build,
+same-runtime, same-worker continuation. This is additional local evidence, not
+newly executed hosted qualification or a change to published 0.2.0. The 61 portable
+contracts and 12 TSan selections are configured for CI but have not run there for
+this feature. Existing hosted/release evidence retains its recorded SHA scope.

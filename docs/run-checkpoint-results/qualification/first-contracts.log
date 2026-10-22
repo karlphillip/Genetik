@@ -1,0 +1,28 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/release
+    Start 54: genetik_prime_exact_contracts
+1/7 Test #54: genetik_prime_exact_contracts ....   Passed    0.01 sec
+    Start 55: genetik_prime_exact_overlap
+2/7 Test #55: genetik_prime_exact_overlap ......   Passed    0.01 sec
+    Start 56: genetik_prime_exact_cli
+3/7 Test #56: genetik_prime_exact_cli ..........   Passed    0.16 sec
+    Start 57: genetik_checkpoint_contracts
+4/7 Test #57: genetik_checkpoint_contracts .....***Failed    1.87 sec
+checkpoint problem/dataset/grammar/configuration identity differs
+
+    Start 58: genetik_checkpoint_overlap
+5/7 Test #58: genetik_checkpoint_overlap .......***Failed    0.00 sec
+expression limits must be positive counts and a finite nonnegative constant bound
+
+    Start 59: genetik_formatting_contracts
+6/7 Test #59: genetik_formatting_contracts .....   Passed    0.00 sec
+    Start 60: genetik_checkpoint_process
+7/7 Test #60: genetik_checkpoint_process .......   Passed    1.01 sec
+
+71% tests passed, 2 tests failed out of 7
+
+Total Test time (real) =   3.06 sec
+
+The following tests FAILED:
+	 57 - genetik_checkpoint_contracts (Failed)
+	 58 - genetik_checkpoint_overlap (Failed)
+Errors while running CTest

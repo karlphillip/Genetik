@@ -1,0 +1,183 @@
+{
+  "implementation": "f7f98f1ddc37c692eedeaef4d6d0d8a33ff23405",
+  "first": {
+    "args": [
+      "--search-exact",
+      "--seed",
+      "42",
+      "--threads",
+      "4",
+      "--loss-budget",
+      "1000000",
+      "--report-seconds",
+      ".1",
+      "--checkpoint",
+      "out/runs/checkpoint/smoke/checkpoints",
+      "--checkpoint-seconds",
+      ".15",
+      "--checkpoint-keep",
+      "3",
+      "--metrics-file",
+      "out/runs/checkpoint/smoke/metrics.jsonl"
+    ],
+    "signal": "SIGINT",
+    "elapsed_seconds": 0.8173668050440028,
+    "generations_displayed": [
+      0,
+      1,
+      2,
+      2
+    ],
+    "returncode": 0
+  },
+  "resume": {
+    "args": [
+      "--resume",
+      "out/runs/checkpoint/smoke/checkpoints/latest.gtkc",
+      "--loss-budget",
+      "2000000",
+      "--report-seconds",
+      ".1",
+      "--checkpoint-seconds",
+      ".15",
+      "--checkpoint-keep",
+      "3",
+      "--metrics-file",
+      "out/runs/checkpoint/smoke/metrics.jsonl"
+    ],
+    "signal": "SIGTERM",
+    "elapsed_seconds": 0.9694632969330996,
+    "generations_displayed": [
+      2,
+      3,
+      4,
+      4
+    ],
+    "returncode": 0
+  },
+  "first_final_metrics": {
+    "schema": "genetik.prime-progress/1",
+    "timestamp_unix_ms": 1792699001027,
+    "progress": {
+      "snapshot": "final",
+      "elapsed_seconds": "0.71117920400000001",
+      "committed_generation": "2",
+      "attempted_generations": "3",
+      "published_generations": "2",
+      "actual_loss_attempts": "13195",
+      "loss_budget": "1000000",
+      "remaining_allowance": "986805",
+      "unpublished_loss_attempts": "1980",
+      "candidate_requests": "216",
+      "threads_requested": "4",
+      "threads_effective": "4",
+      "seed": "42",
+      "population": "64",
+      "committed_size": "64",
+      "valid": "62",
+      "invalid": "2",
+      "unevaluated": "0",
+      "displayed": "1",
+      "reporting_prediction_rows": "4000",
+      "reporting_loss_attempts": "0",
+      "stopping_state": "cancelled"
+    },
+    "candidates": [
+      {
+        "metrics": {
+          "rank": "1",
+          "slot": "63",
+          "exact_prefix_loss": "989.97895545852577",
+          "presentation_fitness": "0.011010034506967248",
+          "exact_matches": "11/1000",
+          "mismatches": "989",
+          "raw_rmse": "885.47459006564918",
+          "raw_mae": "693.28700230228901",
+          "raw_max_abs": "2002.5000026524067",
+          "mean_relative": "4.4063679368327406",
+          "max_relative": "1001.2500013262033",
+          "duplicates": "0",
+          "strict_increase_violations": "0",
+          "raw_increase_violations": "0",
+          "invalid_predictions": "0",
+          "unrepresentable_predictions": "0",
+          "nodes": "5",
+          "depth": "3",
+          "constant_count": "2",
+          "duplicate_formula": "0"
+        },
+        "canonical": "(x0 - (3.2168000042438507 * 0.0625))",
+        "decoded": "p_hat(n) = 10000 * ((x0 - (3.2168000042438507 * 0.0625))) [x0 = double(n) / 1000.0]",
+        "presentation_fitness": 0.011010034506967248
+      }
+    ],
+    "checkpoint": "out/runs/checkpoint/smoke/checkpoints/latest.gtkc"
+  },
+  "last_metrics": {
+    "schema": "genetik.prime-progress/1",
+    "timestamp_unix_ms": 1792699001999,
+    "progress": {
+      "snapshot": "final",
+      "elapsed_seconds": "1.542917297",
+      "committed_generation": "4",
+      "attempted_generations": "6",
+      "published_generations": "4",
+      "actual_loss_attempts": "28166",
+      "loss_budget": "2000000",
+      "remaining_allowance": "1971834",
+      "unpublished_loss_attempts": "1541",
+      "candidate_requests": "358",
+      "threads_requested": "4",
+      "threads_effective": "4",
+      "seed": "42",
+      "population": "64",
+      "committed_size": "64",
+      "valid": "60",
+      "invalid": "4",
+      "unevaluated": "0",
+      "displayed": "1",
+      "reporting_prediction_rows": "8000",
+      "reporting_loss_attempts": "0",
+      "stopping_state": "cancelled"
+    },
+    "candidates": [
+      {
+        "metrics": {
+          "rank": "1",
+          "slot": "63",
+          "exact_prefix_loss": "984.94336327007227",
+          "presentation_fitness": "0.016040596133793938",
+          "exact_matches": "16/1000",
+          "mismatches": "984",
+          "raw_rmse": "323.66773995756682",
+          "raw_mae": "204.12169130658751",
+          "raw_max_abs": "2062.0838187550407",
+          "mean_relative": "3.2570282138505249",
+          "max_relative": "1031.0419093775204",
+          "duplicates": "0",
+          "strict_increase_violations": "0",
+          "raw_increase_violations": "0",
+          "invalid_predictions": "0",
+          "unrepresentable_predictions": "0",
+          "nodes": "18",
+          "depth": "5",
+          "constant_count": "6",
+          "duplicate_formula": "0"
+        },
+        "canonical": "((((-0.60684001445770264) - log(x0)) * ((0.75730464850412016 * (-0.0078383503184227266)) * (5.5261699423069501 + x0))) - (x0 * (1.0001291334629059 / (-1.3875602036714554))))",
+        "decoded": "p_hat(n) = 10000 * (((((-0.60684001445770264) - log(x0)) * ((0.75730464850412016 * (-0.0078383503184227266)) * (5.5261699423069501 + x0))) - (x0 * (1.0001291334629059 / (-1.3875602036714554))))) [x0 = double(n) / 1000.0]",
+        "presentation_fitness": 0.01604059613379394
+      }
+    ],
+    "checkpoint": "out/runs/checkpoint/smoke/checkpoints/latest.gtkc"
+  },
+  "checkpoint_sha256": {
+    "generation-00000000000000000004.gtkc": "db60fdaf3d175d711078ef2c34933eb249611fdecf768cb7760f9c74932d3e2a",
+    "latest.gtkc": "db60fdaf3d175d711078ef2c34933eb249611fdecf768cb7760f9c74932d3e2a",
+    "generation-00000000000000000003.gtkc": "ca4f90f22827c25d9993f3079dc23685b3938b0382483a51c55d8ff84da66262",
+    "generation-00000000000000000002.gtkc": "4deca469c2abc66bcd5f56d9df78ace6cfcfcbd19ec713a2d1b1a083effedd36"
+  },
+  "all_records": 8,
+  "resumed_continued": true,
+  "exact_recovery_claim": false
+}

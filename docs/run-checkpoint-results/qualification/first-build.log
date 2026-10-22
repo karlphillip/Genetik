@@ -1,0 +1,13 @@
+[100%] Building CXX object CMakeFiles/genetik_prime_regression.dir/examples/prime_regression.cpp.o
+In file included from /home/karlphillip/workspaces/primeResearcher/Genetik/examples/PrimeExactSearch.hpp:5,
+                 from /home/karlphillip/workspaces/primeResearcher/Genetik/examples/PrimeExactOptions.hpp:3,
+                 from /home/karlphillip/workspaces/primeResearcher/Genetik/examples/prime_regression.cpp:3:
+/home/karlphillip/workspaces/primeResearcher/Genetik/examples/PrimeExactCheckpoint.hpp: In function ‘CheckpointDocument prime_example::encodeExactRun(const ExactSavedRun&, std::string)’:
+/home/karlphillip/workspaces/primeResearcher/Genetik/examples/PrimeExactCheckpoint.hpp:37:130: error: missing initializer for member ‘CheckpointDocument::generation’ [-Werror=missing-field-initializers]
+   37 |     CheckpointDocument result{std::string(CandidateCheckpointCodec<ExpressionCandidate>::identifier),std::move(identity),w.data()};result.generation=s.algorithm.published;return result;
+      |                                                                                                                                  ^
+cc1plus: all warnings being treated as errors
+gmake[3]: *** [CMakeFiles/genetik_prime_regression.dir/build.make:76: CMakeFiles/genetik_prime_regression.dir/examples/prime_regression.cpp.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:1514: CMakeFiles/genetik_prime_regression.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:1521: CMakeFiles/genetik_prime_regression.dir/rule] Error 2
+gmake: *** [Makefile:777: genetik_prime_regression] Error 2

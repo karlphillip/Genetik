@@ -1,0 +1,2 @@
+Implementation f7f98f1ddc37c692eedeaef4d6d0d8a33ff23405
+Three stdout byte comparisons passed: accepted-prime, accepted-arithmetic, accepted-interval4

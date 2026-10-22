@@ -1,0 +1,13 @@
+{
+  "seed": 42,
+  "threads": 4,
+  "population": 64,
+  "fitting": "unchanged enabled default",
+  "report_seconds": 0.1,
+  "checkpoint_seconds": 0.15,
+  "keep": 3,
+  "initial_total_loss_budget": 1000000,
+  "resume_total_loss_budget": 2000000,
+  "stop": "SIGINT after3snapshots, then resume and SIGTERM after3snapshots and continued generation",
+  "target": "no mathematical recovery gate; no tuning"
+}

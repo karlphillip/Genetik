@@ -1,0 +1,26 @@
+{
+  "release": {
+    "tested_sha": "f7f98f1ddc37c692eedeaef4d6d0d8a33ff23405",
+    "tests": 62,
+    "passed": true,
+    "elapsed_seconds": 341.39
+  },
+  "debug": {
+    "tested_sha": "f7f98f1ddc37c692eedeaef4d6d0d8a33ff23405",
+    "tests": 62,
+    "passed": true,
+    "elapsed_seconds": 360.87
+  },
+  "sanitize": {
+    "tested_sha": "f7f98f1ddc37c692eedeaef4d6d0d8a33ff23405",
+    "tests": 62,
+    "passed": true,
+    "elapsed_seconds": 1238.64
+  },
+  "minimum": {
+    "tested_sha": "f7f98f1ddc37c692eedeaef4d6d0d8a33ff23405",
+    "tests": 62,
+    "passed": true,
+    "elapsed_seconds": 260.42
+  }
+}

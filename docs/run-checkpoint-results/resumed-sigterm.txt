@@ -1,0 +1,86 @@
+Prime exact-prefix search • seed 42 • 4 threads • loss allowance 2000000
+Resuming checkpoint
+Generation        2
+Previous attempts 13195
+Seed              42
+RNG state         restored
+Problem           verified
+Checkpoint        checksum OK
+Continuing with generation 3
+
+Prime Search • Generation 2 • 00:00:00
+Fitness        0.01101003  = 0.00000000
+Exact primes   11 / 1000  = 0
+RMSE           885.47459006564918
+Loss           989.97895545852577470 (search objective, lower is better)
+
+Best formula
+p̂(n) = 10000 · ((n/1000) − 3.2168000042438507·0.0625)
+
+Complexity     5 nodes • depth 3 • 2 constants
+Evaluations    13195 / 2000000
+Budget         0.66%
+Seed / threads 42 / 4 requested, 4 effective
+Population     62 valid • 2 invalid • 0 unevaluated
+Generations    2 published / 3 attempted
+Best-ever      0.01101003 fitness • loss 989.97895545852577470 • generation 2
+Checkpoint     out/runs/checkpoint/smoke/checkpoints/latest.gtkc • generation 2 • 00:00:00 ago
+
+Prime Search • Generation 3 • 00:00:01
+Fitness        0.01103187  ↑ +0.00002183
+Exact primes   11 / 1000  = 0
+RMSE           118.75028850798593
+Loss           989.95710057554163086 (search objective, lower is better)
+
+Best formula
+p̂(n) = 10000 · ((n/1000)·((−0.74269535149587984·1.5077866496815773·(6.7439433798069501 + (n/1000)) / (−4.3626835883282435))·(2.50201416015625·(−0.45127344217554555·(−0.35091498494148254)))))
+
+Complexity     17 nodes • depth 6 • 7 constants
+Evaluations    19221 / 2000000
+Budget         0.96%
+Seed / threads 42 / 4 requested, 4 effective
+Population     62 valid • 2 invalid • 0 unevaluated
+Generations    3 published / 4 attempted
+Best-ever      0.01103187 fitness • loss 989.95710057554163086 • generation 3
+Checkpoint     out/runs/checkpoint/smoke/checkpoints/latest.gtkc • generation 3 • 00:00:00 ago
+
+Prime Search • Generation 4 • 00:00:01
+Fitness        0.01604060  ↑ +0.00500873
+Exact primes   16 / 1000  ↑ +5
+RMSE           323.66773995756682
+Loss           984.94336327007226828 (search objective, lower is better)
+
+Best formula
+p̂(n) = 10000 · ((−0.60684001445770264 − ln((n/1000)))·(0.75730464850412016·(−0.0078383503184227266)·(5.5261699423069501 + (n/1000))) − (n/1000)·(1.0001291334629059 / (−1.3875602036714554)))
+
+Complexity     18 nodes • depth 5 • 6 constants
+Evaluations    26625 / 2000000
+Budget         1.33%
+Seed / threads 42 / 4 requested, 4 effective
+Population     60 valid • 4 invalid • 0 unevaluated
+Generations    4 published / 5 attempted
+Best-ever      0.01604060 fitness • loss 984.94336327007226828 • generation 4
+Checkpoint     out/runs/checkpoint/smoke/checkpoints/latest.gtkc • generation 4 • 00:00:00 ago
+
+Prime Search • Generation 4 • 00:00:01
+Fitness        0.01604060  = 0.00000000
+Exact primes   16 / 1000  = 0
+RMSE           323.66773995756682
+Loss           984.94336327007226828 (search objective, lower is better)
+
+Best formula
+p̂(n) = 10000 · ((−0.60684001445770264 − ln((n/1000)))·(0.75730464850412016·(−0.0078383503184227266)·(5.5261699423069501 + (n/1000))) − (n/1000)·(1.0001291334629059 / (−1.3875602036714554)))
+
+Complexity     18 nodes • depth 5 • 6 constants
+Canonical g(x0)  ((((-0.60684001445770264) - log(x0)) * ((0.75730464850412016 * (-0.0078383503184227266)) * (5.5261699423069501 + x0))) - (x0 * (1.0001291334629059 / (-1.3875602036714554))))
+LaTeX           \hat{p}(n) = 10000 \cdot \left(\left(-0.60684001445770264 - \ln\left(\left(\frac{n}{1000}\right)\right)\right) \cdot \left(0.75730464850412016 \cdot \left(-0.0078383503184227266\right) \cdot \left(5.5261699423069501 + \left(\frac{n}{1000}\right)\right)\right) - \left(\frac{n}{1000}\right) \cdot \frac{1.0001291334629059}{-1.3875602036714554}\right)
+Evaluations    28166 / 2000000
+Budget         1.41%
+Seed / threads 42 / 4 requested, 4 effective
+Population     60 valid • 4 invalid • 0 unevaluated
+Generations    4 published / 6 attempted
+Best-ever      0.01604060 fitness • loss 984.94336327007226828 • generation 4
+Checkpoint     out/runs/checkpoint/smoke/checkpoints/latest.gtkc • generation 4 • 00:00:00 ago
+Stopping state cancelled
+Search stopped: cancelled • 28166 actual loss attempts • 8000 reporting rows (zero training attempts)
+Saved checkpoint: out/runs/checkpoint/smoke/checkpoints/latest.gtkc

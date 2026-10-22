@@ -49,6 +49,10 @@ static void numerical() {
     auto affine=model("2*x1+1","0","x0");std::array input{2.};auto forward=affine.evaluate(input);
     check(input[0]==2 && forward.accepted(),"private bindings do not modify external inputs");near(*forward.estimate,6,1e-12,"affine integral");
     auto parameter=model("x0*x1","0","x0");for(double x:{-3.,0.,2.}){auto r=parameter.evaluate(std::array{x});check(r.accepted(),"parameter-dependent integrand");near(*r.estimate,x*x*x/2,1e-12,"external and local slots independent");}
+    IntegralExpression twoInputs(2,expr("0",2),expr("x0+x1",2),expr("x0*x2+x1",3),2);
+    const std::array supplied{2.,3.};auto two=twoInputs.evaluate(supplied);
+    check(two.accepted() && supplied==std::array{2.,3.} && two.work.bindingsValidated==55,"external/local binding storage and accounting with N=2");
+    near(*two.estimate,40,1e-12,"two external parameters and appended local are independent");
     auto reversed=model("2*x1+1","x0","0").evaluate(input);check(bits(*reversed.estimate)==bits(-*forward.estimate) && bits(*reversed.estimatedAbsoluteError)==bits(*forward.estimatedAbsoluteError),"orientation only negates final estimate");
     auto zero=model("log(x1)","(-0.0)","0").evaluate(input);check(zero.accepted() && bits(*zero.estimate)==bits(0.) && *zero.estimatedAbsoluteError==0 && zero.work.integrandEvaluations==0 && zero.work.boundEvaluations==2,"empty interval convention");
     auto cancellation=model("x1","(-1)","1").evaluate(input);check(cancellation.accepted() && *cancellation.estimate==0 && *cancellation.estimatedAbsoluteError>0,"absolute tolerance under cancellation");

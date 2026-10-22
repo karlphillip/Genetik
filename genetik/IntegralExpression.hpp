@@ -159,7 +159,8 @@ public:
             if(originalA==originalB){result.estimate=0.0;result.estimatedAbsoluteError=0.0;result.status=IntegralStatus::EstimatedConvergence;inc(w.successes);result.work=w;return result;}
             reversed=originalA>originalB;
             const double a=std::min(originalA,originalB),b=std::max(originalA,originalB);
-            bindings_.assign(inputs.begin(),inputs.end());bindings_.push_back(0);
+            bindings_.resize(model.externalDimensions()+1);
+            std::copy(inputs.begin(),inputs.end(),bindings_.begin());bindings_.back()=0;
             auto sample=[&](double t) {
                 cancel();if(w.integrandEvaluations==p.maxIntegrandEvaluations)resource(IntegralReason::Samples);
                 inc(w.integrandEvaluations);bindings_.back()=t;return expression(model.integrand(),bindings_,IntegralReason::Integrand);

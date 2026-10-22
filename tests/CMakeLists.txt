@@ -50,7 +50,7 @@ if(GENETIK_BUILD_EXAMPLES)
                         genetik_demo_invalid_argument PROPERTIES TIMEOUT 30)
 endif()
 # Each public header must compile as the first and only include.
-foreach(header DerivativeRegression ExpressionDerivative ScalarExpressionTemplate ScalarTemplateRegression ExpressionParsing TypedExpressionParsing TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)
+foreach(header IntegralExpression IntegralRegression DerivativeRegression ExpressionDerivative ScalarExpressionTemplate ScalarTemplateRegression ExpressionParsing TypedExpressionParsing TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp "#include <${header}.hpp>\n")
     add_library(header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp)
     target_link_libraries(header_${header} PRIVATE genetik_lib)
@@ -241,4 +241,18 @@ if(GENETIK_BUILD_EXAMPLES)
         -DWORKSPACE=${CMAKE_CURRENT_BINARY_DIR}/derivative-regression-cli
         -P ${CMAKE_CURRENT_SOURCE_DIR}/derivative_regression_cli.cmake)
     set_tests_properties(genetik_derivative_regression_cli PROPERTIES TIMEOUT 60)
+endif()
+
+add_executable(genetik_integral_tests integrals.cpp)
+target_link_libraries(genetik_integral_tests PRIVATE Genetik::Genetik)
+add_test(NAME genetik_integral_contracts COMMAND genetik_integral_tests)
+add_test(NAME genetik_integral_overlap COMMAND genetik_integral_tests --overlap)
+set_tests_properties(genetik_integral_contracts genetik_integral_overlap PROPERTIES TIMEOUT 90)
+if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_integrals_quickstart COMMAND genetik_integrals_quickstart --threads 2)
+    add_test(NAME genetik_integral_cli COMMAND ${CMAKE_COMMAND}
+        -DCAMPAIGN=$<TARGET_FILE:genetik_integral_campaign>
+        -DWORKSPACE=${CMAKE_CURRENT_BINARY_DIR}/integral-cli
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/integral_cli.cmake)
+    set_tests_properties(genetik_integrals_quickstart genetik_integral_cli PROPERTIES TIMEOUT 90)
 endif()

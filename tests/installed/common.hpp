@@ -1,3 +1,4 @@
+#include <IntegralRegression.hpp>
 #pragma once
 #include <SymbolicRegression.hpp>
 #include <TypedSymbolicRegression.hpp>

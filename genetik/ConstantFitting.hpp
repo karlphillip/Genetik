@@ -162,6 +162,7 @@ protected:
     virtual void validateMergedObjectiveWork() {}
     // Narrow trusted compute seam: count observations without exposing fitness/genome state.
     std::uint64_t& rowAttemptsCounter() noexcept {return work_.rowAttempts;}
+    const ExecutionContext* executionContext() const noexcept {return execution_;}
     virtual RegressionMetrics compute(const Expression& expression) {
         return problem_->measure(expression, &work_.rowAttempts);
     }

@@ -11,6 +11,9 @@ protected:
     double mutatedGene(unsigned int,std::mt19937& rng) const override{return std::uniform_real_distribution<double>(-1,1)(rng);}
 };
 int main() {
+    IntegralExpression integral(1,parseExpression("0",1),parseExpression("x0",1),parseExpression("2*x1+1",2),1);
+    auto estimate=integral.evaluate(std::array{2.});
+    if(!estimate.accepted() || std::abs(*estimate.estimate-6)>1e-10)return 1;
     const auto observed=DerivativeRegressionProblem::create(1,{{0,{{{1},2}},1,1}});
     if(observed->measure(parseExpression("x0*x0",1)).loss!=Fitness::valid(0))return 1;
     if(evaluatePartial(parseExpression("sin(x0)",1),std::array{0.},0).derivative()!=1)return 1;

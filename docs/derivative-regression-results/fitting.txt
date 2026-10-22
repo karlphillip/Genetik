@@ -1,0 +1,6 @@
+initial=((((1.0 * x0) * x0) + (1.0 * x0)) + 1.0) initial_objective=1.9895833333333333
+model=((((1.5 * x0) * x0) + ((-0.5) * x0)) + 1.25)
+objective=0 calls=173 accepted=4 stop=minimum_step observations=1730 values=173 partials=1557 primal_operations=8650 derivative_arithmetic=9342 derivative_math_calls=0 partial_nodes=17127 aggregate_operations=7958 primal_invalid=0 unavailable=0 loss_failures=0 resource_stops=0
+ set=0 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+ set=1 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+ set=2 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0

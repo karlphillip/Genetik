@@ -133,3 +133,7 @@ and a bounded search using the existing worker and publication machinery.
 computes an ordinary value and one selected input partial over an existing expression.
 Activity is structural; unavailable derivatives remain distinct from invalid primal
 values and local resource exhaustion. See the compiled installed derivatives quickstart.
+
+Supplied value and partial observations: [DERIVATIVE_REGRESSION.md](DERIVATIVE_REGRESSION.md).
+Immutable channels have explicit scale/weight, composite fitness identity and bounded
+all-row reporting. Search/fitting use the same weighted normalized objective.

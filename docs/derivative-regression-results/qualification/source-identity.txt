@@ -1,0 +1,10 @@
+Final implementation revision: 71164b3c8ef73d0b993518357ac88358b24b6c54
+Subsequent tracked changes: documentation and selected evidence only.
+Qualified platform: Jetson ARM64 GCC13.3, libstdc++/libtsan14.2, glibc/libm2.39.
+
+c9d7132cbed36408b3727b1c84a10d98ffbeb337dc375f058b18f084e2722e68  genetik/Regression.hpp
+9e72c7f07ed8b18ce17c57b8fcbbb1c2e6cb7a1f9f8b76c4ba12852c194dce3d  genetik/ConstantFitting.hpp
+8fc99e480728c01b812867e1306ce1fe58ae1a1eb6ad0f0cd08091a6602cd579  genetik/DerivativeRegression.hpp
+719645115c66974a2255f8ce4d6aa269ea2e122f8fc239b7e5b9459535a7359b  tests/derivative_regression.cpp
+8528f86d0bfa2e8aa44c66f66ee00316310501664b495da64c9cb05a2ecea083  apps/campaigns/derivative_regression_campaign.cpp
+53cb175714222a0680b50db12c0b7e3fbf7dd9ec6e1c46535d5a432de3dc4e33  examples/quickstarts/derivative_regression.cpp

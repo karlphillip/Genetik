@@ -1000,3 +1000,12 @@ polynomial/multivariate/strict-arithmetic/prime reports. See SCIENTIFIC_OPERATOR
 SCIENTIFIC_RESULTS.md and SCIENTIFIC_QUALIFICATION.md for public contracts, all15
 outcomes, qualified source identities and executed gates. No generic GA/publication,
 randomness, executor, coordinate optimizer or loss-admission policy was replaced.
+
+## Phase 7B supplied value/partial observations
+
+[DERIVATIVE_REGRESSION.md](DERIVATIVE_REGRESSION.md) defines the immutable channels
+and weighted normalized objective. [DERIVATIVE_REGRESSION_RESULTS.md](DERIVATIVE_REGRESSION_RESULTS.md)
+retains all five bounded discovery runs and the separate supplied-structure fit.
+[DERIVATIVE_REGRESSION_QUALIFICATION.md](DERIVATIVE_REGRESSION_QUALIFICATION.md)
+records local contracts, resource/failure/accounting, concurrency, packaging and replay
+evidence. Historical campaigns and their scope remain unchanged. No remote publication.

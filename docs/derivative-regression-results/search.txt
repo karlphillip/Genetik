@@ -1,0 +1,26 @@
+seed=0 initial=0.5 published=6 generation_attempts=6 objective_attempts=896 unused=9104 unpublished=0 discovery=6 seconds=0.0079482570000000002 stop=exact_training_fit observations=8960 values=896 partials=8064 primal_operations=10780 derivative_arithmetic=9675 derivative_math_calls=0 partial_nodes=27468 aggregate_operations=41216 primal_invalid=0 unavailable=0 loss_failures=0 resource_stops=0 mutation_proposals=270 crossover_proposals=343 rejections=25 mutation_changes=232 crossover_changes=520 mutation_fallbacks=0 crossover_fallbacks=0
+model=(((x0 - x0) + 1.0) + (x0 * x0))
+objective=0 nodes=9 depth=4
+trace=0,128,0,0.5
+trace=0,896,6,0
+seed=1 initial=0.5 published=3 generation_attempts=3 objective_attempts=512 unused=9488 unpublished=0 discovery=3 seconds=0.0046408359999999997 stop=exact_training_fit observations=5120 values=512 partials=4608 primal_operations=5500 derivative_arithmetic=4005 derivative_math_calls=0 partial_nodes=14508 aggregate_operations=23552 primal_invalid=0 unavailable=0 loss_failures=0 resource_stops=0 mutation_proposals=139 crossover_proposals=170 rejections=17 mutation_changes=122 crossover_changes=242 mutation_fallbacks=0 crossover_fallbacks=0
+model=(1.0 + (x0 * x0))
+objective=0 nodes=5 depth=3
+trace=1,128,0,0.5
+trace=1,512,3,0
+seed=2 initial=0.5 published=2 generation_attempts=2 objective_attempts=384 unused=9616 unpublished=0 discovery=2 seconds=0.0033626870000000001 stop=exact_training_fit observations=3840 values=384 partials=3456 primal_operations=4850 derivative_arithmetic=3978 derivative_math_calls=0 partial_nodes=12186 aggregate_operations=17664 primal_invalid=0 unavailable=0 loss_failures=0 resource_stops=0 mutation_proposals=81 crossover_proposals=116 rejections=10 mutation_changes=67 crossover_changes=172 mutation_fallbacks=0 crossover_fallbacks=0
+model=((x0 * x0) - (-1.0))
+objective=0 nodes=5 depth=3
+trace=2,128,0,0.5
+trace=2,384,2,0
+seed=3 initial=0.5 published=3 generation_attempts=3 objective_attempts=512 unused=9488 unpublished=0 discovery=3 seconds=0.0046725489999999998 stop=exact_training_fit observations=5120 values=512 partials=4608 primal_operations=7570 derivative_arithmetic=7065 derivative_math_calls=0 partial_nodes=18234 aggregate_operations=23552 primal_invalid=0 unavailable=0 loss_failures=0 resource_stops=0 mutation_proposals=163 crossover_proposals=182 rejections=25 mutation_changes=126 crossover_changes=264 mutation_fallbacks=0 crossover_fallbacks=0
+model=(1.0 - (x0 * (x0 * (-1.0))))
+objective=0 nodes=7 depth=4
+trace=3,128,0,0.5
+trace=3,512,3,0
+seed=42 initial=0.5 published=3 generation_attempts=3 objective_attempts=512 unused=9488 unpublished=0 discovery=3 seconds=0.0041629350000000004 stop=exact_training_fit observations=5120 values=512 partials=4608 primal_operations=5650 derivative_arithmetic=4392 derivative_math_calls=0 partial_nodes=14778 aggregate_operations=23552 primal_invalid=0 unavailable=0 loss_failures=0 resource_stops=0 mutation_proposals=154 crossover_proposals=183 rejections=30 mutation_changes=122 crossover_changes=278 mutation_fallbacks=0 crossover_fallbacks=0
+model=(1.0 + (x0 * x0))
+objective=0 nodes=5 depth=3
+trace=42,128,0,0.5
+trace=42,512,3,0
+all_models_frozen representative_seed=2

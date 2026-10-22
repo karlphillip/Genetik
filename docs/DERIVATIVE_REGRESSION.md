@@ -90,7 +90,7 @@ if (result.search.best) {
 // Separate fixed structure, same objective for baseline, probes and returned score:
 DerivativeTrainingObjective objective(problem,512);
 ConstantFitConfig fit; fit.maxLossAttempts=512;
-auto fitted=fitConstants(parseExpression("1*x0*x0+1*x0+1",1),objective,fit);
+auto fitted=fitConstants(parseExpression("1*x0*x0+1",1),objective,fit);
 ```
 
 The [installed compiled quickstart](../examples/quickstarts/derivative_regression.cpp)

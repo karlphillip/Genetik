@@ -1,0 +1,103 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/debug
+      Start  1: genetik_strict_arithmetic
+ 1/49 Test  #1: genetik_strict_arithmetic ..................   Passed    0.03 sec
+      Start  2: genetik_multivariate_contracts
+ 2/49 Test  #2: genetik_multivariate_contracts .............   Passed    0.04 sec
+      Start  3: genetik_fitting_contracts
+ 3/49 Test  #3: genetik_fitting_contracts ..................   Passed    0.06 sec
+      Start  4: genetik_symbolic_contracts
+ 4/49 Test  #4: genetik_symbolic_contracts .................   Passed    0.01 sec
+      Start  5: genetik_expression_contracts
+ 5/49 Test  #5: genetik_expression_contracts ...............   Passed    0.08 sec
+      Start  6: genetik_fitness_publication
+ 6/49 Test  #6: genetik_fitness_publication ................   Passed    0.00 sec
+      Start  7: genetik_contracts
+ 7/49 Test  #7: genetik_contracts ..........................   Passed    0.01 sec
+      Start  8: genetik_regression_cli
+ 8/49 Test  #8: genetik_regression_cli .....................   Passed    0.18 sec
+      Start  9: genetik_expression_example
+ 9/49 Test  #9: genetik_expression_example .................   Passed    0.00 sec
+      Start 10: genetik_demo_bounded
+10/49 Test #10: genetik_demo_bounded .......................   Passed    0.04 sec
+      Start 11: genetik_demo_zero_budget
+11/49 Test #11: genetik_demo_zero_budget ...................   Passed    0.00 sec
+      Start 12: genetik_demo_invalid_argument
+12/49 Test #12: genetik_demo_invalid_argument ..............   Passed    0.00 sec
+      Start 13: genetik_downstream
+13/49 Test #13: genetik_downstream .........................   Passed   15.55 sec
+      Start 14: genetik_expression_fp_policy
+14/49 Test #14: genetik_expression_fp_policy ...............   Passed   28.85 sec
+      Start 15: genetik_prime_contracts
+15/49 Test #15: genetik_prime_contracts ....................   Passed    0.05 sec
+      Start 16: genetik_prime_cli
+16/49 Test #16: genetik_prime_cli ..........................   Passed    0.08 sec
+      Start 17: genetik_workspace_contracts
+17/49 Test #17: genetik_workspace_contracts ................   Passed    0.00 sec
+      Start 18: genetik_evaluation_reference
+18/49 Test #18: genetik_evaluation_reference ...............   Passed    0.05 sec
+      Start 19: genetik_installed_package
+19/49 Test #19: genetik_installed_package ..................   Passed  285.17 sec
+      Start 20: genetik_scalar_quickstart
+20/49 Test #20: genetik_scalar_quickstart ..................   Passed    0.01 sec
+      Start 21: genetik_symbolic_quickstart
+21/49 Test #21: genetik_symbolic_quickstart ................   Passed    0.01 sec
+      Start 22: genetik_oop_contracts
+22/49 Test #22: genetik_oop_contracts ......................   Passed    0.00 sec
+      Start 23: genetik_concurrency_contracts
+23/49 Test #23: genetik_concurrency_contracts ..............   Passed    0.17 sec
+      Start 24: genetik_oop_parallel
+24/49 Test #24: genetik_oop_parallel .......................   Passed    0.01 sec
+      Start 25: genetik_character_parallel
+25/49 Test #25: genetik_character_parallel .................   Passed    0.02 sec
+      Start 26: genetik_repository_hygiene
+26/49 Test #26: genetik_repository_hygiene .................   Passed    0.13 sec
+      Start 27: genetik_typed_contracts
+27/49 Test #27: genetik_typed_contracts ....................   Passed    0.03 sec
+      Start 28: genetik_typed_overlap
+28/49 Test #28: genetik_typed_overlap ......................   Passed    0.01 sec
+      Start 29: genetik_typed_example
+29/49 Test #29: genetik_typed_example ......................   Passed    0.00 sec
+      Start 30: genetik_typed_regression_contracts
+30/49 Test #30: genetik_typed_regression_contracts .........   Passed    0.36 sec
+      Start 31: genetik_typed_preparation_overlap
+31/49 Test #31: genetik_typed_preparation_overlap ..........   Passed    0.01 sec
+      Start 32: genetik_typed_search_quickstart
+32/49 Test #32: genetik_typed_search_quickstart ............   Passed    0.01 sec
+      Start 33: genetik_typed_regression_cli
+33/49 Test #33: genetik_typed_regression_cli ...............   Passed    0.15 sec
+      Start 34: genetik_scientific_contracts
+34/49 Test #34: genetik_scientific_contracts ...............   Passed    0.07 sec
+      Start 35: genetik_parsing_contracts
+35/49 Test #35: genetik_parsing_contracts ..................   Passed    0.04 sec
+      Start 36: genetik_parsing_overlap
+36/49 Test #36: genetik_parsing_overlap ....................   Passed    0.01 sec
+      Start 37: genetik_parsing_quickstart
+37/49 Test #37: genetik_parsing_quickstart .................   Passed    0.00 sec
+      Start 38: genetik_expression_file
+38/49 Test #38: genetik_expression_file ....................   Passed    0.10 sec
+      Start 39: genetik_template_contracts
+39/49 Test #39: genetik_template_contracts .................   Passed    0.12 sec
+      Start 40: genetik_template_overlap
+40/49 Test #40: genetik_template_overlap ...................   Passed    0.01 sec
+      Start 41: genetik_templates_quickstart
+41/49 Test #41: genetik_templates_quickstart ...............   Passed    0.01 sec
+      Start 42: genetik_template_campaign_smoke
+42/49 Test #42: genetik_template_campaign_smoke ............   Passed    0.05 sec
+      Start 43: genetik_derivative_contracts
+43/49 Test #43: genetik_derivative_contracts ...............   Passed    0.04 sec
+      Start 44: genetik_derivative_overlap
+44/49 Test #44: genetik_derivative_overlap .................   Passed    0.01 sec
+      Start 45: genetik_derivatives_quickstart
+45/49 Test #45: genetik_derivatives_quickstart .............   Passed    0.00 sec
+      Start 46: genetik_derivative_regression_contracts
+46/49 Test #46: genetik_derivative_regression_contracts ....   Passed    0.07 sec
+      Start 47: genetik_derivative_regression_overlap
+47/49 Test #47: genetik_derivative_regression_overlap ......   Passed    0.03 sec
+      Start 48: genetik_derivative_regression_quickstart
+48/49 Test #48: genetik_derivative_regression_quickstart ...   Passed    0.02 sec
+      Start 49: genetik_derivative_regression_cli
+49/49 Test #49: genetik_derivative_regression_cli ..........   Passed    0.04 sec
+
+100% tests passed out of 49
+
+Total Test time (real) = 331.78 sec

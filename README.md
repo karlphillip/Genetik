@@ -40,6 +40,9 @@ and the required strict floating-point options. Newer C++ standards are allowed.
 - [Bounded scalar partials](examples/quickstarts/derivatives.cpp): ordinary value
   plus one selected input derivative, parsed scientific expressions, materialized
   templates and explicit unavailable-derivative diagnostics.
+- [Supplied value/partial regression](examples/quickstarts/derivative_regression.cpp):
+  explicit weighted observation channels drive shared search and coordinate fitting;
+  a value anchor accompanies derivative observations without supplying extra value labels.
 - [Application-owned permutation consumer](tests/oop_consumer/main.cpp): a non-scalar
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
@@ -239,3 +242,8 @@ identifies its executed candidate; later derivative changes remain locally quali
 Bounded first-order scalar partials are available through the separately included
 `ExpressionDerivative.hpp`; see the [contract and installed quickstart](docs/SCALAR_DERIVATIVES.md).
 This additive capability does not change search grammars or fitting.
+
+Supplied value and first-partial observations can drive the same search and coordinate
+fitter through [DerivativeRegression.hpp](genetik/DerivativeRegression.hpp). See the
+[API/objective contract](docs/DERIVATIVE_REGRESSION.md), [installed quickstart](examples/quickstarts/derivative_regression.cpp)
+and [bounded anchored-antiderivative evidence](docs/DERIVATIVE_REGRESSION_RESULTS.md).

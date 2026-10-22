@@ -1,0 +1,5 @@
+supplied=((x0 * x0) + 1.0) weighted_normalized_objective=0
+fitted=((((1.5 * x0) * x0) + ((-0.5) * x0)) + 1.25) objective=0 attempts=173
+threads_requested=2 threads_effective=2 stop=generation_limit objective=0.5
+model=(x0 * x0)
+Note: the anchor is an observation; finite samples do not identify a unique global function.

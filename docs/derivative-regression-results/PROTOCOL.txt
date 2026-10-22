@@ -1,0 +1,11 @@
+x0=x; channels=value anchor f(0)=1; partial index0 at {-2,-1.5,-1,-.5,0,.5,1,1.5,2}, target=2*x; scales=1 weights=1
+objective=0.5*partial_MSE+0.5*anchor_squared_error; channel order=value then partial0; preserve row order; no additional value labels in training
+seeds=0,1,2,3,42 population=128 objective_limit=10000 candidate_limit=same generation_limit=2000
+operators=add,sub,mul uniform feasible; constants=-2,-1,0,1,2; continuous_probability=0; fitting=off; nodes=9 depth=4 max_abs_constant=2 arithmetic_limit=SIZE_MAX
+rank_selection elites=2 crossover=.9 mutation=.35; initial_depth=4 mutation_depth=3 grow_probability=.65 full_probability=.5 proposal_limit=8; fit_every=1 (disabled)
+construction dimensions<=64 channels<=65 observations<=65536 input_coefficients<=1048576; evaluation observations<=65536 aggregation<=1000000; value nodes<=65536 operations<=1000000 workspace<=8388608
+partial operations<=1000000 nodes<=65536 bindings<=65536 workspace<=8388608; opaque native calls count as operations; assessment uses separate default allowance
+stop exact zero composite objective; select by training objective,nodes,text; overall representative tie=first declared seed; freeze all models before assessments
+post-selection sets: training abscissae above (value labels except anchor withheld from search), interior={-1.75,-1.25,-.75,-.25,.25,.75,1.25,1.75}; exterior={-4,-3,3,4}; targets=x*x+1 and 2*x by ordinary arithmetic
+report recovery when max value AND partial errors<=1e-6 on each set; no retry/tuning/target injection; threads=1 seeds sequential
+separate coefficient fixture a*x*x+b*x+c initial=(1,1,1) target=(1.5,-.5,1.25); same derivative points target3*x-.5, anchor1.25; scale/weights1; max512 calls; bounds[-8,8] step1 min1e-8 sweeps128 proposals8192 threshold=none

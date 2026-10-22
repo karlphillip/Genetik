@@ -103,3 +103,10 @@
   active paths and continue primal evaluation after derivative failure. Local derivative
   work is not engine loss work. Include genetik_derivative_overlap in separate TSan.
   See docs/SCALAR_DERIVATIVES.md.
+
+- DerivativeRegression.hpp owns explicit value/partial channels. Average normalized
+  squares within each channel, then combine normalized positive weights; never pool
+  rows or invent anchors. Resource stops abort preparation, not invalid fitness.
+  Preserve worker-local supplemental accounting and shared objective admission.
+  Include genetik_derivative_regression_overlap in TSan. Only 7C integration remains
+  before final qualification/delivery; see docs/DERIVATIVE_REGRESSION.md.

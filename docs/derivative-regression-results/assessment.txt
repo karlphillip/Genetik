@@ -1,0 +1,20 @@
+seed=0 value_anchor_MSE=0 anchor_error=0 partial_training_MSE=0 anchor_normalized=0 partial_normalized=0
+seed=0 set=0 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=0 set=1 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=0 set=2 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=1 value_anchor_MSE=0 anchor_error=0 partial_training_MSE=0 anchor_normalized=0 partial_normalized=0
+seed=1 set=0 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=1 set=1 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=1 set=2 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=2 value_anchor_MSE=0 anchor_error=0 partial_training_MSE=0 anchor_normalized=0 partial_normalized=0
+seed=2 set=0 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=2 set=1 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=2 set=2 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=3 value_anchor_MSE=0 anchor_error=0 partial_training_MSE=0 anchor_normalized=0 partial_normalized=0
+seed=3 set=0 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=3 set=1 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=3 set=2 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=42 value_anchor_MSE=0 anchor_error=0 partial_training_MSE=0 anchor_normalized=0 partial_normalized=0
+seed=42 set=0 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=42 set=1 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0
+seed=42 set=2 complete=1 value_max_error=0 value_invalid=0 unavailable_0=0 resources_0=0 derivative_max_error=0 derivative_invalid=0 unavailable_1=0 resources_1=0

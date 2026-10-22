@@ -44,13 +44,20 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    by forward-mode numerical chain rules, with independent activity, explicit
    unavailable/resource outcomes and strict primal equivalence. See
    SCALAR_DERIVATIVES.md and DERIVATIVE_QUALIFICATION.md. Symbolic trees, gradients,
-   higher derivatives, typed Jacobians, derivative objectives/optimization and
-   integration remain separately scoped; no general symbolic algebra is implied.
-8. **Additional model families** — individually scoped proposals and acceptance
-   criteria, not a single open-ended rewrite.
+   higher derivatives, typed Jacobians and gradient optimizers remain outside the
+   agreed completion scope; no general symbolic algebra is implied.
+   **Phase 7B** now adds supplied value/partial observation channels, weighted
+   normalized loss, shared-engine search and coordinate fitting, with the bounded
+   anchored-antiderivative campaign in DERIVATIVE_REGRESSION_RESULTS.md.
+   **7C bounded numerical integration is the only remaining agreed implementation
+   milestone**, followed by final calculus qualification and delivery. No additional
+   feature phase is part of that completion scope.
+8. **Additional model families** — historical backlog only, outside the agreed
+   7B/7C then final-qualification/delivery scope; no additional implementation phase
+   is scheduled by this roadmap entry.
 
 Cleanup introduced no mathematical API; Phase 2 added typed evaluation and Phase 3
-now adds typed search/refinement. Phase 5 now adds bounded text import; optional adapters, additional Phase 6 constraints, further calculus and Phase 8 remain future work. Further delivery/platform qualification,
+now adds typed search/refinement. Phase 5 now adds bounded text import; 7C integration and final qualification/delivery remain. Optional adapters, additional constraints and model families are backlog outside this completion scope. Further delivery/platform qualification,
 profiling, checkpoint/resume, cache policy and GPU work remain separately scoped.
 The remaining sections preserve the historical engineering and experiment record;
 old “next”/“unreleased” statements describe those checkpoints, not current status.

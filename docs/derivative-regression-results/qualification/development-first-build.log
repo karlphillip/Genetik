@@ -1,0 +1,28 @@
+[ 50%] Building CXX object tests/CMakeFiles/genetik_derivative_regression_tests.dir/derivative_regression.cpp.o
+In file included from /home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivative_regression.cpp:1:
+/home/karlphillip/workspaces/primeResearcher/Genetik/genetik/DerivativeRegression.hpp: In constructor ‘DerivativeRegressionProblem::DerivativeRegressionProblem(std::size_t, const std::vector<ScalarObservationChannel>&, ExpressionLimits, ObservationLimits, ObservationEvaluationLimits)’:
+/home/karlphillip/workspaces/primeResearcher/Genetik/genetik/DerivativeRegression.hpp:92:203: error: no matching function for call to ‘push_back(volatile double&)’
+   92 |         for(const auto& c:channels_) {volatile double alpha=c.weight/sum;if(!std::isfinite(alpha) || alpha<=0)throw std::invalid_argument("observation weight normalization underflow");weights_.push_back(alpha);}
+      |                                                                                                                                                                                         ~~~~~~~~~~~~~~~~~~^~~~~~~
+In file included from /usr/include/c++/13/vector:66,
+                 from /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/Expression.hpp:16,
+                 from /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/ExpressionDerivative.hpp:2,
+                 from /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/DerivativeRegression.hpp:2:
+/usr/include/c++/13/bits/stl_vector.h:1281:7: note: candidate: ‘constexpr void std::vector<_Tp, _Alloc>::push_back(const value_type&) [with _Tp = double; _Alloc = std::allocator<double>; value_type = double]’ (near match)
+ 1281 |       push_back(const value_type& __x)
+      |       ^~~~~~~~~
+/usr/include/c++/13/bits/stl_vector.h:1281:7: note:   conversion of argument 1 would be ill-formed:
+/home/karlphillip/workspaces/primeResearcher/Genetik/genetik/DerivativeRegression.hpp:92:204: error: binding reference of type ‘const std::vector<double>::value_type&’ {aka ‘const double&’} to ‘volatile double’ discards qualifiers
+   92 |         for(const auto& c:channels_) {volatile double alpha=c.weight/sum;if(!std::isfinite(alpha) || alpha<=0)throw std::invalid_argument("observation weight normalization underflow");weights_.push_back(alpha);}
+      |                                                                                                                                                                                                            ^~~~~
+/usr/include/c++/13/bits/stl_vector.h:1298:7: note: candidate: ‘constexpr void std::vector<_Tp, _Alloc>::push_back(value_type&&) [with _Tp = double; _Alloc = std::allocator<double>; value_type = double]’ (near match)
+ 1298 |       push_back(value_type&& __x)
+      |       ^~~~~~~~~
+/usr/include/c++/13/bits/stl_vector.h:1298:7: note:   conversion of argument 1 would be ill-formed:
+/home/karlphillip/workspaces/primeResearcher/Genetik/genetik/DerivativeRegression.hpp:92:204: error: cannot bind rvalue reference of type ‘std::vector<double>::value_type&&’ {aka ‘double&&’} to lvalue of type ‘volatile double’
+   92 |         for(const auto& c:channels_) {volatile double alpha=c.weight/sum;if(!std::isfinite(alpha) || alpha<=0)throw std::invalid_argument("observation weight normalization underflow");weights_.push_back(alpha);}
+      |                                                                                                                                                                                                            ^~~~~
+gmake[3]: *** [tests/CMakeFiles/genetik_derivative_regression_tests.dir/build.make:79: tests/CMakeFiles/genetik_derivative_regression_tests.dir/derivative_regression.cpp.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:3783: tests/CMakeFiles/genetik_derivative_regression_tests.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:3790: tests/CMakeFiles/genetik_derivative_regression_tests.dir/rule] Error 2
+gmake: *** [Makefile:1557: genetik_derivative_regression_tests] Error 2

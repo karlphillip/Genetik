@@ -1,5 +1,10 @@
 # Installable development-package qualification
 
+Phase 7B supplied value/partial regression is locally qualified in
+[DERIVATIVE_REGRESSION_QUALIFICATION.md](DERIVATIVE_REGRESSION_QUALIFICATION.md).
+Hosted calculus qualification remains pending until the checkpoint after 7C; no
+previous hosted result is extended to this new feature by these local checks.
+
 Current local Phase 7A additive derivative scope is recorded in
 [DERIVATIVE_QUALIFICATION.md](DERIVATIVE_QUALIFICATION.md); prior hosted results
 below do not qualify unexecuted feature changes. Package identity/version is unchanged.

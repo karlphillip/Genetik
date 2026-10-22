@@ -1,0 +1,42 @@
+{
+  "implementation": "71164b3c8ef73d0b993518357ac88358b24b6c54",
+  "hosted": "pending after 7C",
+  "suites": {
+    "release": {
+      "passed": 49,
+      "failed": 0,
+      "seconds": 250.76,
+      "cmake": "4.4.4"
+    },
+    "debug": {
+      "passed": 49,
+      "failed": 0,
+      "seconds": 331.78,
+      "cmake": "4.4.4"
+    },
+    "sanitize": {
+      "passed": 49,
+      "failed": 0,
+      "seconds": 734.5,
+      "cmake": "4.4.4"
+    },
+    "minimum": {
+      "passed": 49,
+      "failed": 0,
+      "seconds": 261.04,
+      "cmake": "3.16.0"
+    }
+  },
+  "tsan_repetitions": {
+    "genetik_concurrency_contracts": 3,
+    "genetik_oop_parallel": 3,
+    "genetik_typed_overlap": 3,
+    "genetik_typed_preparation_overlap": 3,
+    "genetik_scientific_contracts": 3,
+    "genetik_parsing_overlap": 3,
+    "genetik_template_overlap": 3,
+    "genetik_derivative_overlap": 3,
+    "genetik_derivative_regression_overlap": 3
+  },
+  "portable_tests": 48
+}

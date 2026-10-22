@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased — after 0.1.0
+## 0.2.0 — unreleased
+
+New pre-1.0 minor series; SameMinorVersion rejects older 0.1 package requests.
+Recompile all dependent translation units consistently after the polymorphic
+measurement-interface additions. See [migration](docs/MIGRATION.md) and
+[complete proposed notes](docs/releases/0.2.0/NOTES.md).
+
 
 - Opt-in Sin/Cos/Exp/Sqrt/Powi across scalar and typed construction, checked CPU
   evaluation, grammars, subtree/discrete variation, continuous fitting and faithful

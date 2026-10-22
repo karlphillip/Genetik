@@ -14,7 +14,10 @@ extrapolation accuracy. Prime regression is one application example.
 The library uses only the C++ standard library and is [MIT licensed](LICENSE),
 copyright Karl Phillip (2021). Version **0.1.0** is available as a
 [development pre-release](https://github.com/karlphillip/Genetik/releases/tag/v0.1.0).
-This checkout may contain subsequent local development; the published tag and assets
+This checkout prepares **0.2.0 (unreleased)**, including typed mathematics, parsing,
+templates and bounded scalar calculus. See [migration](docs/MIGRATION.md) and
+[delivery proposal](docs/RELEASE_PROPOSAL.md). The previous hosted results cover their
+recorded SHAs; combined calculus qualification is pending. This is subsequent development; the published tag and assets
 remain unchanged.
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
@@ -57,10 +60,10 @@ git clone https://github.com/karlphillip/Genetik.git Genetik
 cd Genetik
 ```
 
-Alternatively extract the published source archive and enter `Genetik-0.1.0/`.
-The typed quickstart and canonical output conventions below describe post-0.1.0
-local development. The published tag contains the original scalar/symbolic
-quickstarts, not the additive typed API; omit the typed program when using that tag.
+For this 0.2.0 candidate, use its reviewed source archive and enter `Genetik-0.2.0/`
+when made available. The commands below describe that candidate, not published
+v0.1.0. The older tag contains only the original scalar/symbolic quickstarts and
+requires its own 0.1 package requests. Do not use 0.2 instructions with that archive.
 From the corresponding source root, install and build the available programs:
 
 ```sh
@@ -73,13 +76,16 @@ out/consumers/quickstarts/scalar_quickstart
 out/consumers/quickstarts/symbolic_quickstart
 out/consumers/quickstarts/typed_quickstart
 out/consumers/quickstarts/templates_quickstart --threads 2
+out/consumers/quickstarts/derivatives_quickstart
+out/consumers/quickstarts/derivative_regression_quickstart --threads 2
+out/consumers/quickstarts/integrals_quickstart --threads 2
 ```
 
 The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a complete external
 consumer. In your application, enable CXX and use:
 
 ```cmake
-find_package(Genetik 0.1 CONFIG REQUIRED)
+find_package(Genetik 0.2 CONFIG REQUIRED)
 add_executable(application main.cpp)
 target_link_libraries(application PRIVATE Genetik::Genetik)
 ```
@@ -133,7 +139,7 @@ contract. [Support and repeatability policy](docs/SUPPORT.md).
 - [Installation/package requirements](docs/PACKAGING.md).
 - [Concurrency and callback qualification](docs/CONCURRENCY.md).
 - [Support/version policy](docs/SUPPORT.md) and [executed feature hosted qualification](docs/TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md).
-- [Proposed 0.1.0 release notes](docs/releases/0.1.0/NOTES.md) and [integration/publication proposal](docs/RELEASE_PROPOSAL.md).
+- [Proposed 0.2.0 release notes](docs/releases/0.2.0/NOTES.md) and [integration/publication proposal](docs/RELEASE_PROPOSAL.md).
 
 ## API and examples
 

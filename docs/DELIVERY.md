@@ -1,5 +1,11 @@
 # Installable development-package qualification
 
+Current delivery preparation targets **0.2.0 (unreleased)** and the complete range
+since published v0.1.0. See [CALCULUS_PREFLIGHT.md](CALCULUS_PREFLIGHT.md),
+[release proposal](RELEASE_PROPOSAL.md) and [migration](MIGRATION.md). Earlier sections
+below are historical checkpoint evidence, including then-current unreleased status;
+they do not qualify the later calculus candidate. Hosted upload requires new approval.
+
 Phase7C bounded root integral models are locally qualified in
 [INTEGRAL_QUALIFICATION.md](INTEGRAL_QUALIFICATION.md). Combined calculus hosted
 qualification and final development-delivery review are next. Earlier hosted
@@ -12,7 +18,7 @@ previous hosted result is extended to this new feature by these local checks.
 
 Current local Phase 7A additive derivative scope is recorded in
 [DERIVATIVE_QUALIFICATION.md](DERIVATIVE_QUALIFICATION.md); prior hosted results
-below do not qualify unexecuted feature changes. Package identity/version is unchanged.
+below do not qualify unexecuted feature changes. Package identity is unchanged; the current delivery candidate starts version 0.2.0.
 
 Current parser/template hosted results: [PARSER_TEMPLATES_HOSTED_QUALIFICATION.md](PARSER_TEMPLATES_HOSTED_QUALIFICATION.md).
 Previous feature results: [TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md](TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md).

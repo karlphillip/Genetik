@@ -1,4 +1,4 @@
-# Migrating to the 0.1.0 development API
+# Migrating to the 0.2.0 development API
 
 The original repository declared 0.1.0 but had no published release history.
 This modernization is intentionally not source-compatible with its original
@@ -7,10 +7,39 @@ Once released, the [pre-1.0 policy](SUPPORT.md) applies within each minor series
 The names below are the actual public API; CMake's Genetik:: namespace is not a
 C++ namespace. Existing header spelling/casing remains unchanged.
 
+## From published 0.1.0 to 0.2.0
+
+0.2.0 is an unreleased new minor series. Change explicit installed package requests
+from `find_package(Genetik 0.1 CONFIG REQUIRED)` to `find_package(Genetik 0.2 CONFIG REQUIRED)`
+(or omit a version deliberately). SameMinorVersion intentionally rejects a 0.1
+request for an installed 0.2 package; patches within 0.2 preserve documented source
+API, while compatible defect fixes may change numerical results with release notes.
+
+Recompile **all** dependent translation units consistently, including application
+libraries, when changing these headers/options. RegressionProblem now has a virtual
+measurement/sample-count interface and destructor; protected objective extension
+hooks support complete-model measurements. Header-only does not imply stable object
+layout, vtables, or binary ABI. Existing ordinary constructors, public includes,
+`Genetik::Genetik`, source `genetik_lib`, scalar defaults and generic OOP hooks remain.
+No cross-version seeded trajectory is promised. Exact compatibility comparisons
+are qualified by revision, toolchain/runtime, inputs, configuration and execution.
+
+All typed/parsing/template/calculus headers are optional separate includes; generic
+OOP consumers still need none of them. Scalar templates fit inserted constants
+against complete-model loss; observation regression uses its weighted normalized
+channels; integral regression scores complete numerical integrals. These objectives
+are not interchangeable fitness contexts. See [API index](API.md),
+[0.2 notes](releases/0.2.0/NOTES.md) and the individual contracts before migrating.
+
+Fresh builds use `out/build/`, installed prefixes `out/install/`, consumers
+`out/consumers/` and generated runs `out/runs/`. Campaign sources moved to
+`apps/campaigns/` while executable names/explicit output options are preserved.
+Historical commands and evidence intentionally keep their original paths.
+
 ## Build and includes
 
 Require C++20 and CMake >=3.16. Link `Genetik::Genetik` through installed
-`find_package(Genetik 0.1 CONFIG REQUIRED)` or add_subdirectory. The source-only
+`find_package(Genetik 0.2 CONFIG REQUIRED)` or add_subdirectory. The source-only
 `genetik_lib` compatibility target remains; installed consumers use the canonical
 target. Include `<Creature_i.hpp>` explicitly for scalar subclasses; it is no
 longer pulled in transitively by Population_i.hpp. The package supplies C++20,

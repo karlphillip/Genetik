@@ -1,5 +1,13 @@
 # Version, support and release policy
 
+Current candidate: **0.2.0, unreleased**. The complete implementation scope is locally
+finished; combined calculus hosted qualification awaits the new branch-upload
+approval. [CALCULUS_PREFLIGHT.md](CALCULUS_PREFLIGHT.md) maps the evidence to revisions.
+The latest hosted-qualified tip is `50af98d192ce441f1d5ce5deeddbf9dcf996896e`
+([matrix](https://github.com/karlphillip/Genetik/actions/runs/39664655065));
+its passing Linux combinations do not yet qualify the newer calculus/version stack.
+Historical checkpoint sections below retain their original publication status and counts.
+
 Phase7C bounded root integral models are locally qualified in
 [INTEGRAL_QUALIFICATION.md](INTEGRAL_QUALIFICATION.md). Combined calculus hosted
 qualification and final development-delivery review are next. Earlier hosted
@@ -15,9 +23,9 @@ Phase 7A derivative qualification is local and recorded in
 for the new derivative feature remains pending; earlier hosted claims below retain
 their explicitly identified commit scopes.
 
-The authoritative version is `project(GENETIK VERSION 0.1.0 ...)` in the root
-CMakeLists.txt. Package metadata derives from it. The original checkout already
-declared 0.1.0; there were no local release tags or documented published releases.
+The authoritative version is `project(GENETIK VERSION 0.2.0 ...)` in the root
+CMakeLists.txt. Package metadata derives from it. Version 0.2.0 is unreleased. The original pre-modernization checkout declared 0.1.0
+before that version was subsequently published.
 Version 0.1.0 was published as a development pre-release at
 `f9299ea2cb5136d06e2de8f68bb83ecf460ca369`. Later local changes are not
 retroactively qualified by that release. Historical preparation statements below
@@ -28,8 +36,8 @@ Before 1.0, a minor change (0.1 to 0.2) may introduce documented public source A
 incompatibilities. Patches within a minor series preserve the documented public
 source API while correcting defects. Numerical or seeded-trajectory changes must
 receive explicit release notes, including defect fixes in patches. CMake uses
-SameMinorVersion (ordinary version requests, without EXACT): installed 0.1.x accepts an equal/older request in the 0.1 series,
-not requests from 0.0 or 0.2 and not newer unavailable patches. EXACT requests must
+SameMinorVersion (ordinary version requests, without EXACT): installed 0.2.x accepts an equal/older request in the 0.2 series,
+not requests from 0.1 or 0.3 and not newer unavailable patches. EXACT requests must
 match exactly. Header-only delivery does not provide a stable binary ABI; recompile
 all dependent translation units consistently when changing headers/options.
 
@@ -43,8 +51,8 @@ qualification on arbitrary architectures. Compiler/runtime qualification is sepa
 | --- | --- |
 | Jetson ARM64 Linux, GCC/libstdc++ 13.3.0, glibc/libm 2.39; Release, Debug, ASan+UBSan | Locally verified; delivery results in DELIVERY.md. |
 | CMake 3.16.0 and 4.4.4 on the Jetson | Locally exercised minimum and current tool; install/relocation/consumption. |
-| Ubuntu 24.04 x86-64 GCC 13 Release, CMake 3.16.0 | Hosted verified; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md for the current feature SHA, jobs and runtimes. |
-| Ubuntu 24.04 x86-64 Clang 18 GNU frontend + libstdc++, Debug ASan+UBSan | Hosted verified; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md for the current feature SHA, jobs and runtimes. |
+| Ubuntu 24.04 x86-64 GCC 13 Release, CMake 3.16.0 | Hosted verified; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md for its recorded older feature SHA, jobs and runtimes. |
+| Ubuntu 24.04 x86-64 Clang 18 GNU frontend + libstdc++, Debug ASan+UBSan | Hosted verified; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md for its recorded older feature SHA, jobs and runtimes. |
 | Native Ubuntu 24.04 ARM64 GCC 13 Release | Hosted verified, including separate TSan; see TYPED_SCIENTIFIC_HOSTED_QUALIFICATION.md. |
 | Windows/MSVC, clang-cl, AppleClang/macOS, libc++, other compilers/runtimes | Unqualified. Flag-selection logic alone does not qualify them. |
 

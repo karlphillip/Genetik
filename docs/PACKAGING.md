@@ -1,6 +1,6 @@
 # CMake package and source inclusion
 
-`find_package(Genetik 0.1 CONFIG REQUIRED)` provides `Genetik::Genetik`. This is the
+`find_package(Genetik 0.2 CONFIG REQUIRED)` provides `Genetik::Genetik`. This is the
 same canonical target available through add_subdirectory. The old unnamespaced
 `genetik_lib` remains a source-build compatibility name, not an installed alias.
 Enable CXX before requesting the package. The public platform dependency is Threads::Threads, discovered by the package

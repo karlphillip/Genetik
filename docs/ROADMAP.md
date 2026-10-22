@@ -1,5 +1,13 @@
 # Current phased development plan
 
+**Agreed implementation scope complete locally:** cleanup, typed evaluation/evolution,
+scientific operators, parsing, scalar templates and calculus 7A/7B/7C. The remaining
+actions are combined calculus hosted qualification, review/approval and execution of
+the prepared 0.2.0 development delivery. No new mathematical feature phase precedes
+that checkpoint. See [CALCULUS_PREFLIGHT.md](CALCULUS_PREFLIGHT.md) and
+[RELEASE_PROPOSAL.md](RELEASE_PROPOSAL.md). Older future-work entries below are
+historical recommendations or separately scoped possibilities, not delivery gates.
+
 The published v0.1.0 checkpoint is `f9299ea2cb5136d06e2de8f68bb83ecf460ca369`.
 Delivery and hosted qualification below are completed history. Phase 1 starts from
 that current clean checkpoint; no typed-math work was present to checkpoint.
@@ -37,7 +45,7 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    structure search, full-model loss and selected-constant fitting through shared
    preparation/publication. See SCALAR_TEMPLATES.md, SCALAR_TEMPLATE_RESULTS.md and
    SCALAR_TEMPLATE_QUALIFICATION.md. Multiple/repeated holes, shared parameters,
-   typed templates, units and general constraints require separate Phase 6B scope.
+   typed templates, units and general constraints remain outside the agreed delivery scope.
    The combined parser/template hosted checkpoint is recorded in
    PARSER_TEMPLATES_HOSTED_QUALIFICATION.md; this does not expand the one-site scope.
 7. **Calculus** — Phase 7A implements bounded first-order scalar input partials

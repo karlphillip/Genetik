@@ -27,6 +27,8 @@ class DimensionalRegressionProblem final : public RegressionProblem {
         }
     }
     RegressionMetrics measure(const Expression &e, std::uint64_t *attempts = nullptr) const override {
+        if (e.variableCount() != dimensions())
+            throw std::invalid_argument("dimensional measurement schema mismatch");
         if (!accepts(e))
             return {Fitness::invalid(), {}, 0};
         return RegressionProblem::measure(e, attempts);
@@ -317,10 +319,10 @@ class DimensionalVariation {
             return fallback();
         ++steps;
         std::vector<Production> choices;
-        const auto cap = std::min(limits_.maxGenerationSteps - steps,
-                                  limits_.maxWorkspaceBytes / (128 * sizeof(Production)));
+        const auto cap = limits_.maxGenerationSteps - steps;
+        const auto choiceCap = limits_.maxWorkspaceBytes / (128 * sizeof(Production));
         auto consider = [&](Production p) {
-            if (choices.size() == cap)
+            if (choices.size() == choiceCap)
                 return;
             std::array<PhysicalDimension, 3> units{pool_[p.args[0]].unit, pool_[p.args[1]].unit,
                                                    pool_[p.args[2]].unit};

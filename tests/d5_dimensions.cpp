@@ -46,6 +46,11 @@ void contracts() {
         rejected = true;
     }
     check(rejected, "discrete comparison units");
+    DimensionalExpression signedCoefficient(parseExpression("(-0.0)", 0), {}, {L});
+    auto decoded = restoreDimensionalExpression(
+        decodeCheckpoint(encodeCheckpoint(checkpointDimensionalExpression(signedCoefficient))));
+    check(decoded.expression().sameRepresentation(signedCoefficient.expression()) && decoded.dimension() == L,
+          "dimensional codec preserves signed coefficient bits and units");
     MathematicalConstraints constraints({VariableDomain{0., 4., false, true}},
                                         {{ExpressionKind::Log, 0, true, false}}, {{ExpressionKind::Log, 1}},
                                         0, true);
@@ -81,6 +86,27 @@ void contracts() {
         check(a.text() == before && p->accepts(x.expression()) && p->accepts(y.expression()),
               "owned typed mutation/crossover");
     }
+    // A storage cap must not become a prefix-only operator scan limit.
+    auto completeGrammar = g;
+    completeGrammar.operators = {ExpressionKind::Add, ExpressionKind::Subtract, ExpressionKind::Multiply};
+    completeGrammar.initialMaxDepth = 4;
+    DimensionalVariation complete(p, completeGrammar);
+    std::mt19937 completeRandom(83);
+    bool coefficientGenerated = false;
+    for (int i = 0; i < 64; ++i) {
+        auto candidate = complete.initialize(completeRandom);
+        for (auto n : candidate.expression().nodes())
+            coefficientGenerated |= n.kind() == ExpressionKind::Constant;
+    }
+    check(coefficientGenerated,
+          "bounded dimensional generation reaches coefficient productions beyond Add/Subtract scan prefix");
+    bool wrongSchema = false;
+    try {
+        (void)p->measure(Expression::variable(0, 1));
+    } catch (const std::invalid_argument &) {
+        wrongSchema = true;
+    }
+    check(wrongSchema, "dimensional API schema errors remain distinct from invalid unit candidates");
     auto exponent = parseExpression("pow(x0,2)+3", 1);
     DimensionalConstantSelection selection({{}});
     check(selection.parameters(exponent).size() == 2, "dimensionless exponent remains a coefficient");

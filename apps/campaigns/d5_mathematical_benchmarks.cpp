@@ -105,6 +105,13 @@ void discrete(const std::string &task, unsigned seed, unsigned workers, const st
         stop = discreteStop(*run.stoppingReason());
     run.save(output / "final.gtkc");
     auto best = run.population().bestSeen();
+    if (best) {
+        auto independent = problem->measure(best->expression(), true);
+        if (independent.loss != best->evaluation())
+            throw std::runtime_error(
+                "selected discrete score does not match independent complete assessment");
+    }
+
     std::size_t matches = 0, invalid = 0, operations = 0;
     for (auto &[input, target] : held)
         if (best) {
@@ -221,6 +228,12 @@ void scalar(const std::string &task, unsigned seed, unsigned workers, const std:
         stop = searchStopName(*run.stoppingReason());
     run.save(output / "final.gtkc");
     auto best = run.population().bestSeen();
+    if (best) {
+        auto independent = problem.problem()->measure(best->expression());
+        if (independent.loss != best->evaluation())
+            throw std::runtime_error("selected scalar score does not match independent complete assessment");
+    }
+
     double maxError = 0;
     std::size_t matches = 0, invalid = 0, operations = 0;
     for (const auto &row : held)

@@ -6,7 +6,9 @@ permissions:
   contents: read
 jobs:
   qualify:
-    timeout-minutes: 30
+    # Local full ASan suite:3221s; complete D3 fixture:1378s.
+    # Allow complete instrumentation plus compilation/artifact capture.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -108,7 +110,7 @@ jobs:
                   cp "$target/link.txt" "$destination/linkage/$relative/"
                 fi
               done
-              for executable in genetik_derivative_tests genetik_derivative_regression_tests genetik_integral_tests genetik_concurrency_tests genetik_oop_consumer; do
+              for executable in genetik_derivative_tests genetik_derivative_regression_tests genetik_integral_tests genetik_concurrency_tests genetik_oop_consumer genetik_discrete_tests genetik_discrete_iteration_tests genetik_discrete_prime_tests genetik_checkpoint_compatibility_tests; do
                 if [[ -f "$build/tests/$executable" ]]; then
                   ldd "$build/tests/$executable" > "$destination/$executable-runtime.log"
                 fi

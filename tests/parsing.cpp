@@ -121,8 +121,10 @@ static void typed() {
     }
 }
 static void malformedAndLimits() {
-    const std::array<std::string_view,28> bad{"","()","1 2","x0=1","1;","1,2","2x0","-x0","--1","1e","1e-9999","1e9999","0x1p0","nan","inf","x01","x1","foo(1)","sin(1,2)","sin()","powi(1,x0)","powi(1,9)","powi(1,-1)","powi(1,1.0)","(1+2","sqrt(1))","[1,2]","1/*2"};
+    const std::array<std::string_view,28> bad{"","()","1 2","x0=1","1;","1,2","2x0","-x0","--1","1e","1e-9999","1e9999","0x1p0","nan","inf","x01","x1","foo(1)","sin(1,2)","sin()","powi(1,x0)","powi(1,9)","powi(1,-9)","powi(1,1.0)","(1+2","sqrt(1))","[1,2]","1/*2"};
     for(auto text:bad){bool threw=false;try{(void)parseExpression(text,1);}catch(const ExpressionParseError& e){threw=true;check(e.offset()<=text.size(),"error offset in source");}check(threw,"malformed corpus accepted");}
+    check(parseExpression("powi((-2),-1)",0).evaluate({}).value()==-.5,"scalar negative power explicit extension");
+    bool typedNegativeRejected=false;try{(void)parseTypedExpression("powi(1,-1)",{},TypedShape::scalar());}catch(const ExpressionParseError&){typedNegativeRejected=true;}check(typedNegativeRejected,"typed Powi exponent contract unchanged");
     ExpressionParseLimits p;p.maxSourceBytes=1;check(parseExpression("1",0,p).nodeCount()==1,"byte boundary");rejects([&]{(void)parseExpression("12",0,p);},C::Resource);
     p={};p.maxTokens=3;(void)parseExpression("1+2",0,p);p.maxTokens=2;rejects([&]{(void)parseExpression("1+2",0,p);},C::Resource);
     p={};p.maxTokenBytes=2;(void)parseExpression("12",0,p);rejects([&]{(void)parseExpression("123",0,p);},C::Resource);

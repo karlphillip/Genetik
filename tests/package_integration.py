@@ -9,6 +9,8 @@ from pathlib import Path
 import shlex
 import shutil
 import subprocess
+import signal
+import time
 p=argparse.ArgumentParser()
 p.add_argument('--source',type=Path,required=True)
 p.add_argument('--workspace',type=Path,required=True)
@@ -28,11 +30,24 @@ for key in ['Genetik_DIR','Genetik_ROOT','CMAKE_PREFIX_PATH','CXXFLAGS','CFLAGS'
     env.pop(key,None)
 def run(args,fail=False):
     log.write(shlex.join(map(str,args))+'\n');log.flush()
-    r=subprocess.run(list(map(str,args)),env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=120)
-    log.write(r.stdout);log.flush()
-    if (r.returncode==0)==fail:
-        raise RuntimeError(f'Unexpected exit {r.returncode}: {args}\n{r.stdout}')
-    return r.stdout
+    started=time.monotonic()
+    # D5 adds the complete advanced quickstart; the original120s consumer-build
+    # timeout was measured to expire. Preserve all work with a300s command cap.
+    with subprocess.Popen(list(map(str,args)),env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,
+                          text=True,start_new_session=os.name=='posix') as process:
+        try:
+            output=process.communicate(timeout=300)[0]
+        except subprocess.TimeoutExpired:
+            if os.name=='posix':os.killpg(process.pid,signal.SIGKILL)
+            else:process.kill()
+            output=process.communicate(timeout=10)[0]
+            log.write(output+f'\nTIMEOUT after {time.monotonic()-started:.3f}s (limit300s)\n');log.flush()
+            raise
+        result=process.returncode
+    log.write(output+f'\nCOMMAND_SECONDS {time.monotonic()-started:.3f}\n');log.flush()
+    if (result==0)==fail:
+        raise RuntimeError(f'Unexpected exit {result}: {args}\n{output}')
+    return output
 producer=root/'producer source';build=root/'producer build';prefix_a=root/'prefix A';prefix_b=root/'relocated prefix B'
 producer.mkdir()
 # Copy the current intended library/CMake code, not Git HEAD or installed artifacts.
@@ -89,7 +104,7 @@ def inspect(prefix,consumer_build):
         elif token not in ['-c','-MD','-MMD','-MP']:
             dependency_command.append(token)
     text=run([*dependency_command,'-M'])
-    if any('/'+name+'.hpp' in text for name in ['IntegralExpression','IntegralRegression','DerivativeRegression','ExpressionDerivative','ScalarExpressionTemplate','ScalarTemplateRegression','ExpressionParsing','TypedExpressionParsing','Expression','Regression','SymbolicRegression','ConstantFitting','TypedValue','TypedExpression','TypedRegression','TypedVariation','TypedSymbolicRegression','TypedConstantFitting']):
+    if any('/'+name+'.hpp' in text for name in ['ScalarOperators','AdvancedInteger','DiscreteExpression','DiscreteRegression','DiscreteVariation','DiscreteRunCheckpoint','IntegerRecurrence','SymbolicAlgebra','PhysicalDimensions','DimensionalRegression','MathematicalConstraints','ScalarMathematicsRun','IntegralExpression','IntegralRegression','DerivativeRegression','ExpressionDerivative','ScalarExpressionTemplate','ScalarTemplateRegression','ExpressionParsing','TypedExpressionParsing','Expression','Regression','SymbolicRegression','ConstantFitting','TypedValue','TypedExpression','TypedRegression','TypedVariation','TypedSymbolicRegression','TypedConstantFitting']):
         raise RuntimeError('symbolic dependency in generic consumer')
     installed={p.relative_to(prefix).as_posix() for p in prefix.rglob('*') if p.is_file()}
     if not any(x.endswith('detail/ScopedTiming.hpp') for x in installed):raise RuntimeError('transitive header omitted')

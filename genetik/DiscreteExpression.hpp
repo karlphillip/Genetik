@@ -233,7 +233,7 @@ public:
         if(!outer_.empty())throw std::invalid_argument("open scoped fragment is not executable");
         if(inputs.size()!=dimensions_)throw std::invalid_argument("discrete input dimension mismatch");
         if(l.maxIterationDepth>128||l.maxIterationsPerOperation>1000000000||l.maxAggregateIterations>1000000000)throw std::invalid_argument("invalid iteration evaluation limits");
-        struct Frame {std::size_t index,stage;DiscreteValue left=DiscreteValue::integer(0);std::int64_t cursor=0,upper=0,accumulator=0;DiscreteValue middle=DiscreteValue::integer(0);};
+        struct Frame {std::size_t index,stage;DiscreteValue left=DiscreteValue::integer(0);std::int64_t cursor=0,upper=0,accumulator=0;};
         DiscreteEvaluationResult result;std::vector<Frame> frames;DiscreteValue last=DiscreteValue::integer(0);std::size_t activeIterations=0;
         const auto fail=[&](DiscreteEvaluationStatus status,const char* why){result.status=status;result.reason=why;return result;};
         const auto frameCap=l.maxWorkspaceBytes/sizeof(Frame);
@@ -281,11 +281,11 @@ public:
                 frames.pop_back();continue;
             }
             if(arity>=2&&f.stage==1){f.left=last;f.stage=2;if(frames.size()==frameCap)return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete frame storage exhausted");frames.push_back({metadata_[i].children[1],0});continue;}
-            if(arity==3&&f.stage==2){f.middle=last;f.stage=3;if(frames.size()==frameCap)return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete frame storage exhausted");frames.push_back({metadata_[i].children[2],0});continue;}
+            if(arity==3&&f.stage==2){f.cursor=last.integer();f.stage=3;if(frames.size()==frameCap)return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete frame storage exhausted");frames.push_back({metadata_[i].children[2],0});continue;}
             if(!charge())return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete operations exhausted");
             if(advancedIntegerKind(n.kind())){
                 struct MathStop{DiscreteEvaluationStatus status;};
-                try{const auto first=arity==1?last.integer():f.left.integer();const auto second=arity==3?f.middle.integer():arity==2?last.integer():0;auto answer=genetik_discrete_detail::integerMath(integerOperation(n.kind()),first,second,arity==3?last.integer():0,[&]{if(stop())throw MathStop{DiscreteEvaluationStatus::Cancelled};if(!charge())throw MathStop{DiscreteEvaluationStatus::ResourceExhausted};});if(!answer)return fail(DiscreteEvaluationStatus::MathematicalInvalid,"integer function domain or overflow");last=DiscreteValue::integer(*answer);}catch(const MathStop& e){return fail(e.status,"integer function work or cancellation");}
+                try{const auto first=arity==1?last.integer():f.left.integer();const auto second=arity==3?f.cursor:arity==2?last.integer():0;auto answer=genetik_discrete_detail::integerMath(integerOperation(n.kind()),first,second,arity==3?last.integer():0,[&]{if(stop())throw MathStop{DiscreteEvaluationStatus::Cancelled};if(!charge())throw MathStop{DiscreteEvaluationStatus::ResourceExhausted};});if(!answer)return fail(DiscreteEvaluationStatus::MathematicalInvalid,"integer function domain or overflow");last=DiscreteValue::integer(*answer);}catch(const MathStop& e){return fail(e.status,"integer function work or cancellation");}
                 frames.pop_back();continue;
             }
             const auto a=arity==1?last.integer():f.left.integer(),b=arity==1?0:last.integer();std::int64_t out=0;

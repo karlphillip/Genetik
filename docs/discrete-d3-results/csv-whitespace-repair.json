@@ -1,0 +1,7 @@
+{
+  "original_sha256": "79a0e34b065ab60062c174768c5d7702a289ba26d7b512a3fd896b0491c332c8",
+  "normalized_sha256": "e610171d3f1a8afeff907c6d592ca74b9f578a86298492ade584991d6a36b978",
+  "parsed_rows_unchanged": true,
+  "source": "Python csv.DictWriter default CRLF; now explicit LF",
+  "rows": 11
+}

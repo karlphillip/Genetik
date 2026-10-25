@@ -1,0 +1,7 @@
+{
+  "error": "TypeError: unsupported operand type(s) for +: 'PosixPath' and 'str'",
+  "line": "shutil.copy2(o/name,packet/name+'.txt')",
+  "cause": "Missing parentheses around the destination filename in the ignored packaging helper.",
+  "repair": "packet/(name+'.txt')",
+  "scope": "Evidence packaging only; no C++ source, test results or mathematical values changed."
+}

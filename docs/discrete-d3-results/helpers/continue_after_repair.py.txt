@@ -1,0 +1,5 @@
+from pathlib import Path
+import json,subprocess,time
+r=Path.cwd();o=r/'out/runs/discrete-d3';pid=json.loads((o/'qualification-pause.json').read_text())['driver']
+while Path('/proc',str(pid)).exists() and Path('/proc',str(pid),'stat').read_text().split()[2]!='Z':time.sleep(1)
+assert (o/'io-failure-repaired.json').exists();subprocess.run(['python3',str(o/'qualify_continuation.py')],check=True)

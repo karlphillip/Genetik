@@ -1,0 +1,21 @@
+{
+  "command": [
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-d3-release/genetik_discrete_prime_search",
+    "--task",
+    "primality",
+    "--seed",
+    "42",
+    "--loss-budget",
+    "32",
+    "--generation-limit",
+    "0",
+    "--output",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/discrete-d3/io-failure-original"
+  ],
+  "exit": 0,
+  "stdout": "primality generation=0 attempts=32/32 matches=44/62 loss=18 nodes=4 depth=2 seconds=0.0107432 visits=11482 iterations=868 stop=running\nsum(k0, 16, -2, 16)\n\u03a3[k0=16..-2] 16\nprimality generation=0 attempts=32/32 matches=44/62 loss=18 nodes=4 depth=2 seconds=0.1054 visits=11482 iterations=868 stop=generation_limit\nsum(k0, 16, -2, 16)\n\u03a3[k0=16..-2] 16\n",
+  "stderr": "",
+  "expected": "metadata write must fail before starting search",
+  "source": "f21920f",
+  "probe": "run-owned effective.json symlink to/dev/full; no disk filled"
+}

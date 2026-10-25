@@ -1,0 +1,2 @@
+factorial seed=42 loss=0 generation=1 attempts=128
+product(k0, 1, x0, k0)

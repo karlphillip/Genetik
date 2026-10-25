@@ -1,0 +1,14 @@
+from pathlib import Path
+import subprocess,time,json,hashlib
+r=Path.cwd();o=r/'out/runs/discrete-d3';logs=r/'out/logs/discrete-d3';lookup=subprocess.run(['pgrep','-f','^python3 '+str(o/'qualify_continuation.py')+'$'],capture_output=True,text=True);pids=[int(x) for x in lookup.stdout.split()];print('waiting for original selected suite to drain',pids,flush=True)
+while any(Path('/proc',str(pid)).exists() and Path('/proc',str(pid),'stat').read_text().split()[2]!='Z' for pid in pids):time.sleep(1)
+text=(logs/'sanitize-affected-tests.log').read_text()
+if '***Timeout' not in text:print('no timing diagnosis needed',flush=True);raise SystemExit(0)
+# Original results are immutable before another CTest invocation can replace LastTest.
+(logs/'sanitize-original-timeout.log').write_text(text);original=r/'out/build/discrete-sanitize/Testing/Temporary/LastTest.log'
+if original.exists():(logs/'sanitize-original-LastTest.log').write_bytes(original.read_bytes())
+binary=r/'out/build/discrete-sanitize/tests/genetik_discrete_prime_tests';expected=json.loads((o/'asan-timeout-progress.json').read_text())['binary_sha256'];assert hashlib.sha256(binary.read_bytes()).hexdigest()==expected;command=[str(binary),str(r/'tests/discrete-primes.tsv'),str(o/'asan-unchanged-diagnostic')];start=time.monotonic();print('starting one unchanged binary diagnosis, allowance3600s',flush=True)
+with (logs/'sanitize-unchanged-diagnostic.log').open('w') as f:
+ try:result=subprocess.run(command,stdout=f,stderr=subprocess.STDOUT,timeout=3600);status=result.returncode
+ except subprocess.TimeoutExpired:status='timeout3600'
+record=dict(command=command,exit=status,seconds=time.monotonic()-start,binary_sha256=expected,unchanged_binary=True,diagnostic_allowance_seconds=3600,original_allowance_seconds=600);(o/'asan-diagnostic.json').write_text(json.dumps(record,indent=2)+'\n');print(json.dumps(record,indent=2),flush=True)

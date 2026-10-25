@@ -1,0 +1,6 @@
+{
+  "command": [
+    "out/tmp/actionlint"
+  ],
+  "exit": 0
+}

@@ -1,0 +1,11 @@
+[
+  "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/iteration-release/genetik_discrete_iteration_campaign",
+  "--case",
+  "factorial",
+  "--seed",
+  "2",
+  "--threads",
+  "1",
+  "--output",
+  "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/discrete-d2/campaign/factorial-seed2"
+]

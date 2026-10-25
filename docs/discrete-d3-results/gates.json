@@ -1,0 +1,50 @@
+[
+  {
+    "name": "release-configure",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-S",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik",
+      "-B",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-release",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DGENETIK_WARNINGS_AS_ERRORS=ON",
+      "-DGENETIK_BUILD_TESTS=ON",
+      "-DGENETIK_BUILD_EXAMPLES=ON",
+      "-DBUILD_TESTING=ON",
+      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+      "-DGENETIK_RECORDED_REFERENCE=ON",
+      "-DGENETIK_SANITIZERS=OFF",
+      "-DGENETIK_THREAD_SANITIZER=OFF"
+    ],
+    "exit": 0,
+    "seconds": 0.8986151639837772,
+    "source_sha": "1daa8a6f141c4869169122e9f653eafe2270b463"
+  },
+  {
+    "name": "release-build",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "--build",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-release",
+      "-j2"
+    ],
+    "exit": 0,
+    "seconds": 334.98713410901837,
+    "source_sha": "1daa8a6f141c4869169122e9f653eafe2270b463"
+  },
+  {
+    "name": "release-full-tests",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-release",
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest",
+      "--output-on-failure"
+    ],
+    "exit": 8,
+    "seconds": 414.9896846610354,
+    "source_sha": "1daa8a6f141c4869169122e9f653eafe2270b463"
+  }
+]

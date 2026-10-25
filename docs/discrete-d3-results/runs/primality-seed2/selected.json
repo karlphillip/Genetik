@@ -1,0 +1,1 @@
+{"canonical":"(if((2 != (product(k1, 4, 8, 8) % x0)), (product(k0, 4, 8, 8) % x0), x0) % 2)","loss":8.000000,"generation":624}

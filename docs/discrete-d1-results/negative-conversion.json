@@ -1,0 +1,14 @@
+{
+  "command": [
+    "g++",
+    "-std=c++20",
+    "-Igenetik",
+    "-c",
+    "out/tmp/discrete-reject-float.cpp",
+    "-o",
+    "out/tmp/discrete-reject-float.o"
+  ],
+  "expected_compile_rejection": true,
+  "exit": 1,
+  "reason": "Floating-point operands cannot silently become Int64 expression literals."
+}

@@ -1,0 +1,20 @@
+from pathlib import Path
+import subprocess,os,signal,time,json,shlex
+r=Path.cwd();o=r/'out/runs/discrete-d3';logs=r/'out/logs/discrete-d3';pid=1206256;s=(r/'tests/discrete_prime.cpp').read_text()
+s=s.replace('const auto ref=referencePrimes();','std::cerr<<"phase reference"<<std::endl;const auto ref=referencePrimes();')
+s=s.replace('auto d=parse(divisor),','std::cerr<<"phase parse"<<std::endl;auto d=parse(divisor),')
+s=s.replace('n<=256;++n){std::int64_t divisors','n<=256;++n){if(n%16==0)std::cerr<<"divisor n="<<n<<std::endl;std::int64_t divisors')
+s=s.replace('n<=100;++n){std::int64_t expected','n<=100;++n){if(n%8==0)std::cerr<<"count n="<<n<<std::endl;std::int64_t expected')
+s=s.replace('n<=10;++n){auto a=pn.evaluate','n<=10;++n){std::cerr<<"nth n="<<n<<std::endl;auto a=pn.evaluate')
+s=s.replace('auto shortPolicy=fixturePolicy();','std::cerr<<"phase resource"<<std::endl;auto shortPolicy=fixturePolicy();')
+s=s.replace('int polls=0;','std::cerr<<"phase cancellation"<<std::endl;int polls=0;')
+s=s.replace('int main(int argc,char** argv){try{','int main(int argc,char** argv){try{std::cerr<<"phase main"<<std::endl;')
+p=o/'progress-only.cpp';p.write_text(s);entries=json.loads((r/'out/build/discrete-sanitize/compile_commands.json').read_text());entry=next(x for x in entries if x['file']==str(r/'tests/discrete_prime.cpp'));command=shlex.split(entry['command']);command.remove('-c');command[command.index(str(r/'tests/discrete_prime.cpp'))]=str(p);command[command.index('-o')+1]=str(o/'progress-only');start=time.monotonic();os.kill(pid,signal.SIGSTOP)
+try:
+ with (logs/'progress-diagnostic-build.log').open('w') as f:subprocess.run(command,cwd=r/'out/build/discrete-sanitize',stdout=f,stderr=subprocess.STDOUT,check=True,timeout=180)
+ with (logs/'progress-diagnostic.log').open('w') as f:
+  try:result=subprocess.run([str(o/'progress-only'),str(r/'tests/discrete-primes.tsv'),str(o/'progress-only-output')],stdout=f,stderr=subprocess.STDOUT,timeout=60);status=result.returncode
+  except subprocess.TimeoutExpired:status='diagnostic sample60s'
+finally:
+ os.kill(pid,signal.SIGCONT);(o/'asan-progress-diagnostic-pause.json').write_text(json.dumps(dict(pause_seconds=time.monotonic()-start,reason='unchanged run paused for progress-only diagnostic build/sample, then resumed',diagnostic_command=command),indent=2)+'\n')
+print('original run resumed',flush=True)

@@ -1,0 +1,49 @@
+#include "examples/DiscretePrimeResearch.hpp"
+#include "examples/PrimeRegression.hpp"
+#include <barrier>
+#include <fstream>
+#include <iostream>
+#include <chrono>
+namespace {
+using namespace discrete_prime;
+void check(bool b,const char* message){if(!b)throw std::runtime_error(message);}
+auto fixtures(){DiscreteExpressionLimits l;l.maxNodes=200;l.maxDepth=30;l.maxConstants=100;l.maxIterationDepth=4;return l;}
+auto parse(std::string_view text){return parseDiscreteExpression(text,1,fixtures());}
+DiscreteEvaluationLimits fixturePolicy(){return {2000000,2000000,1048576,1024,200000,4};}
+const char* divisor="sum(k0,1,x0,if(x0%k0==0,1,0))";
+const char* predicate="if(x0<2,0,if(sum(k0,1,x0,if(x0%k0==0,1,0))==2,1,0))";
+const char* count="sum(k0,2,x0,if(sum(k1,1,k0,if(k0%k1==0,1,0))==2,1,0))";
+const char* nth="1+sum(k0,1,30,if(sum(k1,2,k0,if(sum(k2,1,k1,if(k1%k2==0,1,0))==2,1,0))<x0,1,0))";
+void mathematical(const std::filesystem::path& corpus){
+ const auto ref=referencePrimes();const auto historical=prime_example::reference();check(ref.size()==1200&&std::equal(ref.begin(),ref.end(),historical.begin()),"independent1200 prime historical cross-check");
+ std::ifstream file(corpus);std::size_t i=0,index;std::int64_t p;while(file>>index>>p){check(index==i+1&&i<ref.size()&&p==ref[i],"frozen prime corpus identity");++i;}check(file.eof()&&i==1200,"complete1200 reference records");
+ // Independent bounded sieve, not the expression evaluator or trial-division helper.
+ std::array<bool,257> composite{};composite[0]=composite[1]=true;for(std::size_t k=2;k<=256/k;++k)if(!composite[k])for(std::size_t m=k*k;m<257;m+=k)composite[m]=true;
+ auto d=parse(divisor),pr=parse(predicate),pc=parse(count),pn=parse(nth);std::uint64_t countVisits=0,countIterations=0;
+ for(std::int64_t n=-8;n<=256;++n){std::int64_t divisors=0;if(n>0)for(std::int64_t k=1;k<=n;++k)if(n%k==0)++divisors;auto a=d.evaluate(std::array{n},fixturePolicy());auto b=pr.evaluate(std::array{n},fixturePolicy());check(a.valid()&&a.value->integer()==divisors,"positive divisor/empty nonpositive domain");check(b.valid()&&b.value->integer()==(n>=2&&!composite[static_cast<std::size_t>(n)]?1:0),"guarded primality fixture");}
+ for(std::int64_t n=-4;n<=100;++n){std::int64_t expected=0;for(std::int64_t k=2;k<=n;++k)if(!composite[static_cast<std::size_t>(k)])++expected;auto a=pc.evaluate(std::array{n},fixturePolicy());check(a.valid()&&a.value->integer()==expected,"prime count independent sieve");countVisits+=a.nodeVisits;countIterations+=a.iterations;}
+ for(std::int64_t n=1;n<=10;++n){auto a=pn.evaluate(std::array{n},fixturePolicy());check(a.valid()&&a.value->integer()==ref[static_cast<std::size_t>(n-1)]&&a.iterations==5395,"bounded nth identity first10; exact iteration cost");check(parse(a.valid()?pn.toString():"").sameRepresentation(pn),"three binder canonical roundtrip");}
+ auto shortPolicy=fixturePolicy();shortPolicy.maxAggregateIterations=5394;check(pn.evaluate(std::array<std::int64_t,1>{10},shortPolicy).status==DiscreteEvaluationStatus::ResourceExhausted,"nth incomplete work not a valid approximation");
+ shortPolicy=fixturePolicy();shortPolicy.maxIterationDepth=2;check(pn.evaluate(std::array<std::int64_t,1>{1},shortPolicy).status==DiscreteEvaluationStatus::ResourceExhausted,"nested scope runtime depth");
+ int polls=0;auto cancelled=pn.evaluateWithCancellation(std::array<std::int64_t,1>{10},fixturePolicy(),[&]{return ++polls==100;});check(cancelled.status==DiscreteEvaluationStatus::Cancelled&&cancelled.iterations>0,"nested number theoretic cancellation");
+ check(parse("if(x0<2,0,1%(x0-2))").evaluate(std::array<std::int64_t,1>{-3}).valid(),"negative guarded branch remains lazy");check(!parse("1%(x0-2)").evaluate(std::array<std::int64_t,1>{2}).valid(),"zero modulo remains invalid");
+ check(distance(INT64_MIN,INT64_MAX)==UINT64_MAX&&distance(INT64_MAX,INT64_MIN)==UINT64_MAX,"full-width diagnostic distance");
+ auto m=assess(parse("-9223372036854775808"),std::vector<DiscreteRegressionRow>{{{0},INT64_MAX}});check(m.maximum==UINT64_MAX&&std::isfinite(m.squared),"full-width diagnostic accumulation independent of loss");
+ std::cout<<"references=1200 divisor/primality=-8..256 prime-count=-4..100 count-visits="<<countVisits<<" count-iterations="<<countIterations<<" nth-bound30 iterations-per-row=5395 first10=exact\n";
+}
+std::string state(const DiscreteEvolutionRun& run,const RandomContext& random){CheckpointWriter w;auto document=run.checkpoint();w.text(document.identity);w.text(document.payload);w.text(RunCheckpointAccess::random(random).engine);return w.data();}
+void continuation(const std::filesystem::path& directory,std::string_view task,unsigned workers){
+ auto p=problem(task);auto c=config(task,36);c.population=4;c.elites=1;c.maxGenerations=8;c.grammar.initialMaxDepth=2;c.grammar.mutationMaxDepth=2;c.grammar.operators={DiscreteKind::Add,DiscreteKind::Modulo,DiscreteKind::IfThenElse,DiscreteKind::Sum};
+ std::string expected;{RandomContext rng(19,ExecutionConfig{workers});DiscreteEvolutionRun run(p,c,rng);for(int n=0;n<8;++n)run.step();expected=state(run,rng);}
+ const auto path=directory/(std::string(task)+std::to_string(workers)+".gtkc");{RandomContext rng(19,ExecutionConfig{workers});DiscreteEvolutionRun run(p,c,rng);for(int n=0;n<3;++n)run.step();run.save(path);}
+ RandomContext rng(19,ExecutionConfig{workers});auto document=loadCheckpoint(path);auto restored=DiscreteEvolutionRun::restore(document,p,c,rng);for(int n=3;n<8;++n)restored->step();check(state(*restored,rng)==expected,"both task continuous versus3/destroy/load/8 all-state equivalence");
+ auto wrong=c;wrong.contextIdentity+=";different-task";RandomContext untouched(19,ExecutionConfig{workers});const auto before=untouched.engine();bool rejected=false;try{(void)DiscreteEvolutionRun::restore(document,p,wrong,untouched);}catch(const CheckpointError&){rejected=true;}check(rejected&&untouched.engine()==before&&untouched.evaluationAttempts()==0,"explicit task identity differs even if rows unchanged");
+ auto other=problem(task=="primality"?"nth-prime":"primality");rejected=false;try{(void)DiscreteEvolutionRun::restore(document,other,c,untouched);}catch(const CheckpointError&){rejected=true;}check(rejected,"cross dataset task resume rejected");
+ auto work=restored->work();auto engine=rng.engine();auto best=restored->population().bestSeen();(void)assess(best->expression(),p->rows());(void)formatDiscreteExpression(best->expression());check(restored->work()==work&&rng.engine()==engine,"reporting does not affect state");
+ std::cout<<task<<" workers="<<workers<<" full-state continuation exact; context rejection exact\n";
+}
+void overlap(){auto training=problem("primality");auto p=DiscreteRegressionProblem::create(1,training->rows(),fixtures(),fixturePolicy());auto expression=parse(predicate);std::barrier gate(4);ExecutionContext execution({4});execution.run(4,[&](std::size_t){gate.arrive_and_wait();auto objective=std::make_shared<DiscreteTrainingObjective>(p,1);DiscreteExpressionCandidate candidate(expression,p,objective);candidate.calculateFitness();check(candidate.fitness()==0&&objective->work().lossAttempts==1,"private preparation shared immutable predicate");CheckpointWriter writer;CandidateCheckpointCodec<DiscreteExpressionCandidate>::encode(writer,candidate);CheckpointReader reader(writer.data());auto restored=CandidateCheckpointCodec<DiscreteExpressionCandidate>::decode(reader,{p,objective});reader.finish();check(restored.text()==candidate.text(),"concurrent independent codec state");});check(execution.peakTasks()==4,"forced overlap");}
+std::string balanced(unsigned count){if(count==1)return "k0";return "("+balanced(count/2)+"+"+balanced(count-count/2)+")";}
+void benchmark(){auto p=problem("nth-prime");auto expression=parseDiscreteExpression("sum(k0,-2,x0,"+balanced(23)+")",1,p->limits());const auto begin=std::chrono::steady_clock::now();auto m=p->measure(expression,true);double elapsed=std::chrono::duration<double>(std::chrono::steady_clock::now()-begin).count();std::cout<<"{\"case\":\"48node-iteration-heavy-permitted-candidate\",\"rows\":"<<m.rowsAttempted<<",\"visits\":"<<m.nodeVisits<<",\"operations\":"<<m.operations<<",\"iterations\":"<<m.iterations<<",\"seconds\":"<<std::setprecision(17)<<elapsed<<",\"mathematically_valid\":"<<(m.loss.state()==FitnessState::Valid?"true":"false")<<"}\n";check(m.rowsAttempted==1000&&m.loss.state()==FitnessState::Valid,"engineering candidate full training pass");}
+}
+int main(int argc,char** argv){try{if(argc>1&&std::string_view(argv[1])=="--overlap"){overlap();return 0;}if(argc>1&&std::string_view(argv[1])=="--benchmark"){benchmark();return 0;}if(argc!=3)throw std::invalid_argument("fixture corpus and output required");mathematical(argv[1]);std::filesystem::create_directories(argv[2]);for(auto task:{"primality","nth-prime"})for(unsigned workers:{1,2,4})continuation(argv[2],task,workers);return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

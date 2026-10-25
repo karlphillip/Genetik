@@ -1,0 +1,106 @@
+{
+  "series": {
+    "training": [
+      {
+        "n": 0,
+        "target": 0
+      },
+      {
+        "n": 1,
+        "target": 1
+      },
+      {
+        "n": 2,
+        "target": 3
+      },
+      {
+        "n": 3,
+        "target": 6
+      },
+      {
+        "n": 4,
+        "target": 10
+      },
+      {
+        "n": 5,
+        "target": 15
+      },
+      {
+        "n": 6,
+        "target": 21
+      },
+      {
+        "n": 7,
+        "target": 28
+      },
+      {
+        "n": 8,
+        "target": 36
+      }
+    ],
+    "assessment": [
+      {
+        "n": 9,
+        "target": 45
+      },
+      {
+        "n": 10,
+        "target": 55
+      },
+      {
+        "n": 11,
+        "target": 66
+      },
+      {
+        "n": 12,
+        "target": 78
+      }
+    ]
+  },
+  "factorial": {
+    "training": [
+      {
+        "n": 0,
+        "target": 1
+      },
+      {
+        "n": 1,
+        "target": 1
+      },
+      {
+        "n": 2,
+        "target": 2
+      },
+      {
+        "n": 3,
+        "target": 6
+      },
+      {
+        "n": 4,
+        "target": 24
+      },
+      {
+        "n": 5,
+        "target": 120
+      },
+      {
+        "n": 6,
+        "target": 720
+      }
+    ],
+    "assessment": [
+      {
+        "n": 7,
+        "target": 5040
+      },
+      {
+        "n": 8,
+        "target": 40320
+      },
+      {
+        "n": 9,
+        "target": 362880
+      }
+    ]
+  }
+}

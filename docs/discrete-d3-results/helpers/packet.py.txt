@@ -1,0 +1,21 @@
+from pathlib import Path
+import json,gzip,shutil,hashlib,re
+r=Path.cwd();o=r/'out/runs/discrete-d3';p=r/'docs/discrete-d3-results';logs=r/'out/logs/discrete-d3'
+def gz(src,dst):dst.parent.mkdir(parents=True,exist_ok=True);dst.write_bytes(gzip.compress(src.read_bytes(),mtime=0))
+for src in sorted(logs.glob('*.log')):gz(src,p/'logs'/(src.name+'.gz'))
+for name in ['gates.json','gates-continuation.json','gates-final.json','qualification-scope.json','instrumentation.json','environment.json','preservation.json','preservation-final.json','feasibility-benchmark.json','campaign-results.json','selected-structure.json','io-failure-original.json','io-failure-repaired.json','qualification-pause.json','tsan-repetitions.json','manifest-audit.json','csv-whitespace-repair.json','asan-timeout-progress.json','asan-diagnostic.json','asan-diagnostic-pause.json','asan-progress-diagnostic-pause.json']:
+ shutil.copyfile(o/name,p/name)
+for src in o.glob('*-manifest.json'):
+ (p/src.name).write_text(json.dumps(json.loads(src.read_bytes()),indent=2)+'\n');gz(src,p/(src.name+'.original.gz'))
+for name in ['qualify.py','qualify_continuation.py','qualify_final.py','measure_sanitize.py','progress_diagnostic.py','progress-only.cpp','resume_qualification.py','continue_after_repair.py','analyze.py','report.py','preserve.py','packet.py','campaign.py','audit.cpp','audit.py','inspect.cpp']:
+ (p/'helpers').mkdir(exist_ok=True);shutil.copyfile(o/name,p/'helpers'/(name+'.txt'))
+for task in ['primality','nth-prime']:
+ for seed in [0,1,2,3,42]:
+  source=o/'campaign'/f'{task}-seed{seed}';destination=p/'runs'/source.name;destination.mkdir(parents=True,exist_ok=True)
+  for path in sorted(source.iterdir()):
+   if path.is_file():
+    if path.name=='audit.json':gz(path,destination/'audit.json.gz')
+    else:shutil.copyfile(path,destination/path.name)
+  for path in sorted((source/'checkpoints').glob('*')):
+   if path.is_file():gz(path,destination/'checkpoints'/(path.name+'.gz'))
+items=[hashlib.sha256(path.read_bytes()).hexdigest()+'  '+str(path.relative_to(p)) for path in sorted(p.rglob('*')) if path.is_file() and path.name!='SHA256SUMS'];(p/'SHA256SUMS').write_text('\n'.join(items)+'\n');print('selected files',len(items))

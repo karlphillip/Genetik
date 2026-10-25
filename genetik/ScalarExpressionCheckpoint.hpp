@@ -79,3 +79,13 @@ inline PreparationStatistics readPreparationStatistics(CheckpointReader& r){Prep
 }
 inline void writeVariationStatistics(CheckpointWriter& w,const VariationStatistics& s){for(auto n:{s.initializations,s.mutationProposals,s.crossoverProposals,s.structuralRejections,s.mutationFallbacks,s.crossoverFallbacks,s.mutationChanges,s.crossoverChanges})w.integer(n);}
 inline VariationStatistics readVariationStatistics(CheckpointReader& r){VariationStatistics s;s.initializations=r.integer();s.mutationProposals=r.integer();s.crossoverProposals=r.integer();s.structuralRejections=r.integer();s.mutationFallbacks=r.integer();s.crossoverFallbacks=r.integer();s.mutationChanges=r.integer();s.crossoverChanges=r.integer();return s;}
+
+// Reviewed forward read from published0.3.0; strict compiler/runtime/FP suffix and
+// unchanged codec payload are still required. Generic loading stays exact-version.
+inline std::optional<CheckpointReadCompatibility> scalarCheckpointCompatibility03(){
+    if(std::string_view(genetikVersion)=="0.4.0")return CheckpointReadCompatibility{"0.3.0",std::string(CandidateCheckpointCodec<ExpressionCandidate>::identifier)};
+    return {};
+}
+inline CheckpointDocument loadScalarCheckpoint(const std::filesystem::path& path,CheckpointLimits limits={}){
+    return loadCheckpoint(path,limits,scalarCheckpointCompatibility03());
+}

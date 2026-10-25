@@ -11,6 +11,12 @@ protected:
     double mutatedGene(unsigned int,std::mt19937& rng) const override{return std::uniform_real_distribution<double>(-1,1)(rng);}
 };
 int main() {
+    {auto e=parseDiscreteExpression("sum(k0,1,x0,k0)",1);auto value=e.evaluate(std::array<std::int64_t,1>{5});if(!value.valid()||value.value->integer()!=15)return 1;}
+    { auto e=parseDiscreteExpression("if(x0 == 0, 0, 10 % x0)",1);
+      if(!e.evaluate(std::array<std::int64_t,1>{0}).valid() || parseDiscreteExpression(e.toString(),1).toString()!=e.toString())return 1;
+      auto p=DiscreteRegressionProblem::create(1,{{{0},0},{{2},0}});
+      if(p->measure(e).loss!=Fitness::valid(0))return 1;
+    }
     IntegralExpression integral(1,parseExpression("0",1),parseExpression("x0",1),parseExpression("2*x1+1",2),1);
     auto estimate=integral.evaluate(std::array{2.});
     if(!estimate.accepted() || std::abs(*estimate.estimate-6)>1e-10)return 1;

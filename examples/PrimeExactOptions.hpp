@@ -91,7 +91,7 @@ inline int exactMain(int argc,char** argv) {
     ExactRunOptions io;io.pretty=options.reportFormat=="pretty";io.formulaPrecision=options.formulaPrecision;
     if(!options.resumePath.empty()){
         if(std::filesystem::is_directory(options.resumePath))options.resumePath/="latest.gtkc";
-        io.resume=loadCheckpoint(options.resumePath);const auto saved=decodeExactRun(*io.resume);
+        io.resume=loadScalarCheckpoint(options.resumePath);const auto saved=decodeExactRun(*io.resume);
         if(!options.specified.contains("--seed"))options.seed=saved.seed;
         if(!options.specified.contains("--threads"))options.execution=ExecutionConfig{saved.threads};
         if(!options.specified.contains("--loss-budget"))options.budget=saved.allowance;

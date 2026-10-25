@@ -1,0 +1,92 @@
+{
+  "schema": "genetik.discrete-iteration-study/1",
+  "cases": [
+    "series",
+    "factorial"
+  ],
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    42
+  ],
+  "threads": 1,
+  "sequential": true,
+  "population": 64,
+  "elites": 2,
+  "crossover": 0.9,
+  "mutation": 0.35,
+  "max_loss_attempts": 10048,
+  "max_generations": 200,
+  "operators": [
+    "Add",
+    "Subtract",
+    "Multiply",
+    "Sum",
+    "Product"
+  ],
+  "constants": [
+    0,
+    1,
+    2
+  ],
+  "bool_constants": [],
+  "fit": false,
+  "nodes": 25,
+  "depth": 6,
+  "initial_depth": 4,
+  "mutation_depth": 3,
+  "proposal_limit": 8,
+  "grammar_iteration_depth": 2,
+  "terminal_bounds": true,
+  "evaluation": {
+    "node_visits": 200000,
+    "operations": 200000,
+    "workspace": 1048576,
+    "iterations_per_op": 64,
+    "aggregate_iterations": 1024,
+    "depth": 2
+  },
+  "training": {
+    "series": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "factorial": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "assessment": {
+    "series": [
+      9,
+      10,
+      11,
+      12
+    ],
+    "factorial": [
+      7,
+      8,
+      9
+    ]
+  },
+  "stopping": "first zero training mismatch count, otherwise budget/generation/failure; training-only archive selection",
+  "checkpoint_every": 10,
+  "checkpoint_keep": 3,
+  "initial_successes_retained": true,
+  "no_target_injection": true,
+  "executable_sha256": "605291f2ce8dbc740184bec0319c645b98b37899c008d2127350593797c2b662"
+}

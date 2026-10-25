@@ -1,0 +1,12 @@
+{
+  "selections": {
+    "genetik_discrete_iteration_overlap": 3,
+    "genetik_discrete_overlap": 3,
+    "genetik_concurrency_contracts": 3,
+    "genetik_oop_parallel": 3
+  },
+  "successful_executions": 12,
+  "complete_contract_executions": 1,
+  "full_ci_manifest_executed": false,
+  "tsan_options": "halt_on_error=1"
+}

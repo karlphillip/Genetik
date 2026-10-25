@@ -1,0 +1,22 @@
+{
+  "pause_seconds": 82.03249451098964,
+  "reason": "unchanged run paused for progress-only diagnostic build/sample, then resumed",
+  "diagnostic_command": [
+    "/usr/bin/c++",
+    "-I/home/karlphillip/workspaces/primeResearcher/Genetik",
+    "-I/home/karlphillip/workspaces/primeResearcher/Genetik/genetik",
+    "-g",
+    "-std=gnu++20",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Werror",
+    "-fsanitize=address,undefined",
+    "-fno-omit-frame-pointer",
+    "-fno-fast-math",
+    "-ffp-contract=off",
+    "-o",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/discrete-d3/progress-only",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/discrete-d3/progress-only.cpp"
+  ]
+}

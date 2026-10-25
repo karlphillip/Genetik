@@ -1,0 +1,3 @@
+#include <DiscreteExpressionParsing.hpp>
+#include <iostream>
+int main(int argc,char** argv){try{if(argc!=2)return 2;auto e=parseDiscreteExpression(argv[1],1);std::size_t references=0,loops=0;for(auto n:e.nodes()){references+=n.kind()==DiscreteKind::Iterator;loops+=discreteIteration(n.kind());}std::cout<<"{\"nodes\":"<<e.nodeCount()<<",\"depth\":"<<e.depth()<<",\"iterator_references\":"<<references<<",\"iteration_constructs\":"<<loops<<"}\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

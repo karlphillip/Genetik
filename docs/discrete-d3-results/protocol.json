@@ -1,0 +1,97 @@
+{
+  "schema": "genetik.discrete-prime-discovery/1",
+  "source_sha": "f21920fa982449378b36adf9b9e22eacdae6335a",
+  "binary_sha256": "f7a2ca53c570b0f167a154c37ce11c221a5ad97c1a69e1b14188f24da85ffbf9",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    42
+  ],
+  "tasks": [
+    "primality",
+    "nth-prime"
+  ],
+  "workers": 4,
+  "sequential": true,
+  "population": 32,
+  "elites": 2,
+  "loss_allowances": {
+    "primality": 20000,
+    "nth-prime": 5000
+  },
+  "generation_limit": 1000,
+  "crossover": 0.9,
+  "mutation": 0.35,
+  "constant_fitting": false,
+  "constants": [
+    -2,
+    -1,
+    0,
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "operators": [
+    "Add",
+    "Subtract",
+    "Multiply",
+    "Negate",
+    "Modulo",
+    "Equal",
+    "NotEqual",
+    "LessThan",
+    "LessEqual",
+    "GreaterThan",
+    "GreaterEqual",
+    "IfThenElse",
+    "Sum",
+    "Product"
+  ],
+  "boolean_constants": [
+    false,
+    true
+  ],
+  "modulo": "general positive divisor checked at evaluation; no protected arithmetic",
+  "grammar_iteration_nesting": 1,
+  "terminal_bounds": true,
+  "initial_depth": 4,
+  "mutation_depth": 3,
+  "proposal_limit": 8,
+  "node_limit": 49,
+  "depth_limit": 7,
+  "per_observation": {
+    "visits": 100000,
+    "operations": 100000,
+    "workspace_bytes": 1048576,
+    "iterations_per_operation": 2048,
+    "aggregate_iterations": 32768,
+    "nesting": 2
+  },
+  "per_objective": {
+    "visits": 50000000,
+    "operations": 50000000,
+    "iterations": 20000000
+  },
+  "selection": "training exact mismatch count; ties nodes/depth/canonical; archive frozen before assessment",
+  "stopping": "exact training fit OR allowance insufficient for complete32-candidate generation OR1000 generation attempts OR cancellation/failure; no retries",
+  "assessment": "primality64..255 and256..1024; nth1001..1200; all datasets frozen before search",
+  "reference_tsv_sha256": "203afe12c00daab34efc15b8e8b546d392a3ace93c16b9543a1594ff1c127658",
+  "data_json_sha256": "d7cb8ed6dc4e3458737af1d39850776698808757fef9257793b91c9eb06d8b82",
+  "report_seconds": 30,
+  "checkpoint_seconds": 30,
+  "checkpoint_keep": 3,
+  "runtime": "recorded per run in effective.json",
+  "feasibility": {
+    "case": "48node-iteration-heavy-permitted-candidate",
+    "rows": 1000,
+    "visits": 22660500,
+    "operations": 12084000,
+    "iterations": 503500,
+    "seconds": 0.687932629,
+    "mathematically_valid": true
+  }
+}

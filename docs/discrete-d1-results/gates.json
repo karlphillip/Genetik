@@ -1,0 +1,76 @@
+[
+  {
+    "name": "release-final-build",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "--build",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-release",
+      "-j2"
+    ],
+    "exit": 0,
+    "seconds": 15.28054882097058,
+    "source_sha": "bab46ac29305486a14e6099b78e1cad393fcddff"
+  },
+  {
+    "name": "release-full-tests",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-release",
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest",
+      "--output-on-failure"
+    ],
+    "exit": 0,
+    "seconds": 368.4746903079795,
+    "source_sha": "bab46ac29305486a14e6099b78e1cad393fcddff"
+  },
+  {
+    "name": "debug-final-configure",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-S",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik",
+      "-B",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/checkpoint-preflight-debug",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DGENETIK_WARNINGS_AS_ERRORS=ON",
+      "-DGENETIK_BUILD_TESTS=ON",
+      "-DGENETIK_BUILD_EXAMPLES=ON",
+      "-DBUILD_TESTING=ON",
+      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+      "-DGENETIK_RECORDED_REFERENCE=ON",
+      "-DGENETIK_SANITIZERS=OFF",
+      "-DGENETIK_THREAD_SANITIZER=OFF"
+    ],
+    "exit": 0,
+    "seconds": 0.9982099179178476,
+    "source_sha": "bab46ac29305486a14e6099b78e1cad393fcddff"
+  },
+  {
+    "name": "debug-final-build",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "--build",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/checkpoint-preflight-debug",
+      "-j2"
+    ],
+    "exit": 0,
+    "seconds": 184.6132162680151,
+    "source_sha": "bab46ac29305486a14e6099b78e1cad393fcddff"
+  },
+  {
+    "name": "debug-full-tests",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/checkpoint-preflight-debug",
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest",
+      "--output-on-failure"
+    ],
+    "exit": 8,
+    "seconds": 453.275237009977,
+    "source_sha": "bab46ac29305486a14e6099b78e1cad393fcddff"
+  }
+]

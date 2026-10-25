@@ -19,6 +19,8 @@
 #endif
 
 struct CheckpointError:std::runtime_error {using std::runtime_error::runtime_error;};
+// Explicit opt-in bridge: caller certifies one producer version/codec pair.
+struct CheckpointReadCompatibility {std::string producerVersion,codec;};
 struct CheckpointLimits {std::size_t maxBytes=64*1024*1024,maxStringBytes=1024*1024,maxCandidates=100000;};
 class CheckpointWriter {
     std::string data_;std::size_t maximum_;
@@ -86,6 +88,8 @@ inline std::string checkpointRuntime() {
 struct CheckpointDocument {
     std::string codec,identity,payload,runtime=checkpointRuntime();
     std::optional<std::uint64_t> generation{};
+    // Import provenance only; new saves identify the current writer, format remains1.
+    std::string producerVersion=genetikVersion;
 };
 inline std::string encodeCheckpoint(const CheckpointDocument& document,CheckpointLimits limits={}) {
     if(document.runtime.size()>limits.maxStringBytes||document.codec.size()>limits.maxStringBytes||document.identity.size()>limits.maxStringBytes)throw CheckpointError("checkpoint metadata string limit");
@@ -94,7 +98,8 @@ inline std::string encodeCheckpoint(const CheckpointDocument& document,Checkpoin
     if(header.size()>limits.maxBytes||payload.size()>limits.maxBytes-header.size())throw CheckpointError("checkpoint source byte limit");
     return header+payload;
 }
-inline CheckpointDocument decodeCheckpoint(std::string_view bytes,CheckpointLimits limits={}) {
+inline CheckpointDocument decodeCheckpoint(std::string_view bytes,CheckpointLimits limits={},std::optional<CheckpointReadCompatibility> compatibility={}) {
+    if(compatibility&&(compatibility->producerVersion.empty()||compatibility->producerVersion.size()>32||compatibility->codec.empty()||compatibility->codec.size()>256))throw std::invalid_argument("invalid checkpoint compatibility policy");
     if(bytes.size()>limits.maxBytes)throw CheckpointError("checkpoint source byte limit");
     const auto a=bytes.find('\n'),b=a==bytes.npos?a:bytes.find('\n',a+1),c=b==bytes.npos?b:bytes.find('\n',b+1);
     if(a!=20 || b==bytes.npos || c==bytes.npos || c>128 || bytes.substr(0,a)!="GENETIK-CHECKPOINT 1")throw CheckpointError("unsupported or malformed checkpoint format");
@@ -102,17 +107,24 @@ inline CheckpointDocument decodeCheckpoint(std::string_view bytes,CheckpointLimi
     if(h.ec!=std::errc{}||h.ptr!=bytes.data()+b||n.ec!=std::errc{}||n.ptr!=bytes.data()+c||size>limits.maxBytes||size!=bytes.size()-c-1)throw CheckpointError("checkpoint length/header mismatch");
     const auto payload=bytes.substr(c+1);if(checkpointChecksum(payload)!=checksum)throw CheckpointError("checkpoint checksum mismatch");
     CheckpointReader r(payload,limits);
-    if(r.text()!=std::string("Genetik-")+genetikVersion+"/run-state-1")throw CheckpointError("incompatible Genetik checkpoint state version");
+    const auto current=std::string("Genetik-")+genetikVersion+"/run-state-1";
+    const auto producer=r.text();const bool imported=producer!=current;
+    if(imported&&(!compatibility||producer!="Genetik-"+compatibility->producerVersion+"/run-state-1"))throw CheckpointError("incompatible Genetik checkpoint state version");
     CheckpointDocument d;d.runtime=r.text();d.codec=r.text();d.identity=r.text();if(r.count(1))d.generation=r.integer();d.payload=r.text(limits.maxBytes);r.finish();
-    if(d.runtime!=checkpointRuntime())throw CheckpointError("checkpoint runtime/FP environment differs");
+    const auto runtime=checkpointRuntime();
+    if(imported){
+        const auto prefix=producer+";";
+        if(d.codec!=compatibility->codec||!d.runtime.starts_with(prefix)||d.runtime.substr(prefix.size())!=runtime.substr(current.size()+1))throw CheckpointError("incompatible checkpoint codec/runtime import");
+        d.producerVersion=compatibility->producerVersion;d.runtime=runtime;
+    }else if(d.runtime!=runtime)throw CheckpointError("checkpoint runtime/FP environment differs");
     return d;
 }
-inline CheckpointDocument loadCheckpoint(const std::filesystem::path& path,CheckpointLimits limits={}) {
+inline CheckpointDocument loadCheckpoint(const std::filesystem::path& path,CheckpointLimits limits={},std::optional<CheckpointReadCompatibility> compatibility={}) {
     std::ifstream in(path,std::ios::binary);if(!in)throw CheckpointError("cannot open checkpoint: "+path.string());
     std::string bytes;char block[8192];
     while(in){in.read(block,sizeof(block));const auto n=static_cast<std::size_t>(in.gcount());if(bytes.size()>limits.maxBytes || n>limits.maxBytes-bytes.size())throw CheckpointError("checkpoint source byte limit");bytes.append(block,n);}
     if(!in.eof())throw CheckpointError("checkpoint read failure");
-    return decodeCheckpoint(bytes,limits);
+    return decodeCheckpoint(bytes,limits,std::move(compatibility));
 }
 namespace genetik_detail {
 // Sync directory entries, including the parent entry of each newly created

@@ -1,0 +1,8 @@
+{
+  "runs": 10,
+  "frozen_result_records_equal": true,
+  "selected_records_agree": true,
+  "independent_assessment_vectors_equal": true,
+  "total_loss_attempts": 5696,
+  "campaign_executable_sha256_unchanged": true
+}

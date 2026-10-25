@@ -1,0 +1,6 @@
+primality generation=0 attempts=32/20000 matches=44/62 loss=18 nodes=1 depth=1 seconds=0.0126994 visits=10580 iterations=2676 stop=running
+0
+0
+primality generation=624 attempts=20000/20000 matches=54/62 loss=8 nodes=18 depth=6 seconds=1.17401 visits=22430702 iterations=5824652 stop=loss_budget
+(if((2 != (product(k1, 4, 8, 8) % x0)), (product(k0, 4, 8, 8) % x0), x0) % 2)
+((if (2 ≠ (Π[k1=4..8] 8 mod x0)) then (Π[k0=4..8] 8 mod x0) else x0) mod 2)

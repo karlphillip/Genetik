@@ -1,0 +1,18 @@
+from pathlib import Path
+import subprocess,json,time,hashlib,datetime,shutil,math
+r=Path.cwd();o=r/'out/runs/discrete-d2';protocol=json.loads((o/'protocol.json').read_text());source=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip();binary=r/'out/build/iteration-release/genetik_discrete_iteration_campaign'
+assert hashlib.sha256(binary.read_bytes()).hexdigest()==protocol['executable_sha256']
+packet=r/'docs/discrete-d2-results';packet.mkdir(exist_ok=True);shutil.copy2(o/'protocol.json',packet/'protocol.json');(packet/'source.json').write_text(json.dumps(dict(commit=source,binary=str(binary),sha256=protocol['executable_sha256'],compiler=subprocess.check_output(['g++','--version'],text=True)),indent=2)+'\n')
+data={case:dict(training=[dict(n=n,target=n*(n+1)//2 if case=='series' else math.factorial(n)) for n in protocol['training'][case]],assessment=[dict(n=n,target=n*(n+1)//2 if case=='series' else math.factorial(n)) for n in protocol['assessment'][case]]) for case in protocol['cases']}
+(packet/'data.json').write_text(json.dumps(data,indent=2)+'\n')
+subprocess.run(['git','add',str(packet/'protocol.json'),str(packet/'source.json'),str(packet/'data.json')],check=True);subprocess.run(['git','commit','-m','Freeze bounded series and factorial discovery protocol before execution'],check=True)
+results=[]
+for case in protocol['cases']:
+ for seed in protocol['seeds']:
+  output=o/'campaign'/f'{case}-seed{seed}';output.mkdir(parents=True,exist_ok=False);command=[str(binary),'--case',case,'--seed',str(seed),'--threads','1','--output',str(output)];(output/'command.json').write_text(json.dumps(command,indent=2)+'\n');started=time.monotonic();print('START',case,seed,flush=True)
+  with (output/'stdout.log').open('w') as out,(output/'stderr.log').open('w') as err:run=subprocess.run(command,stdout=out,stderr=err)
+  entry=dict(case=case,seed=seed,exit=run.returncode,seconds=time.monotonic()-started)
+  if run.returncode==0:
+   result=json.loads((output/'result.json').read_text());selected=json.loads((output/'selected.json').read_text());assert result['canonical']==selected['canonical'] and result['final_loss']==selected['loss'];assert result['loss_attempts']<=protocol['max_loss_attempts'] and result['generation']<=protocol['max_generations'];entry['result']=result;entry['checkpoint_sha256']=hashlib.sha256((output/'checkpoints/latest.gtkc').read_bytes()).hexdigest()
+  results.append(entry);(o/'campaign-results.json').write_text(json.dumps(results,indent=2,ensure_ascii=False)+'\n');print('DONE',case,seed,'status',run.returncode,flush=True)
+print('ALL TEN FROZEN RUNS COMPLETE; no configuration tuning',flush=True)

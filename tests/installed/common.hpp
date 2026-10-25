@@ -18,3 +18,10 @@ bool typed_check();
 #include <RunCheckpoint.hpp>
 #include <ScalarExpressionCheckpoint.hpp>
 #include <ExpressionFormatting.hpp>
+
+#include <DiscreteExpressionParsing.hpp>
+#include <DiscreteExpressionFormatting.hpp>
+#include <DiscreteSymbolicRegression.hpp>
+#include <DiscreteExpressionCheckpoint.hpp>
+
+#include <DiscreteRunCheckpoint.hpp>

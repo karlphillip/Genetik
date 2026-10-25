@@ -1,0 +1,7 @@
+{
+  "final_executable_configuration_source": "b994f80dc2a8ad2924bfb7d2254b072bb740525c",
+  "initial_driver_launch": "bab46ac29305486a14e6099b78e1cad393fcddff",
+  "original_record_warning": "gates.json source_sha is driver launch revision; original Release/Debug suites began while review continued. Do not infer final-source per-binary provenance from that field.",
+  "final_driver": "gates-continuation.json records the frozen final source for every command",
+  "final_documentation": "Later report/evidence commits have no executable/configuration changes"
+}

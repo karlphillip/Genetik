@@ -1,0 +1,6 @@
+primality generation=0 attempts=32/20000 matches=44/62 loss=18 nodes=4 depth=2 seconds=0.0141903 visits=19691 iterations=7316 stop=running
+sum(k0, 8, -1, 8)
+Σ[k0=8..-1] 8
+primality generation=624 attempts=20000/20000 matches=48/62 loss=14 nodes=8 depth=4 seconds=0.816942 visits=12419278 iterations=1439599 stop=loss_budget
+(if((4 <= x0), x0, -1) % 2)
+((if (4 ≤ x0) then x0 else -1) mod 2)

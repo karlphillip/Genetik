@@ -1,0 +1,487 @@
+{
+  "backtraceGraph": {
+    "commands": [
+      "add_test"
+    ],
+    "files": [
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/CMakeLists.txt"
+    ],
+    "nodes": [
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 141,
+        "parent": 0
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 143,
+        "parent": 2
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 158,
+        "parent": 4
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 172,
+        "parent": 6
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 187,
+        "parent": 8
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 196,
+        "parent": 10
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 211,
+        "parent": 12
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 226,
+        "parent": 14
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 236,
+        "parent": 16
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 253,
+        "parent": 18
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 267,
+        "parent": 20
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 277,
+        "parent": 22
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 300,
+        "parent": 24
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 309,
+        "parent": 26
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 321,
+        "parent": 28
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 333,
+        "parent": 30
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 339,
+        "parent": 32
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 349,
+        "parent": 34
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 365,
+        "parent": 36
+      }
+    ]
+  },
+  "kind": "ctestInfo",
+  "tests": [
+    {
+      "backtrace": 1,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests/genetik_concurrency_tests"
+      ],
+      "name": "genetik_concurrency_contracts",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 90.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 3,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests/genetik_oop_consumer",
+        "--threads",
+        "3"
+      ],
+      "name": "genetik_oop_parallel",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 30.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 5,
+      "name": "genetik_typed_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 60.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 7,
+      "name": "genetik_typed_preparation_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 90.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 9,
+      "name": "genetik_scientific_contracts",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 11,
+      "name": "genetik_parsing_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 60.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 13,
+      "name": "genetik_template_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 90.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 15,
+      "name": "genetik_derivative_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 90.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 17,
+      "name": "genetik_derivative_regression_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 90.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 19,
+      "name": "genetik_integral_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 90.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 21,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests/genetik_prime_exact_tests",
+        "--overlap",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests/prime-diversity-overlap"
+      ],
+      "name": "genetik_prime_exact_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 90.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 23,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests/genetik_checkpoint_tests",
+        "overlap",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests/checkpoint-overlap/checkpoint-fixture"
+      ],
+      "name": "genetik_checkpoint_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 25,
+      "name": "genetik_prime_refinement_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 400.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 27,
+      "name": "genetik_fitter_evolution_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 400.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 29,
+      "name": "genetik_fit_budget_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 400.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 31,
+      "name": "genetik_local_variation_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 400.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 33,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests/genetik_discrete_tests",
+        "--overlap"
+      ],
+      "name": "genetik_discrete_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 120.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 35,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests/genetik_discrete_iteration_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests/iteration-overlap",
+        "--overlap"
+      ],
+      "name": "genetik_discrete_iteration_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 37,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests/genetik_discrete_prime_tests",
+        "--overlap"
+      ],
+      "name": "genetik_discrete_prime_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan/tests"
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 1,
+    "minor": 0
+  }
+}

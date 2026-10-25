@@ -1,0 +1,12 @@
+from pathlib import Path
+import hashlib,json,subprocess
+r=Path.cwd();o=r/'out/runs/discrete-d2';old=json.loads((o/'preservation.json').read_text());sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert subprocess.check_output(['git','rev-parse','main'],text=True).strip()==old['main']
+assert subprocess.check_output(['git','show-ref','--tags'],text=True)==old['tags']
+assert subprocess.check_output(['git','rev-parse','feature/discrete-expressions'],text=True).strip()==old['base']
+files=json.loads((r/'docs/qualification-results/historical-artifact-sha256.json').read_text());assert len(files)==127
+for p,h in files.items():assert sha(r/p)==h,p
+for p,h in old['assets'].items():assert sha(r.parent/'archive/genetik/published'/p)==h,p
+for p in old['previous_packets']:assert not subprocess.check_output(['git','diff',old['base'],'--','docs/'+p]),p
+runs=json.loads((o/'campaign-results.json').read_text());result=dict(frozen_files_verified=len(files),archived_published_files_verified=len(old['assets']),previous_packets_unchanged=old['previous_packets'],main_unchanged=old['main'],tags_unchanged=old['tags'],d1_branch_unchanged=old['base'],remote_writes=False)
+(o/'preservation-final.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))

@@ -1,0 +1,11 @@
+#include <DiscreteRunCheckpoint.hpp>
+#include <iostream>
+std::int64_t target(std::string_view kind,std::int64_t n){if(kind=="series")return n*(n+1)/2;std::int64_t value=1;for(std::int64_t k=1;k<=n;++k)value*=k;return value;}
+int main(int argc,char** argv){try{if(argc!=2)return 2;std::size_t total=0,rowsChecked=0;
+for(std::string kind:{"series","factorial"})for(unsigned seed:{0,1,2,3,42}){
+ DiscreteExpressionLimits limits;limits.maxNodes=25;limits.maxDepth=6;limits.maxConstants=25;limits.maxIterationDepth=2;DiscreteEvaluationLimits evaluation{200000,200000,1048576,64,1024,2};std::vector<DiscreteRegressionRow> rows;for(std::int64_t n=0;n<=(kind=="series"?8:6);++n)rows.push_back({{n},target(kind,n)});auto p=DiscreteRegressionProblem::create(1,rows,limits,evaluation);
+ DiscreteSearchConfig c;c.population=64;c.maxGenerations=200;c.maxLossAttempts=10048;c.grammar.operators={DiscreteKind::Add,DiscreteKind::Subtract,DiscreteKind::Multiply,DiscreteKind::Sum,DiscreteKind::Product};c.grammar.constants={0,1,2};c.grammar.booleanConstants.clear();c.grammar.iterationBoundsAreTerminals=true;c.grammar.maxIterationNesting=2;RandomContext random(seed);auto run=DiscreteEvolutionRun::restore(loadCheckpoint(std::filesystem::path(argv[1])/(kind+"-seed"+std::to_string(seed))/"checkpoints/latest.gtkc"),p,c,random);
+ const auto work=run->work();const auto rng=random.engine();const auto snapshot=RunCheckpointAccess::population(run->population());std::size_t verified=0;for(const auto& member:snapshot.members){auto fresh=p->measure(member.expression());if(fresh.loss!=member.evaluation())throw std::runtime_error("cached population fitness differs");rowsChecked+=fresh.rowsAttempted;++verified;}auto best=p->measure(snapshot.best.expression());rowsChecked+=best.rowsAttempted;if(best.loss!=snapshot.best.evaluation()||best.loss!=Fitness::valid(0)||run->work()!=work||random.engine()!=rng)throw std::runtime_error("archive or no-work/RNG contract differs");++verified;total+=verified;
+ std::cout<<kind<<" seed="<<seed<<" cached_fitness_verified="<<verified<<" generation="<<snapshot.generation<<" attempts="<<work.lossAttempts<<'\n';}
+ std::cout<<"total="<<total<<" diagnostic_rows="<<rowsChecked<<" training_attempts_added=0\n";return 0;
+}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

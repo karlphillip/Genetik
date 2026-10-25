@@ -1,0 +1,2 @@
+series seed=3 loss=0 generation=7 attempts=512
+sum(k0, 0, x0, k0)

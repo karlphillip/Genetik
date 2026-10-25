@@ -1,0 +1,6 @@
+{
+  "commit": "0c55ba603fc949b2ee8e10a9e1ebad6c2b4733fc",
+  "binary": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/iteration-release/genetik_discrete_iteration_campaign",
+  "sha256": "605291f2ce8dbc740184bec0319c645b98b37899c008d2127350593797c2b662",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
+}

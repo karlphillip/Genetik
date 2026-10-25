@@ -1,0 +1,6 @@
+{
+  "driver": 1182217,
+  "children": "1184013 /home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -E chdir /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-release /home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest --output-on-failure\n",
+  "reason": "complete initial compile, then rebuild corrected metadata-write app before any full suite begins",
+  "observed_phase": "The initial build had already completed and the first Release CTest suite had begun; its child continues while driver is paused. Preserve that suite before corrected app rebuild and a new full Release run."
+}

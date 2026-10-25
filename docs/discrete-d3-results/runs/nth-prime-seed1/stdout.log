@@ -1,0 +1,6 @@
+nth-prime generation=0 attempts=32/5000 matches=1/1000 loss=999 nodes=1 depth=1 seconds=0.0836999 visits=4192406 iterations=1038105 stop=running
+2
+2
+nth-prime generation=155 attempts=4992/5000 matches=20/1000 loss=980 nodes=36 depth=7 seconds=6.5706 visits=531685823 iterations=402883563 stop=loss_budget
+((((x0 + neg(sum(k1, 0, 2, 16))) + x0) + -2) + ((-1 - (-2 + x0)) + (((-2 + x0) + ((-2 + x0) + -2)) + ((-2 + sum(k0, 8, x0, 2)) + x0))))
+((((x0 + −(Σ[k1=0..2] 16)) + x0) + -2) + ((-1 - (-2 + x0)) + (((-2 + x0) + ((-2 + x0) + -2)) + ((-2 + Σ[k0=8..x0] 2) + x0))))

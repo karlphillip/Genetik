@@ -1,0 +1,82 @@
+[
+  {
+    "nodes": 8,
+    "depth": 4,
+    "iterator_references": 0,
+    "iteration_constructs": 0,
+    "task": "primality",
+    "seed": 0
+  },
+  {
+    "nodes": 9,
+    "depth": 4,
+    "iterator_references": 0,
+    "iteration_constructs": 0,
+    "task": "primality",
+    "seed": 1
+  },
+  {
+    "nodes": 18,
+    "depth": 6,
+    "iterator_references": 0,
+    "iteration_constructs": 2,
+    "task": "primality",
+    "seed": 2
+  },
+  {
+    "nodes": 8,
+    "depth": 4,
+    "iterator_references": 0,
+    "iteration_constructs": 0,
+    "task": "primality",
+    "seed": 3
+  },
+  {
+    "nodes": 6,
+    "depth": 3,
+    "iterator_references": 0,
+    "iteration_constructs": 1,
+    "task": "primality",
+    "seed": 42
+  },
+  {
+    "nodes": 10,
+    "depth": 5,
+    "iterator_references": 0,
+    "iteration_constructs": 1,
+    "task": "nth-prime",
+    "seed": 0
+  },
+  {
+    "nodes": 36,
+    "depth": 7,
+    "iterator_references": 0,
+    "iteration_constructs": 2,
+    "task": "nth-prime",
+    "seed": 1
+  },
+  {
+    "nodes": 13,
+    "depth": 6,
+    "iterator_references": 0,
+    "iteration_constructs": 0,
+    "task": "nth-prime",
+    "seed": 2
+  },
+  {
+    "nodes": 6,
+    "depth": 3,
+    "iterator_references": 0,
+    "iteration_constructs": 1,
+    "task": "nth-prime",
+    "seed": 3
+  },
+  {
+    "nodes": 12,
+    "depth": 6,
+    "iterator_references": 0,
+    "iteration_constructs": 1,
+    "task": "nth-prime",
+    "seed": 42
+  }
+]

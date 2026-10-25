@@ -1,0 +1,8 @@
+from pathlib import Path
+import subprocess,json
+r=Path.cwd();o=r/'out/runs/discrete-d3';runs=json.loads((o/'campaign-results.json').read_text())
+for run in runs:
+ folder=o/'campaign'/f"{run['task']}-seed{run['seed']}"
+ with (folder/'audit.json').open('w') as f:subprocess.run([str(o/'audit'),run['task'],str(run['seed']),str(folder/'checkpoints/latest.gtkc')],stdout=f,check=True)
+ a=json.loads((folder/'audit.json').read_text());assert a['selected']==run['result']['canonical'] and a['state_unchanged']
+print('all10 complete population/archive checkpoint audits and exact prediction vectors verified')

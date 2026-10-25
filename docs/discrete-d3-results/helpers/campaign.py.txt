@@ -1,0 +1,13 @@
+from pathlib import Path
+import hashlib,json,subprocess,time
+r=Path.cwd();o=r/'out/runs/discrete-d3';p=r/'docs/discrete-d3-results';protocol=json.loads((p/'protocol.json').read_text());binary=r/'out/build/discrete-d3-release/genetik_discrete_prime_search';assert hashlib.sha256(binary.read_bytes()).hexdigest()==protocol['binary_sha256'];assert subprocess.check_output(['git','show','HEAD:docs/discrete-d3-results/protocol.json'])==(p/'protocol.json').read_bytes()
+runs=[]
+for task in protocol['tasks']:
+ for seed in protocol['seeds']:
+  folder=o/'campaign'/f'{task}-seed{seed}';folder.mkdir(parents=True,exist_ok=False)
+  command=[str(binary),'--task',task,'--seed',str(seed),'--threads','4','--loss-budget',str(protocol['loss_allowances'][task]),'--generation-limit','1000','--report-seconds','30','--checkpoint-seconds','30','--checkpoint',str(folder/'checkpoints'),'--output',str(folder)]
+  (folder/'command.json').write_text(json.dumps(command,indent=2)+'\n');print('START',task,seed,flush=True);start=time.monotonic()
+  with (folder/'stdout.log').open('w') as stdout,(folder/'stderr.log').open('w') as stderr:result=subprocess.run(command,stdout=stdout,stderr=stderr)
+  record=dict(task=task,seed=seed,exit=result.returncode,wall_seconds=time.monotonic()-start,source_sha=protocol['source_sha']);record['result']=json.loads((folder/'result.json').read_text()) if (folder/'result.json').exists() else None
+  runs.append(record);(o/'campaign-results.json').write_text(json.dumps(runs,indent=2)+'\n');print('DONE',task,seed,'exit',result.returncode,'seconds',record['wall_seconds'],flush=True)
+print('ALL TEN RUNS COMPLETE',flush=True)

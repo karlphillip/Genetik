@@ -1,0 +1,18 @@
+{
+  "command": [
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-release/genetik_discrete_prime_search",
+    "--task",
+    "primality",
+    "--loss-budget",
+    "32",
+    "--generation-limit",
+    "0",
+    "--output",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/discrete-d3/io-failure-repaired"
+  ],
+  "exit": 1,
+  "stdout": "",
+  "stderr": "discrete-prime error: record write failed: /home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/discrete-d3/io-failure-repaired/effective.json\n",
+  "source_sha": "b5bff3370eb6bf4982ae4c5c8a56892c8b4717c9",
+  "search_not_started": true
+}

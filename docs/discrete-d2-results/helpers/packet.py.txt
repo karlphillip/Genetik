@@ -1,0 +1,25 @@
+from pathlib import Path
+import gzip,hashlib,json,shutil,re
+r=Path.cwd();o=r/'out/runs/discrete-d2';p=r/'docs/discrete-d2-results';logs=r/'out/logs/discrete-d2'
+def gz(src,dst):
+ dst.parent.mkdir(parents=True,exist_ok=True);dst.write_bytes(gzip.compress(src.read_bytes(),mtime=0))
+for src in sorted(logs.glob('*.log')):gz(src,p/'logs'/(src.name+'.gz'))
+for name in ['gates.json','gates-continuation.json','qualification-scope.json','instrumentation.json','environment.json','preservation.json','preservation-final.json','sanitize-timeout-progress.json','sanitize-diagnostic.json','campaign-results.json','campaign-integrity.json','tsan-repetitions.json']:
+ shutil.copyfile(o/name,p/name)
+for src in o.glob('*-manifest.json'):
+ raw=src.read_bytes();(p/src.name).write_text(json.dumps(json.loads(raw),indent=2)+'\n');gz(src,p/(src.name+'.original.gz'))
+for name in ['qualify.py','qualify_continuation.py','measure_sanitize.py','make_report.py','preserve.py','packet.py','campaign.py','d1_replay.cpp','cross_worker.cpp','audit.cpp']:
+ (p/'helpers').mkdir(exist_ok=True);shutil.copyfile(o/name,p/'helpers'/(name+'.txt'))
+for case in ['series','factorial']:
+ for seed in [0,1,2,3,42]:
+  src=o/'campaign'/f'{case}-seed{seed}';dst=p/'runs'/src.name;dst.mkdir(parents=True,exist_ok=True)
+  for name in ['result.json','selected.json','command.json','stdout.log','stderr.log']:
+   if (src/name).exists():shutil.copyfile(src/name,dst/name)
+  for path in sorted((src/'checkpoints').glob('*')):
+   if path.is_file():gz(path,dst/'checkpoints'/(path.name+'.gz'))
+# Legacy candidate fixture is exactly 97 bytes produced by the actual D1 headers.
+for name in ['legacy-d1-candidate.bin','current-d1-candidate.bin']:gz(o/name,p/(name+'.gz'))
+lines=[]
+for path in sorted(p.rglob('*')):
+ if path.is_file() and path.name!='SHA256SUMS':lines.append(hashlib.sha256(path.read_bytes()).hexdigest()+'  '+str(path.relative_to(p)))
+(p/'SHA256SUMS').write_text('\n'.join(lines)+'\n');print('selected files',len(lines))

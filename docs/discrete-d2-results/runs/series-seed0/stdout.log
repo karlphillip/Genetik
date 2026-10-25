@@ -1,0 +1,2 @@
+series seed=0 loss=0 generation=0 attempts=64
+sum(k0, 0, x0, k0)

@@ -1,0 +1,5 @@
+{
+  "source_sha": "dc9dd619be57c0f11e6cf004bfaf1a67f050189f",
+  "time_utc": "2026-10-25T04:00:00.924419+00:00",
+  "scope": "Transactional expression assignment, moved-from candidate/formatter guards, noncopyable objective. First Release suite began before this fix; repeat full Release after rebuild. Subsequent Debug/minimum/sanitizer/TSan builds start after this fix; original driver source field denotes its launch revision."
+}

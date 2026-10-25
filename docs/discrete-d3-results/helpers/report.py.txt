@@ -1,0 +1,182 @@
+from pathlib import Path
+import json,statistics
+r=Path.cwd();p=r/'docs/discrete-d3-results';o=r/'out/runs/discrete-d3';a=json.loads((p/'analysis.json').read_text());rows=a['runs']
+def table(names,rows):return '|'+ '|'.join(names)+'|\n|'+ '|'.join(['---']*len(names))+'|\n'+''.join('|'+ '|'.join(map(str,row))+'|\n' for row in rows)
+text='''# D3 — discrete-prime discovery: complete local results
+
+D3 uses the completed D2 baseline `50d88668baa22ce3d9e8ed2d0203a31fa11b356d`
+on `feature/discrete-prime-discovery`. The application/reference/fixture source is
+`f21920f`; protocol/data/executable identities were committed at `1daa8a6` before
+all ten sequential runs. Public contracts, commands, scope/resource conventions
+and mathematical identities are in [DISCRETE_PRIME_DISCOVERY.md](DISCRETE_PRIME_DISCOVERY.md).
+
+## Every evolutionary outcome
+
+All ten runs completed normally at their training-loss budget boundary. There
+were no restarts, retuning, process failures, resource-abort stops or injected
+reference expressions. Each primality run consumed20,000 objectives and committed
+624generations; each direct n-th run consumed4,992 and committed155generations.
+The latter retains8 unspent attempts because another complete generation needs32.
+Both use four workers, population32, no fitting and the frozen D1/D2 grammar/policy.
+There is no zero-loss recovery in either task. Initialization results remain
+reported: primality initial loss18 (44/62 correct), direct initial loss999 (1/1000).
+
+'''
+for task in ['primality','nth-prime']:
+ group=[x for x in rows if x['task']==task];text+='### '+task+'\n\n';text+=table(['Seed','Train matches','Loss','Training prefix','RMSE','MAE','Max error','Held-out','Larger range','First best generation/attempts','Seconds'],[[x['seed'],f"{x['training_assessment']['matches']}/{x['training_assessment']['rows']}",x['loss'],x['training_assessment']['prefix'],f"{x['training_assessment']['rmse']:.6f}",f"{x['training_assessment']['mae']:.6f}",x['training_assessment']['maximum'],f"{x['held_out']['matches']}/{x['held_out']['rows']}",f"{x['exterior']['matches']}/{x['exterior']['rows']}" if task=='primality' else 'not applicable',f"{x['attainment_generation']}/{x['attainment_attempts']}",f"{x['search_seconds']:.6f}"] for x in group]);text+='\n'
+text+='''The primality training prefix starts at integer2, not at prime index1. Held-out
+classification is64..255; the larger range is256..1024. Direct n-th training is
+indices1..1000 and assessment1001..1200. All selected models evaluate successfully
+on all declared assessment rows; no invalid/resource row was silently dropped.
+Direct n-th prefix is0 except seed2, whose prefix is1. None matches a later prime.
+
+### Actual selected trees
+
+The canonical and Unicode forms below are actual archive candidates, preserved
+without algebraic simplification. Product/sum declarations are genuine executable
+nodes, even where their bodies happen not to use the iterator.
+
+'''
+for x in rows:text+=f"**{x['task']} seed{x['seed']}** — {x['nodes']}nodes, depth{x['depth']}, {x['constants']}constants\n\n```text\n{x['canonical']}\n{x['pretty']}\n```\n\n"
+text+='''## What the classification results mean
+
+The independently generated class balance is44nonprimes/18primes in training,
+156/36 held out, and651/118 in the larger range. Constant-zero accuracy is thus
+44/62,156/192 and651/769. All five learned candidates improve training accuracy;
+only seed1 improves on constant zero on held-out points (164/192). None improves
+on it in the larger range (best631/769). Accuracy must be read with this imbalance,
+not treated as evidence of complete primality discovery. Full false-positive,
+missed-prime and nonbinary-output counts are in `analysis.json`; every prediction,
+target/status/work is independently audited in the per-run records.
+
+The best training classifier is `n*n mod((n mod2)+2)`. Its modular structure
+rejects multiples of2/3 but is not a primality predicate. This interpretation
+explains its finite-sample errors; it was not supplied to initialization. Selected
+models are frozen by training mismatch count and established complexity ties,
+never by these later assessments. No learned-predicate enumeration was implemented
+or presented as a direct n-th-prime formula.
+
+## Computational cost and feasibility
+
+'''
+text+=table(['Task/seed','Objectives','Row attempts','Node visits','Integer operations','Iterations','Invalid objectives','Peak RSS KiB'],[[f"{x['task']}/{x['seed']}",x['work']['loss_attempts'],x['work']['row_attempts'],x['work']['node_visits'],x['work']['operations'],x['work']['iterations'],x['work']['invalid_losses'],x['peak_rss_kib']] for x in rows])
+text+='''
+Full per-run diagnostics additionally record iteration constructs, invalid rows,
+reporting and assessment evaluations, canonical trees, work, actual stopping
+reasons and effective runtime/configuration. Mathematical invalidity is ordinary
+invalid candidate fitness; exhausted computation aborts private preparation rather
+than assigning a finite penalty. There were zero resource-abort outcomes in the
+ten campaigns, while focused fixtures deliberately exercise resource exhaustion.
+Rows may stop at the first mathematical failure during training; selected-model
+reporting separately evaluates every declared row. These costs are not comparable
+to an objective that evaluates a three-node arithmetic expression.
+
+The engineering stress candidate has48nodes and runs a balanced23-leaf body for
+every term of `sum(k0,-2,x0,body)` across all1,000 training rows. It consumed
+22,660,500visits,12,084,000operations and503,500iterations in0.687933seconds on the
+unlocked Jetson. The terminal-bound/one-level/49node grammar has a finite
+conservative cost within the declared50million-visit/operation per-loss allowance.
+This is a grammar-specific engineering bound, not permission for arbitrary nested
+D2 trees. Timing is descriptive; no CPU-frequency or thermal normalization was
+performed. Scientific runs were sequential and did not overlap compilation/tests.
+Peak RSS is process high-water usage, not an exact allocation/workspace measurement.
+
+## Representability and independent mathematical validation
+
+Python trial division and an independent sieve produce all1,200 labels, with the
+historical corpus cross-check and frozen TSV hash recorded in the API document.
+C++ independent sieve fixtures verify divisor counts/primality over-8..256 and
+prime counts over-4..100. Negative/zero divisor-count inputs use the documented
+empty-range value0; the guarded predicate returns0 below2. These are separately
+constructed mathematical fixtures, never evolutionary initialization data.
+
+The expanded bounded n-th identity at B=30 exactly returns the first ten primes.
+It costs5,395 iterations per query including all three nested levels. At B=7919
+the same expansion would cost82,830,198,001 iterations per query, over82trillion
+per1,000-query pass, before additional arithmetic. That experiment was refused
+by design rather than attempted with relaxed limits. The direct search grammar
+restricts nesting to one and therefore excludes this particular expensive
+reference construction; full D1/D2 representability is broader than the frozen
+search subspace. No bounded-selection or prime-specific operator was added.
+
+## Reproducibility and checkpoint safety
+
+Both task types exactly match uninterrupted versus3/save/destroy/load/8 evolution
+at1/2/4 workers. The compared checkpoint state includes complete populations,
+coefficient/binder identities, fitness, archive/best-generation state, RNG,
+generation/request/variation and mathematical-work counters. Fixtures reject
+cross-task/problem identity, including a changed context with identical rows,
+before modifying caller RNG or starting workers. TSan forced overlap shares only
+immutable expressions/problems; objectives and codec scratch remain private.
+
+The optional `DiscreteSearchConfig::contextIdentity` appends a tagged identity
+field only when nonempty. Candidate IDs/native format1/D2 empty-context bytes
+remain unchanged. The current reader restored all ten historical D2 native
+checkpoints and independently verified650cached population/archive entries,
+without adding training attempts. The D3 audit likewise verified330cached entries
+and168,328diagnostic rows, and checked every selected training/assessment vector
+against independent integer labels. RNG/work/full payload remained unchanged.
+
+Reporting and periodic/final checkpointing occur only with the executor idle.
+SIGINT/SIGTERM request an orderly stop after the bounded active generation drains;
+the handler only sets the shared lock-free flag. SIGKILL cannot cause a final save.
+JSONL/reporting work is separate from training, and exact configured total budgets
+and workers are required for continuation. The new task identity prevents a
+classifier checkpoint from becoming n-th regression. Recompile dependent TUs
+consistently after the optional configuration field is added.
+
+## Local qualification and retained repairs
+
+GATE_RESULTS
+
+The first build caught misleading indentation under warnings-as-errors. The
+initial overlap fixture incorrectly tried to prepare a depth8 guarded reference
+under the depth7 search policy: its declared fixture problem now uses the same
+explicitly deeper fixture limits as the independent mathematical test. Search
+limits were not increased. Repeated CLI tests originally reused a protected
+output directory; they now allocate distinct retained execution directories.
+Original diagnostics and outputs remain under `out/` and in the selected packet.
+
+A `/dev/full` metadata-write probe found buffered stream failure was not checked
+on flush/close. The application could incorrectly continue after losing its
+configuration record. The focused `b5bff33` repair checks both operations before
+search; the regression fixture requires failure and no checkpoint/search startup.
+This changes no objective, grammar, candidate proposal, successful-run data or
+checkpoint format. Scientific results retain their original frozen executable
+identity and are not rerun. Original failure and corrected evidence are preserved.
+The driver launch revision is not a blanket per-binary SHA; source mapping and
+full-versus-targeted scope are recorded explicitly below.
+
+QUALIFICATION_SCOPE
+
+## Conclusions and limits
+
+Median direct recovery is9/1000 (range5..20), with median training RMSE972.454491.
+The selected first-1,000 models produce no exact later-prime matches. Historical
+continuous searches often recovered50..74, but had much larger attempt budgets,
+a different language/objective and different per-attempt costs. This is not a
+controlled representation-superiority comparison. Exact integers alone do not
+make the discovery search successful or cheap.
+
+The structural audit finds no iterator-reference node in any of the ten selected
+models. Iteration constructs are used only as repeated constants/counts or repeated
+functions of the external input, not to learn a varying divisor test. That is a
+measured property of the selected endpoints, not proof that the whole population
+collapsed or that no intermediate useful subtree existed. Full D1/D2 can express
+the reference classifier/count/identity, but its nested n-th construction is
+prohibitively costly and outside the declared search subspace. The evidence does
+not isolate one universal failure cause or prove that the grammar is insufficient.
+
+A concrete future research recommendation is to measure discovery/retention of
+iterator-dependent divisor-test subexpressions, using matched integer-operation
+budgets and independent simple discrete tasks, before another large direct-prime
+campaign. This recommendation does not add a search strategy/operator here or
+schedule another implementation phase. First complete the agreed D4 combined
+D1/D2/D3 hosted qualification, development-release preparation and delivery review.
+
+Finite-prefix agreement would not establish a universal formula; these partial
+fits plainly do not. No default grammar, operator, fitter, genetic probability,
+main, tag, release asset, historical campaign or frozen evidence is promoted or
+changed. D3 ends here, with D4 next and separately approved publication required.
+'''
+(r/'docs/DISCRETE_D3_RESULTS.md').write_text(text)

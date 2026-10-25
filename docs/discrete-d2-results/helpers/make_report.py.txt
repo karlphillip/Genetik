@@ -1,0 +1,152 @@
+from pathlib import Path
+import json,statistics
+r=Path.cwd();o=r/'out/runs/discrete-d2';p=r/'docs/discrete-d2-results';analysis=json.loads((p/'analysis.json').read_text());rows=analysis['runs']
+def table(headers,data):return '|'+ '|'.join(headers)+'|\n|'+ '|'.join(['---']*len(headers))+'|\n'+''.join('|'+ '|'.join(str(x) for x in row)+'|\n' for row in data)
+text='''# D2 — bounded discrete iteration qualification and discovery
+
+D2 is locally implemented on `feature/discrete-iteration` from
+`398c391e7aa3e187391c90747a71f4d382e7e3e0`. The public API and numerical/scope
+contracts are in [DISCRETE_ITERATION.md](DISCRETE_ITERATION.md). This is not a
+prime-discovery experiment, production release or hosted qualification.
+
+## Frozen experiments: every outcome
+
+The protocol/data/source/executable identities were committed before execution.
+Both cases used seeds 0,1,2,3,42, sequential serial execution, population64,
+coordinate fitting disabled, at most10,048 loss attempts/200 generation attempts,
+25 nodes/depth6, Add/Subtract/Multiply/Sum/Product, constants {0,1,2}, original
+GA crossover .9/mutation .35 and two elites. Iteration bounds were terminal-only,
+with two nested levels and the predeclared work/iteration policy. Only observations
+and the case's independent reference sequence differ. No model was injected.
+
+'''
+text+=table(['Case','Seed','Initial→final loss','Discovery gen','Actual attempts','Assessment','Nodes/depth','Seconds','Stop'],[[x['case'],x['seed'],f"{x['initial_loss']}→{x['final_loss']}",x['discovery_generation'],x['loss_attempts'],f"{x['assessment_matches']}/{x['assessment_rows']}",f"{x['nodes']}/{x['depth']}",f"{x['seconds']:.6f}",x['stop']] for x in rows])
+text+='''
+All ten models match their declared training and assessment rows exactly, with
+zero integer error and no assessment invalidity. Series seeds0 and2 recovered
+at generation zero; neither was discarded or restarted. All selected models
+contain iteration, not just alternative non-iteration polynomials coinciding on
+the finite training data. Their complete trees are retained below, including
+redundant arithmetic and nonzero binder IDs. No uniqueness/global identity claim
+follows from these finite samples. Product lower bounds of2 legitimately omit
+factor1 for the nonnegative input domain; empty ranges cover n=0/1.
+
+The ten runs consumed 5,696 objective attempts in total. Early exact success
+stopped each run; unused allowances were not padded. Native checkpoints and a
+selected canonical record were written before each run's assessment. Later cases
+used the already committed configuration unchanged. No failure/retry/tuning
+occurred in these ten scientific runs. Runtime includes initialization, candidate
+preparation and checkpoint/selection writes, excludes assessment, and is descriptive
+unlocked Jetson timing rather than an optimizer throughput comparison.
+
+'''
+for case in ['series','factorial']:
+ text+='### '+case+'\n\n'+table(['Seed','Faithful canonical model'],[[x['seed'],'`'+x['canonical']+'`'] for x in rows if x['case']==case])+'\n'
+text+='''`RUNS.csv` and `analysis.json` retain full metrics, structural size/depth/constants,
+variation requests/rejections/fallbacks, training rows, visits, primitive operations,
+aggregate iterations and begun constructs. Per-run result files retain assessment
+prediction vectors and separately measured work. Reporting never consumes training
+loss attempts. Independent Python integer assessment verifies all retained vectors;
+series n=9..12 yields45,55,66,78 and factorial n=7..9 yields5040,40320,362880.
+
+## Independent mathematical validation
+
+Checked fixtures cover arithmetic-series and sum-of-squares closed forms at
+n=0,1,2,3,8,12,100,10000, within explicitly sufficient work limits. Products verify
+0!=1,1!=1,5!=120,20!=2432902008176640000 and checked overflow at21. Nested sums
+return10; independent outer-body and diagonal fixtures return24 and3, detecting
+confusion of inner/outer cursors. The divisor-count composition returns4 for6;
+it is a representability fixture, not a primality predicate or discovery campaign.
+
+Singleton sums at INT64_MIN/MAX remain exact, short near-MAX accumulation overflows
+mathematically, and the full signed interval is rejected as ResourceExhausted
+before entering a body. The near-maximum unary series bound4294967295 is likewise
+refused by its declared iteration cap, not misreported as arithmetic invalidity.
+No billions-of-terms experiment was attempted. Empty ranges validate bounds, then
+skip invalid bodies. The lazy modulo sum is1; a zero product does not hide a later
+invalid modulo. Per-operation/aggregate/nesting/node/operation/frame limits and
+mid-loop cancellation leave no valid partial accumulator.
+
+`independent-references.csv` uses Python exact integers/`math.factorial`; positive
+divisor counts apply only to n>0. The production interpreter never generates its
+own oracle. The campaign uses independent tiny native-integer references and is
+cross-checked against the Python data committed before execution. Negative n has
+the explicitly defined empty-range model semantics, not an asserted extension of
+factorials or of the positive arithmetic-series polynomial.
+
+## Scope, ownership, variation and continuation
+
+Fixtures reject unbound/leaking/self-bound/duplicate IDs, wrong operand types and
+open fragment execution. External inputs remain unchanged. Closed incoming loops
+are alpha-renamed without capture; an inner subtree depending on an outer binder
+cannot move into an unbound context. Complete generated/mutated/crossed expressions
+are revalidated, and parents remain owned/unchanged. D1 operators are unchanged
+unless Sum/Product are explicitly enabled.
+
+Continuous generation0→100 exactly matches generation0→40/save/destroy/load→100
+at1,2,4 workers: entire committed population, integer nodes and binder identities,
+fitness/selection state, archive, RNG, generation/request/training/variation counters.
+An additional independent comparison reaches generation100 with the same complete
+state key at all three worker counts (1,212 loss attempts). This is nonbinding
+same-environment reproducibility, not a promise across arbitrary runtimes or
+binding-budget schedules. A resource-failed private generation preserves its
+committed archive while retaining consumed work/RNG, and its checkpoint restores
+that complete state. Grammar/iteration-policy mismatches reject before RNG/work;
+corrupted payloads reject. No candidate is rescored during restore.
+
+Actual D1 headers from the starting Git revision produced the retained legacy
+candidate payload and baseline replay. Current source reproduces both byte-for-byte.
+Old operator IDs0–14/codec payloads remain unchanged; new IDs15–17 are appended
+and reject safely in old readers. Generic atomic persistence remains untouched;
+the new complete-run profile has exact bounded configuration identity and native
+format1 envelope. The native discrete structures require consistent recompilation;
+tight ABI-dependent workspace/storage allowances may need requalification.
+
+## Local engineering qualification
+
+GATE_RESULTS
+
+`gates.json` records the driver's launch source/protocol commit, not a blanket
+per-binary guarantee while the test-only additions were made. Public implementation
+source is0c55ba603fc949b2ee8e10a9e1ebad6c2b4733fc; additional scope assertions
+are80ab378749d9c3c872a28f95b710cf7cb0c96d1c. The first Release full suite predates
+those assertions; the final targeted Release rerun includes them. Subsequent
+Debug/minimum/sanitizer/TSan builds include them. Original records and mapping are
+retained rather than rewritten. Final documentation commits add no executable
+source changes.
+
+## Retained development issues
+
+Warnings-as-errors caught misleading indentation, an early checkpoint-document
+aggregate initializer and an invalid constexpr-before-class-completion use.
+The application scratch build caught a mistaken persistence helper name and an
+ADL collision with `std::quoted`; calls now use the actual existing
+`saveCheckpointSeries` and an explicit JSON quoting helper. Original diagnostics
+remain in the packet. No mathematical/resource assertion, sanitizer instrument,
+accepted replay or existing timeout was weakened. Engineering repairs preceded
+the protocol freeze; no scientific results drove them.
+
+## Limits and completion boundary
+
+Canonical parsing remains bounded (hard nesting128); deeper supported trees use
+node-codec reconstruction. Declarations are globally unique rather than shadowing;
+crossover conservatively rejects open donor fragments. No fitting or global
+integer-function optimizer exists. Complete-run identities are bounded1MiB and
+require exact budget/settings/runtime/worker compatibility. Native physical
+workspace/storage accounting includes new state and can differ from D1 for very
+tight custom allowances; default D1 replay/codec compatibility is qualified.
+
+Preservation checks cover all127 frozen historical files, six prior research/D1
+packets, recorded published assets, main and tags. No remote writes/release actions
+occurred. Local qualification does not establish hosted, libc++, Windows/MSVC or
+macOS/AppleClang support.
+
+D2 ends here. Next is the consolidated **D3: Discrete Sequence Discovery and
+Controlled Prime-Number Experiments**, then **D4: Hosted Qualification and
+Development Release**. No D3 prime campaign, D5 mathematics or additional phase
+was begun.
+'''
+# Editorial spacing for established compact protocol terms.
+for a,b in {'population64':'population 64','most10,048':'most 10,048','depth6':'depth 6','seeds0 and2':'seeds 0 and 2','of2':'of 2','factor1':'factor 1','yields45,55,66,78':'yields 45, 55, 66, 78','yields5040,40320,362880':'yields 5040, 40320, 362880','at21':'at 21','return10':'return 10','return24 and3':'return 24 and 3','returns4 for6':'returns 4 for 6','bound4294967295':'bound 4294967295','is1;':'is 1;','generation0':'generation 0','generation100':'generation 100','at1,2,4':'at 1, 2, 4','counts (1,212':'counts (1,212','IDs0–14':'IDs 0–14','IDs15–17':'IDs 15–17','format1':'format 1','source is0c':'source is 0c','are80ab':'are 80ab','nesting128':'nesting 128','bounded1MiB':'bounded 1 MiB','all127':'all 127'}.items():text=text.replace(a,b)
+(o/'REPORT_DRAFT.md').write_text(text)
+print('Draft report generated; qualification result marker remains until gates finish.')

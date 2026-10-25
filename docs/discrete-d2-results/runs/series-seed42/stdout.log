@@ -1,0 +1,2 @@
+series seed=42 loss=0 generation=2 attempts=192
+sum(k0, 0, x0, (k0 - 0))

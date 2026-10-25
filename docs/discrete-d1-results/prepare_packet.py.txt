@@ -1,0 +1,22 @@
+from pathlib import Path
+import json,hashlib,gzip,shutil,re
+r=Path.cwd();o=r/'out/runs/discrete-d1';packet=r/'docs/discrete-d1-results';packet.mkdir(exist_ok=True)
+records=json.loads((o/'gates-continuation.json').read_text());assert records and all(x['exit']==0 for x in records);assert {'release-complete-tests','tsan-full-discrete','portable-manifest-check','quickstart-threads4'} <= {x['name'] for x in records}
+# Original failures and launch-revision bookkeeping remain unmodified in raw records.
+for path in o.glob('*.json'):
+ raw=path.read_bytes();value=json.loads(raw);(packet/path.name).write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n')
+ if path.name.endswith('-manifest.json'):
+  with (packet/(path.name+'.original.gz')).open('wb') as f:
+   with gzip.GzipFile(filename='',fileobj=f,mode='wb',mtime=0) as z:z.write(raw)
+for path in (r/'out/logs/discrete-d1').iterdir():
+ if path.is_file():
+  target=packet/'logs'/(path.name+'.gz');target.parent.mkdir(exist_ok=True)
+  with target.open('wb') as f:
+   with gzip.GzipFile(filename='',fileobj=f,mode='wb',mtime=0) as z:z.write(path.read_bytes())
+for name in ['qualify.py','continue.py','prepare_packet.py']:
+ shutil.copy2(o/name,packet/(name+'.txt'))
+# Confirm actual per-selection executions, not only an aggregate count.
+text=(r/'out/logs/discrete-d1/tsan-repeated.log').read_text()
+names=['genetik_discrete_overlap','genetik_concurrency_contracts','genetik_oop_parallel'];counts={name:len(re.findall(re.escape(name)+r'\s+\.+\s+Passed',text)) for name in names};assert all(n==3 for n in counts.values());(packet/'tsan-repetitions.json').write_text(json.dumps(counts,indent=2)+'\n')
+(packet/'SHA256SUMS').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.relative_to(packet).as_posix()+'\n' for p in sorted(packet.rglob('*')) if p.is_file() and p.name!='SHA256SUMS'))
+print('Packaged',sum(p.is_file() for p in packet.rglob('*')),'selected evidence files')

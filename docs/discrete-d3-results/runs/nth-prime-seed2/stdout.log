@@ -1,0 +1,6 @@
+nth-prime generation=0 attempts=32/5000 matches=1/1000 loss=999 nodes=1 depth=1 seconds=0.0314303 visits=632000 iterations=508688 stop=running
+2
+2
+nth-prime generation=155 attempts=4992/5000 matches=9/1000 loss=991 nodes=13 depth=6 seconds=2.24371 visits=105906241 iterations=28657504 stop=loss_budget
+((x0 + ((4 * (-2 % x0)) + x0)) + (1 % x0))
+((x0 + ((4 · (-2 mod x0)) + x0)) + (1 mod x0))

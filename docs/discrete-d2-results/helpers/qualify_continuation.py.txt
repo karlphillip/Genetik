@@ -1,0 +1,33 @@
+from pathlib import Path
+import json,subprocess,time,os,platform
+r=Path.cwd();o=r/'out/runs/discrete-d2';logs=r/'out/logs/discrete-d2';cm=r.parent/'.tools/bin/cmake';ct=r.parent/'.tools/bin/ctest';minimum=r.parent/'delivery-tools/cmake-min/bin/cmake';minct=r.parent/'delivery-tools/cmake-min/bin/ctest';source=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip();gates=[]
+def run(name,args,env=None):
+ print('START',name,flush=True);started=time.monotonic()
+ with (logs/(name+'.log')).open('w') as f:result=subprocess.run(list(map(str,args)),stdout=f,stderr=subprocess.STDOUT,env=env)
+ gates.append(dict(name=name,command=list(map(str,args)),exit=result.returncode,seconds=time.monotonic()-started,source_sha=source));(o/'gates-continuation.json').write_text(json.dumps(gates,indent=2)+'\n');print('DONE',name,result.returncode,round(gates[-1]['seconds'],2),flush=True)
+ if result.returncode:raise RuntimeError(name+' failed; diagnose retained evidence')
+def configure(name,path,tool=cm,**extra):
+ args=[tool,'-S',r,'-B',path,'-DCMAKE_BUILD_TYPE='+('Debug' if 'debug' in name or 'sanitize' in name else 'Release'),'-DGENETIK_WARNINGS_AS_ERRORS=ON','-DGENETIK_BUILD_TESTS=ON','-DGENETIK_BUILD_EXAMPLES=ON','-DBUILD_TESTING=ON','-DCMAKE_EXPORT_COMPILE_COMMANDS=ON']
+ for key,val in extra.items():args.append('-D'+key+'='+val)
+ run(name+'-configure',args)
+def manifest(name,path,tool=ct,pattern=None):
+ args=[str(tool),'--show-only=json-v1']
+ if pattern:args+=['-R',pattern]
+ result=subprocess.run(args,cwd=path,capture_output=True,text=True,check=True);(o/(name+'-manifest.json')).write_text(result.stdout)
+
+import hashlib
+sanitized=r/'out/build/discrete-sanitize'
+binary=sanitized/'tests/genetik_discrete_iteration_tests';expected=json.loads((o/'sanitize-diagnostic.json').read_text())['binary_sha256']
+configure('sanitize-timeout-repair',sanitized,GENETIK_RECORDED_REFERENCE='OFF',GENETIK_SANITIZERS='ON',GENETIK_THREAD_SANITIZER='OFF')
+assert hashlib.sha256(binary.read_bytes()).hexdigest()==expected
+run('sanitize-complete-repaired',[cm,'-E','chdir',sanitized,ct,'-R','^genetik_discrete_iteration_contracts$','--output-on-failure'])
+assert hashlib.sha256(binary.read_bytes()).hexdigest()==expected
+tsan=r/'out/build/discrete-tsan';configure('tsan',tsan,GENETIK_THREAD_SANITIZER='ON',GENETIK_SANITIZERS='OFF');run('tsan-build',[cm,'--build',tsan,'--target','genetik_discrete_iteration_tests','genetik_discrete_tests','genetik_concurrency_tests','genetik_oop_consumer','-j2']);selected='^(genetik_discrete_iteration_overlap|genetik_discrete_overlap|genetik_concurrency_contracts|genetik_oop_parallel)$';manifest('tsan-selected',tsan,pattern=selected);env=os.environ.copy();env['TSAN_OPTIONS']='halt_on_error=1';run('tsan-repeated',[cm,'-E','chdir',tsan,ct,'-R',selected,'--repeat','until-fail:3','--output-on-failure'],env);run('tsan-full-iteration',[cm,'-E','chdir',tsan,ct,'-R','^genetik_discrete_iteration_contracts$','--output-on-failure'],env)
+release=r/'out/build/discrete-release';run('final-release-d2-build',[cm,'--build',release,'--target','genetik_discrete_iteration_tests','-j2']);run('final-release-d2-tests',[cm,'-E','chdir',release,ct,'-R','^genetik_discrete_iteration_','--output-on-failure'])
+portable=r/'out/build/iteration-portable';configure('portable',portable,GENETIK_RECORDED_REFERENCE='OFF');manifest('portable',portable);run('portable-manifest-check',['python3','scripts/check_ci_manifest.py',o/'portable-manifest.json']);run('workflow-lint',[r/'out/tmp/actionlint']);run('hygiene',['python3','scripts/check_hygiene.py','--workspace']);run('diff-check',['git','diff','--check']);run('quickstart-threads4',[release/'genetik_discrete_iteration_quickstart','--threads','4'])
+checks={}
+for name,directory,flag in [('release',release,None),('sanitize',sanitized,'-fsanitize=address,undefined'),('tsan',tsan,'-fsanitize=thread')]:
+ commands=json.loads((directory/'compile_commands.json').read_text());entry=next(x for x in commands if x['file']==str(r/'tests/discrete_iteration.cpp'));command=entry['command'];assert '-fno-fast-math' in command and '-ffp-contract=off' in command;link=(directory/'tests/CMakeFiles/genetik_discrete_iteration_tests.dir/link.txt').read_text()
+ if flag:assert flag in command and flag in link
+ checks[name]=dict(compile=command,link=link)
+(o/'instrumentation.json').write_text(json.dumps(checks,indent=2)+'\n');environment=dict(source_sha=source,platform=platform.platform(),compiler=subprocess.check_output(['g++','--version'],text=True),cmake=subprocess.check_output([str(cm),'--version'],text=True),minimum_cmake=subprocess.check_output([str(minimum),'--version'],text=True),libc=subprocess.check_output(['ldd','--version'],text=True));(o/'environment.json').write_text(json.dumps(environment,indent=2)+'\n');print('ALL PLANNED D2 GATES COMPLETE',flush=True)

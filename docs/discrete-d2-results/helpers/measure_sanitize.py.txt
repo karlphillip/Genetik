@@ -1,0 +1,14 @@
+from pathlib import Path
+import subprocess,time,json,hashlib,os
+root=Path.cwd();out=root/'out/runs/discrete-d2';logs=root/'out/logs/discrete-d2';lookup=subprocess.run(['pgrep','-f','^python3 out/runs/discrete-d2/qualify.py$'],capture_output=True,text=True)
+pids=[int(x) for x in lookup.stdout.split()]
+print('Waiting for original suite to drain',pids,flush=True)
+while any(Path('/proc')/str(pid) and (Path('/proc')/str(pid)).exists() for pid in pids):time.sleep(1)
+print('Starting one unchanged-binary timing diagnosis',flush=True)
+binary=root/'out/build/discrete-sanitize/tests/genetik_discrete_iteration_tests';expected=json.loads((out/'sanitize-timeout-progress.json').read_text())['binary_sha256'];assert hashlib.sha256(binary.read_bytes()).hexdigest()==expected
+command=[str(binary),str(out/'sanitize-diagnostic')];start=time.monotonic()
+with (logs/'sanitize-unchanged-diagnostic.log').open('w') as stream:
+ try:result=subprocess.run(command,stdout=stream,stderr=subprocess.STDOUT,timeout=1800);status=result.returncode
+ except subprocess.TimeoutExpired:status='timeout1800'
+record=dict(command=command,seconds=time.monotonic()-start,exit=status,binary_sha256=expected,unchanged_binary=True,original_allowance=180,diagnostic_allowance=1800,isolated_after_original_suite=True)
+(out/'sanitize-diagnostic.json').write_text(json.dumps(record,indent=2)+'\n');print(json.dumps(record,indent=2),flush=True)

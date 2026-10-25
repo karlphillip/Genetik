@@ -1,0 +1,31 @@
+{
+  "base": "e2204f95447a3898244de11793132dab56061f30",
+  "main": "ac2786e824198cead70b32ae44229be35baed1ff",
+  "tags": "986316039749aedcf20d1c1537bb4c91ded06151 refs/tags/v0.1.0\ne68d10c9989fb0eea265e0d706a4d8823549ae53 refs/tags/v0.2.0\n4a260f97f2c4d0f0a1da12e64cd8362affd940ec refs/tags/v0.3.0\n",
+  "frozen_files": 127,
+  "previous_packets": [
+    "prime-fitness-results",
+    "prime-refinement-results",
+    "prime-fitter-evolution-results",
+    "prime-fit-budget-results",
+    "prime-local-variation-results"
+  ],
+  "assets": {
+    "v0.1.0/SHA256SUMS": "a12d576eedc38b80af11f118d82d086a992f3d8930b89bda743b91191663353b",
+    "v0.1.0/ASSETS.json": "ebe263a21fdf1aedea45a81dae59381f91494f0d5d64031fb85be7e4677e56bd",
+    "v0.1.0/Genetik-0.1.0-source.tar.gz": "7f632489e45abb97385d98c9c2f703664386e358b22f3f73baa8a72c99b6b992",
+    "v0.3.0/publication.json": "12b9f6697c5d4ebb1a492da4ca3a454c916e9df4ffdb0bce0e00deefc6078251",
+    "v0.3.0/Genetik-0.3.0-source.tar.gz": "dd1b1a55a5bbe90b980f83e6f0acf21e76642ca3b5abf0bbe0e524d1116ca73b",
+    "v0.3.0/MANIFEST.json": "4f046ca22fac31e0d1f18e17205b4cf4b7e4d19a71002f3cda3347d943ef523c",
+    "v0.3.0/SHA256SUMS": "3c808ec02a787112d32d8b680fb468879f94e479685e9349e2c41b5095e1cd43",
+    "v0.3.0/PUBLICATION.md": "d60e4d7126107c55a8f699b4bc3f2058b4c2aa6cbda3e4648a35f3a69260ceda",
+    "v0.3.0/supplemental-tag-run.json": "4a63a8e6e816b9706a08a9d64655733c5246a0cdb275c246b1a780d6920ddd5f",
+    "v0.2.0/publication.json": "44ac5ae8d890bbb22dcd2f70fc25e66bdfe68111aadfe6e3ab7f4718270765d7",
+    "v0.2.0/Genetik-0.2.0-source.tar.gz": "0813347b58db3da338f74207e19d65e4b0897c43f059b6a01a4491df4f8afd9e",
+    "v0.2.0/MANIFEST.json": "4956a005977a6477d990c290f22f273a0e331bb637c8b96a7f72b8b45a952472",
+    "v0.2.0/SHA256SUMS": "eef05a54239b7cedd41a8535ac45e45883b9a248dc22494e48e72249a8da9488",
+    "v0.2.0/PUBLICATION.md": "76f0f81074dccdaffe45c3e1f0220e557b1ca7dc059c2aa344b6ede681e25511",
+    "v0.2.0/supplemental-tag-run.json": "44d29a63d5f1d94d039019477dba48d5008370250c69d52a4f483aec8a31507c"
+  },
+  "reference_sha256": "58acd2f35e6e6323f95875b9522ea4aa430723ccf407d2835894b2820cea882a"
+}

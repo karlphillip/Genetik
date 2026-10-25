@@ -1,0 +1,8 @@
+{
+  "binary_sha256": "e289e22d87eac2f1cc337a4e651db6847840e38389072abfb2b1ad9ed7202a71",
+  "original_allowance_seconds": 600,
+  "observed_timeout_seconds": 600.11,
+  "instrumentation": "-g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-fast-math -ffp-contract=off",
+  "last_observed_process": "09:14 elapsed,09:13 CPU,23148KiB RSS,WCHAN - (running)",
+  "progress_directory_exists": false
+}

@@ -1,0 +1,7 @@
+#include <DiscreteExpressionParsing.hpp>
+#include <DiscreteExpressionCheckpoint.hpp>
+#include <DiscreteSymbolicRegression.hpp>
+#include <fstream>
+#include <iostream>
+int main(int argc,char** argv){auto p=DiscreteRegressionProblem::create(1,{{{0},1},{{2},3}});DiscreteExpressionCandidate c(parseDiscreteExpression("x0+1",1),p);c.calculateFitness();CheckpointWriter w;CandidateCheckpointCodec<DiscreteExpressionCandidate>::encode(w,c);if(argc==2){std::ofstream file(argv[1],std::ios::binary);file<<w.data();}
+ auto data=DiscreteRegressionProblem::create(1,{{{0},97},{{1},83},{{2},71}});DiscreteSearchConfig config;config.population=12;config.elites=1;config.maxGenerations=8;config.maxLossAttempts=108;RandomContext rng(17,ExecutionConfig{4});auto r=discreteSymbolicRegression(data,config,rng);std::cout<<r.best->text()<<'\n'<<r.best->fitness()<<'\n'<<rng.engine()<<'\n'<<r.work.lossAttempts<<' '<<r.work.rowAttempts<<' '<<r.work.nodeVisits<<' '<<r.work.operations<<' '<<r.work.invalidLosses<<' '<<r.work.invalidRows<<'\n';return 0;}

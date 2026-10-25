@@ -1,0 +1,6 @@
+primality generation=0 attempts=32/20000 matches=44/62 loss=18 nodes=4 depth=2 seconds=0.0123609 visits=28134 iterations=6415 stop=running
+product(k0, 2, 4, 0)
+Π[k0=2..4] 0
+primality generation=624 attempts=20000/20000 matches=56/62 loss=6 nodes=9 depth=4 seconds=0.906198 visits=10235972 iterations=1106747 stop=loss_budget
+((x0 * x0) % ((x0 % 2) + 2))
+((x0 · x0) mod ((x0 mod 2) + 2))

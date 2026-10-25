@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_discrete_iteration_tests",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/discrete-d2/sanitize-diagnostic"
+  ],
+  "seconds": 307.62779364397284,
+  "exit": 0,
+  "binary_sha256": "33b51332d4acbcbf312d95e83606e91d7020120755e4c42cce2c19912f6a73a8",
+  "unchanged_binary": true,
+  "original_allowance": 180,
+  "diagnostic_allowance": 1800,
+  "isolated_after_original_suite": true
+}

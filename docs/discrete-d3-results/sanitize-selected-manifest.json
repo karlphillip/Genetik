@@ -1,0 +1,378 @@
+{
+  "backtraceGraph": {
+    "commands": [
+      "add_test"
+    ],
+    "files": [
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/CMakeLists.txt"
+    ],
+    "nodes": [
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 266,
+        "parent": 0
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 267,
+        "parent": 2
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 276,
+        "parent": 4
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 278,
+        "parent": 6
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 338,
+        "parent": 8
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 339,
+        "parent": 10
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 342,
+        "parent": 12
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 348,
+        "parent": 14
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 349,
+        "parent": 16
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 357,
+        "parent": 18
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 364,
+        "parent": 20
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 365,
+        "parent": 22
+      },
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 369,
+        "parent": 24
+      }
+    ]
+  },
+  "kind": "ctestInfo",
+  "tests": [
+    {
+      "backtrace": 1,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_prime_exact_tests"
+      ],
+      "name": "genetik_prime_exact_contracts",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 90.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 3,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_prime_exact_tests",
+        "--overlap",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/prime-diversity-overlap"
+      ],
+      "name": "genetik_prime_exact_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 90.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 5,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_checkpoint_tests",
+        "contracts",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/checkpoint-contracts/checkpoint-fixture"
+      ],
+      "name": "genetik_checkpoint_contracts",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 7,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_checkpoint_tests",
+        "format",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/formatting/checkpoint-fixture"
+      ],
+      "name": "genetik_formatting_contracts",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 9,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_discrete_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/discrete-arithmetic.tsv"
+      ],
+      "name": "genetik_discrete_contracts",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 120.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 11,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_discrete_tests",
+        "--overlap"
+      ],
+      "name": "genetik_discrete_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 120.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 13,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/genetik_discrete_quickstart",
+        "--threads",
+        "2"
+      ],
+      "name": "genetik_discrete_quickstart",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 60.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 15,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_discrete_iteration_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/iteration-contracts"
+      ],
+      "name": "genetik_discrete_iteration_contracts",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 900.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 17,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_discrete_iteration_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/iteration-overlap",
+        "--overlap"
+      ],
+      "name": "genetik_discrete_iteration_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 19,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/genetik_discrete_iteration_quickstart",
+        "--threads",
+        "2"
+      ],
+      "name": "genetik_discrete_iteration_quickstart",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 60.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 21,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_discrete_prime_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/discrete-primes.tsv",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/discrete-prime"
+      ],
+      "name": "genetik_discrete_prime_contracts",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 600.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 23,
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_discrete_prime_tests",
+        "--overlap"
+      ],
+      "name": "genetik_discrete_prime_overlap",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 180.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    },
+    {
+      "backtrace": 25,
+      "command": [
+        "/usr/bin/python3.12",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/discrete_prime_cli.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/genetik_discrete_prime_search",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/discrete-prime-cli"
+      ],
+      "name": "genetik_discrete_prime_cli",
+      "properties": [
+        {
+          "name": "TIMEOUT",
+          "value": 600.0
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests"
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 1,
+    "minor": 0
+  }
+}

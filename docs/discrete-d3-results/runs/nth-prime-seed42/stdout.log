@@ -1,0 +1,6 @@
+nth-prime generation=0 attempts=32/5000 matches=1/1000 loss=999 nodes=4 depth=3 seconds=0.0173931 visits=161978 iterations=8799 stop=running
+(1 - neg(16))
+(1 - −(16))
+nth-prime generation=155 attempts=4992/5000 matches=5/1000 loss=995 nodes=12 depth=6 seconds=2.65671 visits=108803339 iterations=49427626 stop=loss_budget
+(1 + sum(k0, -2, -1, (((1 + x0) + x0) - 8)))
+(1 + Σ[k0=-2..-1] (((1 + x0) + x0) - 8))

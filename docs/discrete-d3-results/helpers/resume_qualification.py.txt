@@ -1,0 +1,10 @@
+from pathlib import Path
+import os,signal,time,subprocess,json
+r=Path.cwd();o=r/'out/runs/discrete-d3';state=json.loads((o/'qualification-pause.json').read_text());pid=state['driver']
+# Driver is paused; its already-started original CTest suite drains before repair compilation.
+children=[int(line.strip().split()[0]) for line in state['children'].splitlines()]
+while any(Path('/proc',str(c)).exists() and Path('/proc',str(c),'stat').read_text().split()[2]!='Z' for c in children):time.sleep(1)
+with (r/'out/logs/discrete-d3/repaired-app-build.log').open('w') as log:subprocess.run([str(r.parent/'.tools/bin/cmake'),'--build',str(r/'out/build/discrete-release'),'--target','genetik_discrete_prime_search','-j2'],stdout=log,stderr=subprocess.STDOUT,check=True)
+# Independent repeat of the original failed-write probe, using the corrected binary.
+folder=o/'io-failure-repaired';folder.mkdir();(folder/'effective.json').symlink_to('/dev/full');command=[str(r/'out/build/discrete-release/genetik_discrete_prime_search'),'--task','primality','--loss-budget','32','--generation-limit','0','--output',str(folder)];result=subprocess.run(command,capture_output=True,text=True);assert result.returncode==1 and not (folder/'checkpoints').exists();(o/'io-failure-repaired.json').write_text(json.dumps(dict(command=command,exit=result.returncode,stdout=result.stdout,stderr=result.stderr,source_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),search_not_started=True),indent=2)+'\n')
+os.kill(pid,signal.SIGCONT);print('repaired application built and write failure verified after retained original suite; driver resumed',flush=True)

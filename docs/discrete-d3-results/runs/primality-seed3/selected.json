@@ -1,0 +1,1 @@
+{"canonical":"(if((4 <= x0), x0, -1) % 2)","loss":14.000000,"generation":624}

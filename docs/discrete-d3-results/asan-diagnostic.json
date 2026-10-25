@@ -1,0 +1,20 @@
+{
+  "command": [
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize/tests/genetik_discrete_prime_tests",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/discrete-primes.tsv",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/discrete-d3/asan-unchanged-diagnostic"
+  ],
+  "exit": 0,
+  "seconds": 1484.5310347089544,
+  "binary_sha256": "e289e22d87eac2f1cc337a4e651db6847840e38389072abfb2b1ad9ed7202a71",
+  "unchanged_binary": true,
+  "diagnostic_allowance_seconds": 3600,
+  "original_allowance_seconds": 600,
+  "diagnostic_pauses_seconds": [
+    25.043572673923336,
+    82.03249451098964
+  ],
+  "seconds_excluding_recorded_pauses": 1377.4549675240414,
+  "timing_scope": "one unchanged complete execution; controlled diagnostic pauses included in wall clock, no competing work while original was running; not a throughput benchmark",
+  "post_execution_binary_sha256_verified": true
+}

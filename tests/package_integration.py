@@ -104,7 +104,7 @@ def consume(prefix,name,extra=(),build_it=True,fail=False):
     if fail:return output
     if build_it:
         run([a.cmake,'--build',directory,'-j2'])
-        for exe in ['installed_consumer','quickstarts/checkpoint_quickstart','quickstarts/integrals_quickstart','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart','quickstarts/typed_quickstart','quickstarts/typed_search_quickstart','quickstarts/parsing_quickstart','quickstarts/templates_quickstart','quickstarts/derivative_regression_quickstart','quickstarts/derivatives_quickstart','oop_consumer/permutation_consumer']:
+        for exe in ['installed_consumer','quickstarts/discrete_iteration_quickstart','quickstarts/discrete_quickstart','quickstarts/checkpoint_quickstart','quickstarts/integrals_quickstart','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart','quickstarts/typed_quickstart','quickstarts/typed_search_quickstart','quickstarts/parsing_quickstart','quickstarts/templates_quickstart','quickstarts/derivative_regression_quickstart','quickstarts/derivatives_quickstart','oop_consumer/permutation_consumer']:
             run([directory/exe])
             run([directory/exe,'--threads','2']) if exe not in ['installed_consumer','quickstarts/typed_quickstart','quickstarts/parsing_quickstart','quickstarts/derivatives_quickstart'] else None
             dependencies=run(['ldd',directory/exe])
@@ -118,10 +118,10 @@ shutil.rmtree(producer);shutil.rmtree(build)
 assert not producer.exists() and not build.exists() and src.is_dir()
 consume(prefix_b,'relocated consumer build')
 no_version=consume(prefix_b,'no version',('-DREQUEST_NO_VERSION=ON',),False)
-if (no_version/'resolved.txt').read_text().splitlines()[1]!='0.3.0':
+if (no_version/'resolved.txt').read_text().splitlines()[1]!='0.4.0':
     raise RuntimeError('package version metadata missing without version request')
-consume(prefix_b,'exact version',('-DREQUEST_VERSION=0.3.0','-DREQUEST_EXACT=ON'),False)
-for version in ['0.1.0','0.1.99','0.2.0','0.2.99','0.4.0','0.3.1','1.0']:
+consume(prefix_b,'exact version',('-DREQUEST_VERSION=0.4.0','-DREQUEST_EXACT=ON'),False)
+for version in ['0.1.0','0.1.99','0.2.0','0.2.99','0.3.0','0.3.99','0.4.1','1.0']:
     consume(prefix_b,'rejected '+version,(f'-DREQUEST_VERSION={version}',),False,True)
 message=consume(prefix_b,'required component',('-DREQUEST_COMPONENT=imaginary',),False,True)
 if 'no package components' not in message:raise RuntimeError('unclear component diagnostic')

@@ -1,0 +1,5 @@
+{
+  "genetik_discrete_overlap": 3,
+  "genetik_concurrency_contracts": 3,
+  "genetik_oop_parallel": 3
+}

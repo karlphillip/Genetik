@@ -1,0 +1,9 @@
+{
+  "implementation": "0c55ba603fc949b2ee8e10a9e1ebad6c2b4733fc",
+  "protocol_commit": "919031d75cb66fefe3d8da6e9c4f11e2f1b1695a",
+  "additional_tests": "80ab378749d9c3c872a28f95b710cf7cb0c96d1c",
+  "scope": "Additional outer-body/diagonal and closed nested-move assertions only. No executable library or campaign change. Initial Release full suite binary precedes these assertions; run final targeted Release D2 checks after rebuild. Subsequent Debug/minimum/sanitizer/TSan builds include them.",
+  "driver_source_field": "gates.json source_sha is driver launch revision, not a blanket per-binary build revision.",
+  "timeout_only_cmake_revision": "e25742398fb995ccf32d84d5f95366e6d60eddc2",
+  "timeout_scope": "New complete D2 ASan CTest allowance only:180 to900 after unchanged binary completed307.6278s. All public library/campaign code remains0c55ba6; test additions80ab378 remain."
+}

@@ -1,0 +1,6 @@
+#define main iteration_fixture_main
+#include "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/discrete_iteration.cpp"
+#undef main
+int main(int argc,char** argv){try{if(argc!=2)return 2;std::string reference;
+ for(unsigned workers:{1,2,4}){auto p=problem();auto c=config();RandomContext random(77,ExecutionConfig{workers});auto document=loadCheckpoint(std::filesystem::path(argv[1])/("iteration-"+std::to_string(workers)+".gtkc"));auto run=DiscreteEvolutionRun::restore(document,p,c,random);for(int i=40;i<100;++i)run->step();auto key=populationKey(*run,random);if(reference.empty())reference=key;else check(key==reference,"cross-worker entire population/archive/fitness/RNG/counters differ");std::cout<<workers<<" workers generation="<<*run->population().generation()<<" attempts="<<run->work().lossAttempts<<" key="<<checkpointHex(checkpointChecksum(key))<<'\n';}return 0;
+ }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

@@ -1,0 +1,215 @@
+[
+  {
+    "name": "sanitize-timeout-repair-configure",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-S",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik",
+      "-B",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DGENETIK_WARNINGS_AS_ERRORS=ON",
+      "-DGENETIK_BUILD_TESTS=ON",
+      "-DGENETIK_BUILD_EXAMPLES=ON",
+      "-DBUILD_TESTING=ON",
+      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+      "-DGENETIK_RECORDED_REFERENCE=OFF",
+      "-DGENETIK_SANITIZERS=ON",
+      "-DGENETIK_THREAD_SANITIZER=OFF"
+    ],
+    "exit": 0,
+    "seconds": 0.8907415360445157,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "sanitize-complete-repaired",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-sanitize",
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest",
+      "-R",
+      "^genetik_discrete_iteration_contracts$",
+      "--output-on-failure"
+    ],
+    "exit": 0,
+    "seconds": 307.1140932040289,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "tsan-configure",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-S",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik",
+      "-B",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DGENETIK_WARNINGS_AS_ERRORS=ON",
+      "-DGENETIK_BUILD_TESTS=ON",
+      "-DGENETIK_BUILD_EXAMPLES=ON",
+      "-DBUILD_TESTING=ON",
+      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+      "-DGENETIK_THREAD_SANITIZER=ON",
+      "-DGENETIK_SANITIZERS=OFF"
+    ],
+    "exit": 0,
+    "seconds": 0.8825500740204006,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "tsan-build",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "--build",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan",
+      "--target",
+      "genetik_discrete_iteration_tests",
+      "genetik_discrete_tests",
+      "genetik_concurrency_tests",
+      "genetik_oop_consumer",
+      "-j2"
+    ],
+    "exit": 0,
+    "seconds": 48.61025023809634,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "tsan-repeated",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan",
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest",
+      "-R",
+      "^(genetik_discrete_iteration_overlap|genetik_discrete_overlap|genetik_concurrency_contracts|genetik_oop_parallel)$",
+      "--repeat",
+      "until-fail:3",
+      "--output-on-failure"
+    ],
+    "exit": 0,
+    "seconds": 5.682465455960482,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "tsan-full-iteration",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-tsan",
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest",
+      "-R",
+      "^genetik_discrete_iteration_contracts$",
+      "--output-on-failure"
+    ],
+    "exit": 0,
+    "seconds": 5.480822497047484,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "final-release-d2-build",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "--build",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-release",
+      "--target",
+      "genetik_discrete_iteration_tests",
+      "-j2"
+    ],
+    "exit": 0,
+    "seconds": 18.924230342032388,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "final-release-d2-tests",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-release",
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest",
+      "-R",
+      "^genetik_discrete_iteration_",
+      "--output-on-failure"
+    ],
+    "exit": 0,
+    "seconds": 1.0696932809660211,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "portable-configure",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-S",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik",
+      "-B",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/iteration-portable",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DGENETIK_WARNINGS_AS_ERRORS=ON",
+      "-DGENETIK_BUILD_TESTS=ON",
+      "-DGENETIK_BUILD_EXAMPLES=ON",
+      "-DBUILD_TESTING=ON",
+      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+      "-DGENETIK_RECORDED_REFERENCE=OFF"
+    ],
+    "exit": 0,
+    "seconds": 1.4007502970052883,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "portable-manifest-check",
+    "command": [
+      "python3",
+      "scripts/check_ci_manifest.py",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/discrete-d2/portable-manifest.json"
+    ],
+    "exit": 0,
+    "seconds": 0.06662331894040108,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "workflow-lint",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/actionlint"
+    ],
+    "exit": 0,
+    "seconds": 0.0063900110544636846,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "hygiene",
+    "command": [
+      "python3",
+      "scripts/check_hygiene.py",
+      "--workspace"
+    ],
+    "exit": 0,
+    "seconds": 0.1248384570935741,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "diff-check",
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit": 0,
+    "seconds": 0.011221638997085392,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  },
+  {
+    "name": "quickstart-threads4",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/discrete-release/genetik_discrete_iteration_quickstart",
+      "--threads",
+      "4"
+    ],
+    "exit": 0,
+    "seconds": 0.007567901047877967,
+    "source_sha": "e25742398fb995ccf32d84d5f95366e6d60eddc2"
+  }
+]

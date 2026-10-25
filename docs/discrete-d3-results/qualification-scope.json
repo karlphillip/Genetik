@@ -1,0 +1,18 @@
+{
+  "implementation": "f21920fa982449378b36adf9b9e22eacdae6335a",
+  "protocol": "1daa8a6f141c4869169122e9f653eafe2270b463",
+  "campaigns_uninterrupted": true,
+  "campaigns_sequential": true,
+  "code_changes_during_campaign": false,
+  "qualification_code_changes": true,
+  "default_empty_context_d2_native_population_entries_verified": 650,
+  "default_empty_context_d2_diagnostic_rows": 5200,
+  "all_ten_task_checkpoint_entries_verified": 330,
+  "task_audit_rows": 168328,
+  "io_repair": "b5bff3370eb6bf4982ae4c5c8a56892c8b4717c9",
+  "driver_source_field": "gates.json is launch revision1daa8a6, not a blanket binary SHA. First full Release suite tested original compiled app against the newly added failing-write regression and passed79/80. Driver was paused while that suite completed; corrected app rebuilt, probe rejected before search, then new driver runs complete80-test suite at repair source. Debug/minimum/sanitizer/TSan builds include repair.",
+  "scientific_scope": "All ten campaigns used original f21920f binary and frozen1daa8a6 protocol; repair only flushes/checks/closes already-successfully-written metadata. No change to successful-run datasets/expressions/objectives, no campaign retry.",
+  "qualification_change_scope": "metadata stream flush/close failure detection, then new complete fixture ASan-only CTest timeout600->3600 based on unchanged completion; no mathematical/search/fitness/configuration change",
+  "asan_timeout_only_cmake_revision": "566f8a52062800158236f53985566664f9d175fd",
+  "asan_scope": "original13selected CTest cases:12pass and completeD3timeout600.11s. One unchanged complete binary then passed direct,1484.531s including107.076s controlled diagnostic pauses; metadata-only ASan allowance3600 verified after reconfigure with identicalbinarySHA. Other12notrepeated; no whole13passclaim. No further mathematical/source/assertion/instrumentation change."
+}

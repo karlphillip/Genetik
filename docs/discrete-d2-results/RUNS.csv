@@ -1,0 +1,11 @@
+case,seed,initial_loss,final_loss,generation,discovery_generation,loss_attempts,rows,node_visits,operations,iterations,iteration_operations,invalid_losses,nodes,depth,constants,contains_iteration,canonical,pretty,assessment_matches,assessment_rows,assessment_max_error,seconds,stop,mutations,crossovers,rejections,fallbacks
+series,0,0,0,0,0,64,576,4099,2569,731,447,0,4,2,1,True,"sum(k0, 0, x0, k0)",Σ[k0=0..x0] k0,4,4,0,0.095880633,exact_fit,0,0,0,0
+series,1,7,0,43,43,2816,25344,202188,144722,48508,23654,0,4,2,1,True,"sum(k0, 1, x0, k0)",Σ[k0=1..x0] k0,4,4,0,0.531715572,exact_fit,933,1208,516,2
+series,2,0,0,0,0,64,576,3314,2008,598,450,0,4,2,1,True,"sum(k0, 0, x0, k0)",Σ[k0=0..x0] k0,4,4,0,0.093767004,exact_fit,0,0,0,0
+series,3,7,0,7,7,512,4608,26457,17248,5449,2768,0,4,2,1,True,"sum(k0, 0, x0, k0)",Σ[k0=0..x0] k0,4,4,0,0.101421751,exact_fit,152,198,68,0
+series,42,7,0,2,2,192,1728,10537,6989,2263,1224,0,6,3,2,True,"sum(k0, 0, x0, (k0 - 0))",Σ[k0=0..x0] (k0 - 0),4,4,0,0.095967835,exact_fit,50,53,12,0
+factorial,0,5,0,10,10,704,4928,21269,12748,4323,2928,0,4,2,1,True,"product(k1, 2, x0, k1)",Π[k1=2..x0] k1,3,3,0,0.199217542,exact_fit,210,267,160,3
+factorial,1,5,0,8,8,576,4032,20845,11884,3355,2859,0,4,2,1,True,"product(k0, 1, x0, k0)",Π[k0=1..x0] k0,3,3,0,0.101906853,exact_fit,168,226,70,1
+factorial,2,5,0,4,4,320,2240,9791,5406,1523,980,0,6,3,2,True,"product(k1, 2, x0, (0 + k1))",Π[k1=2..x0] (0 + k1),3,3,0,0.098141081,exact_fit,73,109,28,0
+factorial,3,5,0,4,4,320,2240,12827,7064,1751,1456,0,4,2,1,True,"product(k0, 2, x0, k0)",Π[k0=2..x0] k0,3,3,0,0.097394308,exact_fit,92,114,44,0
+factorial,42,5,0,1,1,128,896,6109,3954,1273,778,0,4,2,1,True,"product(k0, 1, x0, k0)",Π[k0=1..x0] k0,3,3,0,0.096485449,exact_fit,24,30,6,0

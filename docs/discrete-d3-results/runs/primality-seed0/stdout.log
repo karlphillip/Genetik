@@ -1,0 +1,6 @@
+primality generation=0 attempts=32/20000 matches=44/62 loss=18 nodes=1 depth=1 seconds=0.0134562 visits=13885 iterations=3064 stop=running
+0
+0
+primality generation=624 attempts=20000/20000 matches=48/62 loss=14 nodes=8 depth=4 seconds=0.953332 visits=12014858 iterations=1272838 stop=loss_budget
+(if((4 > x0), -1, x0) % 2)
+((if (4 > x0) then -1 else x0) mod 2)

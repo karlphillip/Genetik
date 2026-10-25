@@ -1,0 +1,17 @@
+{
+  "original_timeout": 180.12,
+  "progress": {
+    "iteration-1.gtkc": {
+      "bytes": 9280,
+      "mtime": 1792925312.9554584,
+      "sha256": "3ee217d3e97871e52fa62afbe1129d2bd1b082dd797d31cd71118fa4d5ddebde"
+    },
+    "failed-private.gtkc": {
+      "bytes": 8830,
+      "mtime": 1792925251.6695821,
+      "sha256": "4709103a48e906d2ecb504cd85ff850d718145e7887df8ce1cf74ce12be46f31"
+    }
+  },
+  "binary_sha256": "33b51332d4acbcbf312d95e83606e91d7020120755e4c42cce2c19912f6a73a8",
+  "note": "Unchanged complete contract, failed-private and first continuation checkpoint present before timeout; no sanitizer finding."
+}

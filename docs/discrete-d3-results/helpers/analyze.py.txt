@@ -1,0 +1,44 @@
+from pathlib import Path
+import json,hashlib,statistics,csv,math
+r=Path.cwd();o=r/'out/runs/discrete-d3';p=r/'docs/discrete-d3-results';data=json.loads((p/'data.json').read_text());protocol=json.loads((p/'protocol.json').read_text());runs=json.loads((o/'campaign-results.json').read_text());assert len(runs)==10
+assert hashlib.sha256((r/'tests/discrete-primes.tsv').read_bytes()).hexdigest()==protocol['reference_tsv_sha256'];assert hashlib.sha256((p/'data.json').read_bytes()).hexdigest()==protocol['data_json_sha256'];assert hashlib.sha256((r/'out/build/discrete-d3-release/genetik_discrete_prime_search').read_bytes()).hexdigest()==protocol['binary_sha256']
+def prime(n):
+    if n<2:return False
+    for d in range(2,math.isqrt(n)+1):
+        if n%d==0:return False
+    return True
+
+def check_points(points,task):
+    for row in points:
+        assert row['target']==(int(prime(row['n'])) if task=='primality' else data['primes'][row['n']-1])
+    errors=[abs(row['value']-row['target']) for row in points if row['status']==0]
+    prefix=0
+    for row in points:
+        if row['status'] or row['value']!=row['target']:break
+        prefix+=1
+    return dict(matches=sum(x==0 for x in errors),prefix=prefix,maximum=max(errors,default=0),mae=sum(errors)/len(errors) if errors else None,rmse=math.sqrt(sum(x*x for x in errors)/len(errors)) if errors else None,false_positive=sum(x['value']==1 and x['target']==0 for x in points if x['status']==0),missed_prime=sum(x['value']!=1 and x['target']==1 for x in points if x['status']==0),nonbinary=sum(x['value'] not in [0,1] for x in points if x['status']==0))
+rows=[];entries=0;diagnostic_rows=0
+for run in runs:
+    task=run['task'];seed=run['seed'];folder=o/'campaign'/f'{task}-seed{seed}';result=json.loads((folder/'result.json').read_text());audit=json.loads((folder/'audit.json').read_text());frozen=json.loads((folder/'selected.json').read_text());assert result==run['result'];assert frozen['canonical']==result['canonical']==audit['selected'];assert result['work']['loss_attempts']<=protocol['loss_allowances'][task];assert run['exit']==0 and result['stop']=='loss_budget' and not result['failure'];assert audit['training_attempts_added']==0 and audit['state_unchanged']
+    for key,destination in [('training','training_assessment'),('held_out','held_out'),('exterior','exterior')]:
+        checked=check_points(audit[key],task)
+        for metric in ['matches','prefix','maximum']:assert checked[metric]==result[destination][metric]
+        for metric in ['rmse','mae']:
+            if checked[metric] is not None:assert math.isclose(checked[metric],result[destination][metric],rel_tol=1e-14,abs_tol=1e-14)
+        result[destination]['independent_audit']=checked
+    assert result['loss']==len(audit['training'])-result['training_assessment']['matches'];entries+=audit['cached_entries_verified'];diagnostic_rows+=audit['diagnostic_rows'];rows.append(result)
+summary={}
+for task in protocol['tasks']:
+    group=[x for x in rows if x['task']==task];summary[task]={name:statistics.median(values) for name,values in dict(training_matches=[x['training_assessment']['matches'] for x in group],training_rmse=[x['training_assessment']['rmse'] for x in group],held_out_matches=[x['held_out']['matches'] for x in group],prefix=[x['training_assessment']['prefix'] for x in group],node_visits=[x['work']['node_visits'] for x in group],operations=[x['work']['operations'] for x in group],iterations=[x['work']['iterations'] for x in group],search_seconds=[x['search_seconds'] for x in group],rss_kib=[x['peak_rss_kib'] for x in group]).items()}
+baselines={key:dict(rows=len(data[key]),constant_zero_matches=sum(y==0 for n,y in data[key]),constant_one_matches=sum(y==1 for n,y in data[key])) for key in ['primality_training','primality_held_out','primality_exterior']}
+(p/'analysis.json').write_text(json.dumps(dict(runs=rows,medians=summary,primality_baselines=baselines,cached_entries_audited=entries,audit_rows=diagnostic_rows,frozen_campaign_binary_and_data_unchanged=True,optional_enumeration=False),indent=2)+'\n')
+fields=['task','seed','initial_loss','loss','canonical','pretty','nodes','depth','constants','attainment_generation','attainment_attempts','generation','stop','search_seconds','peak_rss_kib']
+flat=[]
+for x in rows:
+    row={k:x[k] for k in fields}
+    for channel in ['training_assessment','held_out','exterior']:
+        for k in ['rows','matches','prefix','invalid','resources','maximum','mae','rmse']:row[channel+'_'+k]=x[channel][k]
+    row.update({'work_'+k:v for k,v in x['work'].items()});flat.append(row)
+with (p/'RUNS.csv').open('w') as f:
+    w=csv.DictWriter(f,fieldnames=list(flat[0]),lineterminator="\n");w.writeheader();w.writerows(flat)
+print(json.dumps(dict(medians=summary,baselines=baselines,cached_entries_audited=entries,audit_rows=diagnostic_rows),indent=2))

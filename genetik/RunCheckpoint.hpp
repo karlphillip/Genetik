@@ -98,7 +98,7 @@ inline std::string encodeCheckpoint(const CheckpointDocument& document,Checkpoin
     if(header.size()>limits.maxBytes||payload.size()>limits.maxBytes-header.size())throw CheckpointError("checkpoint source byte limit");
     return header+payload;
 }
-inline CheckpointDocument decodeCheckpoint(std::string_view bytes,CheckpointLimits limits={},std::optional<CheckpointReadCompatibility> compatibility={}) {
+inline CheckpointDocument decodeCompatibleCheckpoint(std::string_view bytes,CheckpointLimits limits,std::optional<CheckpointReadCompatibility> compatibility) {
     if(compatibility&&(compatibility->producerVersion.empty()||compatibility->producerVersion.size()>32||compatibility->codec.empty()||compatibility->codec.size()>256))throw std::invalid_argument("invalid checkpoint compatibility policy");
     if(bytes.size()>limits.maxBytes)throw CheckpointError("checkpoint source byte limit");
     const auto a=bytes.find('\n'),b=a==bytes.npos?a:bytes.find('\n',a+1),c=b==bytes.npos?b:bytes.find('\n',b+1);
@@ -119,13 +119,15 @@ inline CheckpointDocument decodeCheckpoint(std::string_view bytes,CheckpointLimi
     }else if(d.runtime!=runtime)throw CheckpointError("checkpoint runtime/FP environment differs");
     return d;
 }
-inline CheckpointDocument loadCheckpoint(const std::filesystem::path& path,CheckpointLimits limits={},std::optional<CheckpointReadCompatibility> compatibility={}) {
+inline CheckpointDocument decodeCheckpoint(std::string_view bytes,CheckpointLimits limits={}){return decodeCompatibleCheckpoint(bytes,limits,{});}
+inline CheckpointDocument loadCompatibleCheckpoint(const std::filesystem::path& path,CheckpointLimits limits,std::optional<CheckpointReadCompatibility> compatibility) {
     std::ifstream in(path,std::ios::binary);if(!in)throw CheckpointError("cannot open checkpoint: "+path.string());
     std::string bytes;char block[8192];
     while(in){in.read(block,sizeof(block));const auto n=static_cast<std::size_t>(in.gcount());if(bytes.size()>limits.maxBytes || n>limits.maxBytes-bytes.size())throw CheckpointError("checkpoint source byte limit");bytes.append(block,n);}
     if(!in.eof())throw CheckpointError("checkpoint read failure");
-    return decodeCheckpoint(bytes,limits,std::move(compatibility));
+    return decodeCompatibleCheckpoint(bytes,limits,std::move(compatibility));
 }
+inline CheckpointDocument loadCheckpoint(const std::filesystem::path& path,CheckpointLimits limits={}){return loadCompatibleCheckpoint(path,limits,{});}
 namespace genetik_detail {
 // Sync directory entries, including the parent entry of each newly created
 // directory. No file-format change; failures remain visible to the coordinator.

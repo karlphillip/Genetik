@@ -87,5 +87,5 @@ inline std::optional<CheckpointReadCompatibility> scalarCheckpointCompatibility0
     return {};
 }
 inline CheckpointDocument loadScalarCheckpoint(const std::filesystem::path& path,CheckpointLimits limits={}){
-    return loadCheckpoint(path,limits,scalarCheckpointCompatibility03());
+    return loadCompatibleCheckpoint(path,limits,scalarCheckpointCompatibility03());
 }

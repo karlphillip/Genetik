@@ -5,6 +5,8 @@
 #endif
 #include <ExpressionParsing.hpp>
 #include <iostream>
+static_assert(std::is_same_v<decltype(&loadCheckpoint),CheckpointDocument(*)(const std::filesystem::path&,CheckpointLimits)>);
+static_assert(std::is_same_v<decltype(&decodeCheckpoint),CheckpointDocument(*)(std::string_view,CheckpointLimits)>);
 using P=Population<ExpressionCandidate,RegressionOrdering>;
 using A=GeneticAlgorithm<P,ExpressionCandidate,ExpressionVariation>;
 auto problem(){return RegressionProblem::create({{{0},1},{{0},2},{{2},7}},{7,4,8});}
@@ -18,7 +20,7 @@ int main(int argc,char** argv){try{if(argc!=2)return 2;std::filesystem::path roo
 #else
  bool rejected=false;try{(void)loadCheckpoint(root/"v03.gtkc");}catch(const CheckpointError&){rejected=true;}if(!rejected)throw std::runtime_error("generic reader must retain exact-version default");for(auto name:{"wrong-codec.gtkc","wrong-runtime.gtkc"}){bool failed=false;try{(void)loadScalarCheckpoint(root/name);}catch(const CheckpointError&){failed=true;}if(!failed)throw std::runtime_error("legacy compatibility whitelist weakened");}auto d=loadScalarCheckpoint(root/"v03.gtkc");if(d.producerVersion!="0.3.0"||d.identity!="v03-scalar-exact-mse/fixture-rows-and-settings-1"||d.runtime!=checkpointRuntime())throw std::runtime_error("import provenance/context failed");CheckpointReader r(d.payload);RandomCheckpoint random;random.seed=static_cast<std::uint32_t>(r.integer());random.threads=static_cast<unsigned>(r.integer());random.candidateAttempts=r.integer();random.engine=r.text();AlgorithmCheckpoint algorithm;algorithm.attempts=r.integer();algorithm.published=static_cast<unsigned>(r.integer());algorithm.lastOutcome=static_cast<GenerationOutcome>(r.integer());auto stats=readVariationStatistics(r);auto state=readCommittedPopulation<ExpressionCandidate>(r,ScalarCheckpointContext{p,{}});r.finish();RandomContext rng(41,ExecutionConfig{2});auto population=RunCheckpointAccess::restorePopulation<ExpressionCandidate,RegressionOrdering>(state,rng);A a(.9,.35,rng,variation(p),1);RunCheckpointAccess::restoreRandom(rng,random);RunCheckpointAccess::restoreAlgorithm(a,algorithm);a.variation().restoreStatistics(stats);for(int n=3;n<8;++n)if(a.evolve(*population)!=GenerationOutcome::Committed)throw std::runtime_error("consumer generation failed");std::ifstream expected(root/"expected.bin",std::ios::binary);std::string bytes((std::istreambuf_iterator<char>(expected)),{});if(payload(*population,a,rng)!=bytes)throw std::runtime_error("published0.3 to0.4 trajectory differs");
  // The opt-in reader cannot normalize unrelated codecs or runtime environments.
- auto bad=d;bad.codec="custom.unknown/1";bad.runtime="other-runtime";bool failed=false;try{(void)decodeCheckpoint(encodeCheckpoint(bad),{},scalarCheckpointCompatibility03());}catch(const CheckpointError&){failed=true;}if(!failed)throw std::runtime_error("runtime guard weakened");
+ auto bad=d;bad.codec="custom.unknown/1";bad.runtime="other-runtime";bool failed=false;try{(void)decodeCompatibleCheckpoint(encodeCheckpoint(bad),{},scalarCheckpointCompatibility03());}catch(const CheckpointError&){failed=true;}if(!failed)throw std::runtime_error("runtime guard weakened");
  saveCheckpointAtomic(root/"new04.gtkc",d);if(loadCheckpoint(root/"new04.gtkc").producerVersion!="0.4.0")throw std::runtime_error("new writer version not current");
  std::cout<<"published0.3 producer ->0.4 consumer: population, fitness, archive, RNG, counters and continued trajectory exact\n";
 #endif

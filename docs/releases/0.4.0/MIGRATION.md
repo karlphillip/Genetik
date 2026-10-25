@@ -20,7 +20,9 @@ binding identities are distinct from external input indices. Configure expressio
 parser, workspace, per-operation/aggregate iteration and objective-work allowances.
 Resource exhaustion aborts private preparation; it is not a finite loss penalty.
 
-Generic loadCheckpoint remains exact-version. loadScalarCheckpoint explicitly
+Generic loadCheckpoint/decodeCheckpoint retain their original function signatures
+and exact-version default. The distinct loadCompatibleCheckpoint/decodeCompatibleCheckpoint
+entrypoints take an explicit policy. loadScalarCheckpoint explicitly
 supports the published0.3.0 scalar codec on the identical qualified compiler,
 standard/runtime libraries, FP/optimization environment and unchanged problem/config.
 The scalar prime application's --resume uses that loader. loadDiscreteRunCheckpoint

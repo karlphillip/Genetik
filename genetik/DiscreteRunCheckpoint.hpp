@@ -86,5 +86,5 @@ private:
 inline CheckpointDocument loadDiscreteRunCheckpoint(const std::filesystem::path& path,CheckpointLimits limits={}){
     std::optional<CheckpointReadCompatibility> compatibility;
     if(std::string_view(genetikVersion)=="0.4.0")compatibility=CheckpointReadCompatibility{"0.3.0","genetik.discrete-evolution/2"};
-    return loadCheckpoint(path,limits,std::move(compatibility));
+    return loadCompatibleCheckpoint(path,limits,std::move(compatibility));
 }

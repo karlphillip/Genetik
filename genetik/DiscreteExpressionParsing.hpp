@@ -43,7 +43,7 @@ private:
             push(DiscreteNode::integer(n));return;
         }
         if(take("-")){primary(nesting+1);push(DiscreteNode::operation(DiscreteKind::Negate));return;}
-        space();while(pos_<text_.size()&&((text_[pos_]>='a'&&text_[pos_]<='z')||digit(text_[pos_])))++pos_;
+        space();while(pos_<text_.size()&&((text_[pos_]>='a'&&text_[pos_]<='z')||text_[pos_]=='_'||digit(text_[pos_])))++pos_;
         if(pos_-start>p_.maxTokenBytes)error(DiscreteParseCategory::Resource,"symbol token limit");
         auto name=text_.substr(start,pos_-start);
         if(name=="true"||name=="false"){push(DiscreteNode::boolean(name=="true"));return;}
@@ -57,8 +57,8 @@ private:
             if(parsed.ec!=std::errc{}||parsed.ptr!=name.data()+name.size()||std::find(active_.begin(),active_.end(),id)==active_.end())error(DiscreteParseCategory::UnknownSymbol,"unbound iterator");
             push(DiscreteNode::iterator(id));return;
         }
-        if(name=="sum"||name=="product"){
-            need("(");space();const auto begin=pos_;while(pos_<text_.size()&&((text_[pos_]>='a'&&text_[pos_]<='z')||digit(text_[pos_])))++pos_;
+        if(name=="sum"||name=="product"||name=="first"){
+            need("(");space();const auto begin=pos_;while(pos_<text_.size()&&((text_[pos_]>='a'&&text_[pos_]<='z')||text_[pos_]=='_'||digit(text_[pos_])))++pos_;
             const auto binder=text_.substr(begin,pos_-begin);std::size_t id=0;
             if(binder.size()>p_.maxTokenBytes)error(DiscreteParseCategory::Resource,"binder token limit");
             if(binder.size()<2||binder[0]!='k')error(DiscreteParseCategory::Syntax,"binder must be k followed by an integer identity");
@@ -67,8 +67,9 @@ private:
             if(declared_.size()==e_.maxBinders)error(DiscreteParseCategory::Resource,"binder count limit");
             declared_.push_back(id);
             need(",");expression(0,nesting+1);need(",");expression(0,nesting+1);need(",");active_.push_back(id);expression(0,nesting+1);active_.pop_back();need(")");
-            push(DiscreteNode::iteration(name=="sum"?DiscreteKind::Sum:DiscreteKind::Product,id));return;
+            push(DiscreteNode::iteration(name=="sum"?DiscreteKind::Sum:name=="product"?DiscreteKind::Product:DiscreteKind::First,id));return;
         }
+        for(auto d:integerOperators)if(name==d.name){need("(");for(unsigned j=0;j<d.arity;++j){if(j)need(",");expression(0,nesting+1);}need(")");for(unsigned raw=18;raw<=24;++raw){auto k=static_cast<DiscreteKind>(raw);if(integerOperation(k)==d.operation){push(DiscreteNode::operation(k));return;}}}
         if(name=="if"||name=="neg"){
             need("(");expression(0,nesting+1);
             if(name=="if"){need(",");expression(0,nesting+1);need(",");expression(0,nesting+1);}

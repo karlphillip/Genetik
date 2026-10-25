@@ -15,7 +15,7 @@ inline std::string runIdentity(const DiscreteRegressionProblem& p,const Discrete
     w.integer(g.booleanConstants.size());for(bool b:g.booleanConstants)w.integer(b);w.integer(g.allowedVariables.has_value());if(g.allowedVariables){w.integer(g.allowedVariables->size());for(auto n:*g.allowedVariables)w.integer(n);}
     w.integer(g.positiveConstantDivisorsOnly);w.integer(g.positiveDivisors.size());for(auto n:g.positiveDivisors)signedField(w,n);
     for(auto n:{g.initialMaxDepth,g.mutationMaxDepth,g.proposalLimit,g.maxIterationNesting})w.integer(n);
-    w.integer(g.iterationBoundsAreTerminals);if(!c.contextIdentity.empty()){w.text("application-context/1");w.text(c.contextIdentity);}return w.data();
+    w.integer(g.iterationBoundsAreTerminals);if(g.iteratorDiscovery||g.recordIterationDiagnostics){w.text("iterator-discovery/1");w.integer(g.iteratorDiscovery);w.integer(g.recordIterationDiagnostics);}if(!p.measurementIdentity().empty()){w.text("discrete-measurement/1");w.text(p.measurementIdentity());}if(!c.contextIdentity.empty()){w.text("application-context/1");w.text(c.contextIdentity);}return w.data();
 }
 inline void writeWork(CheckpointWriter& w,const DiscreteTrainingWork& x){for(auto n:{x.lossAttempts,x.rowAttempts,x.nodeVisits,x.operations,x.invalidLosses,x.invalidRows,x.iterations,x.iterationOperations})w.integer(n);}
 inline DiscreteTrainingWork readWork(CheckpointReader& r){DiscreteTrainingWork w;w.lossAttempts=r.integer();w.rowAttempts=r.integer();w.nodeVisits=r.integer();w.operations=r.integer();w.invalidLosses=r.integer();w.invalidRows=r.integer();w.iterations=r.integer();w.iterationOperations=r.integer();return w;}
@@ -51,6 +51,7 @@ public:
         CheckpointWriter w;w.text(CandidateCheckpointCodec<DiscreteExpressionCandidate>::identifier);w.integer(rng.seed);w.integer(rng.candidateAttempts);w.text(rng.engine);w.integer(rng.threads);
         w.integer(a.attempts);w.integer(a.published);w.integer(static_cast<unsigned>(a.lastOutcome));
         for(auto n:{v.initializations,v.mutations,v.crossovers,v.rejections,v.fallbacks})w.integer(n);
+        if(config_.grammar.iteratorDiscovery||config_.grammar.recordIterationDiagnostics)for(auto n:{v.iterationGenerated,v.dependentGenerated,v.bodyRepairs,v.alignedCrossovers})w.integer(n);
         genetik_discrete_detail::writeWork(w,objective_->work());writeCommittedPopulation(w,state);
         CheckpointDocument document;document.codec="genetik.discrete-evolution/2";document.identity=identity_;document.payload=w.data();document.generation=state.generation;return document;
     }
@@ -62,10 +63,12 @@ public:
         RandomCheckpoint rng;rng.seed=static_cast<std::uint32_t>(r.count(std::numeric_limits<std::uint32_t>::max()));rng.candidateAttempts=r.integer();rng.engine=r.text(16000);rng.threads=static_cast<unsigned>(r.count(256));
         AlgorithmCheckpoint a;a.attempts=r.integer();a.published=static_cast<unsigned>(r.count(std::numeric_limits<unsigned>::max()));a.lastOutcome=static_cast<GenerationOutcome>(r.count(2));
         DiscreteVariationStatistics v;v.initializations=r.integer();v.mutations=r.integer();v.crossovers=r.integer();v.rejections=r.integer();v.fallbacks=r.integer();
+        if(config.grammar.iteratorDiscovery||config.grammar.recordIterationDiagnostics){v.iterationGenerated=r.integer();v.dependentGenerated=r.integer();v.bodyRepairs=r.integer();v.alignedCrossovers=r.integer();}
         const auto work=genetik_discrete_detail::readWork(r);const auto state=readCommittedPopulation<DiscreteExpressionCandidate>(r,DiscreteCheckpointContext{result->problem_,result->objective_});r.finish();
         if(!document.generation||*document.generation!=state.generation||state.generation!=a.published||state.members.size()!=config.population||state.direction!=ObjectiveDirection::Minimize||a.attempts>config.maxGenerations||a.attempts<a.published||v.initializations!=config.population||rng.candidateAttempts<work.lossAttempts)throw CheckpointError("inconsistent discrete run counters");
         if(a.attempts==std::numeric_limits<std::uint64_t>::max()||rng.candidateAttempts/(a.attempts+1)>config.population||(rng.candidateAttempts/(a.attempts+1)==config.population&&rng.candidateAttempts%(a.attempts+1)))throw CheckpointError("excess candidate requests");
         if(v.mutations>a.attempts*config.population||v.crossovers>a.attempts*config.population||v.fallbacks>v.mutations+v.crossovers||v.rejections>(v.mutations+v.crossovers)*config.grammar.proposalLimit)throw CheckpointError("invalid discrete variation counters");
+        if(v.dependentGenerated>v.iterationGenerated||v.iterationGenerated>v.initializations+v.mutations+2*v.crossovers||v.alignedCrossovers>v.crossovers)throw CheckpointError("invalid iterator diagnostic counters");
         auto ready=RunCheckpointAccess::restorePopulation<DiscreteExpressionCandidate,DiscreteRegressionOrdering>(state,random);
         result->objective_->restoreWork(work);RunCheckpointAccess::restoreAlgorithm(*result->algorithm_,a);result->algorithm_->variation().restoreStatistics(v);
         RunCheckpointAccess::restoreRandom(random,rng);result->population_=std::move(ready);return result;

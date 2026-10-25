@@ -32,7 +32,7 @@ template<> struct CandidateCheckpointCodec<DiscreteExpressionCandidate> {
         const auto cap=std::min({context.problem->limits().maxNodes,context.problem->limits().maxStorageBytes/DiscreteExpression::storageBytesPerNode(),r.limits().maxBytes/8});
         const auto size=r.count(cap);if(!size)throw CheckpointError("empty discrete checkpoint");
         std::vector<DiscreteNode> nodes;nodes.reserve(size);
-        for(std::size_t i=0;i<size;++i){const auto k=static_cast<DiscreteKind>(r.count(17));
+        for(std::size_t i=0;i<size;++i){const auto k=static_cast<DiscreteKind>(r.count(25));
             if(k==DiscreteKind::Integer){auto text=r.text(20);if(text.size()>20)throw CheckpointError("discrete integer token too large");std::int64_t n=0;auto parsed=std::from_chars(text.data(),text.data()+text.size(),n);if(parsed.ec!=std::errc{}||parsed.ptr!=text.data()+text.size())throw CheckpointError("invalid discrete integer");nodes.push_back(DiscreteNode::integer(n));}
             else if(k==DiscreteKind::Boolean)nodes.push_back(DiscreteNode::boolean(r.count(1)!=0));
             else if(k==DiscreteKind::Variable)nodes.push_back(DiscreteNode::variable(r.count(dimensions?dimensions-1:0)));

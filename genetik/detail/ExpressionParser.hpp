@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include "ScalarOperators.hpp"
 #include <charconv>
 #include <cmath>
 #include <cstddef>
@@ -145,13 +146,16 @@ private:
             for(std::size_t i=0;i<count;++i){if(i)expect(",",Category::Arity);values.push_back(number());}
             expect(")",Category::Arity);b_.aggregate(t.text,rows,cols,values,t.offset);return;
         }
-        const bool binary=t.text=="dot"||t.text=="matvec"||t.text=="matmul";
-        const bool unary=t.text=="log"||t.text=="sin"||t.text=="cos"||t.text=="exp"||t.text=="sqrt"||t.text=="powi";
+        const auto scalar=scalarOperatorFromName(t.text);
+        const bool extra=!Builder::typed&&scalar&&*scalar>=ExpressionKind::NegativePowi;
+        const bool binary=t.text=="dot"||t.text=="matvec"||t.text=="matmul"||(extra&&expressionArity(*scalar)>=2);
+        const bool unary=extra||t.text=="log"||t.text=="sin"||t.text=="cos"||t.text=="exp"||t.text=="sqrt"||t.text=="powi";
         if(!unary && !(Builder::typed && (binary||t.text=="transpose")))fail(Category::UnknownSymbol,t.offset,"unknown function or variable");
         Nest n(*this);expect("(");expression();unsigned exponent=0;
-        if(binary){expect(",",Category::Arity);expression();}
-        if(t.text=="powi"){expect(",",Category::Arity);const auto e=integer();if(e>8)fail(Category::Literal,t.offset,"powi exponent must be in [0,8]");exponent=static_cast<unsigned>(e);}
-        expect(")",Category::Arity);b_.operation(t.text,exponent,t.offset);
+        if(binary){expect(",",Category::Arity);expression();if(extra&&expressionArity(*scalar)==3){expect(",",Category::Arity);expression();}}
+        bool negative=false;
+        if(t.text=="powi"||t.text=="npowi"){expect(",",Category::Arity);if(!Builder::typed&&is("-")){negative=true;lex_.next();}const auto e=integer();if(e>8)fail(Category::Literal,t.offset,"powi exponent must be in [0,8]");if((negative||t.text=="npowi")&&e==0)fail(Category::Literal,t.offset,"negative powi needs magnitude1..8");exponent=static_cast<unsigned>(e);}
+        expect(")",Category::Arity);b_.operation(negative?std::string_view("npowi"):t.text,exponent,t.offset);
     }
     Lexer lex_;Builder& b_;Budget& budget_;std::size_t nesting_=0;
 };

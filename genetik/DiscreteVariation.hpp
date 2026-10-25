@@ -15,8 +15,10 @@ struct DiscreteGrammar {
     std::size_t initialMaxDepth=4,mutationMaxDepth=3,proposalLimit=8;
     std::size_t maxIterationNesting=2;
     bool iterationBoundsAreTerminals=false;
+    bool iteratorDiscovery=false; // opt-in binder-dependent bodies and scope-aligned crossover
+    bool recordIterationDiagnostics=false;
 };
-struct DiscreteVariationStatistics {std::uint64_t initializations=0,mutations=0,crossovers=0,rejections=0,fallbacks=0;bool operator==(const DiscreteVariationStatistics&) const = default;};
+struct DiscreteVariationStatistics {std::uint64_t initializations=0,mutations=0,crossovers=0,rejections=0,fallbacks=0;std::uint64_t iterationGenerated=0,dependentGenerated=0,bodyRepairs=0,alignedCrossovers=0;bool operator==(const DiscreteVariationStatistics&) const = default;};
 inline DiscreteExpression discreteSubtree(const DiscreteExpression& expression,std::size_t root) {
     const auto nodes=expression.nodes().subspan(expression.subtreeStart(root),root+1-expression.subtreeStart(root));
     std::vector<std::size_t> free;
@@ -55,7 +57,7 @@ public:
         :problem_(std::move(p)),grammar_(std::move(grammar)),objective_(std::move(objective)) {
         if(!problem_||(objective_&&objective_->problem()!=problem_))throw std::invalid_argument("discrete variation context mismatch");
         if(!grammar_.initialMaxDepth||!grammar_.mutationMaxDepth||grammar_.initialMaxDepth>32||grammar_.mutationMaxDepth>32||!grammar_.proposalLimit||grammar_.proposalLimit>256)throw std::invalid_argument("discrete planner depth/proposal limits");
-        if(grammar_.operators.size()>14||grammar_.constants.size()>256||grammar_.positiveDivisors.size()>256||grammar_.booleanConstants.size()>2)throw std::invalid_argument("discrete grammar source limit");
+        if(grammar_.operators.size()>22||grammar_.constants.size()>256||grammar_.positiveDivisors.size()>256||grammar_.booleanConstants.size()>2)throw std::invalid_argument("discrete grammar source limit");
         for(std::size_t i=0;i<grammar_.operators.size();++i){if(!discreteArity(grammar_.operators[i])||std::find(grammar_.operators.begin(),grammar_.operators.begin()+i,grammar_.operators[i])!=grammar_.operators.begin()+i)throw std::invalid_argument("invalid/duplicate discrete grammar operation");}
         if((grammar_.allowedVariables&&grammar_.allowedVariables->size()>1024)||(!grammar_.allowedVariables&&problem_->dimensions()>1024))throw std::invalid_argument("discrete planner variable source exceeds 1024; supply a restricted original-index set");
         if(grammar_.allowedVariables)variables_=*grammar_.allowedVariables;else for(std::size_t i=0;i<problem_->dimensions();++i)variables_.push_back(i);
@@ -88,8 +90,8 @@ public:
         const auto depth=std::min(maximumDepth?maximumDepth:grammar_.initialMaxDepth,witnesses_.size()-1);
         if(!depth||!witnesses_[depth][index(type)])throw std::invalid_argument("discrete result infeasible under grammar");
         for(std::size_t attempt=0;attempt<grammar_.proposalLimit;++attempt){
-            auto nodes=iterationEnabled_?buildScoped(type,depth,std::min(problem_->limits().maxNodes,std::size_t{255}),rng,{},0,0):build(type,depth,std::min(problem_->limits().maxNodes,std::size_t{255}),rng);
-            try{DiscreteExpression e(nodes,problem_->dimensions(),problem_->limits());validate(e);return e;}catch(const std::length_error&){}catch(const std::invalid_argument&){}
+            try{auto nodes=iterationEnabled_?buildScoped(type,depth,std::min(problem_->limits().maxNodes,std::size_t{255}),rng,{},0,0):build(type,depth,std::min(problem_->limits().maxNodes,std::size_t{255}),rng);
+            DiscreteExpression e(nodes,problem_->dimensions(),problem_->limits());validate(e);return e;}catch(const std::length_error&){}catch(const std::invalid_argument&){}
         }
         return *witnesses_[depth][index(type)]; // finite owned constructive fallback, never a target injection
     }
@@ -110,7 +112,7 @@ public:
             if(n.kind()==K::Modulo&&grammar_.positiveConstantDivisorsOnly){const auto& divisor=e.nodes()[e.children(i)[1]];if(divisor.kind()!=K::Integer||divisor.integer()<=0||std::find(grammar_.positiveDivisors.begin(),grammar_.positiveDivisors.end(),divisor.integer())==grammar_.positiveDivisors.end())throw std::invalid_argument("modulo divisor requires configured positive literal");}
         }
     }
-    DiscreteExpressionCandidate initialize(std::mt19937& rng){++stats_.initializations;return {generate(T::Int64,rng),problem_,objective_};}
+    DiscreteExpressionCandidate initialize(std::mt19937& rng){++stats_.initializations;auto e=generate(T::Int64,rng);record(e);return {e,problem_,objective_};}
     DiscreteExpressionCandidate mutation(const DiscreteExpressionCandidate& parent,float rate,std::mt19937& rng){
         if(!std::isfinite(rate)||rate<0||rate>1)throw std::invalid_argument("invalid discrete mutation rate");
         require(parent);auto child=parent;if(std::uniform_real_distribution<float>(0,1)(rng)>=rate)return child;
@@ -121,7 +123,7 @@ public:
             if(iterationEnabled_){const auto scope=parent.expression().scopeAt(root);auto used=std::vector<std::size_t>(parent.expression().binders().begin(),parent.expression().binders().end());used.insert(used.end(),scope.begin(),scope.end());std::size_t fresh=0;while(std::find(used.begin(),used.end(),fresh)!=used.end())++fresh;
                 for(std::size_t attempt=0;attempt<grammar_.proposalLimit;++attempt){try{auto nodes=buildScoped(type,d,std::min(problem_->limits().maxNodes,std::size_t{255}),rng,scope,parent.expression().iterationLevelAt(root),fresh);replacement=DiscreteExpression(nodes,problem_->dimensions(),problem_->limits(),scope);break;}catch(const std::length_error&){}catch(const std::invalid_argument&){}}}
             auto next=replaceDiscreteSubtree(parent.expression(),root,replacement,problem_->limits());
-            if(next){try{validate(*next);if(!next->sameRepresentation(parent.expression())){child.replaceExpression(*next);return child;}}catch(const std::invalid_argument&){}}
+            if(next){try{validate(*next);if(!next->sameRepresentation(parent.expression())){child.replaceExpression(*next);record(*next);return child;}}catch(const std::invalid_argument&){}}
             ++stats_.rejections;
         }
         ++stats_.fallbacks;return child;
@@ -131,10 +133,15 @@ public:
         require(a);require(b);x=a;y=b;if(std::uniform_real_distribution<float>(0,1)(rng)>=rate)return;++stats_.crossovers;
         for(std::size_t p=0;p<grammar_.proposalLimit;++p){const auto i=choose(a.expression().nodeCount(),rng),j=choose(b.expression().nodeCount(),rng);
             if(a.expression().subtreeType(i)!=b.expression().subtreeType(j)){++stats_.rejections;continue;}
-            const auto left=discreteSubtree(a.expression(),i),right=discreteSubtree(b.expression(),j);
-            if(!left.outerBindings().empty()||!right.outerBindings().empty()){++stats_.rejections;continue;} // no cross-individual capture
+            auto left=discreteSubtree(a.expression(),i),right=discreteSubtree(b.expression(),j);
+            if(!left.outerBindings().empty()||!right.outerBindings().empty()){
+                if(!grammar_.iteratorDiscovery){++stats_.rejections;continue;}
+                auto one=align(right,a.expression().scopeAt(i)),two=align(left,b.expression().scopeAt(j));
+                if(!one||!two){++stats_.rejections;continue;}right=std::move(*one);left=std::move(*two);
+                if(grammar_.recordIterationDiagnostics)++stats_.alignedCrossovers;
+            } // no cross-individual capture
             auto one=replaceDiscreteSubtree(a.expression(),i,right,problem_->limits()),two=replaceDiscreteSubtree(b.expression(),j,left,problem_->limits());
-            if(one&&two){try{validate(*one);validate(*two);auto readyX=a,readyY=b;readyX.replaceExpression(*one);readyY.replaceExpression(*two);x=std::move(readyX);y=std::move(readyY);return;}catch(const std::invalid_argument&){}}
+            if(one&&two){try{validate(*one);validate(*two);auto readyX=a,readyY=b;readyX.replaceExpression(*one);readyY.replaceExpression(*two);x=std::move(readyX);y=std::move(readyY);record(x.expression());record(y.expression());return;}catch(const std::invalid_argument&){}}
             ++stats_.rejections;
         }
         ++stats_.fallbacks;
@@ -146,7 +153,7 @@ private:
     static std::size_t index(T t){if(t==T::Int64)return 0;if(t==T::Bool)return 1;throw std::invalid_argument("invalid discrete type");}
     static std::size_t choose(std::size_t n,std::mt19937& r){return std::uniform_int_distribution<std::size_t>(0,n-1)(r);}
     static T output(K k,T requested){if(k==K::IfThenElse)return requested;return k>=K::Equal&&k<=K::GreaterEqual?T::Bool:T::Int64;}
-    static std::vector<T> types(K k,T result){if(k==K::IfThenElse)return {T::Bool,result,result};return std::vector<T>(discreteArity(k),T::Int64);}
+    static std::vector<T> types(K k,T result){if(k==K::IfThenElse)return {T::Bool,result,result};if(k==K::First)return {T::Int64,T::Int64,T::Bool};return std::vector<T>(discreteArity(k),T::Int64);}
     std::vector<DiscreteNode> build(T type,std::size_t depth,std::size_t budget,std::mt19937& rng) const {
         std::vector<std::vector<DiscreteNode>> terminals;
         if(type==T::Int64){for(auto v:variables_)terminals.push_back({DiscreteNode::variable(v)});for(auto c:grammar_.constants)if(problem_->limits().maxConstants)terminals.push_back({DiscreteNode::integer(c)});}
@@ -180,12 +187,45 @@ private:
             else {
                 auto inner=scope;if(discreteIteration(k)&&j==2)inner.push_back(id);
                 auto child=buildScoped(ts[j],discreteIteration(k)&&j<2&&grammar_.iterationBoundsAreTerminals?1:depth-1,budget-nodes.size()-reserve,rng,std::move(inner),level+(discreteIteration(k)?1:0),nextId);
+                if(grammar_.iteratorDiscovery&&discreteIteration(k)&&j==2&&std::none_of(child.begin(),child.end(),[&](const auto& n){return n.kind()==K::Iterator&&n.binder()==id;})){
+                    std::vector<std::size_t> leaves;
+                    for(std::size_t z=0;z<child.size();++z){const auto& node=child[z];
+                        if(node.kind()==K::Integer||node.kind()==K::Variable)leaves.push_back(z);
+                        else if(node.kind()==K::Iterator){const bool declared=std::any_of(child.begin(),child.end(),[&](const auto& n){return discreteIteration(n.kind())&&n.binder()==node.binder();});const auto refs=std::count_if(child.begin(),child.end(),[&](const auto& n){return n.kind()==K::Iterator&&n.binder()==node.binder();});if(!declared||refs>1)leaves.push_back(z);}
+                    }
+                    if(leaves.empty())throw std::invalid_argument("no typed iterator insertion site");
+                    child[leaves[choose(leaves.size(),rng)]]=DiscreteNode::iterator(id);
+                    if(grammar_.recordIterationDiagnostics)++stats_.bodyRepairs;
+                }
                 for(const auto& n:child)if(discreteIteration(n.kind()))nextId=std::max(nextId,n.binder()+1);
                 nodes.insert(nodes.end(),child.begin(),child.end());
             }
         }
         nodes.push_back(discreteIteration(k)?DiscreteNode::iteration(k,id):DiscreteNode::operation(k));return nodes;
     }
+    std::optional<DiscreteExpression> align(const DiscreteExpression& fragment,std::span<const std::size_t> destination) const {
+        if(fragment.outerBindings().size()>destination.size())return {};
+        auto nodes=std::vector<DiscreteNode>(fragment.nodes().begin(),fragment.nodes().end());
+        // Innermost free reference maps to innermost available binding; internal declarations
+        // are renamed by replaceDiscreteSubtree, never captured by textual names.
+        auto free=std::vector<std::size_t>(fragment.outerBindings().begin(),fragment.outerBindings().end());
+        std::vector<std::size_t> mapped;
+        for(std::size_t z=0;z<free.size();++z)mapped.push_back(destination[destination.size()-free.size()+z]);
+        // Avoid collisions between incoming closed declarations and the destination free IDs.
+        std::vector<std::pair<std::size_t,std::size_t>> renamed;auto reserved=mapped;
+        for(auto id:fragment.binders())reserved.push_back(id);
+        for(auto id:fragment.binders())if(std::find(mapped.begin(),mapped.end(),id)!=mapped.end()){std::size_t fresh=0;while(std::find(reserved.begin(),reserved.end(),fresh)!=reserved.end())++fresh;reserved.push_back(fresh);renamed.push_back({id,fresh});}
+        for(auto& n:nodes){if(n.kind()==K::Iterator||discreteIteration(n.kind())){
+            const auto before=n.binder();bool local=false;for(auto [a,b]:renamed)if(before==a){n=n.kind()==K::Iterator?DiscreteNode::iterator(b):DiscreteNode::iteration(n.kind(),b);local=true;break;}
+            if(!local&&n.kind()==K::Iterator)for(std::size_t z=0;z<free.size();++z)if(before==free[z]){n=DiscreteNode::iterator(mapped[z]);break;}
+        }}
+        try{return DiscreteExpression(nodes,fragment.dimensions(),problem_->limits(),mapped);}catch(const std::length_error&){return {};}catch(const std::invalid_argument&){return {};}
+    }
+    void record(const DiscreteExpression& e) {
+        if(!grammar_.recordIterationDiagnostics)return;
+        if(!e.binders().empty())++stats_.iterationGenerated;
+        if(std::any_of(e.nodes().begin(),e.nodes().end(),[](const auto& n){return n.kind()==K::Iterator;}))++stats_.dependentGenerated;
+    }
     void require(const DiscreteExpressionCandidate& c) const {if(c.problem()!=problem_||c.problemIdentity()!=(objective_?std::shared_ptr<const void>(objective_):std::shared_ptr<const void>(problem_)))throw std::invalid_argument("discrete parent context differs");validate(c.expression());}
-    std::shared_ptr<const DiscreteRegressionProblem> problem_;DiscreteGrammar grammar_;std::shared_ptr<DiscreteTrainingObjective> objective_;std::vector<std::size_t> variables_;std::vector<std::array<std::optional<DiscreteExpression>,2>> witnesses_;DiscreteVariationStatistics stats_;bool iterationEnabled_=false;
+    std::shared_ptr<const DiscreteRegressionProblem> problem_;DiscreteGrammar grammar_;std::shared_ptr<DiscreteTrainingObjective> objective_;std::vector<std::size_t> variables_;std::vector<std::array<std::optional<DiscreteExpression>,2>> witnesses_;mutable DiscreteVariationStatistics stats_;bool iterationEnabled_=false;
 };

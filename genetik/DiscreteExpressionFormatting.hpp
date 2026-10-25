@@ -20,9 +20,10 @@ inline std::string formatDiscreteExpression(const DiscreteExpression& expression
             const auto start=stack.size()-arity;
             const auto join=[&](std::initializer_list<std::string_view> parts){std::size_t size=0;for(auto part:parts){if(part.size()>maxBytes-size)throw std::length_error("discrete formatting bound");size+=part.size();}std::string text;text.reserve(size);for(auto part:parts)text.append(part);return text;};
             const auto& a=stack[start];
-            if(arity==1)value=tex?join({"-\\left(",a,"\\right)"}):join({"−(",a,")"});
+            if(advancedIntegerKind(n.kind())){value=tex?"\\operatorname{"+std::string(discreteFunctionName(n.kind()))+"}(":std::string(discreteFunctionName(n.kind()))+"(";for(std::size_t j=0;j<arity;++j){if(j)value+=", ";value+=stack[start+j];}value+=")";}
+            else if(arity==1)value=tex?join({"-\\left(",a,"\\right)"}):join({"−(",a,")"});
             else if(discreteIteration(n.kind())){const auto& b=stack[start+1];const auto& body=stack[start+2];const auto binder="k"+std::to_string(n.binder());
-                value=tex?join({n.kind()==DiscreteKind::Sum?"\\sum_{":"\\prod_{",binder,"=",a,"}^{",b,"}{",body,"}"}):join({n.kind()==DiscreteKind::Sum?"Σ[":"Π[",binder,"=",a,"..",b,"] ",body});}
+                value=tex?join({n.kind()==DiscreteKind::Sum?"\\sum_{":n.kind()==DiscreteKind::Product?"\\prod_{":"\\min_{",binder,"=",a,"}^{",b,"}{",body,"}"}):join({n.kind()==DiscreteKind::Sum?"Σ[":n.kind()==DiscreteKind::Product?"Π[":"first[",binder,"=",a,"..",b,"] ",body});}
             else if(arity==3){const auto& b=stack[start+1];const auto& c=stack[start+2];value=tex?join({"\\begin{cases}",b," & \\text{if } ",a,"\\\\",c," & \\text{otherwise}\\end{cases}"}):join({"(if ",a," then ",b," else ",c,")"});}
             else {std::string op=discreteSymbol(n.kind());
                 if(n.kind()==DiscreteKind::Multiply)op=tex?"\\cdot":"·";

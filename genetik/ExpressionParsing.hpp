@@ -4,16 +4,8 @@
 
 namespace genetik_parse_detail {
 inline ExpressionKind scalarOperator(std::string_view name) {
-    if(name=="+")return ExpressionKind::Add;
-    if(name=="-")return ExpressionKind::Subtract;
-    if(name=="*")return ExpressionKind::Multiply;
-    if(name=="/")return ExpressionKind::Divide;
-    if(name=="log")return ExpressionKind::Log;
-    if(name=="sin")return ExpressionKind::Sin;
-    if(name=="cos")return ExpressionKind::Cos;
-    if(name=="exp")return ExpressionKind::Exp;
-    if(name=="sqrt")return ExpressionKind::Sqrt;
-    if(name=="powi")return ExpressionKind::Powi;
+    if(name=="npowi")return ExpressionKind::NegativePowi;
+    if(auto kind=scalarOperatorFromName(name))return *kind;
     throw std::logic_error("unrecognized internal parser operator");
 }
 class ScalarBuilder {
@@ -38,12 +30,12 @@ public:
     void operation(std::string_view name,unsigned exponent,std::size_t p) {
         const auto k=scalarOperator(name);const auto arity=expressionArity(k);
         auto depth=depths_.back();depths_.pop_back();
-        if(arity==2){depth=std::max(depth,depths_.back());depths_.pop_back();}
+        for(std::size_t j=1;j<arity;++j){depth=std::max(depth,depths_.back());depths_.pop_back();}
         if(depth>=limits_.maxDepth)fail(Category::Resource,p,"expression depth limit");
-        const std::size_t cost=k==ExpressionKind::Powi ? (exponent ? exponent-1:0):1;
+        const std::size_t cost=expressionOperationCost(k,exponent);
         if(cost>limits_.maxArithmeticOperations-work_)fail(Category::Resource,p,"expression arithmetic work limit");
         work_+=cost;
-        append(k==ExpressionKind::Powi ? ExpressionNode::power(exponent):arity==1 ? ExpressionNode::unary(k):ExpressionNode::binary(k),depth+1,p);
+        append(expressionPowerMetadata(k)?(k==ExpressionKind::Powi?ExpressionNode::power(exponent):ExpressionNode::signedPower(-static_cast<int>(exponent))):arity==1?ExpressionNode::unary(k):arity==2?ExpressionNode::binary(k):ExpressionNode::ternary(k),depth+1,p);
     }
     Expression finish() {return Expression(nodes_,variables_,limits_);}
     std::size_t aggregateSize(std::string_view,std::size_t,std::size_t,std::size_t p){fail(Category::UnknownSymbol,p,"aggregate literal in scalar language");}

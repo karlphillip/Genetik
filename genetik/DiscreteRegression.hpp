@@ -11,10 +11,18 @@ class DiscreteLossBudgetExceeded : public EvaluationBudgetExceeded {public:Discr
 struct DiscreteRegressionRow {std::vector<std::int64_t> inputs;std::int64_t target;};
 struct DiscreteDatasetLimits {std::size_t maxRows=100000,maxInputValues=10000000,maxNodeVisitsPerLoss=10000000,maxOperationsPerLoss=10000000,maxIterationsPerLoss=1000000;};
 struct DiscreteRegressionMetrics {Fitness loss;std::size_t rowsAttempted=0,mismatches=0,invalidRows=0,nodeVisits=0,operations=0,iterations=0,iterationOperations=0;};
+// Immutable mathematical measurement adapter. Default null retains the exact D1/D2 path.
+class DiscreteMeasurement {
+public:
+    virtual ~DiscreteMeasurement()=default;
+    virtual std::string identity() const=0;
+    virtual bool parallelEvaluationSafe() const noexcept{return false;}
+    virtual DiscreteEvaluationResult evaluate(const DiscreteExpression&,std::span<const std::int64_t>,DiscreteEvaluationLimits,const ExecutionContext*) const=0;
+};
 class DiscreteRegressionProblem final {
 public:
-    DiscreteRegressionProblem(std::size_t dimensions,const std::vector<DiscreteRegressionRow>& rows,DiscreteExpressionLimits e={},DiscreteEvaluationLimits evaluation={},DiscreteDatasetLimits data={})
-        :dimensions_(dimensions),limits_(e),evaluation_(evaluation),data_(data) {
+    DiscreteRegressionProblem(std::size_t dimensions,const std::vector<DiscreteRegressionRow>& rows,DiscreteExpressionLimits e={},DiscreteEvaluationLimits evaluation={},DiscreteDatasetLimits data={},std::shared_ptr<const DiscreteMeasurement> measurement={})
+        :dimensions_(dimensions),limits_(e),evaluation_(evaluation),data_(data),measurement_(std::move(measurement)) {
         genetik_discrete_detail::validateLimits(e);
         if(evaluation.maxIterationDepth>128||evaluation.maxIterationsPerOperation>1000000000||evaluation.maxAggregateIterations>1000000000)throw std::invalid_argument("invalid iteration evaluation limits");
         if(rows.empty()||!data.maxRows||!data.maxInputValues||!data.maxNodeVisitsPerLoss||!data.maxOperationsPerLoss||!evaluation.maxWorkspaceBytes)throw std::invalid_argument("invalid discrete data or limits");
@@ -23,9 +31,12 @@ public:
         genetik_discrete_detail::limit(rows.size(),std::min(data.maxRows,std::size_t{1000000}),"discrete row limit");
         if(dimensions&&rows.size()>data.maxInputValues/dimensions)throw std::length_error("discrete dataset storage limit");
         for(const auto& row:rows)if(row.inputs.size()!=dimensions)throw std::invalid_argument("discrete row dimension mismatch");
+        if(measurement_){const auto id=measurement_->identity();if(id.empty()||id.size()>1024*1024)throw std::invalid_argument("measurement identity must be nonempty and bounded");}
         rows_=rows;
     }
-    static std::shared_ptr<const DiscreteRegressionProblem> create(std::size_t dimensions,const std::vector<DiscreteRegressionRow>& rows,DiscreteExpressionLimits e={},DiscreteEvaluationLimits v={},DiscreteDatasetLimits d={}) {return std::make_shared<const DiscreteRegressionProblem>(dimensions,rows,e,v,d);}
+    static std::shared_ptr<const DiscreteRegressionProblem> create(std::size_t dimensions,const std::vector<DiscreteRegressionRow>& rows,DiscreteExpressionLimits e={},DiscreteEvaluationLimits v={},DiscreteDatasetLimits d={},std::shared_ptr<const DiscreteMeasurement> measurement={}) {return std::make_shared<const DiscreteRegressionProblem>(dimensions,rows,e,v,d,std::move(measurement));}
+    std::string measurementIdentity() const{return measurement_?measurement_->identity():std::string{};}
+    bool parallelEvaluationSafe() const noexcept{return !measurement_||measurement_->parallelEvaluationSafe();}
     std::size_t dimensions() const noexcept{return dimensions_;}
     std::size_t sampleCount() const noexcept{return rows_.size();}
     DiscreteExpressionLimits limits() const noexcept{return limits_;}
@@ -45,7 +56,7 @@ public:
             ++result.rowsAttempted;if(consumed)++consumed->rowsAttempted;
             auto v=evaluation_;v.maxNodeVisits=std::min(v.maxNodeVisits,data_.maxNodeVisitsPerLoss-result.nodeVisits);v.maxOperations=std::min(v.maxOperations,data_.maxOperationsPerLoss-result.operations);
             v.maxAggregateIterations=std::min(v.maxAggregateIterations,data_.maxIterationsPerLoss-result.iterations);
-            const auto prediction=e.evaluateWithCancellation(row.inputs,v,[&]{return execution&&execution->stopRequested();});result.nodeVisits+=prediction.nodeVisits;result.operations+=prediction.operations;result.iterations+=prediction.iterations;result.iterationOperations+=prediction.iterationOperations;
+            const auto prediction=measurement_?measurement_->evaluate(e,row.inputs,v,execution):e.evaluateWithCancellation(row.inputs,v,[&]{return execution&&execution->stopRequested();});result.nodeVisits+=prediction.nodeVisits;result.operations+=prediction.operations;result.iterations+=prediction.iterations;result.iterationOperations+=prediction.iterationOperations;
             if(consumed){consumed->nodeVisits+=prediction.nodeVisits;consumed->operations+=prediction.operations;consumed->iterations+=prediction.iterations;consumed->iterationOperations+=prediction.iterationOperations;}
             if(prediction.status==DiscreteEvaluationStatus::ResourceExhausted)throw DiscreteResourceExhausted(prediction.reason);
             if(prediction.status==DiscreteEvaluationStatus::Cancelled)throw EvaluationCancelled();
@@ -57,7 +68,7 @@ public:
         result.loss=invalid?Fitness::invalid():Fitness::valid(static_cast<double>(result.mismatches));return result;
     }
 private:
-    std::size_t dimensions_;DiscreteExpressionLimits limits_;DiscreteEvaluationLimits evaluation_;DiscreteDatasetLimits data_;std::vector<DiscreteRegressionRow> rows_;
+    std::size_t dimensions_;DiscreteExpressionLimits limits_;DiscreteEvaluationLimits evaluation_;DiscreteDatasetLimits data_;std::vector<DiscreteRegressionRow> rows_;std::shared_ptr<const DiscreteMeasurement> measurement_;
 };
 struct DiscreteTrainingWork {
     std::uint64_t lossAttempts=0,rowAttempts=0,nodeVisits=0,operations=0,invalidLosses=0,invalidRows=0,iterations=0,iterationOperations=0;
@@ -122,7 +133,7 @@ public:
     const std::string& text() const noexcept{return text_;}
     const auto& problem() const noexcept{return problem_;}
     std::shared_ptr<const void> problemIdentity() const noexcept override{return objective_?std::shared_ptr<const void>(objective_):std::shared_ptr<const void>(problem_);}
-    bool parallelEvaluationSafe() const noexcept override{return typeid(*this)==typeid(DiscreteExpressionCandidate);}
+    bool parallelEvaluationSafe() const noexcept override{return typeid(*this)==typeid(DiscreteExpressionCandidate)&&problem_->parallelEvaluationSafe();}
     void beginParallelEvaluation(ExecutionContext& execution) override {if(objective_){auto local=objective_->fork(execution);parent_=objective_;objective_=std::move(local);}}
     void finishParallelEvaluation() override {if(parent_){auto local=std::move(objective_);objective_=std::move(parent_);objective_->merge(*local);}}
     std::string stats() override{return text_;}

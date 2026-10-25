@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include "detail/AdvancedInteger.hpp"
 #include <array>
 #include <atomic>
 #include <cstdint>
@@ -44,19 +45,25 @@ private:
     std::variant<std::int64_t,bool> value_;
 };
 enum class DiscreteKind { Integer, Boolean, Variable, Add, Subtract, Multiply, Negate, Modulo,
-    Equal, NotEqual, LessThan, LessEqual, GreaterThan, GreaterEqual, IfThenElse, Iterator=15, Sum=16, Product=17 };
-inline bool discreteIteration(DiscreteKind k) noexcept {return k==DiscreteKind::Sum||k==DiscreteKind::Product;}
+    Equal, NotEqual, LessThan, LessEqual, GreaterThan, GreaterEqual, IfThenElse, Iterator=15, Sum=16, Product=17, IntegerDivide=18, Gcd=19, Lcm=20, IntegerPower=21, ModularPower=22, Factorial=23, Binomial=24, First=25 };
+inline bool discreteIteration(DiscreteKind k) noexcept {return k==DiscreteKind::Sum||k==DiscreteKind::Product||k==DiscreteKind::First;}
 inline std::size_t discreteArity(DiscreteKind k) {
     switch(k) {
     case DiscreteKind::Integer:case DiscreteKind::Boolean:case DiscreteKind::Variable:case DiscreteKind::Iterator:return 0;
-    case DiscreteKind::Negate:return 1;
-    case DiscreteKind::IfThenElse:case DiscreteKind::Sum:case DiscreteKind::Product:return 3;
+    case DiscreteKind::Negate:case DiscreteKind::Factorial:return 1;
+    case DiscreteKind::IfThenElse:case DiscreteKind::Sum:case DiscreteKind::Product:case DiscreteKind::First:case DiscreteKind::ModularPower:return 3;
     case DiscreteKind::Add:case DiscreteKind::Subtract:case DiscreteKind::Multiply:case DiscreteKind::Modulo:
     case DiscreteKind::Equal:case DiscreteKind::NotEqual:case DiscreteKind::LessThan:case DiscreteKind::LessEqual:
-    case DiscreteKind::GreaterThan:case DiscreteKind::GreaterEqual:return 2;
+    case DiscreteKind::GreaterThan:case DiscreteKind::GreaterEqual:case DiscreteKind::IntegerDivide:case DiscreteKind::Gcd:case DiscreteKind::Lcm:case DiscreteKind::IntegerPower:case DiscreteKind::Binomial:return 2;
     }
     throw std::invalid_argument("unknown discrete operator");
 }
+inline bool advancedIntegerKind(DiscreteKind k) noexcept {return k>=DiscreteKind::IntegerDivide&&k<=DiscreteKind::Binomial;}
+inline genetik_discrete_detail::IntegerOperation integerOperation(DiscreteKind k){
+ using K=DiscreteKind;using O=genetik_discrete_detail::IntegerOperation;
+ switch(k){case K::IntegerDivide:return O::Divide;case K::Gcd:return O::Gcd;case K::Lcm:return O::Lcm;case K::IntegerPower:return O::Power;case K::ModularPower:return O::ModularPower;case K::Factorial:return O::Factorial;case K::Binomial:return O::Binomial;default:throw std::invalid_argument("not advanced integer operation");}
+}
+inline std::string_view discreteFunctionName(DiscreteKind k){if(advancedIntegerKind(k))for(auto d:genetik_discrete_detail::integerOperators)if(d.operation==integerOperation(k))return d.name;throw std::invalid_argument("not discrete function");}
 class DiscreteNode {
 public:
     template<std::integral I> requires (!std::same_as<I,bool>)
@@ -88,7 +95,7 @@ struct DiscreteEvaluationLimits {
     std::size_t maxNodeVisits=4096,maxOperations=4096,maxWorkspaceBytes=1024*1024;
     std::size_t maxIterationsPerOperation=10000,maxAggregateIterations=100000,maxIterationDepth=8;
 };
-enum class DiscreteEvaluationStatus { Valid, MathematicalInvalid, ResourceExhausted, Cancelled };
+enum class DiscreteEvaluationStatus { Valid, MathematicalInvalid, ResourceExhausted, Cancelled, NoWitness };
 struct DiscreteEvaluationResult {
     DiscreteEvaluationStatus status=DiscreteEvaluationStatus::MathematicalInvalid;
     std::optional<DiscreteValue> value;
@@ -150,7 +157,7 @@ public:
                     if(binders_.size()>=limits.maxBinders-outer_.size())throw std::length_error("binder count limit");
                     binders_.push_back(n.binder());}
                 if(n.kind()==DiscreteKind::IfThenElse){if(type(0)!=DiscreteType::Bool||type(1)!=type(2))throw std::invalid_argument("if requires Bool,T,T");m.type=type(1);}
-                else {for(std::size_t j=0;j<arity;++j)if(type(j)!=DiscreteType::Int64)throw std::invalid_argument("integer operands required");
+                else {for(std::size_t j=0;j<arity;++j)if(type(j)!=(n.kind()==DiscreteKind::First&&j==2?DiscreteType::Bool:DiscreteType::Int64))throw std::invalid_argument("integer operands or first-search predicate type required");
                     if(n.kind()>=DiscreteKind::Equal&&n.kind()<=DiscreteKind::GreaterEqual)m.type=DiscreteType::Bool;}
                 stack.resize(stack.size()-arity);
             }
@@ -176,6 +183,10 @@ public:
     static DiscreteExpression binary(DiscreteKind k,const DiscreteExpression& a,const DiscreteExpression& b,DiscreteExpressionLimits l={}) {
         if(discreteArity(k)!=2)throw std::invalid_argument("binary discrete operator required");
         const std::array<const DiscreteExpression*,2> args{&a,&b};return compose(k,args,l);
+    }
+    static DiscreteExpression ternary(DiscreteKind k,const DiscreteExpression& a,const DiscreteExpression& b,const DiscreteExpression& c,DiscreteExpressionLimits l={}) {
+        if(discreteArity(k)!=3||discreteIteration(k)||k==DiscreteKind::IfThenElse)throw std::invalid_argument("ordinary ternary integer operation required");
+        const std::array<const DiscreteExpression*,3> args{&a,&b,&c};return compose(k,args,l);
     }
     static DiscreteExpression conditional(const DiscreteExpression& condition,const DiscreteExpression& yes,const DiscreteExpression& no,DiscreteExpressionLimits l={}) {
         const std::array<const DiscreteExpression*,3> args{&condition,&yes,&no};return compose(DiscreteKind::IfThenElse,args,l);
@@ -222,7 +233,7 @@ public:
         if(!outer_.empty())throw std::invalid_argument("open scoped fragment is not executable");
         if(inputs.size()!=dimensions_)throw std::invalid_argument("discrete input dimension mismatch");
         if(l.maxIterationDepth>128||l.maxIterationsPerOperation>1000000000||l.maxAggregateIterations>1000000000)throw std::invalid_argument("invalid iteration evaluation limits");
-        struct Frame {std::size_t index,stage;DiscreteValue left=DiscreteValue::integer(0);std::int64_t cursor=0,upper=0,accumulator=0;};
+        struct Frame {std::size_t index,stage;DiscreteValue left=DiscreteValue::integer(0);std::int64_t cursor=0,upper=0,accumulator=0;DiscreteValue middle=DiscreteValue::integer(0);};
         DiscreteEvaluationResult result;std::vector<Frame> frames;DiscreteValue last=DiscreteValue::integer(0);std::size_t activeIterations=0;
         const auto fail=[&](DiscreteEvaluationStatus status,const char* why){result.status=status;result.reason=why;return result;};
         const auto frameCap=l.maxWorkspaceBytes/sizeof(Frame);
@@ -248,14 +259,15 @@ public:
                 if(f.stage==2){
                     if(!charge())return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete operations exhausted");
                     f.cursor=f.left.integer();f.upper=last.integer();f.accumulator=n.kind()==DiscreteKind::Sum?0:1;
-                    if(f.cursor>f.upper){last=DiscreteValue::integer(f.accumulator);--activeIterations;frames.pop_back();continue;}
+                    if(f.cursor>f.upper){if(n.kind()==DiscreteKind::First)return fail(DiscreteEvaluationStatus::NoWitness,"empty bounded search has no witness");last=DiscreteValue::integer(f.accumulator);--activeIterations;frames.pop_back();continue;}
                     // Unsigned subtraction gives the ordered mathematical distance in [0,2^64-1].
                     const auto distance=static_cast<std::uint64_t>(f.upper)-static_cast<std::uint64_t>(f.cursor);
                     if(distance>=l.maxIterationsPerOperation)return fail(DiscreteEvaluationStatus::ResourceExhausted,"per-operation iteration allowance exhausted");
                     f.stage=3;
                 }else{
                     if(!charge())return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete operations exhausted");
-                    std::int64_t next=0;if(!genetik_discrete_detail::arithmetic(n.kind()==DiscreteKind::Sum?DiscreteKind::Add:DiscreteKind::Multiply,f.accumulator,last.integer(),next))return fail(DiscreteEvaluationStatus::MathematicalInvalid,"iteration accumulation overflow");f.accumulator=next;
+                    if(n.kind()==DiscreteKind::First){if(last.boolean()){last=DiscreteValue::integer(f.cursor);--activeIterations;frames.pop_back();continue;}if(f.cursor==f.upper)return fail(DiscreteEvaluationStatus::NoWitness,"bounded search has no witness");}
+                    std::int64_t next=0;if(n.kind()!=DiscreteKind::First&&!genetik_discrete_detail::arithmetic(n.kind()==DiscreteKind::Sum?DiscreteKind::Add:DiscreteKind::Multiply,f.accumulator,last.integer(),next))return fail(DiscreteEvaluationStatus::MathematicalInvalid,"iteration accumulation overflow");f.accumulator=next;
                     if(f.cursor==f.upper){last=DiscreteValue::integer(f.accumulator);--activeIterations;frames.pop_back();continue;}
                     if(!charge())return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete operations exhausted");
                     ++f.cursor; // cursor < upper <= INT64_MAX; never increment after the last term.
@@ -268,8 +280,14 @@ public:
                 if(f.stage==1){if(!charge())return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete operations exhausted");f.stage=2;const auto branch=last.boolean()?1:2;if(frames.size()==frameCap)return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete frame storage exhausted");frames.push_back({metadata_[i].children[branch],0});continue;}
                 frames.pop_back();continue;
             }
-            if(arity==2&&f.stage==1){f.left=last;f.stage=2;if(frames.size()==frameCap)return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete frame storage exhausted");frames.push_back({metadata_[i].children[1],0});continue;}
+            if(arity>=2&&f.stage==1){f.left=last;f.stage=2;if(frames.size()==frameCap)return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete frame storage exhausted");frames.push_back({metadata_[i].children[1],0});continue;}
+            if(arity==3&&f.stage==2){f.middle=last;f.stage=3;if(frames.size()==frameCap)return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete frame storage exhausted");frames.push_back({metadata_[i].children[2],0});continue;}
             if(!charge())return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete operations exhausted");
+            if(advancedIntegerKind(n.kind())){
+                struct MathStop{DiscreteEvaluationStatus status;};
+                try{const auto first=arity==1?last.integer():f.left.integer();const auto second=arity==3?f.middle.integer():arity==2?last.integer():0;auto answer=genetik_discrete_detail::integerMath(integerOperation(n.kind()),first,second,arity==3?last.integer():0,[&]{if(stop())throw MathStop{DiscreteEvaluationStatus::Cancelled};if(!charge())throw MathStop{DiscreteEvaluationStatus::ResourceExhausted};});if(!answer)return fail(DiscreteEvaluationStatus::MathematicalInvalid,"integer function domain or overflow");last=DiscreteValue::integer(*answer);}catch(const MathStop& e){return fail(e.status,"integer function work or cancellation");}
+                frames.pop_back();continue;
+            }
             const auto a=arity==1?last.integer():f.left.integer(),b=arity==1?0:last.integer();std::int64_t out=0;
             switch(n.kind()){
             case DiscreteKind::Equal:last=DiscreteValue::boolean(a==b);break;
@@ -314,8 +332,8 @@ inline std::string DiscreteExpression::toString(std::size_t maxBytes) const {
     while(!stack.empty()){
         auto& f=stack.back();const auto& n=nodes_[f.node];const auto arity=discreteArity(n.kind());
         if(!arity){if(n.kind()==DiscreteKind::Integer)emit(std::to_string(n.integer()));else if(n.kind()==DiscreteKind::Boolean)emit(n.boolean()?"true":"false");else if(n.kind()==DiscreteKind::Iterator){emit("k");emit(std::to_string(n.binder()));}else {emit("x");emit(std::to_string(n.variable()));}stack.pop_back();continue;}
-        if(!f.stage){if(discreteIteration(n.kind())){emit(n.kind()==DiscreteKind::Sum?"sum(k":"product(k");emit(std::to_string(n.binder()));emit(", ");}else emit(n.kind()==DiscreteKind::IfThenElse?"if(":arity==1?"neg(":"(");f.stage=1;stack.push_back({metadata_[f.node].children[0],0});continue;}
-        if(f.stage<arity){const auto child=f.stage++;if(arity==3)emit(", ");else {emit(" ");emit(discreteSymbol(n.kind()));emit(" ");}stack.push_back({metadata_[f.node].children[child],0});continue;}
+        if(!f.stage){if(discreteIteration(n.kind())){emit(n.kind()==DiscreteKind::Sum?"sum(k":n.kind()==DiscreteKind::Product?"product(k":"first(k");emit(std::to_string(n.binder()));emit(", ");}else if(advancedIntegerKind(n.kind())){emit(discreteFunctionName(n.kind()));emit("(");}else emit(n.kind()==DiscreteKind::IfThenElse?"if(":arity==1?"neg(":"(");f.stage=1;stack.push_back({metadata_[f.node].children[0],0});continue;}
+        if(f.stage<arity){const auto child=f.stage++;if(arity==3||advancedIntegerKind(n.kind()))emit(", ");else {emit(" ");emit(discreteSymbol(n.kind()));emit(" ");}stack.push_back({metadata_[f.node].children[child],0});continue;}
         emit(")");stack.pop_back();
     }
     return out;

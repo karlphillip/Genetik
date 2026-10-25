@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include "detail/ScientificScalar.hpp"
+#include "detail/ScalarOperators.hpp"
 #include <bit>
 #include <cstdint>
 #include <charconv>
@@ -22,20 +23,6 @@ static_assert(std::numeric_limits<double>::is_iec559 && std::numeric_limits<doub
               std::numeric_limits<double>::max_exponent == 1024 && FLT_EVAL_METHOD == 0,
               "Genetik expression evaluation requires native IEEE binary64 arithmetic");
 
-enum class ExpressionKind { Variable, Constant, Add, Subtract, Multiply, Divide, Log, Sin, Cos, Exp, Sqrt, Powi };
-
-// One arity definition for construction, validation, traversal and genetic operators.
-inline std::size_t expressionArity(ExpressionKind kind) {
-    switch (kind) {
-    case ExpressionKind::Variable: case ExpressionKind::Constant: return 0;
-    case ExpressionKind::Log: case ExpressionKind::Sin: case ExpressionKind::Cos:
-    case ExpressionKind::Exp: case ExpressionKind::Sqrt: case ExpressionKind::Powi: return 1;
-    case ExpressionKind::Add: case ExpressionKind::Subtract:
-    case ExpressionKind::Multiply: case ExpressionKind::Divide: return 2;
-    }
-    throw std::invalid_argument("unsupported expression node kind");
-}
-
 // Checked primal kernels shared by ordinary and partial-derivative evaluation.
 namespace genetik_detail {
 inline ScientificKind scientificKind(ExpressionKind kind) {
@@ -51,16 +38,28 @@ inline ScientificKind scientificKind(ExpressionKind kind) {
 template<class Charge>
 std::optional<double> scalarBinary(ExpressionKind kind, double left, double right, Charge charge) {
     if (kind == ExpressionKind::Divide && right == 0.0) return {};
+    if(kind==ExpressionKind::Pow&&((left<0&&std::trunc(right)!=right)||(left==0&&!(right>0))))return {};
+    if(kind==ExpressionKind::Atan2&&left==0&&right==0)return {};
     charge(); volatile double result = 0;
     switch (kind) {
     case ExpressionKind::Add: result = left + right; break;
     case ExpressionKind::Subtract: result = left - right; break;
     case ExpressionKind::Multiply: result = left * right; break;
     case ExpressionKind::Divide: result = left / right; break;
+    case ExpressionKind::Pow:result=std::pow(left,right);break;
+    case ExpressionKind::Atan2:result=std::atan2(left,right);break;
+    case ExpressionKind::Min:result=right<left?right:left;break;
+    case ExpressionKind::Max:result=left<right?right:left;break;
     default: throw std::logic_error("not a binary scalar operation");
     }
     if (!std::isfinite(result)) return {};
     return result;
+}
+template<class Charge>
+std::optional<double> scalarTernary(ExpressionKind kind,double x,double low,double high,Charge charge){
+    if(kind!=ExpressionKind::Clamp)throw std::logic_error("unsupported ternary scalar operation");
+    if(low>high)return {};
+    charge();return x<low?low:x>high?high:x;
 }
 template<class Charge, class PowerStep = IgnorePowerStep>
 std::optional<double> scalarUnary(ExpressionKind kind, double argument, unsigned exponent,
@@ -70,6 +69,17 @@ std::optional<double> scalarUnary(ExpressionKind kind, double argument, unsigned
         charge(); volatile double result = std::log(argument);
         if (!std::isfinite(result)) return {};
         return result;
+    }
+    if(kind==ExpressionKind::NegativePowi){
+        if(!exponent||exponent>8)throw std::invalid_argument("negative power magnitude1..8");
+        auto inverse=scalarBinary(ExpressionKind::Divide,1,argument,charge);if(!inverse)return {};
+        return scientificScalar(ScientificKind::Powi,*inverse,exponent,charge);
+    }
+    if(kind>=ExpressionKind::Cbrt){
+        if((kind==ExpressionKind::Log1p&&!(argument>-1))||((kind==ExpressionKind::Log2||kind==ExpressionKind::Log10)&&!(argument>0))||((kind==ExpressionKind::Asin||kind==ExpressionKind::Acos)&&(argument< -1||argument>1)))return {};
+        charge();volatile double value=0;
+        switch(kind){case ExpressionKind::Cbrt:value=std::cbrt(argument);break;case ExpressionKind::Log1p:value=std::log1p(argument);break;case ExpressionKind::Log2:value=std::log2(argument);break;case ExpressionKind::Log10:value=std::log10(argument);break;case ExpressionKind::Expm1:value=std::expm1(argument);break;case ExpressionKind::Tan:value=std::tan(argument);break;case ExpressionKind::Asin:value=std::asin(argument);break;case ExpressionKind::Acos:value=std::acos(argument);break;case ExpressionKind::Atan:value=std::atan(argument);break;case ExpressionKind::Sinh:value=std::sinh(argument);break;case ExpressionKind::Cosh:value=std::cosh(argument);break;case ExpressionKind::Tanh:value=std::tanh(argument);break;case ExpressionKind::Abs:value=std::abs(argument);break;default:throw std::logic_error("not an advanced unary operation");}
+        return std::isfinite(value)?std::optional<double>(value):std::nullopt;
     }
     return scientificScalar(scientificKind(kind), argument, exponent, charge, step);
 }
@@ -86,15 +96,17 @@ public:
         return {kind, 0, 0};
     }
     static ExpressionNode unary(ExpressionKind kind) {
-        if (kind == ExpressionKind::Powi || expressionArity(kind) != 1) throw std::invalid_argument("expected a supported unary expression operator");
+        if (expressionPowerMetadata(kind) || expressionArity(kind) != 1) throw std::invalid_argument("expected a supported unary expression operator");
         return {kind, 0, 0};
     }
     static ExpressionNode power(unsigned exponent) {
         genetik_detail::validateExponent(exponent);
         return {ExpressionKind::Powi, exponent, 0};
     }
+    static ExpressionNode signedPower(int exponent){if(exponent>=0)return power(static_cast<unsigned>(exponent));if(exponent< -8)throw std::invalid_argument("negative powi exponent must be -8..-1");return {ExpressionKind::NegativePowi,static_cast<unsigned>(-exponent),0};}
+    static ExpressionNode ternary(ExpressionKind kind){if(expressionArity(kind)!=3)throw std::invalid_argument("ternary operation required");return {kind,0,0};}
     unsigned exponent() const {
-        if (kind_ != ExpressionKind::Powi) throw std::logic_error("node is not integer power");
+        if (!expressionPowerMetadata(kind_)) throw std::logic_error("node is not integer power");
         return static_cast<unsigned>(index_);
     }
     ExpressionKind kind() const noexcept { return kind_; }
@@ -161,7 +173,7 @@ public:
         for(std::size_t i=0;i<nodes_.size();++i) {
             const auto& a=nodes_[i];const auto& b=other.nodes_[i];
             if(a.kind()!=b.kind())return false;
-            if(a.kind()==ExpressionKind::Powi && a.exponent()!=b.exponent())return false;
+            if(expressionPowerMetadata(a.kind()) && a.exponent()!=b.exponent())return false;
             if(a.kind()==ExpressionKind::Variable && a.variableIndex()!=b.variableIndex())return false;
             if(a.kind()==ExpressionKind::Constant && std::bit_cast<std::uint64_t>(a.constantValue())!=std::bit_cast<std::uint64_t>(b.constantValue()))return false;
         }
@@ -187,6 +199,13 @@ public:
         genetik_detail::validateExponent(exponent);
         auto nodes = child.nodes(); nodes.push_back(ExpressionNode::power(exponent));
         return Expression(nodes, child.variableCount(), limits);
+    }
+    static Expression integerPower(const Expression& child,int exponent,ExpressionLimits limits={}){
+        if(exponent>=0)return power(child,static_cast<unsigned>(exponent),limits);
+        auto nodes=child.nodes();nodes.push_back(ExpressionNode::signedPower(exponent));return Expression(nodes,child.variableCount(),limits);
+    }
+    static Expression ternary(ExpressionKind kind,const Expression& a,const Expression& b,const Expression& c,ExpressionLimits limits={}){
+        validateLimits(limits);if(a.variableCount()!=b.variableCount()||a.variableCount()!=c.variableCount())throw std::invalid_argument("ternary schema mismatch");std::size_t total=1;for(const auto* e:{&a,&b,&c}){if(e->nodeCount()>limits.maxNodes-total)throw std::length_error("ternary node limit");total+=e->nodeCount();}std::vector<ExpressionNode> nodes;nodes.reserve(total);for(const auto* e:{&a,&b,&c}){auto part=e->nodes();nodes.insert(nodes.end(),part.begin(),part.end());}nodes.push_back(ExpressionNode::ternary(kind));return Expression(nodes,a.variableCount(),limits);
     }
     Expression withExponent(std::size_t index, unsigned exponent) const {
         genetik_detail::validateExponent(exponent);
@@ -262,9 +281,12 @@ private:
             else if (expressionArity(node.kind()) == 1) {
                 const double argument = stack.back();
                 const auto value = genetik_detail::scalarUnary(node.kind(), argument,
-                    node.kind() == ExpressionKind::Powi ? node.exponent() : 0, [&executed]{++executed;});
+                    expressionPowerMetadata(node.kind()) ? node.exponent() : 0, [&executed]{++executed;});
                 if (!value) return ExpressionResult(i, executed);
                 stack.back() = *value;
+            } else if(expressionArity(node.kind())==3){
+                const double high=stack.back();stack.pop_back();const double low=stack.back();stack.pop_back();const double x=stack.back();
+                const auto value=genetik_detail::scalarTernary(node.kind(),x,low,high,[&executed]{++executed;});if(!value)return ExpressionResult(i,executed);stack.back()=*value;
             } else {
                 const double right = stack.back(); stack.pop_back();
                 const double left = stack.back();
@@ -294,6 +316,11 @@ public:
                 const auto result = std::to_chars(buffer, buffer + sizeof buffer, node.variableIndex());
                 if (result.ec != std::errc{}) throw std::runtime_error("variable export failed");
                 out += 'x'; out.append(buffer, result.ptr); stack.pop_back();
+            } else if(node.kind()>=ExpressionKind::NegativePowi){
+                const auto arity=expressionArity(node.kind());
+                if(frame.phase==0){out+=(node.kind()==ExpressionKind::NegativePowi?"powi":std::string(scalarOperatorDescription(node.kind()).name))+"(";frame.phase=1;std::size_t child=frame.root-1;for(std::size_t j=1;j<arity;++j)child-=subtreeSizes_[child];stack.push_back({child,0});}
+                else if(frame.phase<arity){out+=", ";const auto next=frame.phase++;std::size_t child=frame.root-1;for(std::size_t j=next+1;j<arity;++j)child-=subtreeSizes_[child];stack.push_back({child,0});}
+                else {if(node.kind()==ExpressionKind::NegativePowi)out+=",-"+std::to_string(node.exponent());out+=')';stack.pop_back();}
             } else if (expressionArity(node.kind()) == 1) {
                 if (frame.phase == 0) {
                     out += node.kind() == ExpressionKind::Log ? "log(" : genetik_detail::scientificName(genetik_detail::scientificKind(node.kind())) + "("; frame.phase = 1; stack.push_back({frame.root - 1, 0});
@@ -336,14 +363,12 @@ private:
                 stack.push_back(item); break;
             default: {
                 const auto arity = expressionArity(node.kind());
-                const std::size_t cost = node.kind()==ExpressionKind::Powi ? (node.exponent() ? node.exponent()-1 : 0) : 1;
+                const std::size_t cost = expressionOperationCost(node.kind(),expressionPowerMetadata(node.kind())?node.exponent():0);
                 if (cost > limits_.maxArithmeticOperations - work_) throw std::length_error("expression arithmetic work limit exceeded");
                 work_ += cost;
                 if (stack.size() < arity) throw std::invalid_argument("expression operator lacks operands");
                 auto childDepth = stack.back().depth;
-                if (arity == 2) {
-                    stack.pop_back(); childDepth = std::max(childDepth, stack.back().depth);
-                }
+                for(std::size_t j=1;j<arity;++j){stack.pop_back();childDepth=std::max(childDepth,stack.back().depth);}
                 if (childDepth >= limits_.maxDepth) throw std::length_error("expression depth limit exceeded");
                 item = {childDepth + 1, stack.back().start};
                 stack.back() = item;

@@ -1,0 +1,111 @@
+{
+  "schema": "genetik.d5.iterator-discovery/1",
+  "seeds": [
+    0,
+    1,
+    42
+  ],
+  "profiles": [
+    "baseline",
+    "dependent"
+  ],
+  "tasks": [
+    "squares",
+    "divisors"
+  ],
+  "population": 32,
+  "elites": 2,
+  "workers": 1,
+  "max_generations": 40,
+  "max_objective_attempts": 1312,
+  "operators": [
+    "Add",
+    "Subtract",
+    "Multiply",
+    "Modulo",
+    "Equal",
+    "IfThenElse",
+    "Sum"
+  ],
+  "constants": [
+    0,
+    1,
+    2
+  ],
+  "initial_depth": 5,
+  "mutation_depth": 4,
+  "node_limit": 25,
+  "depth_limit": 6,
+  "iteration_nesting": 2,
+  "positive_constant_divisors_only": false,
+  "bounds_terminals": true,
+  "evaluation": {
+    "node_visits": 100000,
+    "operations": 100000,
+    "workspace_bytes": 1048576,
+    "per_operation_iterations": 64,
+    "aggregate_iterations": 4096
+  },
+  "source_sha": "c08859e462210a1ef378b0c6c47a2b4c520f7353",
+  "source_status": "D5 worktree; exact header and binary hashes below",
+  "sources": {
+    "apps/campaigns/d5_iteration_study.cpp": "cadec61bd0ba4ee85a81f12f664a03e56c5ce29340826a3486ce1e7dada3ba8a",
+    "genetik/DiscreteExpressionParsing.hpp": "1721616acad4b9117b4e88ddd254b744cb25744fc39635378a705f921cfa85e7",
+    "genetik/Execution.hpp": "eb32c202865a865251ae2d55e770204115fb9fcd77d155b95fb1b83b5d4f615f",
+    "genetik/ScalarVariation.hpp": "3237b5eca26785484e1cf7a9d6d078cfc4a63cf69d0298f073afbae0c6f0da9c",
+    "genetik/ExpressionDerivative.hpp": "1c118097229f3b7a533e1f67ea8d43175907f5e183090c0817ca9a50d9612b49",
+    "genetik/IntegralRegression.hpp": "e60a5483869ca7891f0c11aa6c2fb868a5fa07edae92b0a4146a3f4d3ea4dd64",
+    "genetik/DiscreteVariation.hpp": "272905d5d90fa78fcbb916ae0fb6ec6618711ea80c71be2e21404b9d5024c9b1",
+    "genetik/TypedValue.hpp": "415f424d4bc18e97114a7674c4a685ceed46be06512f8582ce49b229f32770d7",
+    "genetik/Population.hpp": "6218cde530f9aa02cb3e2ff048993b328ca989cbdc6e675b2e9c945d5dd93bdf",
+    "genetik/Expression.hpp": "ea9195b5c004796900874ce555bc0f4ed002955ff4ffed7efbbdbebcf6a1c19f",
+    "genetik/DiscreteExpression.hpp": "046d9e1ce95c1584499f3c140e74ae2fdc721928d01d4e0bb67bdcc80202bee5",
+    "genetik/GeneticAlgorithm_i.hpp": "e5bdd509cb67c013fe745964c19d967ffb98f2e53f27b3f234e951c3fa398f1e",
+    "genetik/ExpressionParsing.hpp": "4ac43f177644c807e9ea89dce1cb9c1c890b072a10815bf8347a77ed65d4c163",
+    "genetik/DiscreteRegression.hpp": "7451baa3ce12f8960d1d1fffdd97c36f131b5b69fd1d1fcd09cd55cef45e2632",
+    "genetik/TypedVariation.hpp": "18abf26d183c5b51a93afe037a97086d48cf7e9defb019d30c27e4da081db34b",
+    "genetik/DiscreteRunCheckpoint.hpp": "2ffd68a1540b46de4d938d3b8475ff453efa00cb996ddd97d3738317fffc5033",
+    "genetik/Version.hpp": "35c93919481b410e6bea4355d82f7ca68a8e48e4beafcbfb5bf79b8b5148615a",
+    "genetik/Population_i.hpp": "8b076e5ae0c47f6c4bde7807e719ed54f5813f9926838fbb41e58d7d2ec62f13",
+    "genetik/Creature_i.hpp": "5978301e156e0df86a48f87c0a72d03e88fefbccc98ea5147e35f4953ec29989",
+    "genetik/ScalarExpressionCheckpoint.hpp": "caec051b825fee739ed8381d325835c3d9c60cf789dd53a48312e383c5b975cf",
+    "genetik/ExpressionVariation.hpp": "b0bbdb92e9ad7e1c2aac0dab71ec1c01cac1f39990fda877feb52f3281818d69",
+    "genetik/EvaluatedCandidate.hpp": "c3e39a75d034241e294fb6d71fa1c2849f7f22c3a28a0fd35b2436a5af25ec07",
+    "genetik/ScalarTemplateRegression.hpp": "d0e15c50751f4fc17cb872d5969f344603b423ac25b96b52c6ea113ff726c65e",
+    "genetik/DiscreteExpressionFormatting.hpp": "24da0995b58cc1f362aecfb07768e28443c3370777e1d67a82fa1ce00f8c8387",
+    "genetik/TypedExpression.hpp": "3a237fc08a657b471af3e37ca90541ef6be475c62e30c97fcbf89d4764d97849",
+    "genetik/TypedConstantFitting.hpp": "33b3a10d12bc3558ea18a1510647033e24b79c7267f0b1b1b68390cb7c1b2e5b",
+    "genetik/Fitness.hpp": "24015b92cb5ff0e2a905409d6269f732612727ac58836022a81cd83747916454",
+    "genetik/TypedExpressionParsing.hpp": "6a8558829f4c49c5ef94a2e561d7ff2ca4a55b1cf91a9846beed33441ff88e23",
+    "genetik/DiscreteSymbolicRegression.hpp": "efd31777eb5321fa68922d9e8baab6a375d2b1dc7f3d2eaa87bfd0f613923763",
+    "genetik/SymbolicRegression.hpp": "b5aac5a741e782979d789c613cd7df34f9127d91f998a680af858d89fc01f900",
+    "genetik/DerivativeRegression.hpp": "8fc99e480728c01b812867e1306ce1fe58ae1a1eb6ad0f0cd08091a6602cd579",
+    "genetik/ExpressionFormatting.hpp": "f64e3559c4da9225d5e2d8cc0e8c0dbd1e41cad58b56f5abd0e3bff8b1299ae7",
+    "genetik/RunCheckpoint.hpp": "7a3e25c44d775febca5fe4060cbe4036b738ebf7e358587d0d946e2beb8b2e03",
+    "genetik/RandomContext.hpp": "5ce9bf257d625b07cb8b5829e4083a4a5c21a79225b6b46144b6ac695a5102dd",
+    "genetik/Regression.hpp": "91f401a27dfd3b76bd485c9111a13f56becaf40b167bc127cd9c57177411cd8b",
+    "genetik/TypedRegression.hpp": "66b3692b2dd7ec35e76e3e274be17ca2a86c8f24eabae05044f6aff460360b1b",
+    "genetik/TypedSymbolicRegression.hpp": "414e782ac9b516d56af3364627c3a632b29b21a30f0a68802493a660e03e0646",
+    "genetik/DiscreteExpressionCheckpoint.hpp": "b1bcabd82c8b9ecede5f11aae7437b3ada0957883118cecefd776c3d44356b64",
+    "genetik/IntegralExpression.hpp": "0b1402662f5f521e9e6e90837b1699caea5306b824cd5bf0dd57a10ffe19fc7a",
+    "genetik/GeneticAlgorithm.hpp": "61439e97f6ded2ab5fea8bf3c96c56734df78df4039429805f46b59c335a2796",
+    "genetik/ScalarExpressionTemplate.hpp": "ca0df2f2b1e512edebb903c64e4bb5c71a34b9ecfc563f893d82a8ec92e4e876",
+    "genetik/Creature.hpp": "7dbb1323d0c59f562e466b194d1e0612628b3b152f8b48a27e722c9c53dafd2e",
+    "genetik/ConstantFitting.hpp": "95d8cd372ec4971dc0ccbf87b490cdb5a255abd73183f9fc8a849e4a7398a1f4",
+    "genetik/detail/ScientificScalar.hpp": "838d3fd8184e919308bfdb24dd1443bcc0a3de821f87dc24658260891b9db836",
+    "genetik/detail/AdvancedInteger.hpp": "fb7fe909b8ba6be948ef77e2992402fe74f10e498fa6fee553b225acc8a894f9",
+    "genetik/detail/ExpressionParser.hpp": "43ec5f67b6c90e16063cf5b3f340a00d6a64fd901b1441c03dadfb735ac3c117",
+    "genetik/detail/ScopedTiming.hpp": "437eda1f2e179b87b1ef68561a07b421b3b2d734ab4539d14046b6d946c9a5b3"
+  },
+  "binary_sha256": "a6dc656fa3eec6fb459a2a9e69a89b17cc430ed8b528bb4cc77e8191f81a3df6",
+  "training": {
+    "squares": "n=0..8; independent sum of k*k",
+    "divisors": "n=1..16; independent integer modulo count"
+  },
+  "assessment": {
+    "squares": "n=9..12",
+    "divisors": "n=17..32"
+  },
+  "no_target_injection": true,
+  "no_assessment_selection": true
+}

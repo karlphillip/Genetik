@@ -19,7 +19,7 @@ template<> struct CandidateCheckpointCodec<ExpressionCandidate> {
             w.integer(kindCode(n.kind()));
             if(n.kind()==ExpressionKind::Constant)w.real(n.constantValue());
             else if(n.kind()==ExpressionKind::Variable)w.integer(n.variableIndex());
-            else if(n.kind()==ExpressionKind::Powi)w.integer(n.exponent());
+            else if(expressionPowerMetadata(n.kind()))w.integer(n.exponent());
         }
         w.integer(c.fitnessState()==FitnessState::Valid?1:c.fitnessState()==FitnessState::Invalid?2:0);
         if(c.fitnessState()==FitnessState::Valid)w.real(c.fitness());
@@ -37,9 +37,9 @@ template<> struct CandidateCheckpointCodec<ExpressionCandidate> {
         for(std::size_t i=0;i<count;++i){const auto k=codeKind(r.integer());
             if(k==ExpressionKind::Constant)nodes.push_back(ExpressionNode::constant(r.real()));
             else if(k==ExpressionKind::Variable)nodes.push_back(ExpressionNode::variable(r.count(vars?vars-1:0)));
-            else if(k==ExpressionKind::Powi)nodes.push_back(ExpressionNode::power(static_cast<unsigned>(r.count(8))));
+            else if(expressionPowerMetadata(k)){auto power=static_cast<unsigned>(r.count(8));if(k==ExpressionKind::NegativePowi&&!power)throw CheckpointError("zero negative-power magnitude");nodes.push_back(k==ExpressionKind::Powi?ExpressionNode::power(power):ExpressionNode::signedPower(-static_cast<int>(power)));}
             else if(expressionArity(k)==1)nodes.push_back(ExpressionNode::unary(k));
-            else nodes.push_back(ExpressionNode::binary(k));
+            else if(expressionArity(k)==2)nodes.push_back(ExpressionNode::binary(k));else nodes.push_back(ExpressionNode::ternary(k));
         }
         ExpressionCandidate c(Expression(nodes,vars,l),context.problem,context.preparation);
         const auto state=r.integer();if(state==1)c.fitness_=Fitness::valid(r.real());else if(state==2)c.fitness_=Fitness::invalid();else throw CheckpointError("unevaluated/unknown committed fitness");
@@ -50,7 +50,7 @@ template<> struct CandidateCheckpointCodec<ExpressionCandidate> {
         c.context_.generation=r.integer();c.context_.origin=static_cast<PreparationOrigin>(r.count(4));return c;
     }
 private:
-    static constexpr std::array kinds{ExpressionKind::Variable,ExpressionKind::Constant,ExpressionKind::Add,ExpressionKind::Subtract,ExpressionKind::Multiply,ExpressionKind::Divide,ExpressionKind::Log,ExpressionKind::Sin,ExpressionKind::Cos,ExpressionKind::Exp,ExpressionKind::Sqrt,ExpressionKind::Powi};
+    static constexpr auto kinds=[] {std::array<ExpressionKind,scalarOperators.size()> a{};for(std::size_t i=0;i<a.size();++i)a[i]=scalarOperators[i].kind;return a;}();
     static std::uint64_t kindCode(ExpressionKind k){for(std::size_t i=0;i<kinds.size();++i)if(kinds[i]==k)return i;throw CheckpointError("unknown expression kind");}
     static ExpressionKind codeKind(std::uint64_t c){if(c>=kinds.size())throw CheckpointError("unsupported expression kind code");return kinds[c];}
 };

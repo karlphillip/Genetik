@@ -1,0 +1,9 @@
+{
+  "generator": "mpmath 1.2.1",
+  "precision_decimal_digits": 100,
+  "input_identity": "exact Fraction.from_float binary64 dyadic values; exponent1.7 exact binary64",
+  "primary_oracle": "independent analytic formulas using arbitrary precision; no Genetik helper or finite difference",
+  "rows": 70,
+  "relative_tolerance": 1e-13,
+  "absolute_tolerance": 1e-14
+}

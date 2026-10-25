@@ -14,6 +14,10 @@ struct ExpressionGrammar {
     // Default preserves the original discrete-only draw sequence. With a positive continuous
     // probability, choose uniform [lower,upper) instead of a discrete terminal at that frequency.
     double continuousProbability = 0, continuousLower = -8, continuousUpper = 8;
+    std::vector<unsigned> negativeExponents{1,2,3,4,5,6,7,8};
+    bool powerExponentsAreConstants=true; // only affects opt-in Pow
+    std::vector<double> realExponents{.5,1,2}; // initial constant exponent source, fitting remains explicit
+
 };
 struct VariationStatistics {
     std::uint64_t initializations = 0, mutationProposals = 0, crossoverProposals = 0;
@@ -30,7 +34,7 @@ inline std::pair<std::size_t, std::size_t> expressionSubtree(const Expression& e
     for (std::size_t i = 0; i <= root; ++i) {
         const auto arity = expressionArity(nodes[i].kind());
         if (arity == 0) starts.push_back(i);
-        else if (arity == 2) starts.pop_back(); // consume right; unary/left start remains
+        else for(std::size_t j=1;j<arity;++j)starts.pop_back(); // consume right; unary/left start remains
     }
     return {starts.back(), root + 1};
 }
@@ -58,11 +62,11 @@ inline std::optional<Expression> replaceExpressionSubtree(const Expression& pare
             depths.push_back(1);
         } else if (kind == ExpressionKind::Variable) depths.push_back(1);
         else {
-            const std::size_t cost = kind==ExpressionKind::Powi ? (node.exponent()?node.exponent()-1:0) : 1;
+            const std::size_t cost = expressionOperationCost(kind,expressionPowerMetadata(kind)?node.exponent():0);
             if(cost>limits.maxArithmeticOperations-work)return {};
             work+=cost;
             auto child = depths.back();
-            if (expressionArity(kind) == 2) { depths.pop_back(); child = std::max(depths.back(), child); }
+            for(std::size_t j=1;j<expressionArity(kind);++j){depths.pop_back();child=std::max(depths.back(),child);}
             if (child >= limits.maxDepth) return {}; // destination depth checked in the complete tree
             depths.back() = child + 1;
         }
@@ -71,6 +75,11 @@ inline std::optional<Expression> replaceExpressionSubtree(const Expression& pare
 }
 
 namespace genetik_detail {
+inline bool extendedGrammarAccepts(const Expression& expression,const ExpressionGrammar& grammar){
+    if(!grammar.powerExponentsAreConstants||std::find(grammar.operators.begin(),grammar.operators.end(),ExpressionKind::Pow)==grammar.operators.end())return true;
+    const auto nodes=expression.nodes();for(std::size_t i=0;i<nodes.size();++i)if(nodes[i].kind()==ExpressionKind::Pow&&(i==0||nodes[i-1].kind()!=ExpressionKind::Constant))return false;
+    return true;
+}
 inline void validateExpressionGrammar(std::size_t dimensions,ExpressionLimits limits,const ExpressionGrammar& grammar) {
         if ((grammar.constants.empty() && grammar.continuousProbability == 0 && dimensions == 0) || grammar.initialMaxDepth == 0 ||
             grammar.mutationMaxDepth == 0 || grammar.proposalLimit == 0 ||
@@ -84,6 +93,10 @@ inline void validateExpressionGrammar(std::size_t dimensions,ExpressionLimits li
             (grammar.constants.empty() && grammar.continuousProbability > 0 && grammar.continuousProbability < 1))
             throw std::invalid_argument("invalid continuous constant source");
         genetik_detail::validateExponents(grammar.exponents);
+        if(grammar.negativeExponents.empty()||grammar.negativeExponents.size()>8)throw std::invalid_argument("negative power source needs1..8 distinct magnitudes");
+        for(std::size_t i=0;i<grammar.negativeExponents.size();++i)if(!grammar.negativeExponents[i]||grammar.negativeExponents[i]>8||std::find(grammar.negativeExponents.begin(),grammar.negativeExponents.begin()+i,grammar.negativeExponents[i])!=grammar.negativeExponents.begin()+i)throw std::invalid_argument("invalid negative power magnitude");
+        if(grammar.realExponents.size()>256||(grammar.powerExponentsAreConstants&&std::find(grammar.operators.begin(),grammar.operators.end(),ExpressionKind::Pow)!=grammar.operators.end()&&grammar.realExponents.empty()))throw std::invalid_argument("constant real-power exponent source");
+        if(std::find(grammar.operators.begin(),grammar.operators.end(),ExpressionKind::Pow)!=grammar.operators.end())for(auto e:grammar.realExponents)if(!std::isfinite(e)||std::abs(e)>limits.maxAbsConstant)throw std::invalid_argument("real-power exponent bound");
         for (auto kind : grammar.operators)
             if (expressionArity(kind) == 0) throw std::invalid_argument("grammar operator cannot be a terminal");
         for (double value : grammar.constants)
@@ -92,7 +105,7 @@ inline void validateExpressionGrammar(std::size_t dimensions,ExpressionLimits li
 }
 inline Expression generateExpression(std::mt19937& rng,std::size_t maximumDepth,std::size_t dimensions,
        ExpressionLimits limits,const ExpressionGrammar& grammar,const std::vector<std::size_t>* allowed=nullptr) {
-        struct Task { std::size_t budget, depth; bool emit; ExpressionKind kind; unsigned exponent=0; std::size_t work=std::numeric_limits<std::size_t>::max(); };
+        struct Task { std::size_t budget, depth; bool emit; ExpressionKind kind; unsigned exponent=0; std::size_t work=std::numeric_limits<std::size_t>::max();bool literal=false;double value=0; };
         const auto variableCount=allowed ? allowed->size():dimensions;
         const auto index=[](std::size_t n,std::mt19937& engine){return std::uniform_int_distribution<std::size_t>(0,n-1)(engine);};
         const auto depth = 1 + index(std::min(maximumDepth, limits.maxDepth), rng);
@@ -101,27 +114,37 @@ inline Expression generateExpression(std::mt19937& rng,std::size_t maximumDepth,
         std::vector<ExpressionNode> nodes;
         while (!tasks.empty()) {
             const auto task = tasks.back(); tasks.pop_back();
+            if(task.literal){nodes.push_back(ExpressionNode::constant(task.value));continue;}
             if (task.emit) {
-                nodes.push_back(task.kind==ExpressionKind::Powi ? ExpressionNode::power(task.exponent) : expressionArity(task.kind) == 1 ? ExpressionNode::unary(task.kind) : ExpressionNode::binary(task.kind));
+                nodes.push_back(expressionPowerMetadata(task.kind)?(task.kind==ExpressionKind::Powi?ExpressionNode::power(task.exponent):ExpressionNode::signedPower(-static_cast<int>(task.exponent))):expressionArity(task.kind)==1?ExpressionNode::unary(task.kind):expressionArity(task.kind)==2?ExpressionNode::binary(task.kind):ExpressionNode::ternary(task.kind));
                 continue;
             }
             std::vector<ExpressionKind> feasible;
             if (task.depth > 1) for (auto kind : grammar.operators)
-                if (task.budget > expressionArity(kind) && (kind==ExpressionKind::Powi ?
-                    std::any_of(grammar.exponents.begin(),grammar.exponents.end(),[&](unsigned e){return (e?e-1:0)<=task.work;}) : task.work>0)) feasible.push_back(kind);
+                if (task.budget > expressionArity(kind) && (expressionPowerMetadata(kind)?(kind==ExpressionKind::Powi?std::any_of(grammar.exponents.begin(),grammar.exponents.end(),[&](unsigned e){return expressionOperationCost(kind,e)<=task.work;}):std::any_of(grammar.negativeExponents.begin(),grammar.negativeExponents.end(),[&](unsigned e){return expressionOperationCost(kind,e)<=task.work;})):task.work>0)) feasible.push_back(kind);
             const bool operation = !feasible.empty() &&
                 (full || std::bernoulli_distribution(grammar.growBinaryProbability)(rng));
             if (operation) {
                 const auto kind = feasible[index(feasible.size(), rng)];
                 unsigned exponent=0;
-                if(kind==ExpressionKind::Powi) {
-                    std::vector<unsigned> options;for(auto e:grammar.exponents)if((e?e-1:0)<=task.work)options.push_back(e);
+                if(expressionPowerMetadata(kind)) {
+                    const auto& source=kind==ExpressionKind::Powi?grammar.exponents:grammar.negativeExponents;std::vector<unsigned> options;for(auto e:source)if(expressionOperationCost(kind,e)<=task.work)options.push_back(e);
                     exponent=options[index(options.size(),rng)];
                 }
-                const auto cost=kind==ExpressionKind::Powi ? (exponent?exponent-1:0) : 1;
+                const auto cost=expressionOperationCost(kind,exponent);
                 const auto remainingWork=task.work-cost;
                 tasks.push_back({0, 0, true, kind, exponent});
                 if (expressionArity(kind) == 1) tasks.push_back({task.budget - 1, task.depth - 1, false, kind, 0, remainingWork});
+                else if(expressionArity(kind)==3){
+                    // Deterministic left/middle/right budget partition; this branch is opt-in only.
+                    const auto first=1+index(task.budget-3,rng);const auto second=1+index(task.budget-2-first,rng);const auto third=task.budget-1-first-second;
+                    const auto w=limits.maxArithmeticOperations==std::numeric_limits<std::size_t>::max()?remainingWork:remainingWork/3;
+                    tasks.push_back({third,task.depth-1,false,kind,0,w});tasks.push_back({second,task.depth-1,false,kind,0,w});tasks.push_back({first,task.depth-1,false,kind,0,w});
+                }
+                else if(kind==ExpressionKind::Pow&&grammar.powerExponentsAreConstants){
+                    const auto exponentValue=grammar.realExponents[index(grammar.realExponents.size(),rng)];
+                    tasks.push_back({1,1,false,kind,0,0,true,exponentValue});tasks.push_back({task.budget-2,task.depth-1,false,kind,0,remainingWork});
+                }
                 else {
                     const auto left = 1 + index(task.budget - 2, rng);
                     const auto leftWork=limits.maxArithmeticOperations==std::numeric_limits<std::size_t>::max() ? remainingWork : remainingWork/2;
@@ -184,7 +207,7 @@ public:
             }
             const auto subtree = randomExpression(rng, grammar_.mutationMaxDepth);
             auto next = replaceExpressionSubtree(parent.expression(), root, subtree, problem_->limits());
-            if (!next) { count(statistics_.structuralRejections); continue; }
+            if (!next||!genetik_detail::extendedGrammarAccepts(*next,grammar_)) { count(statistics_.structuralRejections); continue; }
             child.replaceExpression(*next);
             count(statistics_.mutationChanges, child.text() != parent.text());
             return child;
@@ -204,7 +227,7 @@ public:
                 const auto fs = subtree(father.expression(), fr), ms = subtree(mother.expression(), mr);
                 auto la = replaceExpressionSubtree(father.expression(), fr, ms, problem_->limits());
                 auto rb = replaceExpressionSubtree(mother.expression(), mr, fs, problem_->limits());
-                if (!la || !rb) { count(statistics_.structuralRejections); continue; }
+                if (!la || !rb||!genetik_detail::extendedGrammarAccepts(*la,grammar_)||!genetik_detail::extendedGrammarAccepts(*rb,grammar_)) { count(statistics_.structuralRejections); continue; }
                 left.replaceExpression(*la); right.replaceExpression(*rb);
                 count(statistics_.crossoverChanges, (left.text() != father.text()) + (right.text() != mother.text()));
                 accepted = true; break;

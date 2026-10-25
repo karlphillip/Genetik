@@ -104,7 +104,7 @@ def consume(prefix,name,extra=(),build_it=True,fail=False):
     if fail:return output
     if build_it:
         run([a.cmake,'--build',directory,'-j2'])
-        for exe in ['installed_consumer','quickstarts/discrete_iteration_quickstart','quickstarts/discrete_quickstart','quickstarts/checkpoint_quickstart','quickstarts/integrals_quickstart','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart','quickstarts/typed_quickstart','quickstarts/typed_search_quickstart','quickstarts/parsing_quickstart','quickstarts/templates_quickstart','quickstarts/derivative_regression_quickstart','quickstarts/derivatives_quickstart','oop_consumer/permutation_consumer']:
+        for exe in ['quickstarts/advanced_mathematics_quickstart','installed_consumer','quickstarts/discrete_iteration_quickstart','quickstarts/discrete_quickstart','quickstarts/checkpoint_quickstart','quickstarts/integrals_quickstart','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart','quickstarts/typed_quickstart','quickstarts/typed_search_quickstart','quickstarts/parsing_quickstart','quickstarts/templates_quickstart','quickstarts/derivative_regression_quickstart','quickstarts/derivatives_quickstart','oop_consumer/permutation_consumer']:
             run([directory/exe])
             run([directory/exe,'--threads','2']) if exe not in ['installed_consumer','quickstarts/typed_quickstart','quickstarts/parsing_quickstart','quickstarts/derivatives_quickstart'] else None
             dependencies=run(['ldd',directory/exe])

@@ -23,7 +23,7 @@ public:
             const auto arity=expressionArity(nodes[i].kind());
             if(!arity)starts.push_back(i);
             else {
-                if(arity==2)starts.pop_back();
+                for(std::size_t j=1;j<arity;++j)starts.pop_back();
                 if(i>=end && starts.back()<=begin)++ancestors_;
             }
             if(i<begin || i>=end) {
@@ -86,13 +86,13 @@ private:
     }
     static std::size_t operationCost(const ExpressionNode& n) {
         if(!expressionArity(n.kind()))return 0;
-        return n.kind()==ExpressionKind::Powi ? (n.exponent()?n.exponent()-1:0):1;
+        return expressionOperationCost(n.kind(),expressionPowerMetadata(n.kind())?n.exponent():0);
     }
     static bool sameNode(const ExpressionNode& a,const ExpressionNode& b) {
         if(a.kind()!=b.kind())return false;
         if(a.kind()==ExpressionKind::Variable)return a.variableIndex()==b.variableIndex();
         if(a.kind()==ExpressionKind::Constant)return std::bit_cast<std::uint64_t>(a.constantValue())==std::bit_cast<std::uint64_t>(b.constantValue());
-        return a.kind()!=ExpressionKind::Powi || a.exponent()==b.exponent();
+        return !expressionPowerMetadata(a.kind()) || a.exponent()==b.exponent();
     }
     std::size_t variables_,frozen_=0,ancestors_=0,frozenWork_=0;
     ExpressionLimits local_,model_,effective_;

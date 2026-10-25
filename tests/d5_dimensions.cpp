@@ -62,6 +62,14 @@ void contracts() {
           "explicit variable domain");
     check(constraints.structural(parseExpression("log(log(x0))", 1)).status == ConstraintStatus::Violated,
           "bounded nesting structural proof");
+    bool invalidPolicy = false;
+    try {
+        auto bad = std::make_shared<const MathematicalConstraints>(std::vector<VariableDomain>(2));
+        (void)ScalarMathematicsProblem::constrained({{{1.}, 2.}}, bad);
+    } catch (const std::invalid_argument &) {
+        invalidPolicy = true;
+    }
+    check(invalidPolicy, "constraint schema is validated before evolution");
     MathematicalConstraints decreasing({}, {}, {}, 0, true);
     check(decreasing.assess(parseExpression("(-1)*x0", 1), std::array{1.}).status ==
               ConstraintStatus::Violated,

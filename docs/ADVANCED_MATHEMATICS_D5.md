@@ -168,7 +168,7 @@ clamp symbolic differentiation is explicitly unsupported; numerical partials
 remain independently available under their local rules.
 
 Polynomial collection/expansion supports multivariate rational arithmetic,
-nonnegative integer powers and division by nonzero constants. Factorization is
+nonnegative metadata Powi and division by nonzero constants. Factorization is
 a documented subset: univariate integer-root extraction in [-16,16], finishing
 with a degree0/1 residual. Unsupported factorization returns Unknown, rather
 than a fabricated proof. Common-subexpression identification uses full exact

@@ -54,6 +54,47 @@ void search() {
               DiscreteEvaluationStatus::ResourceExhausted,
           "range admission before first predicate");
 }
+void variationAndCodec() {
+    auto problem = DiscreteRegressionProblem::create(1, {{{1}, 1}, {{2}, 2}});
+    for (auto kind :
+         {DiscreteKind::IntegerDivide, DiscreteKind::Gcd, DiscreteKind::Lcm, DiscreteKind::IntegerPower,
+          DiscreteKind::ModularPower, DiscreteKind::Factorial, DiscreteKind::Binomial, DiscreteKind::First}) {
+        DiscreteGrammar grammar;
+        grammar.operators = {kind};
+        grammar.constants = {0, 1, 2};
+        grammar.initialMaxDepth = 3;
+        grammar.mutationMaxDepth = 2;
+        DiscreteVariation variation(problem, grammar);
+        std::mt19937 rng(73);
+        bool observed = false;
+        for (int i = 0; i < 32; ++i) {
+            auto a = variation.initialize(rng), b = variation.initialize(rng);
+            auto before = a.text();
+            auto x = variation.mutation(a, 1, rng), y = b;
+            variation.crossover(a, b, x, y, 1, rng);
+            check(a.text() == before, "advanced integer variation ownership");
+            for (auto candidate : {a, x, y}) {
+                for (auto n : candidate.expression().nodes())
+                    observed |= n.kind() == kind;
+                check(candidate.expression().type() == DiscreteType::Int64 &&
+                          parseDiscreteExpression(candidate.text(), 1)
+                              .sameRepresentation(candidate.expression()),
+                      "typed advanced operator variation/canonical reconstruction");
+                candidate.calculateFitness();
+                CheckpointWriter writer;
+                CandidateCheckpointCodec<DiscreteExpressionCandidate>::encode(writer, candidate);
+                CheckpointReader reader(writer.data());
+                auto decoded =
+                    CandidateCheckpointCodec<DiscreteExpressionCandidate>::decode(reader, {problem, {}});
+                reader.finish();
+                check(decoded.expression().sameRepresentation(candidate.expression()) &&
+                          decoded.evaluation() == candidate.evaluation(),
+                      "advanced discrete operator IDs and fitness codec");
+            }
+        }
+        check(observed, "each advanced production available in its explicit grammar");
+    }
+}
 void work() {
     auto e = parseDiscreteExpression(
         "modular_power(9223372036854775806,9223372036854775807,9223372036854775807)", 0);
@@ -91,6 +132,7 @@ int main(int argc, char **argv) {
             for (std::int64_t b = 1; b <= 12; ++b)
                 check(relationship.evaluate(std::array{a, b}).value->integer() == a * b,
                       "independent positive gcd/lcm relationship");
+        variationAndCodec();
         work();
         search();
         for (auto [text, status] : std::array<std::pair<const char *, DiscreteEvaluationStatus>, 3>{

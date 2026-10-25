@@ -77,16 +77,18 @@ class MathematicalConstraints {
         arguments_ = arguments;
         nesting_ = nesting;
     }
+    void validateSchema(std::size_t dimensions) const {
+        if ((!domains_.empty() && domains_.size() != dimensions) || (monotonic_ && *monotonic_ >= dimensions))
+            throw std::invalid_argument("constraint schema mismatch");
+    }
     ConstraintReport structural(const Expression &expression) const {
+        validateSchema(expression.variableCount());
         ConstraintReport result;
         result.structuralProof = true;
         if (expression.nodeCount() > limits_.maxNodes || expression.depth() > limits_.maxDepth) {
             result.status = ConstraintStatus::Violated;
             return result;
         }
-        if ((!domains_.empty() && domains_.size() != expression.variableCount()) ||
-            (monotonic_ && *monotonic_ >= expression.variableCount()))
-            throw std::invalid_argument("constraint schema mismatch");
         if (expression.nodeCount() >
             limits_.maxWorkspaceBytes / (sizeof(ExpressionNode) + 4 * sizeof(std::size_t))) {
             result.status = ConstraintStatus::ResourceExhausted;
@@ -276,6 +278,7 @@ class ConstrainedRegressionProblem final : public RegressionProblem {
         : RegressionProblem(rows, limits), rows_(rows), policy_(std::move(policy)) {
         if (!policy_)
             throw std::invalid_argument("constraint policy required");
+        policy_->validateSchema(dimensions());
     }
     bool parallelEvaluationSafe() const noexcept override { return true; }
     RegressionMetrics measure(const Expression &expression,

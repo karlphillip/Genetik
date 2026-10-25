@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 — proposed development pre-release
+
+- Add optional exact Int64/Bool expressions, checked arithmetic, lazy conditionals,
+  scoped bounded sums/products, type-safe variation and discrete regression.
+- Add explicit scalar/discrete checkpoint forward readers with exact runtime/context
+  validation; retain format1 and codec IDs. Rebuild all dependent TUs.
+- Retain all D3 negative prime-discovery outcomes separately from representability.
+- Exclude unrelated post0.3 experimental optimizers/objectives/mutation strategies
+  from the clean release integration. Existing defaults are unchanged.
+- Hosted qualification/publication remain pending; see RELEASE_0.4.0_PROPOSAL.md.
+
+
 ## 0.3.0 — unreleased
 
 - Add opt-in exact-prefix prime search, readable committed-generation reports,

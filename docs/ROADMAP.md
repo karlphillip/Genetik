@@ -310,3 +310,15 @@ branch. See CHECKPOINT_HOSTED_QUALIFICATION.md for exact scope and final-tip gat
 Next is approval and execution of the prepared 0.3.0 delivery, after the final
 report tip passes and its source assets are verified. No new mathematical or
 operational feature phase is introduced.
+
+
+## Discrete release D4 (local preparation)
+
+D1–D3 implementation and original evidence are integrated selectively from the
+preserved research history into a clean0.3-based0.4 candidate. See
+[exact scope](DISCRETE_RELEASE_INTEGRATION.md), [release proposal](RELEASE_0.4.0_PROPOSAL.md)
+and [migration](releases/0.4.0/MIGRATION.md). The agreed implementation scope is
+complete. D4 local/hosted qualification and final delivery review remain the only
+current checkpoint; no D5–D7 work is begun. Upload and final publication are separate
+approval boundaries. Local evidence and exact asset/candidate identities are in
+out/runs/discrete-d4/preflight; hosted claims require actual runs on the final tip.

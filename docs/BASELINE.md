@@ -1029,3 +1029,15 @@ view. No generic/public library header changes; historical modes and frozen evid
 are preserved. See PRIME_EXACT_SEARCH.md and PRIME_EXACT_RESULTS.md for objective,
 reporting/cancellation contracts and new verification/smoke evidence. This is not a
 revision of the historical MSE prime campaign or a new all-primes formula claim.
+
+
+## Discrete release D4 (local preparation)
+
+D1–D3 implementation and original evidence are integrated selectively from the
+preserved research history into a clean0.3-based0.4 candidate. See
+[exact scope](DISCRETE_RELEASE_INTEGRATION.md), [release proposal](RELEASE_0.4.0_PROPOSAL.md)
+and [migration](releases/0.4.0/MIGRATION.md). The agreed implementation scope is
+complete. D4 local/hosted qualification and final delivery review remain the only
+current checkpoint; no D5–D7 work is begun. Upload and final publication are separate
+approval boundaries. Local evidence and exact asset/candidate identities are in
+out/runs/discrete-d4/preflight; hosted claims require actual runs on the final tip.

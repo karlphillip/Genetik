@@ -1,3 +1,19 @@
+# Current 0.4.0 candidate scope
+
+This checkout prepares0.4.0, unreleased, from the published0.3.0 baseline plus the
+selective D1–D3 integration. [Scope](DISCRETE_RELEASE_INTEGRATION.md),
+[notes](releases/0.4.0/NOTES.md), [migration](releases/0.4.0/MIGRATION.md).
+The actual local preflight/manifests/source identities are retained under
+out/runs/discrete-d4/preflight. No older hosted result qualifies this candidate;
+new hosted execution is pending explicit upload approval. SameMinorVersion now
+accepts compatible0.4 requests and rejects0.3/other minor series. Generic checkpoint
+loading remains exact-version; only explicit reviewed first-party import policies
+support0.3.0 codecs under identical runtime/context. No stable ABI is promised.
+
+The following sections are historical support/preparation records with their
+original named revisions, versions and then-current pending statuses. Published
+v0.3.0 is at ac2786e824198cead70b32ae44229be35baed1ff; its tag/assets are preserved.
+
 # Version, support and release policy
 
 Current local candidate: **0.3.0, unreleased**, for exact-prime search,

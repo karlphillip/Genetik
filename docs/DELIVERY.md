@@ -332,3 +332,15 @@ consumers and installed parser/template quickstarts. See the new report above fo
 exact environments and links. Its documentation tip receives the same matrix; the
 final SHA/links are recorded in ignored completion output to avoid an untested tip.
 This supersedes the earlier pending statement for that candidate, not older history.
+
+
+## Discrete release D4 (local preparation)
+
+D1–D3 implementation and original evidence are integrated selectively from the
+preserved research history into a clean0.3-based0.4 candidate. See
+[exact scope](DISCRETE_RELEASE_INTEGRATION.md), [release proposal](RELEASE_0.4.0_PROPOSAL.md)
+and [migration](releases/0.4.0/MIGRATION.md). The agreed implementation scope is
+complete. D4 local/hosted qualification and final delivery review remain the only
+current checkpoint; no D5–D7 work is begun. Upload and final publication are separate
+approval boundaries. Local evidence and exact asset/candidate identities are in
+out/runs/discrete-d4/preflight; hosted claims require actual runs on the final tip.

@@ -77,6 +77,42 @@ void contracts() {
     check(decreasing.assess(parseExpression("abs(x0)", 1), std::array{0.}).status ==
               ConstraintStatus::DerivativeUnavailable,
           "no manufactured monotonicity proof at unavailable derivative");
+    auto sharedUnits = std::make_shared<const DimensionalRegressionProblem>(
+        std::vector<RegressionRow>{{{1, 2}, 0}}, std::vector{L, L}, L, ExpressionLimits{9, 4, 10, 1000});
+    ExpressionGrammar terminals;
+    terminals.operators.clear();
+    terminals.initialMaxDepth = 1;
+    DimensionalVariation sharedVariation(sharedUnits, terminals);
+    std::mt19937 sharedRandom(93);
+    bool secondInput = false;
+    for (int i = 0; i < 64; ++i) {
+        auto candidate = sharedVariation.initialize(sharedRandom);
+        secondInput |= candidate.expression().nodes()[0].variableIndex() == 1;
+    }
+    check(secondInput, "all compatible original input bindings remain available in dimensional grammar");
+    auto continuousProblem = std::make_shared<const DimensionalRegressionProblem>(
+        std::vector<RegressionRow>{{{1}, 0}}, std::vector{L}, PhysicalDimension{},
+        ExpressionLimits{9, 4, 10, 1000});
+    ExpressionGrammar continuous = terminals;
+    continuous.constants.clear();
+    continuous.continuousProbability = 1;
+    continuous.continuousLower = .25;
+    continuous.continuousUpper = .75;
+    bool continuousAccepted = false;
+    try {
+        DimensionalVariation generated(continuousProblem, continuous);
+        std::mt19937 engine(94);
+        bool varied = false;
+        for (int i = 0; i < 16; ++i) {
+            auto expression = generated.initialize(engine).expression();
+            auto value = expression.nodes()[0].constantValue();
+            check(value >= .25 && value <= .75, "configured continuous source bounds");
+            varied |= value != .25;
+        }
+        continuousAccepted = varied;
+    } catch (const std::invalid_argument &) {
+    }
+    check(continuousAccepted, "continuous-only dimensional coefficient source supported");
     auto smallProblem = std::make_shared<const DimensionalRegressionProblem>(
         std::vector<RegressionRow>{{{.5}, .125}}, std::vector<PhysicalDimension>{{}}, PhysicalDimension{},
         ExpressionLimits{9, 6, 10, 1000});

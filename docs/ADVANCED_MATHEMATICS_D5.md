@@ -217,7 +217,10 @@ configuration time. Caps bound states, planning/generation steps and storage;
 generation depth<=64. All constructive compositions enforce the destination node/depth/arithmetic
 limits before a witness or candidate is installed. Crossover exchanges matching-unit subtrees. Mutation
 creates a subtree with the selected unit. Bounded rejection retains a parent.
-Evolution uses dimensionless coefficient terminals; manually constructed models
+Terminal selection retains every compatible original input binding, even when
+several inputs share units, and uses the configured discrete/continuous
+coefficient source. Schema scans consume generation work; insufficient work
+falls back to an owned unit witness. Evolution uses dimensionless coefficient terminals; manually constructed models
 also permit explicit units for constant occurrences. `DimensionalConstantSelection`
 freezes dimensionful constant exponents so fitting cannot change type.
 
@@ -249,7 +252,11 @@ Codec `genetik.scalar-mathematics-evolution/1` restores full populations, cached
 fitness, best-seen, RNG, attempted/published generations, preparation/variation
 and fitting work. Existing scalar/discrete node IDs and default checkpoint
 payloads stay compatible; new grammar/policy contexts reject incompatible
-resumes. New model codecs are distinct. Same runtime/worker count/configuration
+resumes. New model codecs are distinct. The dimensional run identity explicitly records
+the qualified typed-terminal production policy and inference limits. Earlier
+unqualified D5 dimensional-run checkpoints without that policy marker are
+rejected; their source-pinned experimental records remain retained. Published
+0.4.0 scalar/discrete checkpoint compatibility is unchanged. Same runtime/worker count/configuration
 is required; this adapter currently requires the same total budget, with no
 budget-extension mode. Use existing atomic save/retention/signal helpers; no
 serialization occurs in signal handlers. Partial generations never become

@@ -62,6 +62,11 @@ class ScalarMathematicsProblem {
         w.real(limits.maxAbsConstant);
         w.integer(limits.maxArithmeticOperations);
         if (dimensional) {
+            w.text(DimensionalVariation::productionPolicy);
+            const auto inference =
+                std::dynamic_pointer_cast<const DimensionalRegressionProblem>(problem_)->inferenceLimits();
+            for (auto n : {inference.maxNodes, inference.maxWorkspaceBytes, inference.maxInferenceSteps})
+                w.integer(n);
             w.integer(variables.size());
             for (auto unit : variables)
                 DimensionalExpression::writeDimension(w, unit);

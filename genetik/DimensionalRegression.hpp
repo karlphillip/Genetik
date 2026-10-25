@@ -85,6 +85,8 @@ class DimensionalVariation {
     };
 
   public:
+    static constexpr std::string_view productionPolicy =
+        "typed-unit-production/1;all-bindings;source-coefficients;destination-limits";
     DimensionalVariation(std::shared_ptr<const DimensionalRegressionProblem> problem,
                          ExpressionGrammar grammar = {},
                          std::shared_ptr<RegressionPreparation> preparation = {},
@@ -105,6 +107,9 @@ class DimensionalVariation {
                 Expression::variable(i, problem_->dimensions(), problem_->limits()));
         for (double c : grammar_.constants)
             add({}, Expression::constant(c, problem_->dimensions(), problem_->limits()));
+        if (grammar_.continuousProbability > 0)
+            add({},
+                Expression::constant(grammar_.continuousLower, problem_->dimensions(), problem_->limits()));
         // Fixed rounds, insertion order, and left/right index order define planning.
         for (std::size_t round = 0; round < problem_->limits().maxDepth; ++round) {
             const auto count = pool_.size();
@@ -313,6 +318,46 @@ class DimensionalVariation {
             return false;
         }
     }
+    Expression terminal(std::size_t target, std::mt19937 &rng, std::size_t &steps) const {
+        const auto fallback = [&] { return pool_[target].expression; };
+        std::size_t count = 0, only = 0;
+        for (std::size_t i = 0; i < problem_->dimensions(); ++i) {
+            if (steps == limits_.maxGenerationSteps)
+                return fallback();
+            ++steps;
+            if (problem_->variables()[i] == pool_[target].unit) {
+                ++count;
+                only = i;
+            }
+        }
+        const bool constants = pool_[target].unit.dimensionless() &&
+                               (!grammar_.constants.empty() || grammar_.continuousProbability > 0);
+        if (count && (!constants || std::bernoulli_distribution(.5)(rng))) {
+            if (count == 1)
+                return Expression::variable(only, problem_->dimensions(), problem_->limits());
+            auto selected = index(count, rng);
+            for (std::size_t i = 0; i < problem_->dimensions(); ++i) {
+                if (steps == limits_.maxGenerationSteps)
+                    return fallback();
+                ++steps;
+                if (problem_->variables()[i] == pool_[target].unit) {
+                    if (!selected)
+                        return Expression::variable(i, problem_->dimensions(), problem_->limits());
+                    --selected;
+                }
+            }
+            throw std::logic_error("dimensional terminal enumeration");
+        }
+        if (constants) {
+            const bool continuous = grammar_.continuousProbability > 0 &&
+                                    std::bernoulli_distribution(grammar_.continuousProbability)(rng);
+            const double value = continuous ? std::uniform_real_distribution<double>(
+                                                  grammar_.continuousLower, grammar_.continuousUpper)(rng)
+                                            : grammar_.constants[index(grammar_.constants.size(), rng)];
+            return Expression::constant(value, problem_->dimensions(), problem_->limits());
+        }
+        return fallback();
+    }
     Expression generate(std::size_t target, std::size_t depth, std::mt19937 &rng, std::size_t &steps) const {
         // Witness fallback is finite, unit-valid and independent of observations.
         const auto fallback = [&] { return pool_[target].expression; };
@@ -372,13 +417,8 @@ class DimensionalVariation {
         }
         steps += std::min(scans, cap);
         // A separate terminal choice retains variables and coefficient diversity.
-        if (choices.empty() || std::bernoulli_distribution(1 - grammar_.growBinaryProbability)(rng)) {
-            if (pool_[target].unit.dimensionless() && !grammar_.constants.empty() &&
-                std::bernoulli_distribution(.5)(rng))
-                return Expression::constant(grammar_.constants[index(grammar_.constants.size(), rng)],
-                                            problem_->dimensions(), problem_->limits());
-            return fallback();
-        }
+        if (choices.empty() || std::bernoulli_distribution(1 - grammar_.growBinaryProbability)(rng))
+            return terminal(target, rng, steps);
         auto p = choices[index(choices.size(), rng)];
         std::array<Expression, 3> args{fallback(), fallback(), fallback()};
         for (std::size_t j = 0; j < expressionArity(p.kind); ++j)

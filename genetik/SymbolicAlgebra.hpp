@@ -268,10 +268,14 @@ class SymbolicExpression {
                                           const std::atomic<bool> *cancelled = nullptr) const;
     SymbolicTransformResult simplify(SymbolicLimits limits = {},
                                      const std::atomic<bool> *cancelled = nullptr) const;
-    SymbolicTransformResult expandPolynomial(SymbolicLimits limits = {}) const;
-    SymbolicTransformResult factorPolynomial(SymbolicLimits limits = {}) const;
-    std::vector<std::vector<std::size_t>> commonSubexpressions(SymbolicLimits limits = {}) const;
-    SymbolicConversion toExecutable(ExpressionLimits limits = {}) const;
+    SymbolicTransformResult expandPolynomial(SymbolicLimits limits = {},
+                                             const std::atomic<bool> *cancelled = nullptr) const;
+    SymbolicTransformResult factorPolynomial(SymbolicLimits limits = {},
+                                             const std::atomic<bool> *cancelled = nullptr) const;
+    std::vector<std::vector<std::size_t>>
+    commonSubexpressions(SymbolicLimits limits = {}, const std::atomic<bool> *cancelled = nullptr) const;
+    SymbolicConversion toExecutable(ExpressionLimits limits = {},
+                                    const std::atomic<bool> *cancelled = nullptr) const;
     CheckpointDocument checkpoint() const;
     static SymbolicExpression restore(const CheckpointDocument &document);
     static void validate(SymbolicLimits l) {
@@ -807,10 +811,11 @@ struct PolynomialBuilder {
     }
 };
 } // namespace genetik_symbolic_detail
-inline SymbolicTransformResult SymbolicExpression::expandPolynomial(SymbolicLimits limits) const {
+inline SymbolicTransformResult
+SymbolicExpression::expandPolynomial(SymbolicLimits limits, const std::atomic<bool> *cancelled) const {
     SymbolicWork work;
     try {
-        genetik_symbolic_detail::Builder b(*this, limits, work);
+        genetik_symbolic_detail::Builder b(*this, limits, work, cancelled);
         genetik_symbolic_detail::PolynomialBuilder polynomial{b, variables_};
         auto p = polynomial.extract(*this);
         auto root = polynomial.emit(p);
@@ -829,11 +834,12 @@ inline SymbolicTransformResult SymbolicExpression::expandPolynomial(SymbolicLimi
         return {SymbolicStatus::Undefined, {}, work, "zero polynomial denominator"};
     }
 }
-inline SymbolicTransformResult SymbolicExpression::factorPolynomial(SymbolicLimits limits) const {
+inline SymbolicTransformResult
+SymbolicExpression::factorPolynomial(SymbolicLimits limits, const std::atomic<bool> *cancelled) const {
     SymbolicWork work;
     try {
         using namespace genetik_symbolic_detail;
-        Builder b(*this, limits, work);
+        Builder b(*this, limits, work, cancelled);
         PolynomialBuilder p{b, variables_};
         auto terms = p.extract(*this);
         if (terms.empty())
@@ -912,9 +918,10 @@ inline SymbolicTransformResult SymbolicExpression::factorPolynomial(SymbolicLimi
     }
 }
 inline std::vector<std::vector<std::size_t>>
-SymbolicExpression::commonSubexpressions(SymbolicLimits limits) const {
+SymbolicExpression::commonSubexpressions(SymbolicLimits limits, const std::atomic<bool> *cancelled) const
+    try {
     SymbolicWork work;
-    genetik_symbolic_detail::Builder budget(*this, limits, work);
+    genetik_symbolic_detail::Builder budget(*this, limits, work, cancelled);
     using Key =
         std::tuple<unsigned, std::int64_t, std::int64_t, std::size_t, unsigned, std::array<std::size_t, 3>>;
     budget.reserveElements(nodes_.size(), sizeof(Key) + 128);
@@ -951,8 +958,14 @@ SymbolicExpression::commonSubexpressions(SymbolicLimits limits) const {
             result.push_back(std::move(value.second));
     }
     return result;
+} catch (const genetik_symbolic_detail::Stop &e) {
+    if (e.status == SymbolicStatus::Cancelled)
+        throw EvaluationCancelled();
+    throw SymbolicResourceExhausted(e.why);
 }
-inline SymbolicConversion SymbolicExpression::toExecutable(ExpressionLimits limits) const {
+inline SymbolicConversion SymbolicExpression::toExecutable(ExpressionLimits limits,
+                                                           const std::atomic<bool> *cancelled) const {
+    (void)Expression::constant(0, variables_, limits);
     struct Event {
         std::size_t node, stage;
     };
@@ -961,6 +974,8 @@ inline SymbolicConversion SymbolicExpression::toExecutable(ExpressionLimits limi
     bool rounded = false;
     std::size_t visits = 0;
     while (!stack.empty()) {
+        if (cancelled && cancelled->load(std::memory_order_relaxed))
+            throw EvaluationCancelled();
         if (++visits > limits_.maxSteps)
             throw SymbolicResourceExhausted("symbolic executable expansion work");
         auto &f = stack.back();

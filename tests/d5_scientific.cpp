@@ -83,6 +83,14 @@ void domains() {
     check(scaffold.materialize(Expression::variable(0, 1)).sameRepresentation(e),
           "ternary template preserves grouping");
 }
+void presentation() {
+    check(formatExpression(parse("powi(powi(x0,-2),3)")) == "((x0)⁻²)³",
+          "nested signed power presentation preserves exponent tree");
+    check(formatExpression(parse("powi(pow(x0,2),3)")) == "((x0)^(2))³",
+          "nested real power presentation preserves exponent tree");
+    auto latex = formatExpression(parse("powi(powi(x0,-2),3)"), ExpressionTextFormat::LaTeX);
+    check(latex.find("\\right)^{3}") != std::string::npos, "LaTeX nested exponent grouping");
+}
 void grammar() {
     auto p = RegressionProblem::create({{{.5}, 1}, {{2}, 2}}, {31, 6, 10, 1000});
     ExpressionGrammar g;
@@ -138,6 +146,7 @@ int main(int argc, char **argv) {
             references(argv[1]);
             domains();
             grammar();
+            presentation();
             overlap();
         }
         std::cout << "D5 scientific contracts passed\n";

@@ -145,6 +145,9 @@ finite derivatives remain valid. Seventy independent100-decimal-digit fixtures
 use exact binary64 input identities and analytic mpmath formulas, not the
 implementation derivative helper; see the TSV and provenance in d5-results.
 
+See [D5_SCIENTIFIC_RULES.md](D5_SCIENTIFIC_RULES.md) for the exact local
+numerical formulas, domains, activity and work policy.
+
 ## Symbolic mathematical algebra
 
 `SymbolicAlgebra.hpp` deliberately owns a different mathematical-only DAG.
@@ -177,10 +180,18 @@ Limits bound nodes, DAG depth, transformation steps, variables, degree, terms,
 assumptions, output bytes and accounted storage. Conservative logical storage
 includes coefficient/map bookkeeping; system allocator overhead is not a
 portable byte-exact guarantee. CSE and explicit conversion may throw the typed
-resource exception. Cancellation is supported for differentiation/simplification.
+resource exception. Cancellation is supported for differentiation, simplification, expansion and
+factorization. CSE/export use typed resource/cancellation exceptions; operations
+returning a transform result use explicit statuses.
 `toExecutable` is a separate explicit export, may round rational coefficients,
 retains assumptions and never silently rewrites evolutionary candidates.
-Standalone codec: `genetik.symbolic-rational-dag/1`.
+Returned obligations are not automatically enforced; their node IDs refer to
+the retained immutable `SymbolicConversion::assumptionContext`, rather than
+the newly expanded executable tree.
+Symbolic inspection text is not accepted by the executable scalar parser;
+reconstruct with the standalone codec `genetik.symbolic-rational-dag/1`.
+Recurrence and dimensional full-model inspection similarly use their model codecs,
+not ordinary expression text parsing.
 
 ## Physical dimensions and constraints
 

@@ -79,6 +79,30 @@ void contracts() {
     std::atomic<bool> cancelled{true};
     check(original.differentiate(0, {}, &cancelled).status == SymbolicStatus::Cancelled,
           "symbolic cancellation");
+    check(original.expandPolynomial({}, &cancelled).status == SymbolicStatus::Cancelled &&
+              original.factorPolynomial({}, &cancelled).status == SymbolicStatus::Cancelled,
+          "polynomial transform cancellation");
+    bool typedResource = false;
+    try {
+        (void)original.commonSubexpressions(tiny);
+    } catch (const SymbolicResourceExhausted &) {
+        typedResource = true;
+    }
+    check(typedResource, "CSE resource exhaustion does not leak private control exceptions");
+    bool typedCancellation = false;
+    try {
+        (void)original.commonSubexpressions({}, &cancelled);
+    } catch (const EvaluationCancelled &) {
+        typedCancellation = true;
+    }
+    check(typedCancellation, "CSE cooperative cancellation");
+    typedCancellation = false;
+    try {
+        (void)original.toExecutable({}, &cancelled);
+    } catch (const EvaluationCancelled &) {
+        typedCancellation = true;
+    }
+    check(typedCancellation, "explicit executable export cancellation");
     auto restored = SymbolicExpression::restore(decodeCheckpoint(encodeCheckpoint(original.checkpoint())));
     check(restored.sameRepresentation(original), "explicit symbolic rational DAG/assumptions codec");
     check(ExactRational(2, 3) * ExactRational(3, 4) == ExactRational(1, 2), "independent rational reference");

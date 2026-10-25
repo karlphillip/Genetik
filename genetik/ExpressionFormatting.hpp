@@ -28,10 +28,10 @@ inline std::string formatExpression(const Expression& e,ExpressionTextFormat for
             if(k>=ExpressionKind::NegativePowi){
                 precedence=4;std::vector<Item> args;args.push_back(std::move(right));
                 for(std::size_t j=1;j<expressionArity(k);++j){auto item=std::move(stack.back());stack.pop_back();payload-=item.text.size();args.push_back(std::move(item));}std::reverse(args.begin(),args.end());
-                if(k==ExpressionKind::NegativePowi){constexpr std::array digits{"⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸"};text=wrap(args[0].text)+(tex?"^{-"+std::to_string(n.exponent())+"}":"⁻"+std::string(digits[n.exponent()]));}
+                if(k==ExpressionKind::NegativePowi){precedence=3;constexpr std::array digits{"⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸"};text=wrap(args[0].text)+(tex?"^{-"+std::to_string(n.exponent())+"}":"⁻"+std::string(digits[n.exponent()]));}
                 else if(k==ExpressionKind::Cbrt)text=tex?"\\sqrt[3]{"+args[0].text+"}":"∛"+wrap(args[0].text);
                 else if(k==ExpressionKind::Abs)text=tex?"\\left|"+args[0].text+"\\right|":"|"+args[0].text+"|";
-                else if(k==ExpressionKind::Pow)text=wrap(args[0].text)+(tex?"^{"+args[1].text+"}":"^"+wrap(args[1].text));
+                else if(k==ExpressionKind::Pow){precedence=3;text=wrap(args[0].text)+(tex?"^{"+args[1].text+"}":"^"+wrap(args[1].text));}
                 else{auto name=std::string(scalarOperatorDescription(k).name);text=tex?(k==ExpressionKind::Log2?"\\log_{2}":k==ExpressionKind::Log10?"\\log_{10}":"\\operatorname{"+name+"}"):name;text+=tex?"\\left(":"(";for(std::size_t j=0;j<args.size();++j){if(j)text+=", ";text+=args[j].text;}text+=tex?"\\right)":")";}
             }
             else if(expressionArity(k)==2){auto left=std::move(stack.back());stack.pop_back();payload-=left.text.size();precedence=(k==ExpressionKind::Add||k==ExpressionKind::Subtract)?1:2;

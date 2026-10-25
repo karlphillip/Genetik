@@ -1,0 +1,78 @@
+{
+  "source_sha": "c1fbb28d67d72cf32259100ba05e4ab931722fb6",
+  "binary_sha256": "11cdf5103ed1c1296011a2b2fd494e433a4cb2449675e6d8a310938e3dfb4658",
+  "runs": [
+    {
+      "task": "squares",
+      "profile": "baseline",
+      "seed": 0,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "squares",
+      "profile": "dependent",
+      "seed": 0,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "squares",
+      "profile": "baseline",
+      "seed": 1,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "squares",
+      "profile": "dependent",
+      "seed": 1,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "squares",
+      "profile": "baseline",
+      "seed": 42,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "squares",
+      "profile": "dependent",
+      "seed": 42,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "divisors",
+      "profile": "baseline",
+      "seed": 0,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "divisors",
+      "profile": "dependent",
+      "seed": 0,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "divisors",
+      "profile": "baseline",
+      "seed": 1,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "divisors",
+      "profile": "dependent",
+      "seed": 1,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "divisors",
+      "profile": "baseline",
+      "seed": 42,
+      "all_scientific_fields_identical": true
+    },
+    {
+      "task": "divisors",
+      "profile": "dependent",
+      "seed": 42,
+      "all_scientific_fields_identical": true
+    }
+  ]
+}

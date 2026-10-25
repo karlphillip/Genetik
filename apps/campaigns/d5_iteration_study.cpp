@@ -13,15 +13,23 @@ std::int64_t reference(bool divisors, std::int64_t n) {
     return s;
 }
 struct Counts {
-    std::size_t loops = 0, refs = 0, valid = 0, invalid = 0;
+    std::size_t loops = 0, refs = 0, valid = 0, invalid = 0, validRefs = 0, nodesInspected = 0;
+    std::optional<double> bestValidRefLoss;
 };
 Counts count(const DiscreteEvolutionRun &run) {
     Counts c;
     const auto &members = run.population().selectionView();
     for (const auto &x : members) {
         c.loops += !x.expression().binders().empty();
-        c.refs += std::any_of(x.expression().nodes().begin(), x.expression().nodes().end(),
-                              [](auto &n) { return n.kind() == DiscreteKind::Iterator; });
+        const bool refs = std::any_of(x.expression().nodes().begin(), x.expression().nodes().end(),
+                                      [](auto &n) { return n.kind() == DiscreteKind::Iterator; });
+        c.refs += refs;
+        c.nodesInspected += x.expression().nodeCount();
+        if (refs && x.fitnessState() == FitnessState::Valid) {
+            ++c.validRefs;
+            if (!c.bestValidRefLoss || x.fitness() < *c.bestValidRefLoss)
+                c.bestValidRefLoss = x.fitness();
+        }
         c.valid += x.fitnessState() == FitnessState::Valid;
         c.invalid += x.fitnessState() == FitnessState::Invalid;
     }
@@ -76,14 +84,23 @@ int main(int argc, char **argv) {
         const auto start = std::chrono::steady_clock::now();
         DiscreteEvolutionRun run(p, c, rng);
         std::ofstream metrics(output / "progress.jsonl");
-        std::size_t dependentImprovements = 0, publishedWithRefs = 0;
+        std::size_t dependentImprovements = 0, publishedWithRefs = 0, publishedWithValidRefs = 0,
+                    maxValidRefs = 0, diagnosticNodes = 0;
+        std::optional<double> bestValidRefLoss;
         double prior = std::numeric_limits<double>::infinity();
         const auto snapshot = [&] {
             auto q = count(run);
+            diagnosticNodes += q.nodesInspected;
+            if (q.validRefs)
+                ++publishedWithValidRefs;
+            maxValidRefs = std::max(maxValidRefs, q.validRefs);
+            if (q.bestValidRefLoss && (!bestValidRefLoss || *q.bestValidRefLoss < *bestValidRefLoss))
+                bestValidRefLoss = q.bestValidRefLoss;
             const auto best = run.population().bestSeen();
             if (q.refs)
                 ++publishedWithRefs;
             if (best && best->fitness() < prior) {
+                diagnosticNodes += best->expression().nodeCount();
                 if (std::any_of(best->expression().nodes().begin(), best->expression().nodes().end(),
                                 [](auto &n) { return n.kind() == DiscreteKind::Iterator; }))
                     ++dependentImprovements;
@@ -91,6 +108,8 @@ int main(int argc, char **argv) {
             }
             metrics << "{\"generation\":" << *run.population().generation()
                     << ",\"attempts\":" << run.work().lossAttempts << ",\"loops\":" << q.loops
+                    << ",\"valid_refs\":" << q.validRefs << ",\"best_valid_ref_loss\":"
+                    << (q.bestValidRefLoss ? std::to_string(*q.bestValidRefLoss) : "null")
                     << ",\"refs\":" << q.refs << ",\"valid\":" << q.valid << ",\"invalid\":" << q.invalid
                     << ",\"best_loss\":" << (best ? best->fitness() : -1) << "}\n";
         };
@@ -144,6 +163,10 @@ int main(int argc, char **argv) {
                   << ",\"body_repairs\":" << s.bodyRepairs
                   << ",\"aligned_crossovers\":" << s.alignedCrossovers
                   << ",\"published_generations_with_refs\":" << publishedWithRefs
+                  << ",\"published_generations_with_valid_refs\":" << publishedWithValidRefs
+                  << ",\"max_valid_ref_candidates\":" << maxValidRefs << ",\"best_valid_ref_loss\":"
+                  << (bestValidRefLoss ? std::to_string(*bestValidRefLoss) : "null")
+                  << ",\"diagnostic_structure_nodes\":" << diagnosticNodes
                   << ",\"dependent_best_improvements\":" << dependentImprovements << ",\"stopping\":\""
                   << stopping << "\",\"seconds\":"
                   << std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count() << "}\n";

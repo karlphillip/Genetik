@@ -275,18 +275,19 @@ class DimensionalVariation {
         auto k = p.kind;
         auto arity = expressionArity(k);
         if (k == ExpressionKind::Powi)
-            return Expression::power(args[0], p.exponent);
+            return Expression::power(args[0], p.exponent, problem_->limits());
         if (k == ExpressionKind::NegativePowi)
-            return Expression::integerPower(args[0], -static_cast<int>(p.exponent));
+            return Expression::integerPower(args[0], -static_cast<int>(p.exponent), problem_->limits());
         if (arity == 1)
-            return Expression::unary(k, args[0]);
+            return Expression::unary(k, args[0], problem_->limits());
         if (arity == 2)
             return Expression::binary(
                 k, args[0],
                 p.realExponent
                     ? Expression::constant(*p.realExponent, problem_->dimensions(), problem_->limits())
-                    : args[1]);
-        return Expression::ternary(k, args[0], args[1], args[2]);
+                    : args[1],
+                problem_->limits());
+        return Expression::ternary(k, args[0], args[1], args[2], problem_->limits());
     }
     bool plan(ExpressionKind kind, std::array<std::size_t, 3> args, unsigned exponent = 0,
               std::optional<double> real = {}) {

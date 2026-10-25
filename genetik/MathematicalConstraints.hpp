@@ -198,7 +198,10 @@ class MathematicalConstraints {
             }
             auto derivative = evaluatePartial(expression, bindings, *monotonic_, derivativeLimits);
             const auto work = derivative.work().operations();
-            if (!charge(work))
+            // The derivative allowance was admitted before evaluation. Retain
+            // consumed arithmetic even if a later check/cancellation stops us.
+            result.expressionWork += work;
+            if (!charge(0))
                 return result;
             if (derivative.status() == DerivativeStatus::ResourceLimit) {
                 result.status = ConstraintStatus::ResourceExhausted;

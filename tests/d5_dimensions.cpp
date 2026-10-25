@@ -77,6 +77,34 @@ void contracts() {
     check(decreasing.assess(parseExpression("abs(x0)", 1), std::array{0.}).status ==
               ConstraintStatus::DerivativeUnavailable,
           "no manufactured monotonicity proof at unavailable derivative");
+    auto smallProblem = std::make_shared<const DimensionalRegressionProblem>(
+        std::vector<RegressionRow>{{{.5}, .125}}, std::vector<PhysicalDimension>{{}}, PhysicalDimension{},
+        ExpressionLimits{9, 6, 10, 1000});
+    ExpressionGrammar dense;
+    dense.operators = {ExpressionKind::Clamp, ExpressionKind::Add, ExpressionKind::Multiply};
+    dense.initialMaxDepth = 6;
+    DimensionalVariation limitedVariation(smallProblem, dense);
+    std::mt19937 limitedRandom(91);
+    bool respected = true;
+    try {
+        for (int i = 0; i < 32; ++i) {
+            auto candidate = limitedVariation.initialize(limitedRandom);
+            respected &= candidate.expression().nodeCount() <= 9 && candidate.expression().depth() <= 6;
+        }
+    } catch (const std::length_error &) {
+        respected = false;
+    }
+    check(respected,
+          "dimensional constructive proposals respect destination limits before candidate installation");
+    MathematicalConstraintLimits checkCap;
+    checkCap.maxChecks = 2;
+    MathematicalConstraints boundedChecks({}, {}, {}, 0, true, checkCap);
+    auto differentiated = parseExpression("sin(x0)*exp(x0)", 1);
+    auto consumed = evaluatePartial(differentiated, std::array{.5}, 0).work().operations();
+    auto stopped = boundedChecks.assess(differentiated, std::array{.5});
+    check(stopped.status == ConstraintStatus::ResourceExhausted &&
+              stopped.expressionWork == differentiated.nodeCount() + consumed,
+          "constraint check exhaustion retains completed derivative arithmetic");
     auto p = std::make_shared<const DimensionalRegressionProblem>(
         std::vector<RegressionRow>{{{1, 2}, 2}, {{2, 3}, 9}}, std::vector{M, V}, E,
         ExpressionLimits{31, 7, 10, 1000});

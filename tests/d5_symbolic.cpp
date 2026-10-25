@@ -41,12 +41,12 @@ void contracts() {
     check(nonzero && !simplified.bitExactExecutableEquivalence, "nonzero obligation retained");
     check(!symbolic("(x0+1)*(x0+1)").commonSubexpressions().empty(),
           "collision-free common structure identification");
-    const std::array<std::pair<const char *, double>, 24> cases{
-        {{"x0*x0", .75},       {"powi(x0,-2)", 2}, {"pow(x0,1.7)", 2}, {"log(x0)", 2},     {"log1p(x0)", .5},
-         {"log2(x0)", 2},      {"log10(x0)", 2},   {"exp(x0)", .25},   {"expm1(x0)", .25}, {"sin(x0)", .25},
-         {"cos(x0)", .25},     {"tan(x0)", .25},   {"asin(x0)", .25},  {"acos(x0)", .25},  {"atan(x0)", .25},
-         {"atan2(x0,2)", .25}, {"sinh(x0)", .25},  {"cosh(x0)", .25},  {"tanh(x0)", .25},  {"sqrt(x0)", 2},
-         {"cbrt(x0)", -2},     {"abs(x0)", -2},    {"x0/(x0+2)", .25}, {"powi(x0,3)", 2}}};
+    const std::array<std::pair<const char *, double>, 25> cases{
+        {{"pow(x0,x0)", 2}, {"x0*x0", .75},       {"powi(x0,-2)", 2}, {"pow(x0,1.7)", 2}, {"log(x0)", 2},
+         {"log1p(x0)", .5}, {"log2(x0)", 2},      {"log10(x0)", 2},   {"exp(x0)", .25},   {"expm1(x0)", .25},
+         {"sin(x0)", .25},  {"cos(x0)", .25},     {"tan(x0)", .25},   {"asin(x0)", .25},  {"acos(x0)", .25},
+         {"atan(x0)", .25}, {"atan2(x0,2)", .25}, {"sinh(x0)", .25},  {"cosh(x0)", .25},  {"tanh(x0)", .25},
+         {"sqrt(x0)", 2},   {"cbrt(x0)", -2},     {"abs(x0)", -2},    {"x0/(x0+2)", .25}, {"powi(x0,3)", 2}}};
     for (auto [text, x] : cases) {
         auto expression = parseExpression(text, 1);
         auto derivative = SymbolicExpression::fromExpression(expression).differentiate(0);

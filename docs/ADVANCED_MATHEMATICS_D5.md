@@ -214,7 +214,8 @@ fitting probe. `DimensionalVariation` uses a finite deterministic unit-witness
 closure independent of observations and RNG, followed by typed productions.
 This planner is deliberately incomplete; an unreachable output unit fails at
 configuration time. Caps bound states, planning/generation steps and storage;
-generation depth<=64. Crossover exchanges matching-unit subtrees. Mutation
+generation depth<=64. All constructive compositions enforce the destination node/depth/arithmetic
+limits before a witness or candidate is installed. Crossover exchanges matching-unit subtrees. Mutation
 creates a subtree with the selected unit. Bounded rejection retains a parent.
 Evolution uses dimensionless coefficient terminals; manually constructed models
 also permit explicit units for constant occurrences. `DimensionalConstantSelection`
@@ -223,7 +224,10 @@ freezes dimensionful constant exponents so fitting cannot change type.
 `MathematicalConstraints` owns variable domains, positive/nonzero operator
 arguments, nesting/complexity caps and optional sampled first-partial monotonicity.
 A structural proof and sample-local success are distinct report fields.
-Unavailable derivatives are not converted into a proof. `ConstrainedRegressionProblem`
+Unavailable derivatives are not converted into a proof. Constraint reports
+retain completed derivative arithmetic even when a later check allowance or
+cancellation prevents acceptance; admitted traversal and consumed arithmetic are
+charged separately from training-loss attempts. `ConstrainedRegressionProblem`
 and `ScalarMathematicsProblem::constrained` apply the same policy to every
 training score/probe; constraint evaluation rows are counted separately from
 ordinary residual-pass rows. Exhausted constraint work throws a resource outcome,

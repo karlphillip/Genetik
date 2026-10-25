@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <barrier>
+#include <numbers>
 namespace {
 void check(bool v, const char *s) {
     if (!v)
@@ -91,6 +92,39 @@ void presentation() {
     auto latex = formatExpression(parse("powi(powi(x0,-2),3)"), ExpressionTextFormat::LaTeX);
     check(latex.find("\\right)^{3}") != std::string::npos, "LaTeX nested exponent grouping");
 }
+void analyticBranches() {
+    struct Case {
+        const char *formula;
+        double x, expected;
+    };
+    const std::vector<Case> fixtures{{"pow(2,x0)", 3, 8 * std::numbers::ln2},
+                                     {"pow(x0,x0)", 2, 4 * (1 + std::numbers::ln2)},
+                                     {"pow(1,x0)", 3, 0},
+                                     {"pow(0,x0)", 3, 0},
+                                     {"pow(x0,1)", 0, 1},
+                                     {"pow(x0,2)", 0, 0},
+                                     {"atan2(1,x0)", 2, -.2},
+                                     {"atan2(x0,x0)", 2, 0},
+                                     {"atan2(0,x0)", -2, 0},
+                                     {"min(x0,1)", .5, 1},
+                                     {"min(x0,1)", 2, 0},
+                                     {"max(x0,1)", .5, 0},
+                                     {"max(x0,1)", 2, 1},
+                                     {"clamp(x0,0,1)", .5, 1},
+                                     {"clamp(x0,0,1)", -1, 0},
+                                     {"clamp(x0,0,1)", 2, 0},
+                                     {"clamp(0,x0,2)", 1, 1},
+                                     {"clamp(3,0,x0)", 2, 1},
+                                     {"min(1,1)", 0, 0}};
+    for (auto f : fixtures) {
+        auto partial = evaluatePartial(parse(f.formula), std::array{f.x}, 0);
+        check(partial.derivativeAvailable() && std::abs(partial.derivative() - f.expected) < 1e-14,
+              "independent analytic active-operand and piecewise derivative branches");
+    }
+    check(evaluatePartial(parse("max(abs(x0),1)"), std::array{0.}, 0).status() ==
+              DerivativeStatus::Unavailable,
+          "unavailable active child not erased by later branch choice");
+}
 void grammar() {
     auto p = RegressionProblem::create({{{.5}, 1}, {{2}, 2}}, {31, 6, 10, 1000});
     ExpressionGrammar g;
@@ -147,6 +181,7 @@ int main(int argc, char **argv) {
             domains();
             grammar();
             presentation();
+            analyticBranches();
             overlap();
         }
         std::cout << "D5 scientific contracts passed\n";

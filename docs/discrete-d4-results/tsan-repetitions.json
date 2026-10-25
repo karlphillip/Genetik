@@ -1,0 +1,27 @@
+{
+  "selections": {
+    "genetik_checkpoint_overlap": 3,
+    "genetik_concurrency_contracts": 3,
+    "genetik_derivative_overlap": 3,
+    "genetik_derivative_regression_overlap": 3,
+    "genetik_discrete_iteration_overlap": 3,
+    "genetik_discrete_overlap": 3,
+    "genetik_discrete_prime_overlap": 3,
+    "genetik_integral_overlap": 3,
+    "genetik_oop_parallel": 3,
+    "genetik_parsing_overlap": 3,
+    "genetik_prime_exact_overlap": 3,
+    "genetik_scientific_contracts": 3,
+    "genetik_template_overlap": 3,
+    "genetik_typed_overlap": 3,
+    "genetik_typed_preparation_overlap": 3
+  },
+  "complete": {
+    "genetik_integral_contracts": 1,
+    "genetik_discrete_contracts": 1,
+    "genetik_discrete_iteration_contracts": 1,
+    "genetik_discrete_prime_contracts": 1,
+    "genetik_checkpoint_compatibility": 1
+  },
+  "tested_sha": "c7ffaee0ef9763f789464d4863fca86db3df4ea5"
+}

@@ -1041,3 +1041,14 @@ complete. D4 local/hosted qualification and final delivery review remain the onl
 current checkpoint; no D5–D7 work is begun. Upload and final publication are separate
 approval boundaries. Local evidence and exact asset/candidate identities are in
 out/runs/discrete-d4/preflight; hosted claims require actual runs on the final tip.
+
+
+## D4 hosted discrete qualification
+
+Clean0.4 D1–D3 candidate c7ffaee0ef9763f789464d4863fca86db3df4ea5 passed all
+three hosted jobs:71portable contracts each,15TSanselections three times plus
+five complete contracts. See [measured scope](DISCRETE_HOSTED_QUALIFICATION.md).
+The final report tip receives its own complete matrix; exact completion/run/assets
+are recorded under out/runs/discrete-d4/hosted. Implementation scope is complete.
+Only final delivery approval remains after final-tip qualification; no D5–D7 work.
+Existing historical qualification statements retain their original SHA scope.

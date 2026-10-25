@@ -16,9 +16,10 @@ Published0.1.0/0.2.0/0.3.0 assets remain unchanged. This checkout prepares
 **0.4.0 (unreleased)**: optional exact Int64/Bool expressions, scoped bounded
 iteration and controlled discrete-prime research. See [notes](docs/releases/0.4.0/NOTES.md),
 [migration](docs/releases/0.4.0/MIGRATION.md), [scope audit](docs/DISCRETE_RELEASE_INTEGRATION.md)
-and [delivery proposal](docs/RELEASE_0.4.0_PROPOSAL.md). Local preflight results are
-recorded in the D4 review packet; hosted qualification and publication require
-separate approval. Historical qualification applies only to its named commits.
+and [delivery proposal](docs/RELEASE_0.4.0_PROPOSAL.md). Local preflight and the initial hosted matrix passed; see the
+[measured qualification](docs/DISCRETE_HOSTED_QUALIFICATION.md). The final report
+tip receives the same matrix. Publication requires separate approval. Historical
+qualification applies only to its named commits.
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
 

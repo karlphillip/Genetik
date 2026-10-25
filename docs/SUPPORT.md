@@ -283,3 +283,14 @@ same-runtime, same-worker continuation. This is additional local evidence, not
 newly executed hosted qualification or a change to published 0.2.0. The 61 portable
 contracts and 12 TSan selections are configured for CI but have not run there for
 this feature. Existing hosted/release evidence retains its recorded SHA scope.
+
+
+## D4 hosted discrete qualification
+
+Clean0.4 D1–D3 candidate c7ffaee0ef9763f789464d4863fca86db3df4ea5 passed all
+three hosted jobs:71portable contracts each,15TSanselections three times plus
+five complete contracts. See [measured scope](DISCRETE_HOSTED_QUALIFICATION.md).
+The final report tip receives its own complete matrix; exact completion/run/assets
+are recorded under out/runs/discrete-d4/hosted. Implementation scope is complete.
+Only final delivery approval remains after final-tip qualification; no D5–D7 work.
+Existing historical qualification statements retain their original SHA scope.

@@ -1,0 +1,1 @@
+Selected exact-candidate hosted evidence for40210704207 atc7ffaee0ef9763f789464d4863fca86db3df4ea5. Full artifacts/logs remain under out/runs/discrete-d4/hosted/40210704207. Final report-tip matrix links/results are recorded in ignored hosted/COMPLETION.json after review, avoiding an untested documentation tip. Historical D1/D2/D3 evidence remains unchanged.

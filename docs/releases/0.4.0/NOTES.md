@@ -46,9 +46,10 @@ is qualified by actual POSIX fsync/rename behavior, and crash recovery may repea
 work since the most recent durable committed state. No primality/n-th-prime oracle,
 integer division, GCD, nested unbounded execution or advanced mathematics was added.
 
-Local and hosted evidence must identify exact tested commits. D1–D3 historical
-qualification retains its original scope; D4 records a fresh complete required
-sanitizer suite in the review packet. Hosted Linux GCC13 x64/exactCMake3.16,
-Clang18 x64 ASan+UBSan, and GCC13 ARM64/separate TSan remain pending until executed
-for this candidate. GNU standard-library qualification is not libc++; Windows/MSVC
-and macOS/AppleClang remain unqualified. No upload, PR, tag or publication is implied.
+Exact measured local/hosted scope and retained development failures are in
+[DISCRETE_HOSTED_QUALIFICATION.md](../../DISCRETE_HOSTED_QUALIFICATION.md).
+The initial clean candidate passed71portable tests on Linux GCC13 x64/exactCMake3.16,
+Clang18 x64 ASan+UBSan and GCC13 ARM64, plus15TSanselections repeated3and5complete.
+The final report tip must receive the same matrix before delivery. GNU standard
+library results do not qualify libc++, Windows/MSVC or macOS/AppleClang.
+This remains a proposed development pre-release; publication requires separate approval.

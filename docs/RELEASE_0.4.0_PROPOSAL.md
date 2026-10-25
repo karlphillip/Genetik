@@ -1,15 +1,17 @@
 # Proposed Genetik 0.4.0 development delivery
 
-Status: local preparation only. No remote upload is authorized. Exact candidate,
+Status: hosted upload and targeted qualification/report work authorized;
+initial complete matrix passed. Final report tip requires the same matrix.
+PR/main/tag/publication remain unauthorized. Exact candidate,
 complete commit/file ranges, local results, asset hashes and proposed commands are
-recorded under out/runs/discrete-d4/preflight; assets are generated from the exact
+recorded under out/runs/discrete-d4/preflight (initial) and hosted (final); assets are generated from the exact
 committed source after verification. Read [integration](DISCRETE_RELEASE_INTEGRATION.md),
 [notes](releases/0.4.0/NOTES.md) and [migration](releases/0.4.0/MIGRATION.md).
 
-First request one approval to push the reviewed clean candidate to
-karlphillip/Genetik:qualification/discrete-mathematics, execute/review the established
-three-job hosted matrix, push focused qualification fixes/reports to that branch,
-and qualify its exact final report tip. Existing research branches are not uploaded
+The granted upload scope permits the reviewed clean candidate at
+karlphillip/Genetik:qualification/discrete-mathematics, execution/review of the established
+three-job hosted matrix, focused qualification fixes/report pushes to that branch,
+and qualification of its exact final report tip. Existing research branches are not uploaded
 as a dependency. Keep all original67research commits and evidence locally.
 
 After successful hosted qualification, regenerate/verify assets if the candidate

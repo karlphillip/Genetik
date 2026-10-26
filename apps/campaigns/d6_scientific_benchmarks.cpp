@@ -225,6 +225,20 @@ int main(int argc, char **argv) {
     std::function<void(const std::exception &, unsigned)> report =
         [&](const std::exception &error, unsigned depth) {
           std::cerr << std::string(depth, ' ') << error.what() << '\n';
+          if (auto failure =
+                  dynamic_cast<const ScientificInitializationFailure *>(
+                      &error)) {
+            std::cerr << "attempts=" << failure->work().lossAttempts
+                      << " fitting_attempts="
+                      << failure->work().fittingLossAttempts
+                      << " rows=" << failure->work().rowAttempts
+                      << " operations="
+                      << failure->supplementalWork().mathematicalOperations
+                      << " fields="
+                      << failure->supplementalWork().fieldEvaluations
+                      << " candidate_requests=" << failure->candidateAttempts()
+                      << '\n';
+          }
           if (depth < 16) {
             try {
               std::rethrow_if_nested(error);

@@ -136,6 +136,15 @@ class ScalarMathematicsVariation {
     }
     Value value_;
 };
+class ScientificInitializationFailure:public std::runtime_error {
+public:
+    ScientificInitializationFailure(TrainingWork work,RegressionSupplementalWork supplemental,std::uint64_t candidates)
+        :std::runtime_error("scientific initialization failed before population publication"),work_(work),supplemental_(supplemental),candidates_(candidates){}
+    const TrainingWork& work()const noexcept{return work_;}
+    const RegressionSupplementalWork& supplementalWork()const noexcept{return supplemental_;}
+    std::uint64_t candidateAttempts()const noexcept{return candidates_;}
+private:TrainingWork work_;RegressionSupplementalWork supplemental_;std::uint64_t candidates_;
+};
 class ScalarMathematicsRun {
   public:
     using PopulationType = Population<ExpressionCandidate, RegressionOrdering>;
@@ -145,12 +154,17 @@ class ScalarMathematicsRun {
         : ScalarMathematicsRun(p, config, random, RestoreTag{}) {
         if (config.maxTrainingLossAttempts < config.population || config.maxEvaluations < config.population)
             throw TrainingLossBudgetExceeded();
+        try {
         std::vector<ExpressionCandidate> initial;
         initial.reserve(config.population);
         for (std::size_t i = 0; i < config.population; ++i)
             initial.push_back(algorithm_->variation().initialize(random.engine()));
         population_ = std::make_unique<PopulationType>(initial, random, ObjectiveDirection::Minimize);
         preparation_->initializing = false;
+        }catch(...){
+            if(p.measured())std::throw_with_nested(ScientificInitializationFailure(work(),supplementalWork(),random_.evaluationAttempts()));
+            throw;
+        }
     }
     const PopulationType &population() const { return *population_; }
     const TrainingWork &work() const noexcept { return objective_->work(); }

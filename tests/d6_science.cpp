@@ -481,6 +481,23 @@ public:
   }
 };
 void publicationFailure() {
+  auto initialFault = std::make_shared<FaultProblem>();
+  initialFault->fail.store(true);
+  auto initialProblem = ScalarMathematicsProblem::measured(
+      initialFault, "failed-initial-commit/1");
+  SymbolicRegressionConfig initialConfig;
+  initialConfig.population = 4;
+  RandomContext initialRandom(123, {2});
+  bool initCounted = false;
+  try {
+    ScalarMathematicsRun failed(initialProblem, initialConfig, initialRandom);
+  } catch (const ScientificInitializationFailure &failure) {
+    initCounted = failure.work().lossAttempts > 0 &&
+                  failure.supplementalWork().mathematicalOperations > 0 &&
+                  failure.candidateAttempts() > 0;
+  }
+  check(initCounted, "initialization failure retains drained actual work "
+                     "without a committed population");
   auto fault = std::make_shared<FaultProblem>();
   auto problem =
       ScalarMathematicsProblem::measured(fault, "fixed-fault-fixture/1");

@@ -33,12 +33,41 @@ ScientificEquationSystem oscillator() {
   return {3, {a, c}, {{0, 1, 1, dx}, {1, 2, 1, dv}}, {{1, 0, 4}, {1, 0, 4}}};
 }
 void differential() {
+  ScientificEquationSystem badInitial(1, {parse("log(x1)", 2)},
+                                      {{0, 1, 1, {{{1}, 0}}}}, {{0, -1, 1}});
+  auto invalidFit = fitScientificParameters(badInitial);
+  check(invalidFit.status == ScientificStatus::Invalid && !invalidFit.loss &&
+            invalidFit.stop == ConstantFitStop::InvalidStart &&
+            invalidFit.work.lossAttempts == 1,
+        "invalid initial model is mathematical invalidity with actual work");
+  ScientificEquationSystem noParameters(1, {parse("x0")},
+                                        {{0, 1, 1, {{{1}, 1}}}});
+  auto unchanged = fitScientificParameters(noParameters);
+  check(unchanged.status == ScientificStatus::Success &&
+            unchanged.parameters.empty() && unchanged.loss == 0 &&
+            unchanged.work.lossAttempts == 1 &&
+            unchanged.stop == ConstantFitStop::NoConstants,
+        "zero-coordinate system follows ordinary baseline accounting");
+  ScientificEquationSystem exhaustedSystem(1, {parse("x0")},
+                                           {{0, 1, 1, {{{1}, 1}}}}, {},
+                                           {1, 100, 10000, 100, 1e-12});
+  bool preserved = false;
+  try {
+    fitScientificParameters(exhaustedSystem);
+  } catch (const ScientificFittingFailure &failure) {
+    preserved = failure.work().lossAttempts == 1 &&
+                failure.supplementalWork().mathematicalOperations == 1;
+    preserved = preserved && isEvaluationBudget(std::current_exception());
+  }
+  check(preserved,
+        "fitting resource failure retains work and original typed cause");
+
   auto inactive =
       evaluateSecondPartial(parse("pow(x1,1.7)+normal_pdf(x1,0,1)+x0*x0", 2),
                             std::array{2., 1.}, 0, 0);
   check(inactive.derivatives.has_value(),
         "inactive unsupported rules do not cause unavailability");
-  near(inactive.derivatives->second, 2);
+  near(inactive.derivatives.value().second, 2);
   auto inactiveDivision =
       evaluateSecondPartial(parse("x0/x1", 2), std::array{0., 1e-310}, 0, 0);
   check(inactiveDivision.status == ScientificStatus::Unavailable,
@@ -52,17 +81,19 @@ void differential() {
       check(xx.status == ScientificStatus::Success &&
                 tx.status == ScientificStatus::Success,
             "second partial qualified heat field");
-      near(xx.derivatives->second, -std::exp(-.25 * t) * std::sin(x));
-      near(tx.derivatives->second, -.25 * std::exp(-.25 * t) * std::cos(x));
+      near(xx.derivatives.value().second, -std::exp(-.25 * t) * std::sin(x));
+      near(tx.derivatives.value().second,
+           -.25 * std::exp(-.25 * t) * std::cos(x));
       auto reverse = evaluateSecondPartial(e, std::array{t, x}, 1, 0);
-      near(reverse.derivatives->second, tx.derivatives->second);
-      check(std::bit_cast<std::uint64_t>(*xx.primal) ==
+      near(reverse.derivatives.value().second, tx.derivatives.value().second);
+      check(std::bit_cast<std::uint64_t>(xx.primal.value()) ==
                 std::bit_cast<std::uint64_t>(
                     e.evaluate(std::array{t, x}).value()),
             "primal bits");
     }
   near(evaluateSecondPartial(parse("x0*x0*x0"), std::array{2.}, 0, 0)
-           .derivatives->second,
+           .derivatives.value()
+           .second,
        12);
   check(evaluateSecondPartial(parse("sqrt(x0*x0)"), std::array{0.}, 0, 0)
                 .status == ScientificStatus::Unavailable,
@@ -82,14 +113,15 @@ void differential() {
       evaluateSecondPartial(parse("powi(x0,2)"), std::array{1e-200}, 0, 0);
   check(tinySquare.derivatives.has_value(),
         "sequential power derivative survives primal underflow");
-  near(tinySquare.derivatives->second, 2);
-  check(tinySquare.derivatives->firstI == 2e-200, "no q/x derivative shortcut");
+  near(tinySquare.derivatives.value().second, 2);
+  check(tinySquare.derivatives.value().firstI == 2e-200,
+        "no q/x derivative shortcut");
   auto system = oscillator();
   ObservedOdeSystem ode(system, 0, {1, 2}, {0, 1});
   check(!ode.identity().empty(), "explicit ODE field identities");
   auto exact = system.assess(std::array{.25, 2.});
   check(exact.loss.has_value(), "whole oscillator valid");
-  near(*exact.loss, 0);
+  near(exact.loss.value(), 0);
   ConstantFitConfig f;
   f.maxLossAttempts = 512;
   f.lower = 0;
@@ -97,7 +129,7 @@ void differential() {
   auto fitted = fitScientificParameters(system, f);
   near(fitted.parameters[0], .25);
   near(fitted.parameters[1], 2);
-  near(fitted.loss, 0);
+  near(fitted.loss.value(), 0);
   check(fitted.work.lossAttempts <= 512, "joint parameter budget");
   std::vector<ScientificObservation> heatRows;
   for (double t : {0., .5, 1.})
@@ -112,7 +144,7 @@ void differential() {
   check(!pde.identity().empty(), "PDE field and derivative identities");
   auto heatFit = fitScientificParameters(heat, f);
   near(heatFit.parameters[0], .25);
-  near(heatFit.loss, 0);
+  near(heatFit.loss.value(), 0);
   check(heatFit.supplemental.fieldEvaluations > 0, "all equation work counted");
   std::vector<ScientificObservation> densities;
   for (double x : {-2., -1., 0., 1., 2., 3.}) {
@@ -134,7 +166,7 @@ void differential() {
   ScientificEquationSystem weighted(
       1, {parse("x0")},
       {{0, 1, 1, {{{0}, 1}, {{1}, 3}}}, {0, 2, 3, {{{0}, 2}, {{2}, 2}}}});
-  near(*weighted.assess({}).loss, 1.0);
+  near(weighted.assess({}).loss.value(), 1.0);
   auto rows = weighted.channels();
   for (auto &c : rows) {
     auto original = c.observations;
@@ -142,7 +174,7 @@ void differential() {
                           original.end());
   }
   ScientificEquationSystem doubled(1, weighted.equations(), rows);
-  near(*doubled.assess({}).loss, 1.);
+  near(doubled.assess({}).loss.value(), 1.);
   std::atomic<bool> cancel{true};
   check(system.assess(std::array{.25, 2.}, &cancel).status ==
             ScientificStatus::Cancelled,
@@ -180,7 +212,8 @@ void tensors() {
                          std::array{1., 2., 3., 4., 5., 6.});
   auto c = tensorContract(a, b, 2, 0);
   check(c.success(), "rank3 contraction");
-  check(c.value->shape().dimensions() == std::vector<std::size_t>{2, 2, 2},
+  check(c.value.value().shape().dimensions() ==
+            std::vector<std::size_t>{2, 2, 2},
         "contraction outputshape");
   // References independently expanded three-term dot products.
   for (std::size_t i = 0; i < 2; ++i)
@@ -189,14 +222,15 @@ void tensors() {
         double expected = 0;
         for (std::size_t l = 0; l < 3; ++l)
           expected += a.at(std::array{i, j, l}) * b.at(std::array{l, k});
-        near(c.value->at(std::array{i, j, k}), expected);
+        near(c.value.value().at(std::array{i, j, k}), expected);
       }
   auto saved =
       restoreTensor(decodeCheckpoint(encodeCheckpoint(checkpointTensor(a))));
   check(
       std::equal(a.values().begin(), a.values().end(), saved.values().begin()),
       "tensor exact codec");
-  near(tensorReduce(a, 2).value->at(std::array<std::size_t, 2>{0, 0}), 6);
+  near(tensorReduce(a, 2).value.value().at(std::array<std::size_t, 2>{0, 0}),
+       6);
   auto requirement = tensorScale(a, 2).work.operations;
   check(tensorScale(a, 2, {requirement - 1, 1000, 100000, 100, 1e-12}).status ==
             ScientificStatus::ResourceLimit,
@@ -219,10 +253,11 @@ void tensors() {
   auto small = BoundedTensor(TensorShape(std::array<std::size_t, 1>{2}),
                              std::array{1., 2.});
   near(tensorContract(small, small, {}, {})
-           .value->at(std::array<std::size_t, 2>{1, 1}),
+           .value.value()
+           .at(std::array<std::size_t, 2>{1, 1}),
        4);
   auto sum = tensorAdd(small, small);
-  near(sum.value->values()[1], 4);
+  near(sum.value.value().values()[1], 4);
 }
 void complexMath() {
   auto binary = [&](ComplexKind k) {
@@ -231,24 +266,25 @@ void complexMath() {
                                      ComplexNode::operation(k)};
     return ComplexExpression(nodes, 0).evaluate({});
   };
-  near(binary(ComplexKind::Add).value->real(), 6);
-  near(binary(ComplexKind::Subtract).value->imag(), 8);
-  near(binary(ComplexKind::Multiply).value->real(), 23);
-  near(binary(ComplexKind::Multiply).value->imag(), 2);
-  near(binary(ComplexKind::Divide).value->real(), -7. / 41);
-  near(binary(ComplexKind::Divide).value->imag(), 22. / 41);
+  near(binary(ComplexKind::Add).value.value().real(), 6);
+  near(binary(ComplexKind::Subtract).value.value().imag(), 8);
+  near(binary(ComplexKind::Multiply).value.value().real(), 23);
+  near(binary(ComplexKind::Multiply).value.value().imag(), 2);
+  near(binary(ComplexKind::Divide).value.value().real(), -7. / 41);
+  near(binary(ComplexKind::Divide).value.value().imag(), 22. / 41);
   auto unary = [&](ComplexKind k, std::complex<double> z,
                    unsigned exponent = 0) {
     std::array<ComplexNode, 2> nodes{ComplexNode::constant(z),
                                      ComplexNode::operation(k, exponent)};
     return ComplexExpression(nodes, 0).evaluate({});
   };
-  near(unary(ComplexKind::Conjugate, {2, 3}).value->imag(), -3);
-  near(unary(ComplexKind::Magnitude, {2, 3}).value->real(), std::sqrt(13.));
-  near(unary(ComplexKind::Sqrt, {-1, -0.}).value->imag(), -1);
-  near(unary(ComplexKind::Sin, {0, 1}).value->imag(), std::sinh(1.));
-  near(unary(ComplexKind::Cos, {0, 1}).value->real(), std::cosh(1.));
-  near(unary(ComplexKind::Powi, {1, 1}, 4).value->real(), -4);
+  near(unary(ComplexKind::Conjugate, {2, 3}).value.value().imag(), -3);
+  near(unary(ComplexKind::Magnitude, {2, 3}).value.value().real(),
+       std::sqrt(13.));
+  near(unary(ComplexKind::Sqrt, {-1, -0.}).value.value().imag(), -1);
+  near(unary(ComplexKind::Sin, {0, 1}).value.value().imag(), std::sinh(1.));
+  near(unary(ComplexKind::Cos, {0, 1}).value.value().real(), std::cosh(1.));
+  near(unary(ComplexKind::Powi, {1, 1}, 4).value.value().real(), -4);
   check(unary(ComplexKind::Exp, {1000, 0}).status ==
             ScientificStatus::NumericalFailure,
         "complex nonfinite arithmetic failure");
@@ -257,16 +293,16 @@ void complexMath() {
   for (double x : {0., .25, 1., std::acos(-1.), 2 * std::acos(-1.)}) {
     auto y = e.evaluate(std::array<std::complex<double>, 2>{{{x, 0}, {0, 1}}});
     check(y.success(), "complex exp");
-    near(y.value->real(), std::cos(x));
-    near(y.value->imag(), std::sin(x));
+    near(y.value.value().real(), std::cos(x));
+    near(y.value.value().imag(), std::sin(x));
   }
   std::array<ComplexNode, 2> logarithm{
       ComplexNode::variable(0), ComplexNode::operation(ComplexKind::Log)};
   ComplexExpression log(logarithm, 1);
   auto plus = log.evaluate(std::array<std::complex<double>, 1>{{{-1., 0.}}}),
        minus = log.evaluate(std::array<std::complex<double>, 1>{{{-1., -0.}}});
-  near(plus.value->imag(), std::acos(-1.));
-  near(minus.value->imag(), -std::acos(-1.));
+  near(plus.value.value().imag(), std::acos(-1.));
+  near(minus.value.value().imag(), -std::acos(-1.));
   check(log.evaluate(std::array<std::complex<double>, 1>{{{0, 0}}}).status ==
             ScientificStatus::Invalid,
         "logzero domain");
@@ -294,11 +330,11 @@ void complexMath() {
 void statistics() {
   auto x = std::array{1., 2., 3., 4.};
   auto population = finiteStatistics(x), sample = finiteStatistics(x, 1);
-  near(population.value->mean, 2.5);
-  near(population.value->variance, 1.25);
-  near(sample.value->variance, 5. / 3);
-  near(*finiteCovariance(x, x, 0, true).value, 1);
-  near(*finiteCovariance(x, x).value, 1.25);
+  near(population.value.value().mean, 2.5);
+  near(population.value.value().variance, 1.25);
+  near(sample.value.value().variance, 5. / 3);
+  near(finiteCovariance(x, x, 0, true).value.value(), 1);
+  near(finiteCovariance(x, x).value.value(), 1.25);
   near(
       *finiteWeightedMean(std::array{1., 3.}, std::array{.25, .75}, true).value,
       2.5);
@@ -328,16 +364,16 @@ void statistics() {
 }
 void linear() {
   auto vector = TypedValue::vector(std::array{3., 4., 0.});
-  near(*vectorNorm(vector).value, 5);
-  near(*vectorNorm(vector, true).value, 25);
-  near(vectorNormalize(vector).value->at(0), .6);
+  near(vectorNorm(vector).value.value(), 5);
+  near(vectorNorm(vector, true).value.value(), 25);
+  near(vectorNormalize(vector).value.value().at(0), .6);
   auto cross = vectorCross(TypedValue::vector(std::array{1., 0., 0.}),
                            TypedValue::vector(std::array{0., 1., 0.}));
-  near(cross.value->at(2), 1);
+  near(cross.value.value().at(2), 1);
   auto a = TypedValue::matrix(2, 2, std::array{2., 1., 1., 2.});
-  near(*matrixTrace(a).value, 4);
-  near(*matrixDeterminant(a).value, 3);
-  near(matrixPower(a, 2).value->at(0, 0), 5);
+  near(matrixTrace(a).value.value(), 4);
+  near(matrixDeterminant(a).value.value(), 3);
+  near(matrixPower(a, 2).value.value().at(0, 0), 5);
   auto solve = solveLinearSystem(a, TypedValue::vector(std::array{3., 3.}));
   auto eigen = symmetricEigen(a);
 #ifdef GENETIK_HAS_LAPACK
@@ -353,26 +389,26 @@ void linear() {
     auto pairs = symmetricEigen(matrix);
     check(solution.success() && pairs.success(), "matrix dimensions1,3,16");
     for (std::size_t i = 0; i < n; ++i) {
-      near(solution.value->solution.at(i), 2);
-      near(pairs.value->eigenvalues.at(i), static_cast<double>(i + 1));
+      near(solution.value.value().solution.at(i), 2);
+      near(pairs.value.value().eigenvalues.at(i), static_cast<double>(i + 1));
     }
   }
   auto repeated = symmetricEigen(
       TypedValue::matrix(3, 3, std::array{2., 0., 0., 0., 2., 0., 0., 0., 2.}));
   check(repeated.success(), "repeated eigenvalues accepted");
-  near(repeated.value->maximumResidual, 0);
+  near(repeated.value.value().maximumResidual, 0);
 
-  near(solve.value->solution.at(0), 1);
-  near(solve.value->residualNorm, 0);
-  near(eigen.value->eigenvalues.at(0), 1);
-  near(eigen.value->eigenvalues.at(1), 3);
-  near(eigen.value->maximumResidual, 0);
+  near(solve.value.value().solution.at(0), 1);
+  near(solve.value.value().residualNorm, 0);
+  near(eigen.value.value().eigenvalues.at(0), 1);
+  near(eigen.value.value().eigenvalues.at(1), 3);
+  near(eigen.value.value().maximumResidual, 0);
   auto diagonal = TypedValue::matrix(2, 2, std::array{-1., 0., 0., -2.});
   auto exp = symmetricMatrixExponential(diagonal, .5);
   check(exp.success(), "symmetric matrix exponential");
-  near(exp.value->at(0, 0), std::exp(-.5));
-  near(exp.value->at(1, 1), std::exp(-1.));
-  near(exp.value->at(0, 1), 0);
+  near(exp.value.value().at(0, 0), std::exp(-.5));
+  near(exp.value.value().at(1, 1), std::exp(-1.));
+  near(exp.value.value().at(0, 1), 0);
   check(solveLinearSystem(TypedValue::matrix(2, 2, std::array{1., 1., 1., 1.}),
                           TypedValue::vector(std::array{1., 1.}))
                 .status == ScientificStatus::Invalid,
@@ -501,6 +537,29 @@ public:
   }
 };
 void publicationFailure() {
+  std::uint64_t rows = 0;
+  RegressionSupplementalWork operations;
+  bool original = false;
+  try {
+    genetik_science::accountAssessment(
+        [&](ScientificProgress &progress) -> ScientificAssessment {
+          ScientificAssessment local;
+          genetik_science::Budget budget;
+          genetik_science::ProgressScope scope{&progress, local, budget};
+          budget.charge(7);
+          local.observationsAttempted = 2;
+          local.fieldEvaluations = 1;
+          throw std::runtime_error("original scientific operation");
+        },
+        &rows, operations);
+  } catch (const std::runtime_error &error) {
+    original =
+        std::string_view(error.what()) == "original scientific operation";
+  }
+  check(original && rows == 2 && operations.mathematicalOperations == 7 &&
+            operations.fieldEvaluations == 1,
+        "unwinding retains completed scientific work and original cause");
+
   auto initialFault = std::make_shared<FaultProblem>();
   initialFault->fail.store(true);
   auto initialProblem = ScalarMathematicsProblem::measured(

@@ -14,8 +14,10 @@ int main() {
   fit.upper = 2;
   fit.maxLossAttempts = 128;
   auto fitted = fitScientificParameters(heat, fit);
+  if (!fitted.loss)
+    return 1;
   std::cout << "Heat residual coefficient: " << fitted.parameters[0]
-            << " loss=" << fitted.loss << '\n';
+            << " loss=" << fitted.loss.value() << '\n';
   auto field = parseExpression("exp((-0.25)*x0)*sin(x1)", 2);
   auto derivative = evaluateSecondPartial(field, std::array{.5, 1.}, 1, 1);
   if (!derivative.derivatives)

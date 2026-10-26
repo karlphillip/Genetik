@@ -22,6 +22,24 @@ struct ScientificAssessment {
   std::size_t observationsAttempted = 0, fieldEvaluations = 0;
   std::string reason;
 };
+// Optional invocation-owned progress survives operational unwinding. It never
+// aliases mutable model data or a different worker's accounting.
+struct ScientificProgress {
+  ScientificWork work;
+  std::size_t observations = 0, fields = 0;
+};
+namespace genetik_science {
+struct ProgressScope {
+  ScientificProgress *output;
+  ScientificAssessment &assessment;
+  Budget &budget;
+  ~ProgressScope() noexcept {
+    if (output)
+      *output = {budget.work, assessment.observationsAttempted,
+                 assessment.fieldEvaluations};
+  }
+};
+} // namespace genetik_science
 // All equations bind [external inputs, explicit shared parameters]. Parameters
 // are common input slots, never accidental shared constant occurrences.
 class ScientificEquationSystem {
@@ -108,15 +126,16 @@ public:
     return {inputs_, copy,           channels_,     parameters_,
             limits_, bindingsUnits_, equationUnits_};
   }
-  ScientificAssessment
-  assess(std::span<const double> parameters,
-         const std::atomic<bool> *cancelled = nullptr) const {
-    return assessImpl(parameters, cancelled, {});
+  ScientificAssessment assess(std::span<const double> parameters,
+                              const std::atomic<bool> *cancelled = nullptr,
+                              ScientificProgress *progress = nullptr) const {
+    return assessImpl(parameters, cancelled, {}, progress);
   }
   ScientificAssessment
   assessWithEquation(std::size_t index, const Expression &e,
                      std::span<const double> parameters,
-                     const std::atomic<bool> *cancelled = nullptr) const {
+                     const std::atomic<bool> *cancelled = nullptr,
+                     ScientificProgress *progress = nullptr) const {
     if (index >= equations_.size() ||
         e.variableCount() != inputs_ + parameters_.size())
       throw std::invalid_argument("replacement equation schema");
@@ -131,14 +150,14 @@ public:
                 "invalid equation dimensions"};
       }
     }
-    return assessImpl(parameters, cancelled, std::pair{index, &e});
+    return assessImpl(parameters, cancelled, std::pair{index, &e}, progress);
   }
 
 private:
   ScientificAssessment assessImpl(
       std::span<const double> parameters, const std::atomic<bool> *cancelled,
-      std::optional<std::pair<std::size_t, const Expression *>> replacement)
-      const {
+      std::optional<std::pair<std::size_t, const Expression *>> replacement,
+      ScientificProgress *progress) const {
     if (parameters.size() != parameters_.size())
       throw std::invalid_argument("system parameter count");
     genetik_science::inputs(parameters);
@@ -148,6 +167,7 @@ private:
         throw std::invalid_argument("system coefficient outside bounds");
     ScientificAssessment r;
     genetik_science::Budget b(limits_, cancelled);
+    genetik_science::ProgressScope progressScope{progress, r, b};
     try {
       std::size_t nodes = 0;
       for (std::size_t index = 0; index < equations_.size(); ++index)
@@ -175,9 +195,9 @@ private:
           if (e.arithmeticCost() > limits_.maxOperations - b.work.operations)
             throw genetik_science::Stop{ScientificStatus::ResourceLimit,
                                         "field work admission"};
+          ++r.fieldEvaluations;
           auto p = e.evaluate(bindings);
           b.charge(p.arithmeticOperations());
-          ++r.fieldEvaluations;
           if (!p.valid())
             throw genetik_science::Stop{ScientificStatus::Invalid,
                                         "invalid required equation"};
@@ -279,6 +299,26 @@ objectiveResult(const ScientificAssessment &a, std::uint64_t *rows,
           {},
           a.observationsAttempted};
 }
+template <class F>
+RegressionMetrics accountAssessment(F &&evaluate, std::uint64_t *rows,
+                                    RegressionSupplementalWork &work) {
+  ScientificProgress progress;
+  ScientificAssessment assessment;
+  try {
+    assessment = evaluate(progress);
+  } catch (...) {
+    // Saturate only if counters themselves are exhausted; never replace the
+    // original operational cause while unwinding.
+    bool overflow = false;
+    mergeTrainingCounter(work.mathematicalOperations, progress.work.operations,
+                         overflow);
+    mergeTrainingCounter(work.fieldEvaluations, progress.fields, overflow);
+    if (rows)
+      mergeTrainingCounter(*rows, progress.observations, overflow);
+    throw;
+  }
+  return objectiveResult(assessment, rows, &work);
+}
 class SystemStructureProblem final : public RegressionProblem {
 public:
   SystemStructureProblem(const ScientificEquationSystem &s,
@@ -302,8 +342,12 @@ public:
     std::vector<double> p;
     for (auto a : system_.parameters())
       p.push_back(a.initial);
-    return objectiveResult(system_.assessWithEquation(equation_, expression, p),
-                           rows, &supplemental);
+    return accountAssessment(
+        [&](ScientificProgress &progress) {
+          return system_.assessWithEquation(equation_, expression, p, nullptr,
+                                            &progress);
+        },
+        rows, supplemental);
   }
 
 private:
@@ -334,7 +378,11 @@ public:
       if (p[i] < system_.parameters()[i].lower ||
           p[i] > system_.parameters()[i].upper)
         return {Fitness::invalid(), {}, 0};
-    return objectiveResult(system_.assess(p), rows, &supplemental);
+    return accountAssessment(
+        [&](ScientificProgress &progress) {
+          return system_.assess(p, nullptr, &progress);
+        },
+        rows, supplemental);
   }
 
 private:
@@ -353,33 +401,44 @@ scientificSystemProblem(const ScientificEquationSystem &s, std::size_t unknown,
 }
 struct ScientificParameterFit {
   std::vector<double> parameters;
-  double loss;
+  std::optional<double> loss;
   TrainingWork work;
   ConstantFitStop stop;
   RegressionSupplementalWork supplemental;
+  ScientificStatus status = ScientificStatus::Unavailable;
+};
+class ScientificFittingFailure : public std::runtime_error {
+public:
+  ScientificFittingFailure(TrainingWork work,
+                           RegressionSupplementalWork supplemental)
+      : std::runtime_error(
+            "scientific fitting interrupted; input model unchanged"),
+        work_(work), supplemental_(supplemental) {}
+  const TrainingWork &work() const noexcept { return work_; }
+  const RegressionSupplementalWork &supplementalWork() const noexcept {
+    return supplemental_;
+  }
+
+private:
+  TrainingWork work_;
+  RegressionSupplementalWork supplemental_;
 };
 inline ScientificParameterFit
 fitScientificParameters(const ScientificEquationSystem &s,
                         ConstantFitConfig config = {}) {
   validateConstantFitConfigForLimit(config, std::numeric_limits<double>::max());
-  if (s.parameters().empty()) {
-    auto a = s.assess({});
-    if (!a.loss)
-      throw std::invalid_argument("invalid parameter-free system");
-    return {{},
-            *a.loss,
-            TrainingWork{1, a.observationsAttempted, 1, 1, 0, 0, 0, 0, 0, 0, 0,
-                         1, 0, 0},
-            ConstantFitStop::NoConstants,
-            {a.work.operations, a.fieldEvaluations}};
-  }
   if (s.parameters().size() > 1024)
     throw ScientificResourceExhausted("parameter coordinates");
   ExpressionLimits l{2 * s.parameters().size() + 1,
                      2 * s.parameters().size() + 1,
                      std::numeric_limits<double>::max(), 100000};
   std::vector<ExpressionNode> nodes;
+  if (s.parameters().empty())
+    nodes.push_back(ExpressionNode::variable(0));
   for (auto p : s.parameters()) {
+    if (p.initial < config.lower || p.initial > config.upper)
+      throw std::invalid_argument(
+          "starting scientific coefficient outside fitting bounds");
     nodes.push_back(ExpressionNode::constant(p.initial));
     if (nodes.size() > 1)
       nodes.push_back(ExpressionNode::binary(ExpressionKind::Add));
@@ -387,13 +446,26 @@ fitScientificParameters(const ScientificEquationSystem &s,
   auto problem =
       std::make_shared<const genetik_science::SystemParameterProblem>(s, l);
   TrainingObjective objective(problem, config.maxLossAttempts);
-  auto fitted = fitConstants(Expression(nodes, 1, l), objective, config);
+  auto fitted = [&] {
+    try {
+      return fitConstants(Expression(nodes, 1, l), objective, config);
+    } catch (...) {
+      std::throw_with_nested(ScientificFittingFailure(
+          objective.work(), objective.supplementalWork()));
+    }
+  }();
   std::vector<double> values;
   for (auto n : fitted.expression.nodes())
     if (n.kind() == ExpressionKind::Constant)
       values.push_back(n.constantValue());
-  if (fitted.loss.state() != FitnessState::Valid)
-    throw std::invalid_argument("invalid initial scientific parameter model");
-  return {values, fitted.loss.score(), objective.work(), fitted.stop,
-          objective.supplementalWork()};
+  return {values,
+          fitted.loss.state() == FitnessState::Valid
+              ? std::optional<double>(fitted.loss.score())
+              : std::nullopt,
+          objective.work(),
+          fitted.stop,
+          objective.supplementalWork(),
+          fitted.loss.state() == FitnessState::Valid
+              ? ScientificStatus::Success
+              : ScientificStatus::Invalid};
 }

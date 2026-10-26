@@ -106,6 +106,9 @@ int main(int argc, char **argv) {
       config.upper = 4;
       config.maxLossAttempts = 512;
       auto fitted = fitScientificParameters(train, config);
+      if (!fitted.loss)
+        throw std::runtime_error(
+            "unscorable initial scientific parameter model");
       auto held = (task == "gaussian-fit" ? gaussianSystem(true)
                    : task == "heat"       ? heat(true)
                                           : oscillator(true))
@@ -118,7 +121,7 @@ int main(int argc, char **argv) {
       output.precision(17);
       output << "task\tseed\ttraining_loss\theld_"
                 "loss\tattempts\tseconds\toperations\tfields\tparameters\n"
-             << task << '\t' << seed << '\t' << fitted.loss << '\t'
+             << task << '\t' << seed << '\t' << fitted.loss.value() << '\t'
              << *held.loss << '\t' << fitted.work.lossAttempts << '\t'
              << std::chrono::duration<double>(std::chrono::steady_clock::now() -
                                               start)

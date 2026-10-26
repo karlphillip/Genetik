@@ -43,15 +43,18 @@ public:
   RegressionMetrics
   measureWithWork(const Expression &genome, std::uint64_t *rows,
                   RegressionSupplementalWork &supplemental) const override {
-    auto r =
-        assess(ComplexExpression::fromScalarGenome(checkedExpression(genome)));
-    return genetik_science::objectiveResult(r, rows, &supplemental);
+    auto e = ComplexExpression::fromScalarGenome(checkedExpression(genome));
+    return genetik_science::accountAssessment(
+        [&](ScientificProgress &progress) { return assess(e, &progress); },
+        rows, supplemental);
   }
-  ScientificAssessment assess(const ComplexExpression &e) const {
+  ScientificAssessment assess(const ComplexExpression &e,
+                              ScientificProgress *progress = nullptr) const {
     if (e.variableCount() != dimensions())
       throw std::invalid_argument("complex problem schema");
     ScientificAssessment r;
     genetik_science::Budget b(limits_);
+    genetik_science::ProgressScope progressScope{progress, r, b};
     try {
       double loss = 0;
       for (const auto &row : rows_) {
@@ -62,11 +65,11 @@ public:
         if (!left.maxOperations)
           throw genetik_science::Stop{ScientificStatus::ResourceLimit,
                                       "complex residual work"};
+        ++r.fieldEvaluations;
         auto p = e.evaluate(row.inputs, left);
         b.charge(p.work.operations);
         b.work.workspaceBytes =
             std::max(b.work.workspaceBytes, p.work.workspaceBytes);
-        ++r.fieldEvaluations;
         if (!p.success())
           throw genetik_science::Stop{p.status, "complex required prediction"};
         double re = b.sub(p.value->real(), row.target.real()),
@@ -162,13 +165,17 @@ public:
   RegressionMetrics
   measureWithWork(const Expression &e, std::uint64_t *rows,
                   RegressionSupplementalWork &supplemental) const override {
-    return genetik_science::objectiveResult(assess(e), rows, &supplemental);
+    return genetik_science::accountAssessment(
+        [&](ScientificProgress &progress) { return assess(e, &progress); },
+        rows, supplemental);
   }
-  ScientificAssessment assess(const Expression &e) const {
+  ScientificAssessment assess(const Expression &e,
+                              ScientificProgress *progress = nullptr) const {
     if (e.variableCount() != dimensions())
       throw std::invalid_argument("tensor scale input schema");
     ScientificAssessment r;
     genetik_science::Budget b(limits_);
+    genetik_science::ProgressScope progressScope{progress, r, b};
     try {
       double loss = 0;
       for (const auto &row : rows_) {
@@ -178,9 +185,9 @@ public:
         if (e.arithmeticCost() > limits_.maxOperations - b.work.operations)
           throw genetik_science::Stop{ScientificStatus::ResourceLimit,
                                       "tensor scale expression work"};
+        ++r.fieldEvaluations;
         auto p = e.evaluate(row.inputs);
         b.charge(p.arithmeticOperations());
-        ++r.fieldEvaluations;
         if (!p.valid())
           throw genetik_science::Stop{ScientificStatus::Invalid,
                                       "invalid tensor scale"};

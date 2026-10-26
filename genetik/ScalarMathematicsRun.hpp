@@ -37,7 +37,7 @@ class ScalarMathematicsProblem {
         if(!problem||completeIdentity.empty()||completeIdentity.size()>16*1024*1024)
             throw std::invalid_argument("owned full-model problem identity required");
         auto result=scientific({{std::vector<double>(problem->dimensions(),0),0}},problem->limits());
-        result.measured_=true;result.problem_=std::move(problem);CheckpointWriter w;w.text("full-model-measurement/2");
+        result.measured_=true;result.problem_=std::move(problem);CheckpointWriter w;w.text("full-model-measurement/3");
         w.text(result.identity_);w.text(completeIdentity);result.identity_=w.data();return result;
     }
     const auto &problem() const noexcept { return problem_; }

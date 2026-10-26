@@ -84,6 +84,15 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
       if (expressionArity(k) == 2) {
         auto a = stack.back();
         stack.pop_back();
+        if (!a.active && !c.active) {
+          auto value =
+              genetik_detail::scalarBinary(k, a.v, c.v, [&] { b.charge(); });
+          if (!value)
+            throw genetik_science::Stop{ScientificStatus::Invalid,
+                                        "inactive binary primal"};
+          stack.push_back({*value, 0, 0, 0, false});
+          continue;
+        }
         if (k == K::Add || k == K::Subtract) {
           auto op = [&](double u, double v) {
             return k == K::Add ? b.add(u, v) : b.sub(u, v);
@@ -93,6 +102,11 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
         } else if (k == K::Multiply)
           stack.push_back(product(a, c));
         else if (k == K::Divide) {
+          if (!c.active) {
+            stack.push_back({b.div(a.v, c.v), b.div(a.di, c.v),
+                             b.div(a.dj, c.v), b.div(a.dij, c.v), a.active});
+            continue;
+          }
           double inv = b.div(1, c.v);
           auto reciprocal = unary(c, inv, -b.mul(inv, inv),
                                   b.mul(2, b.mul(b.mul(inv, inv), inv)));
@@ -105,10 +119,22 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
         } else
           throw genetik_science::Stop{ScientificStatus::Unavailable,
                                       "second partial binary rule unsupported"};
-      } else if (expressionArity(k) == 3)
-        throw genetik_science::Stop{ScientificStatus::Unavailable,
-                                    "second partial ternary rule unsupported"};
-      else {
+      } else if (expressionArity(k) == 3) {
+        auto middle = stack.back();
+        stack.pop_back();
+        auto left = stack.back();
+        stack.pop_back();
+        if (left.active || middle.active || c.active)
+          throw genetik_science::Stop{
+              ScientificStatus::Unavailable,
+              "second partial ternary rule unsupported"};
+        auto value = genetik_detail::scalarTernary(k, left.v, middle.v, c.v,
+                                                   [&] { b.charge(); });
+        if (!value)
+          throw genetik_science::Stop{ScientificStatus::Invalid,
+                                      "inactive ternary primal"};
+        stack.push_back({*value, 0, 0, 0, false});
+      } else {
         auto v = genetik_detail::scalarUnary(
             k, c.v, expressionPowerMetadata(k) ? n.exponent() : 0,
             [&] { b.charge(); });

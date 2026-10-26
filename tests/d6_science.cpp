@@ -33,6 +33,17 @@ ScientificEquationSystem oscillator() {
   return {3, {a, c}, {{0, 1, 1, dx}, {1, 2, 1, dv}}, {{1, 0, 4}, {1, 0, 4}}};
 }
 void differential() {
+  auto inactive =
+      evaluateSecondPartial(parse("pow(x1,1.7)+normal_pdf(x1,0,1)+x0*x0", 2),
+                            std::array{2., 1.}, 0, 0);
+  check(inactive.derivatives.has_value(),
+        "inactive unsupported rules do not cause unavailability");
+  near(inactive.derivatives->second, 2);
+  auto inactiveDivision =
+      evaluateSecondPartial(parse("x0/x1", 2), std::array{0., 1e-310}, 0, 0);
+  check(inactiveDivision.status == ScientificStatus::Unavailable,
+        "required first derivative overflow remains unavailable");
+
   for (double t : {0., .5, 2.})
     for (double x : {-.75, .25, 1.5}) {
       auto e = parse("exp((-0.25)*x0)*sin(x1)", 2);
@@ -194,6 +205,34 @@ void tensors() {
   near(sum.value->values()[1], 4);
 }
 void complexMath() {
+  auto binary = [&](ComplexKind k) {
+    std::array<ComplexNode, 3> nodes{ComplexNode::constant({2, 3}),
+                                     ComplexNode::constant({4, -5}),
+                                     ComplexNode::operation(k)};
+    return ComplexExpression(nodes, 0).evaluate({});
+  };
+  near(binary(ComplexKind::Add).value->real(), 6);
+  near(binary(ComplexKind::Subtract).value->imag(), 8);
+  near(binary(ComplexKind::Multiply).value->real(), 23);
+  near(binary(ComplexKind::Multiply).value->imag(), 2);
+  near(binary(ComplexKind::Divide).value->real(), -7. / 41);
+  near(binary(ComplexKind::Divide).value->imag(), 22. / 41);
+  auto unary = [&](ComplexKind k, std::complex<double> z,
+                   unsigned exponent = 0) {
+    std::array<ComplexNode, 2> nodes{ComplexNode::constant(z),
+                                     ComplexNode::operation(k, exponent)};
+    return ComplexExpression(nodes, 0).evaluate({});
+  };
+  near(unary(ComplexKind::Conjugate, {2, 3}).value->imag(), -3);
+  near(unary(ComplexKind::Magnitude, {2, 3}).value->real(), std::sqrt(13.));
+  near(unary(ComplexKind::Sqrt, {-1, -0.}).value->imag(), -1);
+  near(unary(ComplexKind::Sin, {0, 1}).value->imag(), std::sinh(1.));
+  near(unary(ComplexKind::Cos, {0, 1}).value->real(), std::cosh(1.));
+  near(unary(ComplexKind::Powi, {1, 1}, 4).value->real(), -4);
+  check(unary(ComplexKind::Exp, {1000, 0}).status ==
+            ScientificStatus::NumericalFailure,
+        "complex nonfinite arithmetic failure");
+
   auto e = ComplexExpression::fromScalarGenome(parse("exp(x0*x1)", 2));
   for (double x : {0., .25, 1., std::acos(-1.), 2 * std::acos(-1.)}) {
     auto y = e.evaluate(std::array<std::complex<double>, 2>{{{x, 0}, {0, 1}}});
@@ -283,6 +322,26 @@ void linear() {
   auto eigen = symmetricEigen(a);
 #ifdef GENETIK_HAS_LAPACK
   check(solve.success() && eigen.success(), "LAPACK results");
+  for (std::size_t n : {std::size_t{1}, std::size_t{3}, std::size_t{16}}) {
+    std::vector<double> diagonal(n * n), rhs(n);
+    for (std::size_t i = 0; i < n; ++i) {
+      diagonal[i * n + i] = static_cast<double>(i + 1);
+      rhs[i] = 2 * static_cast<double>(i + 1);
+    }
+    auto matrix = TypedValue::matrix(n, n, diagonal);
+    auto solution = solveLinearSystem(matrix, TypedValue::vector(rhs));
+    auto pairs = symmetricEigen(matrix);
+    check(solution.success() && pairs.success(), "matrix dimensions1,3,16");
+    for (std::size_t i = 0; i < n; ++i) {
+      near(solution.value->solution.at(i), 2);
+      near(pairs.value->eigenvalues.at(i), static_cast<double>(i + 1));
+    }
+  }
+  auto repeated = symmetricEigen(
+      TypedValue::matrix(3, 3, std::array{2., 0., 0., 0., 2., 0., 0., 0., 2.}));
+  check(repeated.success(), "repeated eigenvalues accepted");
+  near(repeated.value->maximumResidual, 0);
+
   near(solve.value->solution.at(0), 1);
   near(solve.value->residualNorm, 0);
   near(eigen.value->eigenvalues.at(0), 1);

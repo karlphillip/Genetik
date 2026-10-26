@@ -37,6 +37,15 @@ public:
                 .dimension() !=
             inputAndParameterUnits[stateInputs[i]] / timeUnit)
           throw std::invalid_argument("ODE derivative dimensions");
+      std::vector<PhysicalDimension> outputs;
+      for (const auto &equation : system.equations())
+        outputs.push_back(
+            DimensionalExpression(equation, inputAndParameterUnits)
+                .dimension());
+      system_ = ScientificEquationSystem(system.inputCount(),
+                                         system.equations(), system.channels(),
+                                         system.parameters(), system.limits(),
+                                         inputAndParameterUnits, outputs);
     }
     states_ = stateInputs;
     rhs_ = rhsEquations;

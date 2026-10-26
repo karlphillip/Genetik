@@ -160,6 +160,17 @@ void differential() {
     rejected = true;
   }
   check(rejected, "dimensionally invalid derivative RHS rejected");
+  auto V = L / T;
+  ObservedOdeSystem dimensionedOde(
+      system, 0, {1, 2}, {0, 1},
+      {T, L, V, PhysicalDimension{} / T, PhysicalDimension{} / T.power(2)});
+  auto constrainedOde =
+      odeRegressionProblem(dimensionedOde, 1, {63, 16, 16, 10000});
+  auto wrongUnits = constrainedOde.problem()->measure(parse("x1", 5));
+  check(wrongUnits.loss.state() == FitnessState::Invalid &&
+            wrongUnits.samplesAttempted == 0,
+        "ODE unit policy survives problem adaptation and rejects before field "
+        "evaluation");
 }
 void tensors() {
   auto a = BoundedTensor(

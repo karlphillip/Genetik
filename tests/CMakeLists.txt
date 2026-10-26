@@ -370,7 +370,7 @@ if(GENETIK_SANITIZERS OR GENETIK_THREAD_SANITIZER)
     # Unchanged ASan+UBSan fixture:889.17s; the initial600s cap interrupted it.
     # Keep all dimensional generation/fitting and1/2/4-worker continuation work.
     set_tests_properties(genetik_d5_dimension_contracts PROPERTIES TIMEOUT 1800)
-endif
+endif()
 
 if(GENETIK_BUILD_EXAMPLES)
     add_test(NAME genetik_advanced_mathematics_quickstart COMMAND genetik_advanced_mathematics_quickstart --threads 2)

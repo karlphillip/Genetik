@@ -366,6 +366,11 @@ target_link_libraries(genetik_d5_dimension_tests PRIVATE Genetik::Genetik)
 add_test(NAME genetik_d5_dimension_contracts COMMAND genetik_d5_dimension_tests)
 add_test(NAME genetik_d5_dimension_overlap COMMAND genetik_d5_dimension_tests --overlap)
 set_tests_properties(genetik_d5_dimension_contracts genetik_d5_dimension_overlap PROPERTIES TIMEOUT 600)
+if(GENETIK_SANITIZERS OR GENETIK_THREAD_SANITIZER)
+    # Unchanged ASan+UBSan fixture:889.17s; the initial600s cap interrupted it.
+    # Keep all dimensional generation/fitting and1/2/4-worker continuation work.
+    set_tests_properties(genetik_d5_dimension_contracts PROPERTIES TIMEOUT 1800)
+endif
 
 if(GENETIK_BUILD_EXAMPLES)
     add_test(NAME genetik_advanced_mathematics_quickstart COMMAND genetik_advanced_mathematics_quickstart --threads 2)

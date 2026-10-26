@@ -6,9 +6,10 @@ permissions:
   contents: read
 jobs:
   qualify:
-    # Local full ASan suite:3221s; complete D3 fixture:1378s.
-    # Allow complete instrumentation plus compilation/artifact capture.
-    timeout-minutes: 90
+    # D5 initial complete ASan invocation:4111s, including a600s dimensional timeout.
+    # The unchanged dimensional fixture passed in889s; preserve its full workload.
+    # Allow the complete instrumented suite plus compilation and artifact capture.
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:

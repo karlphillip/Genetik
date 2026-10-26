@@ -207,6 +207,10 @@ std::erf/erfc/tgamma/lgamma/cyl_bessel_j are finite-checked; unexpected native
 operational exceptions propagate. Scalar native calls have the same qualified
 binary64/strict-FP/runtime policy as D5. Parser/export, Unicode/LaTeX, optional
 grammars, ordinary constant fitting and append-only scalar node codecs all apply.
+Genetik serializes its `lgamma` calls because the qualified glibc implementation
+updates process-global `signgam`; this avoids races between concurrent Genetik
+evaluations without depending on nonstandard `lgamma_r`. Concurrent external
+calls to `lgamma` do not share this lock.
 Erf/erfc numerical first derivatives are implemented. Gamma/log-gamma/Bessel/
 distribution derivatives explicitly return unavailable on active paths; valid
 primal values survive. Their symbolic derivatives and second-partial rules are
@@ -246,7 +250,9 @@ out/build/d6/genetik_d6_scientific_benchmarks oscillator 42 out/runs/d6/example
 The optional backend requires `-DGENETIK_SCIENTIFIC_NUMERICS=ON`; base quickstart
 also runs without it and explicitly reports its unavailable backend. All actual
 frozen outcomes, failures and revision-specific qualification are recorded in
-`docs/d6-results/`. No historical campaign is replaced or retuned.
+[`docs/d6-results/`](d6-results/) and
+[`D6_QUALIFICATION.md`](D6_QUALIFICATION.md). No historical campaign is replaced
+or retuned.
 
 ## Reference provenance
 
@@ -258,3 +264,63 @@ the [C++ complex transcendental specification](https://eel.is/c++draft/complex.t
 decimal digits from exact binary64 inputs; it never calls Genetik. The Poisson
 reference relation is also documented by [Boost.Math](https://boostorg.github.io/math/doc/html/math_toolkit/dist_ref/dists/poisson_dist.html).
 No third-party implementation code was copied into the headers.
+
+## Final outcome and accounting clarifications
+
+`ScientificParameterFit::loss` is optional. `status==Success` has the accepted
+finite score; an invalid initial model returns Invalid/InvalidStart and no score,
+with its baseline attempt and rows retained. A zero-shared-coordinate model uses
+the same ordinary fitting-baseline pathway, then returns NoConstants. Configuration
+errors remain API errors. `ScientificFittingFailure` retains actual training and
+supplemental counters and nests an interrupted operation's original cause; the
+caller-owned model remains unchanged. `ScientificInitializationFailure` similarly
+retains drained work and candidate requests when no initial population could commit.
+There is no resumable committed checkpoint before successful initialization.
+
+Built-in scientific assessments can receive invocation-owned `ScientificProgress`;
+an exception-safe scope preserves completed charged work and attempted fields
+while an operational exception unwinds. Workers bill only their private counters.
+These are mathematical work units, not a count of instructions inside a native
+library. An unexpected exception inside an opaque native field call can prevent
+that call from returning its internal operation count; prior completed work and
+the attempted field remain observable. Objective-attempt admission is always charged.
+Scalar PDF/CDF/Poisson nodes each cost one bounded composite primitive dispatch,
+including their fixed internal formula; libm internal arithmetic is opaque.
+`maxIterations` bounds explicitly managed iteration loops, not native LAPACK/libm
+internal iterations; their restricted domains and backend convergence rules apply.
+
+Exact constant finite datasets are detected after complete input validation:
+variance and covariance are zero, and correlation is mathematically invalid.
+For nonconstant data, variance underflow preventing correlation normalization is
+NumericalFailure. Plain covariance does not compute unrequested variances, which
+could overflow even when cross-covariance is finite. These identities are array
+algorithm rules, not silent rewrites of executable expression trees.
+
+Declared ODE units are copied into the underlying system measurement policy, so
+replacement equations and fitting probes retain the same unit validation before
+field evaluation. These are rejection constraints; the initial coupled adapter
+is not a general constructive dimensional planner for arbitrary equation vectors.
+Special-function/distribution scalar arguments initially require dimensionless
+units in D5 inference; no dimensionful probability-density grammar is claimed.
+
+The final full-model run context uses `full-model-measurement/3`, reflecting
+exception-safe supplemental accounting. Earlier unqualified D6 run checkpoints
+with preceding context policies are rejected explicitly. Published v0.4.0 and D5
+scalar/discrete/ordinary-mathematics payloads are unchanged. Standalone complex and
+tensor codec IDs remain /1. No generic checkpoint file-format revision is needed.
+
+The heat coefficient fixture's value-only channels read u; unused derivative
+bindings in those rows are arbitrary finite bindings, not derivative labels.
+Only the residual channel requires u_t/u_xx observations. Initial/boundary values
+and analytic residual data do not constitute field reconstruction or a trajectory
+accuracy claim. The benchmark runner deliberately freezes workers2; library callers
+retain the usual `RandomContext(seed, ExecutionConfig{N})` worker control.
+
+Typed-value-returning vector helpers retain the existing default output limits
+(normalization length<=4096). Larger custom `TypedValue` vectors can be used with
+raw norm where scientific limits permit, but are outside that normalization output
+domain. Codec reconstruction limits are separate from evaluator limits: the
+standalone complex reader caps bindings/nodes/limit metadata at65536; use limits
+within that domain for model round trips. Deep canonical text is additionally
+subject to the64-level parser cap; iterative node-codec construction avoids text
+recursion within its documented caps.

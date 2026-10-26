@@ -1,0 +1,204 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d6-ee1c42cef8da-tsan
+      Start 22: genetik_concurrency_contracts
+    Test #22: genetik_concurrency_contracts ...........   Passed    0.51 sec
+      Start 22: genetik_concurrency_contracts
+    Test #22: genetik_concurrency_contracts ...........   Passed    0.50 sec
+      Start 22: genetik_concurrency_contracts
+ 1/21 Test #22: genetik_concurrency_contracts ...........   Passed    0.52 sec
+      Start 23: genetik_oop_parallel
+    Test #23: genetik_oop_parallel ....................   Passed    0.03 sec
+      Start 23: genetik_oop_parallel
+    Test #23: genetik_oop_parallel ....................   Passed    0.03 sec
+      Start 23: genetik_oop_parallel
+ 2/21 Test #23: genetik_oop_parallel ....................   Passed    0.03 sec
+      Start 27: genetik_typed_overlap
+    Test #27: genetik_typed_overlap ...................   Passed    0.03 sec
+      Start 27: genetik_typed_overlap
+    Test #27: genetik_typed_overlap ...................   Passed    0.04 sec
+      Start 27: genetik_typed_overlap
+ 3/21 Test #27: genetik_typed_overlap ...................   Passed    0.04 sec
+      Start 30: genetik_typed_preparation_overlap
+    Test #30: genetik_typed_preparation_overlap .......   Passed    0.03 sec
+      Start 30: genetik_typed_preparation_overlap
+    Test #30: genetik_typed_preparation_overlap .......   Passed    0.03 sec
+      Start 30: genetik_typed_preparation_overlap
+ 4/21 Test #30: genetik_typed_preparation_overlap .......   Passed    0.03 sec
+      Start 33: genetik_scientific_contracts
+    Test #33: genetik_scientific_contracts ............   Passed    0.26 sec
+      Start 33: genetik_scientific_contracts
+    Test #33: genetik_scientific_contracts ............   Passed    0.26 sec
+      Start 33: genetik_scientific_contracts
+ 5/21 Test #33: genetik_scientific_contracts ............   Passed    0.26 sec
+      Start 35: genetik_parsing_overlap
+    Test #35: genetik_parsing_overlap .................   Passed    0.06 sec
+      Start 35: genetik_parsing_overlap
+    Test #35: genetik_parsing_overlap .................   Passed    0.05 sec
+      Start 35: genetik_parsing_overlap
+ 6/21 Test #35: genetik_parsing_overlap .................   Passed    0.04 sec
+      Start 39: genetik_template_overlap
+    Test #39: genetik_template_overlap ................   Passed    0.06 sec
+      Start 39: genetik_template_overlap
+    Test #39: genetik_template_overlap ................   Passed    0.04 sec
+      Start 39: genetik_template_overlap
+ 7/21 Test #39: genetik_template_overlap ................   Passed    0.05 sec
+      Start 43: genetik_derivative_overlap
+    Test #43: genetik_derivative_overlap ..............   Passed    0.03 sec
+      Start 43: genetik_derivative_overlap
+    Test #43: genetik_derivative_overlap ..............   Passed    0.04 sec
+      Start 43: genetik_derivative_overlap
+ 8/21 Test #43: genetik_derivative_overlap ..............   Passed    0.04 sec
+      Start 46: genetik_derivative_regression_overlap
+    Test #46: genetik_derivative_regression_overlap ...   Passed    0.06 sec
+      Start 46: genetik_derivative_regression_overlap
+    Test #46: genetik_derivative_regression_overlap ...   Passed    0.06 sec
+      Start 46: genetik_derivative_regression_overlap
+ 9/21 Test #46: genetik_derivative_regression_overlap ...   Passed    0.06 sec
+      Start 50: genetik_integral_overlap
+    Test #50: genetik_integral_overlap ................   Passed    0.17 sec
+      Start 50: genetik_integral_overlap
+    Test #50: genetik_integral_overlap ................   Passed    0.17 sec
+      Start 50: genetik_integral_overlap
+10/21 Test #50: genetik_integral_overlap ................   Passed    0.20 sec
+      Start 54: genetik_prime_exact_overlap
+    Test #54: genetik_prime_exact_overlap .............   Passed    0.08 sec
+      Start 54: genetik_prime_exact_overlap
+    Test #54: genetik_prime_exact_overlap .............   Passed    0.09 sec
+      Start 54: genetik_prime_exact_overlap
+11/21 Test #54: genetik_prime_exact_overlap .............   Passed    0.09 sec
+      Start 57: genetik_checkpoint_overlap
+    Test #57: genetik_checkpoint_overlap ..............   Passed   22.54 sec
+      Start 57: genetik_checkpoint_overlap
+    Test #57: genetik_checkpoint_overlap ..............   Passed   22.64 sec
+      Start 57: genetik_checkpoint_overlap
+12/21 Test #57: genetik_checkpoint_overlap ..............   Passed   22.87 sec
+      Start 63: genetik_discrete_overlap
+    Test #63: genetik_discrete_overlap ................   Passed    0.20 sec
+      Start 63: genetik_discrete_overlap
+    Test #63: genetik_discrete_overlap ................   Passed    0.18 sec
+      Start 63: genetik_discrete_overlap
+13/21 Test #63: genetik_discrete_overlap ................   Passed    0.18 sec
+      Start 66: genetik_discrete_iteration_overlap
+    Test #66: genetik_discrete_iteration_overlap ......   Passed    2.30 sec
+      Start 66: genetik_discrete_iteration_overlap
+    Test #66: genetik_discrete_iteration_overlap ......   Passed    2.31 sec
+      Start 66: genetik_discrete_iteration_overlap
+14/21 Test #66: genetik_discrete_iteration_overlap ......   Passed    2.34 sec
+      Start 69: genetik_discrete_prime_overlap
+    Test #69: genetik_discrete_prime_overlap ..........   Passed    0.06 sec
+      Start 69: genetik_discrete_prime_overlap
+    Test #69: genetik_discrete_prime_overlap ..........   Passed    0.06 sec
+      Start 69: genetik_discrete_prime_overlap
+15/21 Test #69: genetik_discrete_prime_overlap ..........   Passed    0.06 sec
+      Start 73: genetik_d5_iteration_overlap
+    Test #73: genetik_d5_iteration_overlap ............   Passed    1.32 sec
+      Start 73: genetik_d5_iteration_overlap
+    Test #73: genetik_d5_iteration_overlap ............   Passed    1.32 sec
+      Start 73: genetik_d5_iteration_overlap
+16/21 Test #73: genetik_d5_iteration_overlap ............   Passed    1.35 sec
+      Start 76: genetik_d5_recurrence_overlap
+    Test #76: genetik_d5_recurrence_overlap ...........   Passed    2.03 sec
+      Start 76: genetik_d5_recurrence_overlap
+    Test #76: genetik_d5_recurrence_overlap ...........   Passed    2.01 sec
+      Start 76: genetik_d5_recurrence_overlap
+17/21 Test #76: genetik_d5_recurrence_overlap ...........   Passed    2.02 sec
+      Start 78: genetik_d5_scientific_overlap
+    Test #78: genetik_d5_scientific_overlap ...........   Passed    0.03 sec
+      Start 78: genetik_d5_scientific_overlap
+    Test #78: genetik_d5_scientific_overlap ...........   Passed    0.03 sec
+      Start 78: genetik_d5_scientific_overlap
+18/21 Test #78: genetik_d5_scientific_overlap ...........   Passed    0.03 sec
+      Start 80: genetik_d5_symbolic_overlap
+    Test #80: genetik_d5_symbolic_overlap .............   Passed    0.03 sec
+      Start 80: genetik_d5_symbolic_overlap
+    Test #80: genetik_d5_symbolic_overlap .............   Passed    0.03 sec
+      Start 80: genetik_d5_symbolic_overlap
+19/21 Test #80: genetik_d5_symbolic_overlap .............   Passed    0.04 sec
+      Start 82: genetik_d5_dimension_overlap
+    Test #82: genetik_d5_dimension_overlap ............   Passed    0.03 sec
+      Start 82: genetik_d5_dimension_overlap
+    Test #82: genetik_d5_dimension_overlap ............   Passed    0.03 sec
+      Start 82: genetik_d5_dimension_overlap
+20/21 Test #82: genetik_d5_dimension_overlap ............   Passed    0.03 sec
+      Start 86: genetik_d6_overlap
+    Test #86: genetik_d6_overlap ......................***Failed    0.54 sec
+==================
+WARNING: ThreadSanitizer: data race (pid=1476280)
+  Write of size 4 at 0xffff96010010 by thread T2:
+    #0 lgamma ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:5193 (libtsan.so.2+0x77ea8) (BuildId: dc0d657f42587fea53114ce058dbdfe5834e0205)
+    #1 std::optional<double> genetik_detail::scalarBinary<Expression::evaluateWithStack(std::span<double const, 18446744073709551615ul>, std::vector<double, std::allocator<double> >&) const::{lambda()#3}>(ExpressionKind, double, double, Expression::evaluateWithStack(std::span<double const, 18446744073709551615ul>, std::vector<double, std::allocator<double> >&) const::{lambda()#3}) /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Expression.hpp:45 (genetik_d6_tests+0x78f84) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #2 Expression::evaluateWithStack(std::span<double const, 18446744073709551615ul>, std::vector<double, std::allocator<double> >&) const /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Expression.hpp:316 (genetik_d6_tests+0x263e0) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #3 Expression::evaluate(std::span<double const, 18446744073709551615ul>) const /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Expression.hpp:283 (genetik_d6_tests+0x25bfc) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #4 statistics /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/tests/d6_science.cpp:379 (genetik_d6_tests+0x14aa0) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #5 operator() /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/tests/d6_science.cpp:658 (genetik_d6_tests+0x18dac) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #6 __invoke_impl<void, (anonymous namespace)::overlap()::<lambda(std::size_t)>&, long unsigned int> /usr/include/c++/13/bits/invoke.h:61 (genetik_d6_tests+0x1a0d8) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #7 __invoke_r<void, (anonymous namespace)::overlap()::<lambda(std::size_t)>&, long unsigned int> /usr/include/c++/13/bits/invoke.h:111 (genetik_d6_tests+0x19d04) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #8 _M_invoke /usr/include/c++/13/bits/std_function.h:290 (genetik_d6_tests+0x199f0) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #9 std::function<void (unsigned long)>::operator()(unsigned long) const /usr/include/c++/13/bits/std_function.h:591 (genetik_d6_tests+0x74fc0) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #10 ExecutionContext::worker() /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Execution.hpp:169 (genetik_d6_tests+0x20d34) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #11 ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}::operator()() const /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Execution.hpp:146 (genetik_d6_tests+0x204ec) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #12 void std::__invoke_impl<void, ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}&>(std::__invoke_other, ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}&) /usr/include/c++/13/bits/invoke.h:61 (genetik_d6_tests+0xe66c8) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #13 std::enable_if<is_invocable_r_v<void, ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}&>, void>::type std::__invoke_r<void, ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}&>(ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}&) /usr/include/c++/13/bits/invoke.h:111 (genetik_d6_tests+0xcc74c) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #14 std::_Function_handler<void (), ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) /usr/include/c++/13/bits/std_function.h:290 (genetik_d6_tests+0xa705c) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #15 std::function<void ()>::operator()() const /usr/include/c++/13/bits/std_function.h:591 (genetik_d6_tests+0x81248) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #16 void std::__invoke_impl<void, std::function<void ()>>(std::__invoke_other, std::function<void ()>&&) /usr/include/c++/13/bits/invoke.h:61 (genetik_d6_tests+0x1213fc) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #17 std::__invoke_result<std::function<void ()>>::type std::__invoke<std::function<void ()>>(std::function<void ()>&&) /usr/include/c++/13/bits/invoke.h:96 (genetik_d6_tests+0x1212f8) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #18 void std::thread::_Invoker<std::tuple<std::function<void ()> > >::_M_invoke<0ul>(std::_Index_tuple<0ul>) /usr/include/c++/13/bits/std_thread.h:292 (genetik_d6_tests+0x120dd4) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #19 std::thread::_Invoker<std::tuple<std::function<void ()> > >::operator()() /usr/include/c++/13/bits/std_thread.h:299 (genetik_d6_tests+0x12078c) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #20 std::thread::_State_impl<std::thread::_Invoker<std::tuple<std::function<void ()> > > >::_M_run() /usr/include/c++/13/bits/std_thread.h:244 (genetik_d6_tests+0x11f7dc) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #21 <null> <null> (libstdc++.so.6+0xe1adc) (BuildId: 7c239d1743727054caa3df1ab866bfa72cd4dd93)
+
+  Previous write of size 4 at 0xffff96010010 by thread T4:
+    #0 lgamma ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:5193 (libtsan.so.2+0x77ea8) (BuildId: dc0d657f42587fea53114ce058dbdfe5834e0205)
+    #1 std::optional<double> genetik_detail::scalarBinary<Expression::evaluateWithStack(std::span<double const, 18446744073709551615ul>, std::vector<double, std::allocator<double> >&) const::{lambda()#3}>(ExpressionKind, double, double, Expression::evaluateWithStack(std::span<double const, 18446744073709551615ul>, std::vector<double, std::allocator<double> >&) const::{lambda()#3}) /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Expression.hpp:45 (genetik_d6_tests+0x78f84) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #2 Expression::evaluateWithStack(std::span<double const, 18446744073709551615ul>, std::vector<double, std::allocator<double> >&) const /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Expression.hpp:316 (genetik_d6_tests+0x263e0) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #3 Expression::evaluate(std::span<double const, 18446744073709551615ul>) const /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Expression.hpp:283 (genetik_d6_tests+0x25bfc) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #4 statistics /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/tests/d6_science.cpp:379 (genetik_d6_tests+0x14aa0) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #5 operator() /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/tests/d6_science.cpp:658 (genetik_d6_tests+0x18dac) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #6 __invoke_impl<void, (anonymous namespace)::overlap()::<lambda(std::size_t)>&, long unsigned int> /usr/include/c++/13/bits/invoke.h:61 (genetik_d6_tests+0x1a0d8) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #7 __invoke_r<void, (anonymous namespace)::overlap()::<lambda(std::size_t)>&, long unsigned int> /usr/include/c++/13/bits/invoke.h:111 (genetik_d6_tests+0x19d04) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #8 _M_invoke /usr/include/c++/13/bits/std_function.h:290 (genetik_d6_tests+0x199f0) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #9 std::function<void (unsigned long)>::operator()(unsigned long) const /usr/include/c++/13/bits/std_function.h:591 (genetik_d6_tests+0x74fc0) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #10 ExecutionContext::worker() /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Execution.hpp:169 (genetik_d6_tests+0x20d34) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #11 ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}::operator()() const /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Execution.hpp:146 (genetik_d6_tests+0x204ec) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #12 void std::__invoke_impl<void, ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}&>(std::__invoke_other, ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}&) /usr/include/c++/13/bits/invoke.h:61 (genetik_d6_tests+0xe66c8) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #13 std::enable_if<is_invocable_r_v<void, ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}&>, void>::type std::__invoke_r<void, ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}&>(ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}&) /usr/include/c++/13/bits/invoke.h:111 (genetik_d6_tests+0xcc74c) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #14 std::_Function_handler<void (), ExecutionContext::ensureWorkers(unsigned int)::{lambda()#1}>::_M_invoke(std::_Any_data const&) /usr/include/c++/13/bits/std_function.h:290 (genetik_d6_tests+0xa705c) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #15 std::function<void ()>::operator()() const /usr/include/c++/13/bits/std_function.h:591 (genetik_d6_tests+0x81248) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #16 void std::__invoke_impl<void, std::function<void ()>>(std::__invoke_other, std::function<void ()>&&) /usr/include/c++/13/bits/invoke.h:61 (genetik_d6_tests+0x1213fc) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #17 std::__invoke_result<std::function<void ()>>::type std::__invoke<std::function<void ()>>(std::function<void ()>&&) /usr/include/c++/13/bits/invoke.h:96 (genetik_d6_tests+0x1212f8) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #18 void std::thread::_Invoker<std::tuple<std::function<void ()> > >::_M_invoke<0ul>(std::_Index_tuple<0ul>) /usr/include/c++/13/bits/std_thread.h:292 (genetik_d6_tests+0x120dd4) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #19 std::thread::_Invoker<std::tuple<std::function<void ()> > >::operator()() /usr/include/c++/13/bits/std_thread.h:299 (genetik_d6_tests+0x12078c) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #20 std::thread::_State_impl<std::thread::_Invoker<std::tuple<std::function<void ()> > > >::_M_run() /usr/include/c++/13/bits/std_thread.h:244 (genetik_d6_tests+0x11f7dc) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #21 <null> <null> (libstdc++.so.6+0xe1adc) (BuildId: 7c239d1743727054caa3df1ab866bfa72cd4dd93)
+
+  Location is global 'signgam' of size 4 at 0xffff96010010 (libm.so.6+0xa0010)
+
+  Thread T2 (tid=1476283, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1022 (libtsan.so.2+0x5dd98) (BuildId: dc0d657f42587fea53114ce058dbdfe5834e0205)
+    #1 std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) <null> (libstdc++.so.6+0xe1c64) (BuildId: 7c239d1743727054caa3df1ab866bfa72cd4dd93)
+    #2 ExecutionContext::launchWorker(std::function<void ()>) /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Execution.hpp:139 (genetik_d6_tests+0x2048c) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #3 ExecutionContext::ensureWorkers(unsigned int) /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Execution.hpp:146 (genetik_d6_tests+0x20650) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #4 ExecutionContext::run(unsigned long, std::function<void (unsigned long)>) /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Execution.hpp:118 (genetik_d6_tests+0x1fedc) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #5 overlap /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/tests/d6_science.cpp:641 (genetik_d6_tests+0x18fa4) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #6 main /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/tests/d6_science.cpp:666 (genetik_d6_tests+0x19160) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+
+  Thread T4 (tid=1476285, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1022 (libtsan.so.2+0x5dd98) (BuildId: dc0d657f42587fea53114ce058dbdfe5834e0205)
+    #1 std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) <null> (libstdc++.so.6+0xe1c64) (BuildId: 7c239d1743727054caa3df1ab866bfa72cd4dd93)
+    #2 ExecutionContext::launchWorker(std::function<void ()>) /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Execution.hpp:139 (genetik_d6_tests+0x2048c) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #3 ExecutionContext::ensureWorkers(unsigned int) /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Execution.hpp:146 (genetik_d6_tests+0x20650) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #4 ExecutionContext::run(unsigned long, std::function<void (unsigned long)>) /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Execution.hpp:118 (genetik_d6_tests+0x1fedc) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #5 overlap /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/tests/d6_science.cpp:641 (genetik_d6_tests+0x18fa4) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+    #6 main /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/tests/d6_science.cpp:666 (genetik_d6_tests+0x19160) (BuildId: de549cdcf867e5fec20b00f849ffbd7815c02c0b)
+
+SUMMARY: ThreadSanitizer: data race /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik/Expression.hpp:45 in std::optional<double> genetik_detail::scalarBinary<Expression::evaluateWithStack(std::span<double const, 18446744073709551615ul>, std::vector<double, std::allocator<double> >&) const::{lambda()#3}>(ExpressionKind, double, double, Expression::evaluateWithStack(std::span<double const, 18446744073709551615ul>, std::vector<double, std::allocator<double> >&) const::{lambda()#3})
+==================
+
+
+95% tests passed, 1 tests failed out of 21
+
+Total Test time (real) =  90.64 sec
+
+The following tests FAILED:
+	 86 - genetik_d6_overlap (Failed)
+Errors while running CTest

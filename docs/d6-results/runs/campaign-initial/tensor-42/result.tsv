@@ -1,0 +1,2 @@
+task	seed	training_loss	held_loss	generation	attempts	fitting_attempts	rows	operations	fields	seconds	stop	nodes	depth	canonical	pretty
+tensor	42	0	0	0	520	520	2080	95076	2080	0.227694536	exact_training_fit	3	2	(1.5 * x0)	1.5·x0

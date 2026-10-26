@@ -1,0 +1,2 @@
+task	seed	training_loss	held_loss	generation	attempts	fitting_attempts	rows	operations	fields	seconds	stop	nodes	depth	canonical	pretty
+oscillator	0	0.046874999999999993	0.017578125	2	2048	2048	61440	448744	61440	0.20519723200000001	evaluation_budget	7	3	(((-1.0) * x1) - (x2 + x1))	−1·x1 − (x2 + x1)

@@ -1,0 +1,31 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d6-c72eaaa3f1ca-tsan
+      Start 49: genetik_integral_contracts
+ 1/13 Test #49: genetik_integral_contracts .............   Passed    0.51 sec
+      Start 62: genetik_discrete_contracts
+ 2/13 Test #62: genetik_discrete_contracts .............   Passed    0.75 sec
+      Start 65: genetik_discrete_iteration_contracts
+ 3/13 Test #65: genetik_discrete_iteration_contracts ...   Passed    8.12 sec
+      Start 68: genetik_discrete_prime_contracts
+ 4/13 Test #68: genetik_discrete_prime_contracts .......   Passed   13.70 sec
+      Start 71: genetik_checkpoint_compatibility
+ 5/13 Test #71: genetik_checkpoint_compatibility .......   Passed    2.75 sec
+      Start 72: genetik_d5_iteration_contracts
+ 6/13 Test #72: genetik_d5_iteration_contracts .........   Passed    3.41 sec
+      Start 74: genetik_d5_integer_contracts
+ 7/13 Test #74: genetik_d5_integer_contracts ...........   Passed    0.85 sec
+      Start 75: genetik_d5_recurrence_contracts
+ 8/13 Test #75: genetik_d5_recurrence_contracts ........   Passed    8.35 sec
+      Start 77: genetik_d5_scientific_contracts
+ 9/13 Test #77: genetik_d5_scientific_contracts ........   Passed    0.11 sec
+      Start 79: genetik_d5_symbolic_contracts
+10/13 Test #79: genetik_d5_symbolic_contracts ..........   Passed    0.47 sec
+      Start 81: genetik_d5_dimension_contracts
+11/13 Test #81: genetik_d5_dimension_contracts .........   Passed   55.44 sec
+      Start 84: genetik_d6_scientific_contracts
+12/13 Test #84: genetik_d6_scientific_contracts ........   Passed    0.84 sec
+      Start 85: genetik_d6_continuation
+13/13 Test #85: genetik_d6_continuation ................   Passed   11.10 sec
+
+100% tests passed out of 13
+
+Total Test time (real) = 106.42 sec

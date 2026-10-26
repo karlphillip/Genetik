@@ -1,0 +1,463 @@
+{
+  "protocol": "PROTOCOL.json",
+  "records": [
+    {
+      "task": "oscillator",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.2150799110531807,
+      "directory": "out/runs/d6/campaign-repair/oscillator-0",
+      "result": {
+        "task": "oscillator",
+        "seed": "0",
+        "training_loss": "0.046874999999999993",
+        "held_loss": "0.017578125",
+        "generation": "2",
+        "attempts": "2048",
+        "fitting_attempts": "2048",
+        "rows": "61440",
+        "operations": "448744",
+        "fields": "61440",
+        "seconds": "0.20519723200000001",
+        "stop": "evaluation_budget",
+        "nodes": "7",
+        "depth": "3",
+        "canonical": "(((-1.0) * x1) - (x2 + x1))",
+        "pretty": "\u22121\u00b7x1 \u2212 (x2 + x1)"
+      },
+      "source_sha": "588a07b3d4f17d3857f84024409c42fb24d492e6",
+      "executable_sha256": "70d59dc8f3e6255d2d8d91a50339266f43c4c23a1a33de901c82a311c9804500",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "a18562bea73b19f0d09af171d031bdaaf78164f0d6fabf78d0d41546293d03ed",
+        "initial.gtkc": "b24ecaded0a20a1dbbba1412c4f01557b20c4ca29626befee8a2a602505938b2",
+        "latest.gtkc": "d2354513a5ffb9e01d26061778adcbbd56dc56ed124f6cf24f0f2578cf6812fd",
+        "result.tsv": "3e8ffdf2be4948aec070714c1ce86291a11d3e46294bfe17e4e3357c9ff850b3"
+      }
+    },
+    {
+      "task": "oscillator",
+      "seed": 1,
+      "exit": 0,
+      "wall_seconds": 0.21569269511383027,
+      "directory": "out/runs/d6/campaign-repair/oscillator-1",
+      "result": {
+        "task": "oscillator",
+        "seed": "1",
+        "training_loss": "0.005208333333333333",
+        "held_loss": "0.0019531249999999998",
+        "generation": "2",
+        "attempts": "2048",
+        "fitting_attempts": "2048",
+        "rows": "61440",
+        "operations": "463204",
+        "fields": "61440",
+        "seconds": "0.20295576100000001",
+        "stop": "evaluation_budget",
+        "nodes": "5",
+        "depth": "3",
+        "canonical": "(x0 + (x1 * (-2.0)))",
+        "pretty": "x0 + x1\u00b7(\u22122)"
+      },
+      "source_sha": "588a07b3d4f17d3857f84024409c42fb24d492e6",
+      "executable_sha256": "70d59dc8f3e6255d2d8d91a50339266f43c4c23a1a33de901c82a311c9804500",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "075e24af558f11c2ea668bd5ce17a3ac3ddd40a29f14cfbb2742132c4a15bd7f",
+        "initial.gtkc": "562c2710fb445605a4068b04888790ab3dddb614eea58930b948398c2cdc85d7",
+        "latest.gtkc": "e8c311cc6eba0c17719e18fbb2a274e79859c9365db4a0fbab26bb9514b3fee9",
+        "result.tsv": "9b27707711073a1317d1f1f2fd8154663ba223a26444884926b90c6d64317cc1"
+      }
+    },
+    {
+      "task": "oscillator",
+      "seed": 42,
+      "exit": 0,
+      "wall_seconds": 0.21567775099538267,
+      "directory": "out/runs/d6/campaign-repair/oscillator-42",
+      "result": {
+        "task": "oscillator",
+        "seed": "42",
+        "training_loss": "0.005208333333333333",
+        "held_loss": "0.0019531249999999998",
+        "generation": "2",
+        "attempts": "2048",
+        "fitting_attempts": "2048",
+        "rows": "61440",
+        "operations": "482314",
+        "fields": "61440",
+        "seconds": "0.20129862700000001",
+        "stop": "evaluation_budget",
+        "nodes": "13",
+        "depth": "4",
+        "canonical": "(((-3.0) - (0.0 - x3)) * ((x4 * x1) + (1.0 + (-1.0))))",
+        "pretty": "(\u22123 \u2212 (0 \u2212 x3))\u00b7(x4\u00b7x1 + (1 + (\u22121)))"
+      },
+      "source_sha": "588a07b3d4f17d3857f84024409c42fb24d492e6",
+      "executable_sha256": "70d59dc8f3e6255d2d8d91a50339266f43c4c23a1a33de901c82a311c9804500",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "da9f6863ce06400cf8854b684b141f00db3c7efd3fb7f67095e1e8b60e59a614",
+        "initial.gtkc": "fb70ba424f93a72e264a87eb4580692e64bb7a43fd519a5d478658ac58d5362b",
+        "latest.gtkc": "4da1c3d5e3755880a2f81d5b6d290d12b180be8a7f765f1bcf0ab17f7a7ce7c1",
+        "result.tsv": "90275ad3a08a898872a4126b40be91c2503a51c817915c7bee684442184a661b"
+      }
+    },
+    {
+      "task": "complex",
+      "seed": 0,
+      "exit": 1,
+      "wall_seconds": 0.0038360210601240396,
+      "directory": "out/runs/d6/initialization-diagnostic-replay/complex-0",
+      "failure_log": "scientific initialization failed before population publication\nattempts=330 fitting_attempts=330 rows=1646 operations=23645 fields=1646 candidate_requests=18\n parallel candidate slot 12 failed\n  training loss attempt 1 failed\n   scientific numerical failure: complex required prediction\n",
+      "source_sha": "c157957b331dd546540c7cafff5c06679d13f985",
+      "executable_sha256": "413190839309f4096566b2118f56223c23bacb82ec9d12a0835a52d36ec3babd",
+      "evidence_hashes": {
+        "execution.log": "5e1b8f22ec070385541d09c219b143c7a2c1b977293076b82f9e77a2fdac614a"
+      }
+    },
+    {
+      "task": "complex",
+      "seed": 1,
+      "exit": 0,
+      "wall_seconds": 0.21543313597794622,
+      "directory": "out/runs/d6/campaign-repair/complex-1",
+      "result": {
+        "task": "complex",
+        "seed": "1",
+        "training_loss": "0.4114748214530799",
+        "held_loss": "0.93126053805205644",
+        "generation": "2",
+        "attempts": "2048",
+        "fitting_attempts": "2048",
+        "rows": "10240",
+        "operations": "151830",
+        "fields": "10240",
+        "seconds": "0.20299892999999999",
+        "stop": "evaluation_budget",
+        "nodes": "1",
+        "depth": "1",
+        "canonical": "c(0.76715087890625,0)",
+        "pretty": "(0.76715087890625+(0)i)"
+      },
+      "source_sha": "588a07b3d4f17d3857f84024409c42fb24d492e6",
+      "executable_sha256": "70d59dc8f3e6255d2d8d91a50339266f43c4c23a1a33de901c82a311c9804500",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "78a172376490a256dc5b9803fc83262e08c102568d8a214767fad2a05e87e1f8",
+        "initial.gtkc": "256af5cda080ea7e4df98826a460a1174929bf22185345a715daa1deb78850fb",
+        "latest.gtkc": "09588b59364e3daf7cff9435457de8d1f9eaada0e48f100a0cf53fd2d721d8ca",
+        "result.tsv": "28b5d066679c999cac712bab6c3a9b4c31928e0a36c19f12f4fe2490d47d76d4"
+      }
+    },
+    {
+      "task": "complex",
+      "seed": 42,
+      "exit": 0,
+      "wall_seconds": 0.21564194199163467,
+      "directory": "out/runs/d6/campaign-repair/complex-42",
+      "result": {
+        "task": "complex",
+        "seed": "42",
+        "training_loss": "0.4114748214530799",
+        "held_loss": "0.93126053805205644",
+        "generation": "2",
+        "attempts": "2048",
+        "fitting_attempts": "2048",
+        "rows": "10240",
+        "operations": "169700",
+        "fields": "10240",
+        "seconds": "0.20501335500000001",
+        "stop": "evaluation_budget",
+        "nodes": "1",
+        "depth": "1",
+        "canonical": "c(0.76715087890625,0)",
+        "pretty": "(0.76715087890625+(0)i)"
+      },
+      "source_sha": "588a07b3d4f17d3857f84024409c42fb24d492e6",
+      "executable_sha256": "70d59dc8f3e6255d2d8d91a50339266f43c4c23a1a33de901c82a311c9804500",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "c3c82b8ccf223d39fb7d85bdef364b943a632824333a90f428a4101706c1ab7f",
+        "initial.gtkc": "e7f4dbe32cf4fa037b35ccbf0f946d7a21018127df196fcf886264f6072ce2f6",
+        "latest.gtkc": "68e6047ef930b6d77d90d4212aff82123aa4b670d233580894be9682d273e411",
+        "result.tsv": "7bdc42bd4fcc85422163b973965fffa6d77ef8c71ec7b3a07c3f7ed9c537a518"
+      }
+    },
+    {
+      "task": "tensor",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.265857563004829,
+      "directory": "out/runs/d6/campaign/tensor-0",
+      "result": {
+        "task": "tensor",
+        "seed": "0",
+        "training_loss": "0",
+        "held_loss": "0",
+        "generation": "0",
+        "attempts": "582",
+        "fitting_attempts": "582",
+        "rows": "2328",
+        "operations": "104716",
+        "fields": "2328",
+        "seconds": "0.227140377",
+        "stop": "exact_training_fit",
+        "nodes": "3",
+        "depth": "2",
+        "canonical": "(1.5 * x0)",
+        "pretty": "1.5\u00b7x0"
+      },
+      "source_sha": "37fcf20a9e55ae6a80a38f79014942f82a1eefab",
+      "executable_sha256": "61aed4552259c99475a8158cdc3fccef61b8ebc7be580946538d47610bf7196c",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "a2cf4a2d07909bc4ff8cdb3dd3f1ca1eb42a8848a7688245bafaf222df077033",
+        "initial.gtkc": "a2cf4a2d07909bc4ff8cdb3dd3f1ca1eb42a8848a7688245bafaf222df077033",
+        "result.tsv": "3ba89aa9bd9cd4a0bf375dc2b3d3dc4fe060043794e1ee0797a0e9a8e3fb84f5"
+      }
+    },
+    {
+      "task": "tensor",
+      "seed": 1,
+      "exit": 0,
+      "wall_seconds": 0.26556657801847905,
+      "directory": "out/runs/d6/campaign/tensor-1",
+      "result": {
+        "task": "tensor",
+        "seed": "1",
+        "training_loss": "0",
+        "held_loss": "0",
+        "generation": "0",
+        "attempts": "551",
+        "fitting_attempts": "551",
+        "rows": "2204",
+        "operations": "99388",
+        "fields": "2204",
+        "seconds": "0.22989690199999999",
+        "stop": "exact_training_fit",
+        "nodes": "3",
+        "depth": "2",
+        "canonical": "(1.5 * x0)",
+        "pretty": "1.5\u00b7x0"
+      },
+      "source_sha": "37fcf20a9e55ae6a80a38f79014942f82a1eefab",
+      "executable_sha256": "61aed4552259c99475a8158cdc3fccef61b8ebc7be580946538d47610bf7196c",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "ee9ea07b64b7f6aca34b2790c84365fb23c445dab921160ac6405fd2cc726280",
+        "initial.gtkc": "ee9ea07b64b7f6aca34b2790c84365fb23c445dab921160ac6405fd2cc726280",
+        "result.tsv": "7f627cf6b6504530dc874269ea87176e7b18f6dd07360275364cfd0f129cc6ce"
+      }
+    },
+    {
+      "task": "tensor",
+      "seed": 42,
+      "exit": 0,
+      "wall_seconds": 0.26583913003560156,
+      "directory": "out/runs/d6/campaign/tensor-42",
+      "result": {
+        "task": "tensor",
+        "seed": "42",
+        "training_loss": "0",
+        "held_loss": "0",
+        "generation": "0",
+        "attempts": "520",
+        "fitting_attempts": "520",
+        "rows": "2080",
+        "operations": "95076",
+        "fields": "2080",
+        "seconds": "0.227694536",
+        "stop": "exact_training_fit",
+        "nodes": "3",
+        "depth": "2",
+        "canonical": "(1.5 * x0)",
+        "pretty": "1.5\u00b7x0"
+      },
+      "source_sha": "37fcf20a9e55ae6a80a38f79014942f82a1eefab",
+      "executable_sha256": "61aed4552259c99475a8158cdc3fccef61b8ebc7be580946538d47610bf7196c",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "93e93fe543aa777caba3763098753f70218254e60a29076751e724544e7e9f88",
+        "initial.gtkc": "93e93fe543aa777caba3763098753f70218254e60a29076751e724544e7e9f88",
+        "result.tsv": "73ec51dbaadf871a18ffb5fbdba4c7acd10d55a1f673dae464c1463f6ccc1d3a"
+      }
+    },
+    {
+      "task": "gaussian",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.21588684304151684,
+      "directory": "out/runs/d6/campaign/gaussian-0",
+      "result": {
+        "task": "gaussian",
+        "seed": "0",
+        "training_loss": "0",
+        "held_loss": "1.9259299443872359e-34",
+        "generation": "2",
+        "attempts": "1343",
+        "fitting_attempts": "1343",
+        "rows": "7951",
+        "operations": "6995",
+        "fields": "7951",
+        "seconds": "0.194215258",
+        "stop": "exact_training_fit",
+        "nodes": "4",
+        "depth": "2",
+        "canonical": "normal_pdf(x0, 0.5, 1.25)",
+        "pretty": "normal_pdf(x0, 0.5, 1.25)"
+      },
+      "source_sha": "37fcf20a9e55ae6a80a38f79014942f82a1eefab",
+      "executable_sha256": "61aed4552259c99475a8158cdc3fccef61b8ebc7be580946538d47610bf7196c",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "f16a52e9b1daa197387543be0e3eb986b2b1856c3289eddad0008d141d861377",
+        "initial.gtkc": "c409114aff957ef1792f28ef4565b818354da7eebf1587da26df55b7be2b6b5f",
+        "latest.gtkc": "f16a52e9b1daa197387543be0e3eb986b2b1856c3289eddad0008d141d861377",
+        "result.tsv": "3f990e85b651edc406b6262996454d0f1efa7f248b1929acf6f3e8b1e403231e"
+      }
+    },
+    {
+      "task": "gaussian",
+      "seed": 1,
+      "exit": 0,
+      "wall_seconds": 0.21561768592800945,
+      "directory": "out/runs/d6/campaign-repair/gaussian-1",
+      "result": {
+        "task": "gaussian",
+        "seed": "1",
+        "training_loss": "1.2077325870824419e-05",
+        "held_loss": "1.3319026769111276e-05",
+        "generation": "2",
+        "attempts": "2048",
+        "fitting_attempts": "2048",
+        "rows": "12048",
+        "operations": "13780",
+        "fields": "12048",
+        "seconds": "0.20162039500000001",
+        "stop": "evaluation_budget",
+        "nodes": "9",
+        "depth": "3",
+        "canonical": "normal_pdf(((-0.125) + 0.625), x0, normal_pdf(x0, x0, 0.3125))",
+        "pretty": "normal_pdf(\u22120.125 + 0.625, x0, normal_pdf(x0, x0, 0.3125))"
+      },
+      "source_sha": "588a07b3d4f17d3857f84024409c42fb24d492e6",
+      "executable_sha256": "70d59dc8f3e6255d2d8d91a50339266f43c4c23a1a33de901c82a311c9804500",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "a51a5629450002b41278fa0e2c12e3dc32f8689fe098153af7f4c7540e027c95",
+        "initial.gtkc": "919df56dc01ab5eca108bf4d3a3ad25292a6392757d96b9a1f13bb819c1d65af",
+        "latest.gtkc": "c1d2c091d0efc1d89c25a444cb4948e64bcc79ccc7c87e7e2b54c799fef4fdb2",
+        "result.tsv": "648b0f8b46979680289c4000f4b3c426d838806e611dc9f5501d000c5dcd6675"
+      }
+    },
+    {
+      "task": "gaussian",
+      "seed": 42,
+      "exit": 0,
+      "wall_seconds": 0.21539633499924093,
+      "directory": "out/runs/d6/campaign-repair/gaussian-42",
+      "result": {
+        "task": "gaussian",
+        "seed": "42",
+        "training_loss": "0.010576450331939201",
+        "held_loss": "0.0091130845974060157",
+        "generation": "2",
+        "attempts": "2048",
+        "fitting_attempts": "2048",
+        "rows": "12238",
+        "operations": "4059",
+        "fields": "12238",
+        "seconds": "0.20093013600000001",
+        "stop": "evaluation_budget",
+        "nodes": "1",
+        "depth": "1",
+        "canonical": "0.164398193359375",
+        "pretty": "0.164398193359375"
+      },
+      "source_sha": "588a07b3d4f17d3857f84024409c42fb24d492e6",
+      "executable_sha256": "70d59dc8f3e6255d2d8d91a50339266f43c4c23a1a33de901c82a311c9804500",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final.gtkc": "2e4ba0a61b0f9bd54b95d2875d57661b59190a7a6c0bb5cac1b363fffc91583e",
+        "initial.gtkc": "c0c543c137e33ca8b06ee1ce24f32d71bf22052ab7fabac7c56de02e42841138",
+        "latest.gtkc": "c8cb69b86b7dc070c6c0f3e15d1493f1cc227d3acde911bf22f70dad694c7379",
+        "result.tsv": "815e25ce539b6ffb87ebcb088ce544d7d52ccdd54c5c1623b24d99851ca520aa"
+      }
+    },
+    {
+      "task": "oscillator-fit",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.008652851916849613,
+      "directory": "out/runs/d6/campaign/oscillator-fit-0",
+      "result": {
+        "task": "oscillator-fit",
+        "seed": "0",
+        "training_loss": "0",
+        "held_loss": "0",
+        "attempts": "109",
+        "seconds": "0.0010100770000000001",
+        "operations": "27032",
+        "fields": "3270",
+        "parameters": "0.25,2,"
+      },
+      "source_sha": "37fcf20a9e55ae6a80a38f79014942f82a1eefab",
+      "executable_sha256": "61aed4552259c99475a8158cdc3fccef61b8ebc7be580946538d47610bf7196c",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "result.tsv": "0bf649581f097429fd03b8988c5bc79201e3e1d933bde556476b16b021738cf7"
+      }
+    },
+    {
+      "task": "heat",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.004250232013873756,
+      "directory": "out/runs/d6/campaign/heat-0",
+      "result": {
+        "task": "heat",
+        "seed": "0",
+        "training_loss": "0",
+        "held_loss": "0",
+        "attempts": "53",
+        "seconds": "0.00044180400000000001",
+        "operations": "5724",
+        "fields": "689",
+        "parameters": "0.25,"
+      },
+      "source_sha": "37fcf20a9e55ae6a80a38f79014942f82a1eefab",
+      "executable_sha256": "61aed4552259c99475a8158cdc3fccef61b8ebc7be580946538d47610bf7196c",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "result.tsv": "3f77caa63300b0f0057d9d4fee183ee785d7b5fbc7d17ff37581358ce34af2a7"
+      }
+    },
+    {
+      "task": "gaussian-fit",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.004763685981743038,
+      "directory": "out/runs/d6/campaign/gaussian-fit-0",
+      "result": {
+        "task": "gaussian-fit",
+        "seed": "0",
+        "training_loss": "0",
+        "held_loss": "1.9259299443872359e-34",
+        "attempts": "118",
+        "seconds": "0.00065105899999999995",
+        "operations": "5382",
+        "fields": "702",
+        "parameters": "0.5,1.25,"
+      },
+      "source_sha": "37fcf20a9e55ae6a80a38f79014942f82a1eefab",
+      "executable_sha256": "61aed4552259c99475a8158cdc3fccef61b8ebc7be580946538d47610bf7196c",
+      "evidence_hashes": {
+        "execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "result.tsv": "e1b3573eb518b07b4b0e38d5d4665bfa7adb79e34630145d8c672309f07121e9"
+      }
+    }
+  ],
+  "recovery": "held-out complete-objective MSE <=1e-12; original protocol; no assessment-driven retuning",
+  "source_reuse": "valid original results retained; normal-budget driver failures replayed unchanged; complex initialization failure replayed for consumed-work diagnostics. Later contract repairs do not alter successful finite scoring or search settings. Timings/counters retain their actual source identities."
+}

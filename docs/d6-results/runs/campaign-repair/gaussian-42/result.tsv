@@ -1,0 +1,2 @@
+task	seed	training_loss	held_loss	generation	attempts	fitting_attempts	rows	operations	fields	seconds	stop	nodes	depth	canonical	pretty
+gaussian	42	0.010576450331939201	0.0091130845974060157	2	2048	2048	12238	4059	12238	0.20093013600000001	evaluation_budget	1	1	0.164398193359375	0.164398193359375

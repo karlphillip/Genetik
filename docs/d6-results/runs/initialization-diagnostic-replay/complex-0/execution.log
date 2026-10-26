@@ -1,0 +1,5 @@
+scientific initialization failed before population publication
+attempts=330 fitting_attempts=330 rows=1646 operations=23645 fields=1646 candidate_requests=18
+ parallel candidate slot 12 failed
+  training loss attempt 1 failed
+   scientific numerical failure: complex required prediction

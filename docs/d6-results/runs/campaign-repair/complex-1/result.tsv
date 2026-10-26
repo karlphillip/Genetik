@@ -1,0 +1,2 @@
+task	seed	training_loss	held_loss	generation	attempts	fitting_attempts	rows	operations	fields	seconds	stop	nodes	depth	canonical	pretty
+complex	1	0.4114748214530799	0.93126053805205644	2	2048	2048	10240	151830	10240	0.20299892999999999	evaluation_budget	1	1	c(0.76715087890625,0)	(0.76715087890625+(0)i)

@@ -1,0 +1,2 @@
+task	seed	training_loss	held_loss	generation	attempts	fitting_attempts	rows	operations	fields	seconds	stop	nodes	depth	canonical	pretty
+gaussian	1	1.2077325870824419e-05	1.3319026769111276e-05	2	2048	2048	12048	13780	12048	0.20162039500000001	evaluation_budget	9	3	normal_pdf(((-0.125) + 0.625), x0, normal_pdf(x0, x0, 0.3125))	normal_pdf(−0.125 + 0.625, x0, normal_pdf(x0, x0, 0.3125))

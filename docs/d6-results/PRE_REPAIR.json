@@ -1,0 +1,228 @@
+{
+  "source_sha": "37fcf20a9e55ae6a80a38f79014942f82a1eefab",
+  "protocol_sha256": "1236df4d9bf87de3fd17bb5dba4994f4b2e3ad465af9247321c4b59847e5cf81",
+  "executable_sha256": "61aed4552259c99475a8158cdc3fccef61b8ebc7be580946538d47610bf7196c",
+  "platform": "Linux-6.8.12-1021-tegra-aarch64-with-glibc2.39",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "libc": "ldd (Ubuntu GLIBC 2.39-0ubuntu8.8) 2.39\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\nWritten by Roland McGrath and Ulrich Drepper.\n",
+  "runs": [
+    {
+      "task": "oscillator",
+      "seed": 0,
+      "exit": 1,
+      "wall_seconds": 0.1651237829355523,
+      "directory": "out/runs/d6/campaign/oscillator-0",
+      "failure_log": "generation attempt after 2 completed evolutions failed\n"
+    },
+    {
+      "task": "oscillator",
+      "seed": 1,
+      "exit": 1,
+      "wall_seconds": 0.16546308808028698,
+      "directory": "out/runs/d6/campaign/oscillator-1",
+      "failure_log": "generation attempt after 2 completed evolutions failed\n"
+    },
+    {
+      "task": "oscillator",
+      "seed": 42,
+      "exit": 1,
+      "wall_seconds": 0.16558648401405662,
+      "directory": "out/runs/d6/campaign/oscillator-42",
+      "failure_log": "generation attempt after 2 completed evolutions failed\n"
+    },
+    {
+      "task": "complex",
+      "seed": 0,
+      "exit": 1,
+      "wall_seconds": 0.008740118006244302,
+      "directory": "out/runs/d6/campaign/complex-0",
+      "failure_log": "parallel candidate slot 12 failed\n"
+    },
+    {
+      "task": "complex",
+      "seed": 1,
+      "exit": 1,
+      "wall_seconds": 0.16532967693638057,
+      "directory": "out/runs/d6/campaign/complex-1",
+      "failure_log": "generation attempt after 2 completed evolutions failed\n"
+    },
+    {
+      "task": "complex",
+      "seed": 42,
+      "exit": 1,
+      "wall_seconds": 0.16509600693825632,
+      "directory": "out/runs/d6/campaign/complex-42",
+      "failure_log": "generation attempt after 2 completed evolutions failed\n"
+    },
+    {
+      "task": "tensor",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.265857563004829,
+      "directory": "out/runs/d6/campaign/tensor-0",
+      "result": {
+        "task": "tensor",
+        "seed": "0",
+        "training_loss": "0",
+        "held_loss": "0",
+        "generation": "0",
+        "attempts": "582",
+        "fitting_attempts": "582",
+        "rows": "2328",
+        "operations": "104716",
+        "fields": "2328",
+        "seconds": "0.227140377",
+        "stop": "exact_training_fit",
+        "nodes": "3",
+        "depth": "2",
+        "canonical": "(1.5 * x0)",
+        "pretty": "1.5\u00b7x0"
+      }
+    },
+    {
+      "task": "tensor",
+      "seed": 1,
+      "exit": 0,
+      "wall_seconds": 0.26556657801847905,
+      "directory": "out/runs/d6/campaign/tensor-1",
+      "result": {
+        "task": "tensor",
+        "seed": "1",
+        "training_loss": "0",
+        "held_loss": "0",
+        "generation": "0",
+        "attempts": "551",
+        "fitting_attempts": "551",
+        "rows": "2204",
+        "operations": "99388",
+        "fields": "2204",
+        "seconds": "0.22989690199999999",
+        "stop": "exact_training_fit",
+        "nodes": "3",
+        "depth": "2",
+        "canonical": "(1.5 * x0)",
+        "pretty": "1.5\u00b7x0"
+      }
+    },
+    {
+      "task": "tensor",
+      "seed": 42,
+      "exit": 0,
+      "wall_seconds": 0.26583913003560156,
+      "directory": "out/runs/d6/campaign/tensor-42",
+      "result": {
+        "task": "tensor",
+        "seed": "42",
+        "training_loss": "0",
+        "held_loss": "0",
+        "generation": "0",
+        "attempts": "520",
+        "fitting_attempts": "520",
+        "rows": "2080",
+        "operations": "95076",
+        "fields": "2080",
+        "seconds": "0.227694536",
+        "stop": "exact_training_fit",
+        "nodes": "3",
+        "depth": "2",
+        "canonical": "(1.5 * x0)",
+        "pretty": "1.5\u00b7x0"
+      }
+    },
+    {
+      "task": "gaussian",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.21588684304151684,
+      "directory": "out/runs/d6/campaign/gaussian-0",
+      "result": {
+        "task": "gaussian",
+        "seed": "0",
+        "training_loss": "0",
+        "held_loss": "1.9259299443872359e-34",
+        "generation": "2",
+        "attempts": "1343",
+        "fitting_attempts": "1343",
+        "rows": "7951",
+        "operations": "6995",
+        "fields": "7951",
+        "seconds": "0.194215258",
+        "stop": "exact_training_fit",
+        "nodes": "4",
+        "depth": "2",
+        "canonical": "normal_pdf(x0, 0.5, 1.25)",
+        "pretty": "normal_pdf(x0, 0.5, 1.25)"
+      }
+    },
+    {
+      "task": "gaussian",
+      "seed": 1,
+      "exit": 1,
+      "wall_seconds": 0.165446319966577,
+      "directory": "out/runs/d6/campaign/gaussian-1",
+      "failure_log": "generation attempt after 2 completed evolutions failed\n"
+    },
+    {
+      "task": "gaussian",
+      "seed": 42,
+      "exit": 1,
+      "wall_seconds": 0.1647325400263071,
+      "directory": "out/runs/d6/campaign/gaussian-42",
+      "failure_log": "generation attempt after 2 completed evolutions failed\n"
+    },
+    {
+      "task": "oscillator-fit",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.008652851916849613,
+      "directory": "out/runs/d6/campaign/oscillator-fit-0",
+      "result": {
+        "task": "oscillator-fit",
+        "seed": "0",
+        "training_loss": "0",
+        "held_loss": "0",
+        "attempts": "109",
+        "seconds": "0.0010100770000000001",
+        "operations": "27032",
+        "fields": "3270",
+        "parameters": "0.25,2,"
+      }
+    },
+    {
+      "task": "heat",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.004250232013873756,
+      "directory": "out/runs/d6/campaign/heat-0",
+      "result": {
+        "task": "heat",
+        "seed": "0",
+        "training_loss": "0",
+        "held_loss": "0",
+        "attempts": "53",
+        "seconds": "0.00044180400000000001",
+        "operations": "5724",
+        "fields": "689",
+        "parameters": "0.25,"
+      }
+    },
+    {
+      "task": "gaussian-fit",
+      "seed": 0,
+      "exit": 0,
+      "wall_seconds": 0.004763685981743038,
+      "directory": "out/runs/d6/campaign/gaussian-fit-0",
+      "result": {
+        "task": "gaussian-fit",
+        "seed": "0",
+        "training_loss": "0",
+        "held_loss": "1.9259299443872359e-34",
+        "attempts": "118",
+        "seconds": "0.00065105899999999995",
+        "operations": "5382",
+        "fields": "702",
+        "parameters": "0.5,1.25,"
+      }
+    }
+  ]
+}

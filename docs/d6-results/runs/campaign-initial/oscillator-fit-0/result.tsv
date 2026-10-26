@@ -1,0 +1,2 @@
+task	seed	training_loss	held_loss	attempts	seconds	operations	fields	parameters
+oscillator-fit	0	0	0	109	0.0010100770000000001	27032	3270	0.25,2,

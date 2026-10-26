@@ -1,0 +1,8 @@
+{
+  "generator": "mpmath 1.2.1",
+  "precision_decimal_digits": 100,
+  "inputs": "exact Fraction.from_float binary64 inputs; independent analytic distribution definitions",
+  "rows": 21,
+  "tolerance": "abs error <=2e-12*max(1,abs(reference)), fixed before native probe execution; same policy as primary special reference fixture",
+  "sha256": "ac30d24fa3d81374df43e16e34c0dd5cefcc09c3f96ca5193d451ab1a91b5d18"
+}

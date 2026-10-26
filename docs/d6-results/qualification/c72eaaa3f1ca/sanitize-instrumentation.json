@@ -1,0 +1,10 @@
+{
+  "d6_science.cpp": {
+    "compile": "/usr/bin/c++ -DGENETIK_HAS_LAPACK=1 -I/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d -I/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik -g -std=gnu++20 -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -fno-fast-math -ffp-contract=off -o CMakeFiles/genetik_d6_tests.dir/d6_science.cpp.o -c /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/tests/d6_science.cpp",
+    "link": "/usr/bin/c++ -g -fsanitize=address,undefined -Wl,--dependency-file=CMakeFiles/genetik_d6_tests.dir/link.d CMakeFiles/genetik_d6_tests.dir/d6_science.cpp.o -o genetik_d6_tests  /usr/lib/aarch64-linux-gnu/libopenblas.so\n"
+  },
+  "discrete_prime.cpp": {
+    "compile": "/usr/bin/c++  -I/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d -I/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/genetik -g -std=gnu++20 -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -fno-fast-math -ffp-contract=off -o CMakeFiles/genetik_discrete_prime_tests.dir/discrete_prime.cpp.o -c /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d6-source-c157957b331d/tests/discrete_prime.cpp",
+    "link": "/usr/bin/c++ -g -fsanitize=address,undefined -Wl,--dependency-file=CMakeFiles/genetik_discrete_prime_tests.dir/link.d CMakeFiles/genetik_discrete_prime_tests.dir/discrete_prime.cpp.o -o genetik_discrete_prime_tests\n"
+  }
+}

@@ -11,9 +11,13 @@ constraints. See [APIs](ADVANCED_MATHEMATICS_D5.md),
 The optional arbitrary-precision backend remains incomplete and unqualified.
 D5 does not promote excluded research optimizers, objectives or mutation strategies,
 change defaults, or publish a release. Older status paragraphs below retain their
-historical scope. Next, only when assigned: **D6 — Scientific and Multidimensional
-Discovery**; **D7** remains competitor benchmarking, hosted qualification and
-release. No additional phase is introduced.
+historical scope. **D6 — Scientific and Multidimensional Discovery** is now
+implemented and locally qualified on its recorded gates; the workspace-wide
+hygiene check has a documented parent-directory exception. See
+[D6 qualification](D6_QUALIFICATION.md) and the retained
+[scientific results](d6-results/RESULTS.md). **D7 — Competitor Benchmarking,
+Hosted Qualification and Development Release** remains separate and is not started
+by D6 completion. No additional mathematical phase is introduced.
 
 
 **Agreed implementation scope complete locally:** cleanup, typed evaluation/evolution,
@@ -77,17 +81,21 @@ Existing `ExpressionNode` operator tags are not a completed general typed-value 
    **Phase 7C** adds bounded owned root integral models, deterministic proper GK7/15
    evaluation with estimated convergence and explicit failure/resources, full-model
    integrand regression and coordinate fitting. See SCALAR_INTEGRALS.md,
-   INTEGRAL_RESULTS.md and INTEGRAL_QUALIFICATION.md. 7A scalar derivatives and
-   7B derivative-observation regression are locally complete; 7C is locally
-   implemented and ready for acceptance after its recorded gates.
-   **Next: combined calculus hosted qualification and final development-delivery
-   review. No further mathematical capabilities or feature phases precede it.**
+   INTEGRAL_RESULTS.md and INTEGRAL_QUALIFICATION.md. Phases 7A/7B/7C and the
+   combined calculus hosted qualification, including final report tip
+   `f9f300ed376370b2f476722e4a92888004d8358d`, are completed history; see
+   [CALCULUS_HOSTED_QUALIFICATION.md](CALCULUS_HOSTED_QUALIFICATION.md) and its
+   retained completion record. The final 0.2.0 delivery remains a separate approval
+   checkpoint. No further calculus implementation phase precedes it.
 8. **Additional model families** — historical backlog only, outside the agreed
    7B/7C then final-qualification/delivery scope; no additional implementation phase
    is scheduled by this roadmap entry.
 
 Cleanup introduced no mathematical API; Phase 2 added typed evaluation and Phase 3
-now adds typed search/refinement. Phase 5 adds bounded text import; 7A/7B/7C calculus implementation is locally complete, with final combined qualification/delivery next. Optional adapters, additional constraints and model families are backlog outside this completion scope. Further delivery/platform qualification,
+now adds typed search/refinement. Phase 5 adds bounded text import; 7A/7B/7C
+calculus implementation and its combined hosted qualification are complete history.
+Optional adapters, additional constraints and model families are backlog outside
+that completion scope. Further delivery/platform qualification,
 profiling, checkpoint/resume, cache policy and GPU work remain separately scoped.
 The remaining sections preserve the historical engineering and experiment record;
 old “next”/“unreleased” statements describe those checkpoints, not current status.

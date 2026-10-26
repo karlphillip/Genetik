@@ -1,0 +1,3 @@
+parallel candidate slot 12 failed
+ training loss attempt 1 failed
+  scientific numerical failure: complex required prediction

@@ -1,0 +1,2 @@
+task	seed	training_loss	held_loss	attempts	seconds	operations	fields	parameters
+gaussian-fit	0	0	1.9259299443872359e-34	118	0.00065105899999999995	5382	702	0.5,1.25,

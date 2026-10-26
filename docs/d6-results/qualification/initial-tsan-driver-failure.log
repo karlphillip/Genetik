@@ -1,0 +1,56 @@
+WAIT original Release compilation to drain before changing the owned source snapshot
+DRAINING prior build 0 seconds
+DRAINING prior build 30 seconds
+DRAINED; replace only changed tracked blobs, preserving configured cache paths
+START release-configure
+DONE release-configure 0 0.96
+START release-build
+DONE release-build 0 149.32
+START release-manifest-check
+DONE release-manifest-check 0 0.07
+release TESTS 90
+START release-full
+DONE release-full 0 458.6
+START debug-configure
+DONE debug-configure 0 0.92
+START debug-build
+DONE debug-build 0 136.23
+START debug-manifest-check
+DONE debug-manifest-check 0 0.07
+debug TESTS 90
+START debug-full
+DONE debug-full 0 507.6
+START minimum-configure
+DONE minimum-configure 0 2.34
+START minimum-build
+DONE minimum-build 0 653.23
+START minimum-manifest-check
+DONE minimum-manifest-check 0 0.06
+minimum TESTS 90
+START minimum-full
+DONE minimum-full 0 352.63
+START sanitize-configure
+DONE sanitize-configure 0 1.8
+START sanitize-build
+DONE sanitize-build 0 718.94
+START sanitize-manifest-check
+DONE sanitize-manifest-check 0 0.07
+sanitize TESTS 89
+START sanitize-full
+DONE sanitize-full 0 4532.15
+START tsan-configure
+DONE tsan-configure 0 1.89
+START tsan-build
+DONE tsan-build 0 274.13
+START tsan-manifest-check
+DONE tsan-manifest-check 0 0.07
+START tsan-repeated
+DONE tsan-repeated 8 91.1
+Traceback (most recent call last):
+  File "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/d6/qualify_complete.py", line 50, in <module>
+    targets=['genetik_discrete_tests','genetik_discrete_iteration_tests','genetik_discrete_prime_tests','genetik_checkpoint_v03_writer','genetik_checkpoint_compatibility_tests','genetik_checkpoint_tests','genetik_prime_exact_tests','genetik_concurrency_tests','genetik_oop_consumer','genetik_typed_tests','genetik_typed_regression_tests','genetik_scientific_tests','genetik_parsing_tests','genetik_template_tests','genetik_derivative_tests','genetik_derivative_regression_tests','genetik_integral_tests','genetik_d5_iteration_tests','genetik_d5_integer_tests','genetik_d5_recurrence_tests','genetik_d5_scientific_tests','genetik_d5_symbolic_tests','genetik_d5_dimension_tests','genetik_d6_tests'];run('tsan-build',[cm,'--build',build,'--target',*targets,'-j2']);expected=runpy.run_path(str(src/'scripts/check_ci_manifest.py'))['TSAN'];pattern='^('+'|'.join(sorted(expected))+')$';manifest('tsan',build,pattern=pattern);run('tsan-manifest-check',['python3',src/'scripts/check_ci_manifest.py',packet/'tsan-manifest.json','--tsan']);run('tsan-repeated',[cm,'-E','chdir',build,ct,'-R',pattern,'--repeat','until-fail:3','--output-on-failure'],{'TSAN_OPTIONS':'halt_on_error=1'});extra='^(genetik_discrete(_iteration|_prime)?_contracts|genetik_integral_contracts|genetik_checkpoint_compatibility|genetik_d5_(integer|iteration|recurrence|scientific|symbolic|dimension)_contracts|genetik_d6_(scientific_contracts|continuation))$';manifest('tsan-complete',build,pattern=extra);run('tsan-complete',[cm,'-E','chdir',build,ct,'-R',extra,'--output-on-failure'],{'TSAN_OPTIONS':'halt_on_error=1'});retain('tsan',build)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/d6/qualify_complete.py", line 30, in run
+    if code:raise RuntimeError(name+' failed; original log retained')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: tsan-repeated failed; original log retained

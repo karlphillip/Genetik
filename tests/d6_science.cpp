@@ -108,6 +108,8 @@ void differential() {
   auto gaussianFit = fitScientificParameters(gaussian, gaussianConfig);
   near(gaussianFit.parameters[0], .5, 1e-6);
   near(gaussianFit.parameters[1], 1.25, 1e-6);
+  check(gaussianFit.work.invalid > 0,
+        "invalid sigma probes counted; accepted improvements retained");
   // Independent normalized-channel fixture, counts must not change weighting.
   ScientificEquationSystem weighted(
       1, {parse("x0")},
@@ -310,7 +312,7 @@ void references(const char *path) {
   check(bool(f), "reference input");
   std::string line;
   unsigned count = 0;
-  double maxError = 0;
+  double maxError = 0, maxScaledError = 0;
   while (std::getline(f, line)) {
     std::istringstream row(line);
     std::string expression;
@@ -320,12 +322,15 @@ void references(const char *path) {
     auto p = parse(expression).evaluate(std::array{x});
     check(p.valid(), "reference finite");
     maxError = std::max(maxError, std::abs(p.value() - y));
+    maxScaledError = std::max(maxScaledError, std::abs(p.value() - y) /
+                                                  std::max(1., std::abs(y)));
     near(p.value(), y, 2e-12);
     ++count;
   }
   check(count >= 30, "reference count");
   std::cout << "Special references=" << count
-            << " max absolute discrepancy=" << maxError << "\n";
+            << " max absolute discrepancy=" << maxError
+            << " max scaled discrepancy=" << maxScaledError << "\n";
   for (auto name : {"gamma", "log_gamma", "bessel_j0"})
     check(
         evaluatePartial(parse(std::string(name) + "(x0)"), std::array{1.25}, 0)

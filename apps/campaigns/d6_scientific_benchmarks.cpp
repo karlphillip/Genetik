@@ -163,9 +163,18 @@ int main(int argc, char **argv) {
     RandomContext random(seed, {2});
     ScalarMathematicsRun run(problem, config, random);
     run.save(directory / "initial.gtkc");
-    while (!run.stoppingReason()) {
-      run.step();
-      run.save(directory / "latest.gtkc");
+    std::optional<SearchStop> interrupted;
+    try {
+      while (!run.stoppingReason()) {
+        run.step();
+        run.save(directory / "latest.gtkc");
+      }
+    } catch (...) {
+      auto error = std::current_exception();
+      if (!isEvaluationStop(error))
+        throw;
+      interrupted = isEvaluationBudget(error) ? SearchStop::EvaluationBudget
+                                              : SearchStop::Cancelled;
     }
     auto best = run.population().bestSeen();
     if (!best)
@@ -206,12 +215,27 @@ int main(int argc, char **argv) {
            << std::chrono::duration<double>(std::chrono::steady_clock::now() -
                                             start)
                   .count()
-           << '\t' << searchStopName(*run.stoppingReason()) << '\t'
-           << selected.nodeCount() << '\t' << selected.depth() << '\t' << text
-           << '\t' << pretty << '\n';
+           << '\t'
+           << searchStopName(interrupted.value_or(
+                  run.stoppingReason().value_or(SearchStop::GenerationLimit)))
+           << '\t' << selected.nodeCount() << '\t' << selected.depth() << '\t'
+           << text << '\t' << pretty << '\n';
     return 0;
   } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
+    std::function<void(const std::exception &, unsigned)> report =
+        [&](const std::exception &error, unsigned depth) {
+          std::cerr << std::string(depth, ' ') << error.what() << '\n';
+          if (depth < 16) {
+            try {
+              std::rethrow_if_nested(error);
+            } catch (const std::exception &nested) {
+              report(nested, depth + 1);
+            } catch (...) {
+              std::cerr << "nonstandard nested failure\n";
+            }
+          }
+        };
+    report(e, 0);
     return 1;
   }
 }

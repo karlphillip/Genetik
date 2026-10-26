@@ -37,7 +37,7 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
     genetik_science::inputs(x);
     // Complete primal first. Invalid later children outrank derivative
     // unavailability.
-    if (e.arithmeticCost() > limits.maxOperations)
+    if (e.arithmeticCost() > limits.maxOperations - b.work.operations)
       throw genetik_science::Stop{ScientificStatus::ResourceLimit,
                                   "primal admission"};
     auto p = e.evaluate(x);

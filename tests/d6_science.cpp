@@ -75,6 +75,7 @@ void differential() {
                                          {1, 100, 10000, 10, 1e-12});
   check(exhausted.status == ScientificStatus::ResourceLimit,
         "bounded derivative");
+  check(exhausted.reason=="primal admission"&&!exhausted.primal&&exhausted.work.operations==1,"binding work must be subtracted before primal admission");
   auto system = oscillator();
   ObservedOdeSystem ode(system, 0, {1, 2}, {0, 1});
   check(!ode.identity().empty(), "explicit ODE field identities");

@@ -2,10 +2,10 @@
 
 ## D7 state
 
-- Phase: D7, checkpoint B — preflight completed; frozen protocol and harness are prepared for commit; no target runs have started.
+- Phase: D7, checkpoint C — frozen protocol committed; neutral preflight evidence is in the resumable manifest; target matrix is next.
 - Repository: `/home/karlphillip/workspaces/primeResearcher/Genetik`.
 - Branch: `qualification/advanced-mathematics-d7`.
-- Current committed SHA: `daf6c96a8bf437a552ae836c1f0e40edb5859f52`; executable implementation remains at this SHA.
+- Current committed SHA: `a33c77bac744afe4025441ab63df74b3a70356ff`; executable implementation remains `daf6c96a8bf437a552ae836c1f0e40edb5859f52` (qualified migration source `c72eaaa3f1ca817ba804d36321069e58ac288e6f`).
 - Published 0.4.0 tag resolves to `c08859e462210a1ef378b0c6c47a2b4c520f7353`, an ancestor of D6. The qualified D6 implementation `c72eaaa3f1ca817ba804d36321069e58ac288e6f` is also an ancestor. The v0.4.0 tag/assets have not been changed.
 - Version metadata is now `0.5.0` in the D7 working tree; release designation remains development pre-release.
 - Checkpoint-A implementation is committed. Targeted GCC 13 Release tests pass 3/3: scalar v0.3, scalar v0.4, and discrete v0.4 checkpoint continuation/compatibility. Full D7 candidate suites remain outstanding.
@@ -24,8 +24,7 @@
 
 ## Open issues and next actions
 
-1. Review and commit the frozen D7 protocol, source locks, generated data, adapters, assessor, preflight evidence and this handoff. Do not change the task matrix after results begin.
-2. Import the three accepted neutral preflight records into the resumable driver, run the fixed 108-cell matrix serially, and independently assess every result. Preserve timeouts/invalid outputs. No target run has begun.
+1. Run the fixed 108-cell matrix serially from the committed protocol SHA (SHA256 to be read from the file), and independently assess every result. Preserve timeouts/invalid outputs. Do not alter the matrix after runs begin.
 3. Analyze retained D5/D6 findings alongside D7 metrics without changing the search algorithm. Complete D5/D6 specialist numerical references and checkpoint compatibility.
 4. Derive the actual final test manifest; run complete Release, Debug, exact CMake 3.16.0, ASan+UBSan, TSan x3 selections, consumers/packaging, strict FP, workflow and hygiene. Preserve the known parent workspace failure on untouched user-owned `session.md`.
 5. Prepare the 0.5.0 documentation, source archive, checksums and final local candidate commit. Confirm no executable source changed after its exact qualified SHA, or rerun affected qualification if a real source defect is repaired.
@@ -48,4 +47,5 @@ Update this file after each D7 checkpoint and before handing off context. Keep d
 - Accepted neutral preflights are summarized in `docs/d7/preflight_results.json`; raw process logs are under `out/logs/d7/preflight/`. PySR first failed from an adapter loss-API mistake, then preflighted with corrected `elementwise_loss` and deterministic serial configuration. Its fit call required ~117.5 s for a 60 s native preflight setting because Julia/JIT overhead is inside that call; target runs use a hard external 120 s cap. Preserve all attempts.
 - An initial PySR import without the pinned Julia environment bootstrapped a venv-managed Julia 1.11 and began compiling to the existing user `~/.julia` depot. That process was identified as this task's own setup process and stopped; its logs/failure remain. Do not clean or alter user Julia files. The accepted runs use the private D7 Julia depot/project/runtime.
 - PyOperon setup first failed on the upstream x86-64 preset; the failure log remains. The isolated retry used GCC 13 and a retained aarch64-only build patch. Source checkouts remain unchanged.
+- Protocol/tooling checkpoint `a33c77bac744afe4025441ab63df74b3a70356ff` contains the frozen benchmark specification, 18 dataset CSVs and manifest, exact environment pins, adapters, assessor and preflight summary. `out/logs/d7/preflight-results.jsonl` imports three already executed accepted smoke preflights; running `benchmark_matrix.py --mode preflight` was verified to skip them. No target result exists yet.
 - No background work is running. The last process ended before handoff; resume by checking `ps` before commands.

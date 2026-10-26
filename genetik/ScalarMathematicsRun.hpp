@@ -30,9 +30,20 @@ class ScalarMathematicsProblem {
         result.identity_ = w.data();
         return result;
     }
+    // Trusted immutable full-model seam. The adapter owns its complete data and
+    // derives an exact identity; callers must not use arbitrary cache keys.
+    static ScalarMathematicsProblem measured(std::shared_ptr<const RegressionProblem> problem,
+                                             const std::string& completeIdentity) {
+        if(!problem||completeIdentity.empty()||completeIdentity.size()>16*1024*1024)
+            throw std::invalid_argument("owned full-model problem identity required");
+        auto result=scientific({{std::vector<double>(problem->dimensions(),0),0}},problem->limits());
+        result.measured_=true;result.problem_=std::move(problem);CheckpointWriter w;w.text("full-model-measurement/2");
+        w.text(result.identity_);w.text(completeIdentity);result.identity_=w.data();return result;
+    }
     const auto &problem() const noexcept { return problem_; }
     const std::string &identity() const noexcept { return identity_; }
     bool hasDimensions() const noexcept { return dimensional_; }
+    bool measured()const noexcept{return measured_;}
     const auto &selection() const noexcept { return selection_; }
     DimensionalGrammarLimits grammarLimits() const noexcept { return grammar_; }
 
@@ -81,6 +92,7 @@ class ScalarMathematicsProblem {
     std::shared_ptr<const ConstantParameterSelection> selection_;
     std::string identity_;
     bool dimensional_;
+    bool measured_=false;
     DimensionalGrammarLimits grammar_;
 };
 class ScalarMathematicsVariation {
@@ -142,6 +154,7 @@ class ScalarMathematicsRun {
     }
     const PopulationType &population() const { return *population_; }
     const TrainingWork &work() const noexcept { return objective_->work(); }
+    const RegressionSupplementalWork& supplementalWork()const noexcept{return objective_->supplementalWork();}
     const Algorithm &algorithm() const noexcept { return *algorithm_; }
     PreparationStatistics preparationWork() const noexcept { return preparation_->statistics(); }
     std::optional<SearchStop> stoppingReason() const {
@@ -183,6 +196,7 @@ class ScalarMathematicsRun {
         w.integer(algorithm.published);
         w.integer(static_cast<unsigned>(algorithm.lastOutcome));
         writeTrainingWork(w, work());
+        if(problem_.measured()){w.integer(supplementalWork().mathematicalOperations);w.integer(supplementalWork().fieldEvaluations);}
         writePreparationStatistics(w, preparation_->statistics());
         w.integer(preparation_->rawInitialBest.has_value());
         if (preparation_->rawInitialBest)
@@ -190,7 +204,7 @@ class ScalarMathematicsRun {
         writeVariationStatistics(w, algorithm_->variation().statistics());
         writeCommittedPopulation(w, state);
         CheckpointDocument d;
-        d.codec = "genetik.scalar-mathematics-evolution/1";
+        d.codec = problem_.measured()?"genetik.scientific-measurement-evolution/1":"genetik.scalar-mathematics-evolution/1";
         d.identity = identity_;
         d.payload = w.data();
         d.generation = state.generation;
@@ -203,7 +217,7 @@ class ScalarMathematicsRun {
                                                          RandomContext &random) {
         auto result =
             std::unique_ptr<ScalarMathematicsRun>(new ScalarMathematicsRun(p, c, random, RestoreTag{}));
-        if (d.codec != "genetik.scalar-mathematics-evolution/1" || d.runtime != checkpointRuntime() ||
+        if (d.codec != (p.measured()?"genetik.scientific-measurement-evolution/1":"genetik.scalar-mathematics-evolution/1") || d.runtime != checkpointRuntime() ||
             d.identity != result->identity_)
             throw CheckpointError("scalar mathematics run identity/runtime differs");
         CheckpointReader r(d.payload);
@@ -219,6 +233,9 @@ class ScalarMathematicsRun {
         a.published = static_cast<unsigned>(r.count(UINT32_MAX));
         a.lastOutcome = static_cast<GenerationOutcome>(r.count(2));
         auto work = readTrainingWork(r);
+        RegressionSupplementalWork supplemental;
+        if(p.measured()){supplemental.mathematicalOperations=r.integer();supplemental.fieldEvaluations=r.integer();}
+        if(p.measured()&&supplemental.fieldEvaluations>work.rowAttempts)throw CheckpointError("scientific field accounting exceeds observation attempts");
         auto preparation = readPreparationStatistics(r);
         std::optional<double> initial;
         if (r.count(1))
@@ -248,6 +265,7 @@ class ScalarMathematicsRun {
         auto population =
             RunCheckpointAccess::restorePopulation<ExpressionCandidate, RegressionOrdering>(state, random);
         result->objective_->restoreWork(work);
+        result->objective_->restoreSupplementalWork(supplemental);
         result->preparation_->restoreStatistics(preparation, initial);
         result->preparation_->initializing = false;
         RunCheckpointAccess::restoreAlgorithm(*result->algorithm_, a);

@@ -1,0 +1,232 @@
+{
+  "protocol": "D6 frozen scientific recovery /1",
+  "frozen_before_any_campaign": true,
+  "seeds": [
+    0,
+    1,
+    42
+  ],
+  "workers": 2,
+  "execution": "sequential, no competing builds or campaigns",
+  "population": 24,
+  "elites": 2,
+  "crossover": 0.9,
+  "mutation": 0.35,
+  "generations": 20,
+  "candidate_request_cap": 504,
+  "loss_attempt_cap": 2048,
+  "fitting": {
+    "method": "unchanged coordinate",
+    "local_attempts": 32,
+    "bounds": [
+      -8,
+      8
+    ],
+    "initialStep": 1,
+    "minimumStep": 1e-08,
+    "maxSweeps": 128,
+    "maxProposals": 8192,
+    "cadence": 1
+  },
+  "grammar": {
+    "operators_common": [
+      "Add",
+      "Subtract",
+      "Multiply"
+    ],
+    "complex_adds": [
+      "Exp"
+    ],
+    "gaussian_replaces": [
+      "NormalPdf",
+      "Add",
+      "Multiply"
+    ],
+    "constants": [
+      -2,
+      -1,
+      0,
+      0.5,
+      1,
+      2
+    ],
+    "initialDepth": 4,
+    "mutationDepth": 3,
+    "expressionLimits": {
+      "nodes": 23,
+      "depth": 6,
+      "constantMagnitude": 8,
+      "arithmeticOperations": 1000
+    },
+    "other_settings": "unchanged ExpressionGrammar defaults serialized by the run"
+  },
+  "scientificLimits": {
+    "maxOperations": 1000000,
+    "maxElements": 65536,
+    "maxWorkspaceBytes": 8388608,
+    "maxIterations": 1024,
+    "tolerance": 1e-12
+  },
+  "stochastic_tasks": {
+    "oscillator": {
+      "reference": "dx=v; dv=-.25*v-2*x; time0",
+      "training_x": [
+        -2,
+        -1,
+        0,
+        1,
+        2
+      ],
+      "training_v": [
+        -1,
+        0,
+        1
+      ],
+      "held_x": [
+        -0.75,
+        0.75,
+        1.75
+      ],
+      "held_v": [
+        -0.5,
+        0.5
+      ],
+      "objective": "equal channel weights, scales1 for dx and2 for dv; one unknown dv AST; prescribed dx and shared parameter initial slots1,1"
+    },
+    "complex": {
+      "reference": "exp(i*x) = cos(x)+i*sin(x)",
+      "training": [
+        -1,
+        -0.5,
+        0,
+        0.5,
+        1
+      ],
+      "held": [
+        -0.75,
+        0.75,
+        1.75
+      ],
+      "inputs": "x0=(x,0),x1=(0,1)",
+      "objective": "mean complex squared residual; real-coefficient complex topology genome"
+    },
+    "tensor": {
+      "reference": "T_prediction=1.5*x*T_input",
+      "input_shape": [
+        2,
+        2,
+        2
+      ],
+      "input_values": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "training": [
+        0.5,
+        1,
+        1.5,
+        2
+      ],
+      "held": [
+        0.25,
+        0.75,
+        1.75
+      ],
+      "objective": "full component MSE, scalar scale expression evolves"
+    },
+    "gaussian": {
+      "reference": "normal density mu=.5 sigma=1.25, independently generated ordinary arithmetic/exp",
+      "training": [
+        -2,
+        -1,
+        0,
+        1,
+        2,
+        3
+      ],
+      "held": [
+        -1.75,
+        -0.75,
+        0.25,
+        1.25,
+        2.25
+      ]
+    }
+  },
+  "fixed_structure_fixtures": {
+    "oscillator-fit": {
+      "initial": [
+        1,
+        1
+      ],
+      "target": [
+        0.25,
+        2
+      ]
+    },
+    "heat": {
+      "reference": "u=exp(-.25*t)*sin(x); u_t=-.25*u;u_xx=-u",
+      "initial_kappa": 1,
+      "target": 0.25,
+      "training_t": [
+        0,
+        0.5,
+        1
+      ],
+      "training_x": [
+        -0.5,
+        0.5,
+        1.5
+      ],
+      "held_t": [
+        0.25,
+        0.75,
+        1.25
+      ],
+      "held_x": [
+        -0.75,
+        0.75
+      ],
+      "objective": "three equal channels: residual, initial observations, boundary observation; scales1"
+    },
+    "gaussian-fit": {
+      "initial": [
+        0,
+        1
+      ],
+      "target": [
+        0.5,
+        1.25
+      ],
+      "parameter_bounds": [
+        [
+          -4,
+          4
+        ],
+        [
+          0.125,
+          4
+        ]
+      ]
+    },
+    "shared": "coordinate512 attempts, initialStep1,minStep1e-8,sweeps128,proposals8192; each run starts from declared initial coefficients"
+  },
+  "independent_numerical_fixtures": [
+    "2x2 solve and symmetric eigenvalues1,3 with residuals",
+    "symmetric diagonal matrix exponential",
+    "rank3 contraction independently expanded integer dot products",
+    "32 mpmath100-digit special references at exact binary64 inputs",
+    "heat field analytic second and mixed partials",
+    "finite population/sample statistics"
+  ],
+  "assessment": "after selected training-best model and final checkpoint are frozen; no assessment-driven retries or tuning",
+  "recovery_reporting": "held-out full-objective MSE <=1e-12; finite-sample result only",
+  "negative_results": "all failures and selected formulas retained; D5 historical outcomes remain unchanged",
+  "limits": "no universal proof, no trajectory/PDE solving, no new prime campaign"
+}

@@ -121,6 +121,8 @@ public:
         GENETIK_ADD_WORK(invalidLosses) GENETIK_ADD_WORK(ordinaryLossAttempts)
         GENETIK_ADD_WORK(fittingBaselineAttempts) GENETIK_ADD_WORK(fittingProbeAttempts) GENETIK_ADD_WORK(fittingImproved)
 #undef GENETIK_ADD_WORK
+        mergeTrainingCounter(supplemental_.mathematicalOperations,local.supplemental_.mathematicalOperations,overflow);
+        mergeTrainingCounter(supplemental_.fieldEvaluations,local.supplemental_.fieldEvaluations,overflow);
         mergeWorker(local);
         if(overflow)throw std::overflow_error("parallel training accounting exceeded uint64 range");
         validateMergedObjectiveWork();
@@ -153,6 +155,11 @@ public:
     std::uint64_t remaining() const { return admission_ ? admission_->remaining():maximum_ - work_.lossAttempts; }
     const std::shared_ptr<RefinementDiagnostics>& diagnostics() const noexcept {return diagnostics_;}
     const TrainingWork& work() const noexcept { return work_; }
+    const RegressionSupplementalWork& supplementalWork()const noexcept{return supplemental_;}
+    void restoreSupplementalWork(RegressionSupplementalWork work){
+        if(supplemental_!=RegressionSupplementalWork{}||admission_||execution_)throw std::invalid_argument("fresh supplemental accounting required");
+        supplemental_=work;
+    }
     // Fresh, idle objective only; context identity is verified by the checkpoint adapter.
     void restoreWork(const TrainingWork& w) {
         if(work_!=TrainingWork{} || admission_ || execution_ || diagnostics_ || w.lossAttempts>maximum_ ||
@@ -175,7 +182,7 @@ protected:
     std::uint64_t& rowAttemptsCounter() noexcept {return work_.rowAttempts;}
     const ExecutionContext* executionContext() const noexcept {return execution_;}
     virtual RegressionMetrics compute(const Expression& expression) {
-        return problem_->measure(expression, &work_.rowAttempts);
+        return problem_->measureWithWork(expression, &work_.rowAttempts,supplemental_);
     }
 private:
     friend ConstantFitResult fitSelectedConstants(const Expression&,TrainingObjective&,std::span<const std::size_t>,const ConstantFitConfig&);
@@ -183,6 +190,7 @@ private:
     std::shared_ptr<TrainingLossAdmission> admission_;
     const ExecutionContext* execution_=nullptr; // worker-local borrow, never installed in committed candidates
     TrainingWork work_;
+    RegressionSupplementalWork supplemental_;
     std::shared_ptr<const RegressionProblem> problem_;
     std::uint64_t maximum_;
     std::shared_ptr<RefinementDiagnostics> diagnostics_;

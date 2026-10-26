@@ -29,6 +29,10 @@ option(GENETIK_RECORDED_REFERENCE "Check the qualified Jetson/GCC13/libm2.39 cap
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 add_subdirectory(genetik)
+option(GENETIK_SCIENTIFIC_NUMERICS "Enable optional LP64 LAPACK scientific target" OFF)
+if(GENETIK_SCIENTIFIC_NUMERICS)
+    include(${PROJECT_SOURCE_DIR}/cmake/GenetikScientificNumerics.cmake)
+endif()
 
 # Directory-scoped development settings cannot propagate through genetik_lib or
 # affect sibling targets in a parent project. No parent standard/build type override.
@@ -49,6 +53,13 @@ elseif(GENETIK_SANITIZERS OR GENETIK_THREAD_SANITIZER)
     message(FATAL_ERROR "Genetik development sanitizers require a GNU-compatible GCC/Clang frontend")
 endif()
 if(GENETIK_BUILD_EXAMPLES)
+    add_executable(genetik_scientific_discovery_quickstart examples/quickstarts/scientific_discovery.cpp)
+    target_link_libraries(genetik_scientific_discovery_quickstart PRIVATE Genetik::Genetik)
+    if(GENETIK_SCIENTIFIC_NUMERICS)
+        target_link_libraries(genetik_scientific_discovery_quickstart PRIVATE Genetik::ScientificNumerics)
+    endif()
+    add_executable(genetik_d6_scientific_benchmarks apps/campaigns/d6_scientific_benchmarks.cpp)
+    target_link_libraries(genetik_d6_scientific_benchmarks PRIVATE Genetik::Genetik)
     add_executable(genetik_advanced_mathematics_quickstart examples/quickstarts/advanced_mathematics.cpp)
     target_link_libraries(genetik_advanced_mathematics_quickstart PRIVATE Genetik::Genetik)
     add_executable(genetik_d5_mathematical_benchmarks apps/campaigns/d5_mathematical_benchmarks.cpp)
@@ -137,7 +148,7 @@ if(GENETIK_INSTALL)
         VERSION ${PROJECT_VERSION} COMPATIBILITY SameMinorVersion ARCH_INDEPENDENT)
     install(EXPORT GenetikTargets NAMESPACE Genetik:: DESTINATION ${_genetik_package_dir})
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/GenetikConfig.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/GenetikConfigVersion.cmake cmake/GenetikFloatingPoint.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/GenetikConfigVersion.cmake cmake/GenetikFloatingPoint.cmake cmake/GenetikScientificNumerics.cmake
         DESTINATION ${_genetik_package_dir})
     install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/Genetik)
 endif()

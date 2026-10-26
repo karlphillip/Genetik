@@ -291,3 +291,8 @@ uses the generic state seams and scalar-expression codec without prime dependenc
 Optional discrete modules: [D1](docs/DISCRETE_EXPRESSIONS.md), [D2](docs/DISCRETE_ITERATION.md), [D3 results](docs/DISCRETE_D3_RESULTS.md). They do not replace the generic OOP engine.
 
 Current delivery proposal: [0.4.0 notes](docs/releases/0.4.0/NOTES.md) and [review boundaries](docs/RELEASE_0.4.0_PROPOSAL.md).
+
+Local D6 development adds [scientific system identification, bounded linear algebra,
+tensors, complex regression and statistical mathematics](docs/SCIENTIFIC_DISCOVERY_D6.md).
+These opt-in mathematical modules preserve the generic GA and existing defaults;
+they are not a new published release.

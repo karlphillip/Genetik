@@ -131,3 +131,9 @@ codecs are trusted cache-restoration boundaries after immutable context validati
 not writable genome access. Arbitrary subclasses and custom virtual-hook state need
 explicit codecs/adapters. See RUN_CHECKPOINTING.md for ownership, idle-access and
 qualified continuation contracts. ExpressionFormatting.hpp is separate presentation.
+
+D6 local development adds optional scientific measurements and owned tensor/complex
+models without dependencies in the GA core. The ordinary package remains standard
+library only; an independently requested `Genetik::ScientificNumerics` target uses
+locally installed LP64 OpenBLAS/LAPACK. See SCIENTIFIC_DISCOVERY_D6.md for the
+restricted numerical domain, codec identities and full-model preparation contracts.

@@ -309,3 +309,10 @@ The final report tip receives its own complete matrix; exact completion/run/asse
 are recorded under out/runs/discrete-d4/hosted. Implementation scope is complete.
 Only final delivery approval remains after final-tip qualification; no D5–D7 work.
 Existing historical qualification statements retain their original SHA scope.
+
+D6 local scientific APIs add an optional LP64 OpenBLAS/LAPACK target. It is not a
+transitive requirement of Genetik::Genetik. Only explicitly measured local
+compiler/runtime/backend combinations are qualified; Windows, macOS, libc++,
+ILP64 backends and arbitrary-precision mathematics remain unqualified. Require
+OPENBLAS_NUM_THREADS=1 and OMP_NUM_THREADS=1 before running the optional backend.
+See SCIENTIFIC_DISCOVERY_D6.md and the revision-specific D6_QUALIFICATION.md.

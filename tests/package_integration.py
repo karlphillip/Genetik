@@ -104,7 +104,7 @@ def inspect(prefix,consumer_build):
         elif token not in ['-c','-MD','-MMD','-MP']:
             dependency_command.append(token)
     text=run([*dependency_command,'-M'])
-    if any('/'+name+'.hpp' in text for name in ['ScalarOperators','AdvancedInteger','DiscreteExpression','DiscreteRegression','DiscreteVariation','DiscreteRunCheckpoint','IntegerRecurrence','SymbolicAlgebra','PhysicalDimensions','DimensionalRegression','MathematicalConstraints','ScalarMathematicsRun','IntegralExpression','IntegralRegression','DerivativeRegression','ExpressionDerivative','ScalarExpressionTemplate','ScalarTemplateRegression','ExpressionParsing','TypedExpressionParsing','Expression','Regression','SymbolicRegression','ConstantFitting','TypedValue','TypedExpression','TypedRegression','TypedVariation','TypedSymbolicRegression','TypedConstantFitting']):
+    if any('/'+name+'.hpp' in text for name in ['ScientificWork','ScientificEquationSystem','ScientificRegression','ObservedDifferentialSystem','ComplexExpression','BoundedTensor','AdvancedLinearAlgebra','FiniteStatistics','ExpressionSecondDerivative','ScalarOperators','AdvancedInteger','DiscreteExpression','DiscreteRegression','DiscreteVariation','DiscreteRunCheckpoint','IntegerRecurrence','SymbolicAlgebra','PhysicalDimensions','DimensionalRegression','MathematicalConstraints','ScalarMathematicsRun','IntegralExpression','IntegralRegression','DerivativeRegression','ExpressionDerivative','ScalarExpressionTemplate','ScalarTemplateRegression','ExpressionParsing','TypedExpressionParsing','Expression','Regression','SymbolicRegression','ConstantFitting','TypedValue','TypedExpression','TypedRegression','TypedVariation','TypedSymbolicRegression','TypedConstantFitting']):
         raise RuntimeError('symbolic dependency in generic consumer')
     installed={p.relative_to(prefix).as_posix() for p in prefix.rglob('*') if p.is_file()}
     if not any(x.endswith('detail/ScopedTiming.hpp') for x in installed):raise RuntimeError('transitive header omitted')
@@ -119,7 +119,7 @@ def consume(prefix,name,extra=(),build_it=True,fail=False):
     if fail:return output
     if build_it:
         run([a.cmake,'--build',directory,'-j2'])
-        for exe in ['quickstarts/advanced_mathematics_quickstart','installed_consumer','quickstarts/discrete_iteration_quickstart','quickstarts/discrete_quickstart','quickstarts/checkpoint_quickstart','quickstarts/integrals_quickstart','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart','quickstarts/typed_quickstart','quickstarts/typed_search_quickstart','quickstarts/parsing_quickstart','quickstarts/templates_quickstart','quickstarts/derivative_regression_quickstart','quickstarts/derivatives_quickstart','oop_consumer/permutation_consumer']:
+        for exe in ['quickstarts/scientific_discovery_quickstart','quickstarts/advanced_mathematics_quickstart','installed_consumer','quickstarts/discrete_iteration_quickstart','quickstarts/discrete_quickstart','quickstarts/checkpoint_quickstart','quickstarts/integrals_quickstart','quickstarts/scalar_quickstart','quickstarts/symbolic_quickstart','quickstarts/typed_quickstart','quickstarts/typed_search_quickstart','quickstarts/parsing_quickstart','quickstarts/templates_quickstart','quickstarts/derivative_regression_quickstart','quickstarts/derivatives_quickstart','oop_consumer/permutation_consumer']:
             run([directory/exe])
             run([directory/exe,'--threads','2']) if exe not in ['installed_consumer','quickstarts/typed_quickstart','quickstarts/parsing_quickstart','quickstarts/derivatives_quickstart'] else None
             dependencies=run(['ldd',directory/exe])
@@ -139,7 +139,7 @@ consume(prefix_b,'exact version',('-DREQUEST_VERSION=0.4.0','-DREQUEST_EXACT=ON'
 for version in ['0.1.0','0.1.99','0.2.0','0.2.99','0.3.0','0.3.99','0.4.1','1.0']:
     consume(prefix_b,'rejected '+version,(f'-DREQUEST_VERSION={version}',),False,True)
 message=consume(prefix_b,'required component',('-DREQUEST_COMPONENT=imaginary',),False,True)
-if 'no package components' not in message:raise RuntimeError('unclear component diagnostic')
+if 'unsupported Genetik component' not in message:raise RuntimeError('unclear component diagnostic')
 # CMake 3.16 predates cxx_std_23; newer consuming CMake may select newer standards.
 version=run([a.cmake,'--version']).splitlines()[0].split()[-1]
 if tuple(map(int,version.split('.')[:2]))>=(3,20):

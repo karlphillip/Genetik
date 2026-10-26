@@ -8,6 +8,10 @@
 
 struct RegressionRow { std::vector<double> inputs; double target; };
 enum class RegressionLoss { MeanSquaredError };
+struct RegressionSupplementalWork {
+    std::uint64_t mathematicalOperations=0,fieldEvaluations=0;
+    bool operator==(const RegressionSupplementalWork& supplemental)const=default;
+};
 struct RegressionMetrics {
     Fitness loss;
     std::optional<double> maxAbsoluteError;
@@ -36,7 +40,18 @@ public:
         if (expression.variableCount() != dimensions_) throw std::invalid_argument("expression/problem dimensions differ");
         return Expression(expression.nodes(), dimensions_, limits_);
     }
+    // Optional per-invocation accounting. The immutable objective never owns
+    // mutable counters; supplied counters belong to the worker objective.
+    virtual RegressionMetrics measureWithWork(const Expression& expression,std::uint64_t* rows,
+                                              RegressionSupplementalWork& supplemental)const {
+        if(typeid(*this)==typeid(RegressionProblem))return measureValue(expression,rows,&supplemental);
+        return measure(expression,rows);
+    }
     virtual RegressionMetrics measure(const Expression& expression, std::uint64_t* rowAttempts = nullptr) const {
+        return measureValue(expression,rowAttempts,nullptr);
+    }
+private:
+    RegressionMetrics measureValue(const Expression& expression,std::uint64_t* rowAttempts,RegressionSupplementalWork* supplemental)const {
         if (expression.variableCount() != dimensions_) throw std::invalid_argument("expression/problem dimensions differ");
         if(rows_.empty())throw std::logic_error("schema-only problem requires a measurement override");
         double sum = 0, maximum = 0;
@@ -52,6 +67,7 @@ public:
                 ++*rowAttempts;
             }
             const auto prediction = workspace.evaluate(expression, row.inputs);
+            if(supplemental){auto cost=prediction.arithmeticOperations();if(cost>UINT64_MAX-supplemental->mathematicalOperations||supplemental->fieldEvaluations==UINT64_MAX)throw std::overflow_error("regression supplemental work");supplemental->mathematicalOperations+=cost;++supplemental->fieldEvaluations;}
             if (!prediction.valid()) return {Fitness::invalid(), {}, attempted};
             volatile double residual = prediction.value() - row.target;
             if (!std::isfinite(residual)) return {Fitness::invalid(), {}, attempted};

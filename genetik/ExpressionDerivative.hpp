@@ -100,6 +100,7 @@ class DerivativeEvaluation final {
     }
     double derivativeBinary(ExpressionKind kind, Slot a, Slot b, double q) {
         using K = ExpressionKind;
+        if(kind==K::PoissonPmf){fail(DerivativeFailure::UnsupportedRule);return 0;}
         if(kind==K::Min||kind==K::Max){if(a.value==b.value){fail(DerivativeFailure::NonDifferentiable);return 0;}const bool chooseA=kind==K::Min?a.value<b.value:a.value>b.value;return chooseA?a.derivative:b.derivative;}
         if(kind==K::Pow){
             if(a.value<=0&&b.active){if(a.value==0&&!a.active&&b.value>0)return 0;fail(DerivativeFailure::UnsupportedRule);return 0;}
@@ -137,6 +138,8 @@ class DerivativeEvaluation final {
     double derivativeUnary(ExpressionKind kind, Slot a, double primal,unsigned exponent=0) {
         using K = ExpressionKind;
         switch (kind) {
+        case K::Erf:case K::Erfc:{const double square=binary(K::Multiply,a.value,a.value);const double density=native(K::Exp,negate(square));const double slope=binary(K::Multiply,2/std::sqrt(std::acos(-1.)),density);return binary(K::Multiply,kind==K::Erfc?negate(slope):slope,a.derivative);}
+        case K::Gamma:case K::LogGamma:case K::BesselJ0:fail(DerivativeFailure::UnsupportedRule);return 0;
         case K::NegativePowi:return binary(K::Multiply,binary(K::Divide,binary(K::Multiply,-static_cast<double>(exponent),primal),a.value),a.derivative);
         case K::Cbrt:if(a.value==0){fail(DerivativeFailure::SingularRule);return 0;}return binary(K::Divide,a.derivative,binary(K::Multiply,binary(K::Multiply,3,primal),primal));
         case K::Log1p:return binary(K::Divide,a.derivative,binary(K::Add,1,a.value));
@@ -212,7 +215,7 @@ public:
                     } else if(expressionArity(kind)==3){
                         stack.pop_back();const Slot low=stack.back();stack.pop_back();const Slot x=stack.back();output.active=x.active||low.active||right.active;
                         value=scalarTernary(kind,x.value,low.value,right.value,primalCharge);
-                        if(value&&output.active&&!result_.failure_){if(x.value==low.value||x.value==right.value||low.value==right.value)fail(DerivativeFailure::NonDifferentiable);else output.derivative=x.value<low.value?low.derivative:x.value>right.value?right.derivative:x.derivative;}
+                        if(value&&output.active&&!result_.failure_){if(kind!=ExpressionKind::Clamp)fail(DerivativeFailure::UnsupportedRule);else if(x.value==low.value||x.value==right.value||low.value==right.value)fail(DerivativeFailure::NonDifferentiable);else output.derivative=x.value<low.value?low.derivative:x.value>right.value?right.derivative:x.derivative;}
                     } else {
                         stack.pop_back(); const Slot left = stack.back();
                         output.active = left.active || right.active;

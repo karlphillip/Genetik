@@ -40,6 +40,11 @@ std::optional<double> scalarBinary(ExpressionKind kind, double left, double righ
     if (kind == ExpressionKind::Divide && right == 0.0) return {};
     if(kind==ExpressionKind::Pow&&((left<0&&std::trunc(right)!=right)||(left==0&&!(right>0))))return {};
     if(kind==ExpressionKind::Atan2&&left==0&&right==0)return {};
+    if(kind==ExpressionKind::PoissonPmf){
+        if(left<0||left>1000000||std::trunc(left)!=left||right<0||right>1000000)return {};
+        charge();double v=right==0?(left==0?1:0):std::exp(left*std::log(right)-right-std::lgamma(left+1));
+        return std::isfinite(v)?std::optional<double>(v):std::nullopt;
+    }
     charge(); volatile double result = 0;
     switch (kind) {
     case ExpressionKind::Add: result = left + right; break;
@@ -57,6 +62,17 @@ std::optional<double> scalarBinary(ExpressionKind kind, double left, double righ
 }
 template<class Charge>
 std::optional<double> scalarTernary(ExpressionKind kind,double x,double low,double high,Charge charge){
+    if(kind==ExpressionKind::NormalPdf||kind==ExpressionKind::NormalCdf){
+        // normal_*(x,mu,sigma), positive finite sigma. Check every intermediate.
+        if(!(high>0))return {};
+        charge();
+        volatile double residual=x-low;if(!std::isfinite(residual))return {};
+        volatile double z=residual/high;if(!std::isfinite(z))return {};
+        double v;
+        if(kind==ExpressionKind::NormalCdf)v=.5*std::erfc(-z/std::sqrt(2.));
+        else {volatile double square=z*z;if(!std::isfinite(square))return {};v=(std::exp(-.5*square)/std::sqrt(2*std::acos(-1.)))/high;}
+        return std::isfinite(v)?std::optional<double>(v):std::nullopt;
+    }
     if(kind!=ExpressionKind::Clamp)throw std::logic_error("unsupported ternary scalar operation");
     if(low>high)return {};
     charge();return x<low?low:x>high?high:x;
@@ -74,6 +90,13 @@ std::optional<double> scalarUnary(ExpressionKind kind, double argument, unsigned
         if(!exponent||exponent>8)throw std::invalid_argument("negative power magnitude1..8");
         auto inverse=scalarBinary(ExpressionKind::Divide,1,argument,charge);if(!inverse)return {};
         return scientificScalar(ScientificKind::Powi,*inverse,exponent,charge);
+    }
+    if(kind>=ExpressionKind::Erf){
+        if((kind==ExpressionKind::Gamma||kind==ExpressionKind::LogGamma)&&!(argument>0))return {};
+        if(kind==ExpressionKind::BesselJ0&&(argument<0||argument>1000000))return {};
+        charge();double value;
+        switch(kind){case ExpressionKind::Erf:value=std::erf(argument);break;case ExpressionKind::Erfc:value=std::erfc(argument);break;case ExpressionKind::Gamma:value=std::tgamma(argument);break;case ExpressionKind::LogGamma:value=std::lgamma(argument);break;case ExpressionKind::BesselJ0:value=std::cyl_bessel_j(0.,argument);break;default:throw std::logic_error("unsupported special unary");}
+        return std::isfinite(value)?std::optional<double>(value):std::nullopt;
     }
     if(kind>=ExpressionKind::Cbrt){
         if((kind==ExpressionKind::Log1p&&!(argument>-1))||((kind==ExpressionKind::Log2||kind==ExpressionKind::Log10)&&!(argument>0))||((kind==ExpressionKind::Asin||kind==ExpressionKind::Acos)&&(argument< -1||argument>1)))return {};

@@ -1069,3 +1069,10 @@ retain their codec/identity contract; new models have explicit distinct identiti
 Unqualified early D5 dimensional-run contexts are rejected after production-policy
 corrections. Optional arbitrary precision is incomplete. No remote writes, release
 metadata changes, new prime campaign or D6 work is part of this milestone.
+
+D6 local development starts at994ef1b5ae42489bce62dea5be590a505928f118.
+Its source-compatible additive measurement accounting hook requires consistent
+recompilation of dependent translation units; it is not an ABI guarantee.
+No version/release/default grammar/optimizer/prime objective change is intended.
+Revision-specific qualification and frozen outcomes are recorded in
+D6_QUALIFICATION.md and d6-results/, separately from D5 evidence.

@@ -182,6 +182,38 @@ void contracts() {
     auto exponent = parseExpression("pow(x0,2)+3", 1);
     DimensionalConstantSelection selection({{}});
     check(selection.parameters(exponent).size() == 2, "dimensionless exponent remains a coefficient");
+    std::vector<PhysicalDimension> suppliedUnits{L};
+    auto *retainedUnits = suppliedUnits.data();
+    DimensionalConstantSelection detachedSelection(std::move(suppliedUnits));
+    *retainedUnits = PhysicalDimension{};
+    check(detachedSelection.parameters(parseExpression("2*pow(x0,2)", 1)).size() == 1,
+          "rvalue dimensional policy storage is detached from retained caller pointers");
+    DimensionalLimits tinySchema;
+    tinySchema.maxWorkspaceBytes = sizeof(PhysicalDimension) - 1;
+    bool schemaResource = false;
+    try {
+        (void)DimensionalConstantSelection({L}, tinySchema);
+    } catch (const DimensionResourceExhausted &) {
+        schemaResource = true;
+    }
+    check(schemaResource, "unit policy schema bytes admitted before allocation");
+    schemaResource = false;
+    try {
+        (void)DimensionalRegressionProblem({{{1}, 1}}, {L}, L, {}, tinySchema);
+    } catch (const DimensionResourceExhausted &) {
+        schemaResource = true;
+    }
+    check(schemaResource, "dimensional problem schema bytes admitted before allocation");
+    DimensionalLimits tinyInference;
+    tinyInference.maxNodes = 1;
+    DimensionalConstantSelection limitedSelection({L}, tinyInference);
+    bool selectionResource = false;
+    try {
+        (void)limitedSelection.parameters(parseExpression("2*pow(x0,2)", 1));
+    } catch (const DimensionResourceExhausted &) {
+        selectionResource = true;
+    }
+    check(selectionResource, "fitting parameter analysis retains the configured inference policy");
     DimensionalConstantSelection dimensionedSelection({L});
     auto power = parseExpression("2*pow(x0,2)", 1);
     check(dimensionedSelection.parameters(power).size() == 1, "dimensionful power exponent frozen");

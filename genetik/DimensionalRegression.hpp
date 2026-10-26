@@ -6,18 +6,29 @@ struct DimensionalGrammarLimits {
     std::size_t maxUnitStates = 48, maxPlanningSteps = 50000, maxGenerationSteps = 10000,
                 maxWorkspaceBytes = 8 * 1024 * 1024;
 };
+namespace genetik_dimensional_detail {
+// Validate before copying; caller rvalues must detach just like lvalues.
+inline std::vector<PhysicalDimension> ownedSchema(const std::vector<PhysicalDimension> &units,
+                                                  DimensionalLimits limits,
+                                                  std::optional<std::size_t> expected = {}) {
+    if (!limits.maxNodes || !limits.maxWorkspaceBytes || !limits.maxInferenceSteps)
+        throw std::invalid_argument("dimensional limits");
+    if (expected && units.size() != *expected)
+        throw std::invalid_argument("dimensional regression schema");
+    if (units.size() > limits.maxWorkspaceBytes / sizeof(PhysicalDimension))
+        throw DimensionResourceExhausted("owned dimensional schema storage");
+    return units;
+}
+} // namespace genetik_dimensional_detail
 // Unit checking precedes numerical measurement, including every fitting probe.
 class DimensionalRegressionProblem final : public RegressionProblem {
   public:
     DimensionalRegressionProblem(const std::vector<RegressionRow> &rows,
                                  const std::vector<PhysicalDimension> &variables, PhysicalDimension output,
                                  ExpressionLimits limits = {}, DimensionalLimits inference = {})
-        : RegressionProblem(rows, limits), variables_(variables), output_(output), inference_(inference) {
-        if (variables.size() != dimensions())
-            throw std::invalid_argument("dimensional regression schema");
-        if (!inference.maxNodes || !inference.maxWorkspaceBytes || !inference.maxInferenceSteps)
-            throw std::invalid_argument("dimensional limits");
-    }
+        : RegressionProblem(rows, limits),
+          variables_(genetik_dimensional_detail::ownedSchema(variables, inference, dimensions())),
+          output_(output), inference_(inference) {}
     bool parallelEvaluationSafe() const noexcept override { return true; }
     bool accepts(const Expression &e) const {
         try {
@@ -46,10 +57,12 @@ class DimensionalRegressionProblem final : public RegressionProblem {
 // exponent is a type change, rather than ordinary coefficient refinement.
 class DimensionalConstantSelection final : public ConstantParameterSelection {
   public:
-    explicit DimensionalConstantSelection(std::vector<PhysicalDimension> units) : units_(std::move(units)) {}
+    explicit DimensionalConstantSelection(const std::vector<PhysicalDimension> &units,
+                                          DimensionalLimits limits = {})
+        : units_(genetik_dimensional_detail::ownedSchema(units, limits)), limits_(limits) {}
     bool parallelEvaluationSafe() const noexcept override { return true; }
     std::vector<std::size_t> parameters(const Expression &e) const override {
-        auto units = inferDimensions(e, units_);
+        auto units = inferDimensions(e, units_, {}, limits_);
         auto nodes = e.nodes();
         std::vector<bool> frozen(nodes.size());
         for (std::size_t i = 0; i < nodes.size(); ++i)
@@ -68,6 +81,7 @@ class DimensionalConstantSelection final : public ConstantParameterSelection {
 
   private:
     std::vector<PhysicalDimension> units_;
+    DimensionalLimits limits_;
 };
 // Finite constructive unit grammar. Planning never reads observations or RNG.
 // One smallest discovered witness per unit; the bounded closure is intentionally
@@ -451,7 +465,8 @@ dimensionalRegression(std::shared_ptr<const DimensionalRegressionProblem> proble
     auto objective =
         std::make_shared<TrainingObjective>(problem, config.maxTrainingLossAttempts, config.diagnostics);
     auto selection = std::make_shared<DimensionalConstantSelection>(
-        std::vector<PhysicalDimension>(problem->variables().begin(), problem->variables().end()));
+        std::vector<PhysicalDimension>(problem->variables().begin(), problem->variables().end()),
+        problem->inferenceLimits());
     auto preparation = std::make_shared<ConstantRefinement>(objective, config.fitting,
                                                             config.fitEveryGenerations, selection);
     DimensionalVariation variation(problem, config.grammar, preparation, limits);

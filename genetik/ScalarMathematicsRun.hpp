@@ -44,7 +44,7 @@ class ScalarMathematicsProblem {
         if (dimensional) {
             auto p = std::make_shared<const DimensionalRegressionProblem>(rows, variables, output, limits);
             problem_ = p;
-            selection_ = std::make_shared<DimensionalConstantSelection>(variables);
+            selection_ = std::make_shared<DimensionalConstantSelection>(variables, p->inferenceLimits());
         } else
             problem_ = RegressionProblem::create(rows, limits);
         CheckpointWriter w;

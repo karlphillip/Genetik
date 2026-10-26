@@ -35,7 +35,7 @@ inline std::optional<std::int64_t> integerMultiply(std::int64_t a, std::int64_t 
                     : static_cast<std::int64_t>(v);
 }
 // Charge BEFORE every arithmetic step. Caller owns work admission and cancellation.
-// At most64 Euclid steps / power bits; modular products use bounded add-and-double.
+// Euclid and power loops are bounded by the 64-bit operands; modular products use add-and-double.
 template <class Charge>
 std::optional<std::int64_t> integerMath(IntegerOperation op, std::int64_t a, std::int64_t b, std::int64_t c,
                                         Charge charge) {

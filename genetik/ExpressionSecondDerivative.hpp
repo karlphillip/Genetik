@@ -145,6 +145,19 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
           stack.push_back({*v, 0, 0, 0, false});
           continue;
         }
+        if (k == K::Powi || k == K::NegativePowi) {
+          Jet base = c;
+          if (k == K::NegativePowi) {
+            double inv = b.div(1, c.v);
+            base = unary(c, inv, -b.mul(inv, inv),
+                         b.mul(2, b.mul(b.mul(inv, inv), inv)));
+          }
+          Jet powered = n.exponent() ? base : Jet{1, 0, 0, 0, c.active};
+          for (unsigned step = 1; step < n.exponent(); ++step)
+            powered = product(powered, base);
+          stack.push_back(powered);
+          continue;
+        }
         double s = 0, h = 0;
         b.charge();
         switch (k) {
@@ -171,23 +184,6 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
                                          : 1.;
           s = b.div(1, b.mul(a, scale));
           h = -b.div(s, a);
-          break;
-        }
-        case K::Powi:
-        case K::NegativePowi: {
-          int power = k == K::Powi ? static_cast<int>(n.exponent())
-                                   : -static_cast<int>(n.exponent());
-          if (!power) {
-            s = h = 0;
-            break;
-          }
-          if (c.v == 0) {
-            s = power == 1 ? 1 : 0;
-            h = power == 2 ? 2 : 0;
-          } else {
-            s = b.div(b.mul(power, *v), c.v);
-            h = b.div(b.mul(power - 1, s), c.v);
-          }
           break;
         }
         case K::Sqrt:

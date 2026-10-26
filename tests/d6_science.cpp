@@ -75,7 +75,15 @@ void differential() {
                                          {1, 100, 10000, 10, 1e-12});
   check(exhausted.status == ScientificStatus::ResourceLimit,
         "bounded derivative");
-  check(exhausted.reason=="primal admission"&&!exhausted.primal&&exhausted.work.operations==1,"binding work must be subtracted before primal admission");
+  check(exhausted.reason == "primal admission" && !exhausted.primal &&
+            exhausted.work.operations == 1,
+        "binding work must be subtracted before primal admission");
+  auto tinySquare =
+      evaluateSecondPartial(parse("powi(x0,2)"), std::array{1e-200}, 0, 0);
+  check(tinySquare.derivatives.has_value(),
+        "sequential power derivative survives primal underflow");
+  near(tinySquare.derivatives->second, 2);
+  check(tinySquare.derivatives->firstI == 2e-200, "no q/x derivative shortcut");
   auto system = oscillator();
   ObservedOdeSystem ode(system, 0, {1, 2}, {0, 1});
   check(!ode.identity().empty(), "explicit ODE field identities");

@@ -636,6 +636,8 @@ void publicationFailure() {
 void overlap() {
   auto p = problem(1);
   auto e = parse("exp(x0*x1)", 2);
+  auto poisson = parse("poisson_pmf(x0,2.5)");
+  auto logGamma = parse("log_gamma(x0)");
   std::barrier gate(4);
   ExecutionContext execution({4});
   execution.run(4, [&](std::size_t index) {
@@ -650,6 +652,10 @@ void overlap() {
     check(s.loss.has_value(), "parallel immutable system");
     auto d = evaluateSecondPartial(parse("sqrt(x0*x0)"),
                                    std::array{index % 2 ? 1. : 0.}, 0, 0);
+    check(poisson.evaluate(std::array{5.}).valid(),
+          "concurrent Poisson log-gamma evaluation");
+    check(logGamma.evaluate(std::array{1.5}).valid(),
+          "concurrent log-gamma evaluation");
     check(d.status == (index % 2 ? ScientificStatus::Success
                                  : ScientificStatus::Unavailable),
           "simultaneous second success/unavailable");

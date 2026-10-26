@@ -9,6 +9,7 @@
 #include <cfloat>
 #include <cstddef>
 #include <limits>
+#include <mutex>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -25,6 +26,15 @@ static_assert(std::numeric_limits<double>::is_iec559 && std::numeric_limits<doub
 
 // Checked primal kernels shared by ordinary and partial-derivative evaluation.
 namespace genetik_detail {
+// Some C math libraries implement lgamma through process-global signgam.
+// Keep concurrent Genetik evaluations race-free without relying on nonstandard
+// platform-specific lgamma_r entry points.
+inline double threadSafeLogGamma(double value) {
+    static std::mutex mutex;
+    const std::lock_guard<std::mutex> lock(mutex);
+    return std::lgamma(value);
+}
+
 inline ScientificKind scientificKind(ExpressionKind kind) {
     switch (kind) {
     case ExpressionKind::Sin: return ScientificKind::Sin;
@@ -42,7 +52,7 @@ std::optional<double> scalarBinary(ExpressionKind kind, double left, double righ
     if(kind==ExpressionKind::Atan2&&left==0&&right==0)return {};
     if(kind==ExpressionKind::PoissonPmf){
         if(left<0||left>1000000||std::trunc(left)!=left||right<0||right>1000000)return {};
-        charge();double v=right==0?(left==0?1:0):std::exp(left*std::log(right)-right-std::lgamma(left+1));
+        charge();double v=right==0?(left==0?1:0):std::exp(left*std::log(right)-right-threadSafeLogGamma(left+1));
         return std::isfinite(v)?std::optional<double>(v):std::nullopt;
     }
     charge(); volatile double result = 0;
@@ -95,7 +105,7 @@ std::optional<double> scalarUnary(ExpressionKind kind, double argument, unsigned
         if((kind==ExpressionKind::Gamma||kind==ExpressionKind::LogGamma)&&!(argument>0))return {};
         if(kind==ExpressionKind::BesselJ0&&(argument<0||argument>1000000))return {};
         charge();double value;
-        switch(kind){case ExpressionKind::Erf:value=std::erf(argument);break;case ExpressionKind::Erfc:value=std::erfc(argument);break;case ExpressionKind::Gamma:value=std::tgamma(argument);break;case ExpressionKind::LogGamma:value=std::lgamma(argument);break;case ExpressionKind::BesselJ0:value=std::cyl_bessel_j(0.,argument);break;default:throw std::logic_error("unsupported special unary");}
+        switch(kind){case ExpressionKind::Erf:value=std::erf(argument);break;case ExpressionKind::Erfc:value=std::erfc(argument);break;case ExpressionKind::Gamma:value=std::tgamma(argument);break;case ExpressionKind::LogGamma:value=threadSafeLogGamma(argument);break;case ExpressionKind::BesselJ0:value=std::cyl_bessel_j(0.,argument);break;default:throw std::logic_error("unsupported special unary");}
         return std::isfinite(value)?std::optional<double>(value):std::nullopt;
     }
     if(kind>=ExpressionKind::Cbrt){

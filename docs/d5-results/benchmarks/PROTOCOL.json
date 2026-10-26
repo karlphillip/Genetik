@@ -1,7 +1,7 @@
 {
   "format": "Genetik D5 bounded recovery protocol/1",
-  "source_sha": "c1fbb28d67d72cf32259100ba05e4ab931722fb6",
-  "binary_sha256": "6c8be978e9cd68e67cfbceb705a67861dccd85495a5649f09e0bc249b227b9ec",
+  "source_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8",
+  "binary_sha256": "030466001446e05cbbd82d8dfc84d54121ee03593487689a705fad1026c4041b",
   "seeds": [
     0,
     1,
@@ -140,7 +140,7 @@
       "workspace": 8388608
     }
   },
-  "engineering_repair": "separate production scan/work admission from storage retention cap; original24 results retained; no frozen configuration changes",
+  "engineering_repair": "qualified typed terminal bindings, continuous sources and destination-bound enforcement; previous records retained; identical frozen datasets/configuration/budgets",
   "reference": "direct analytic formulas/independent integer arithmetic, never the Genetik candidate evaluator",
   "no_target_injection": true,
   "assessment": "only after training-selected best frozen; no configuration changes/retries",

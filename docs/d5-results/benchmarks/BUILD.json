@@ -1,0 +1,22 @@
+{
+  "schema": "genetik.d5.benchmark-build/1",
+  "implementation_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8",
+  "command": [
+    "g++",
+    "-std=c++20",
+    "-O2",
+    "-fno-fast-math",
+    "-ffp-contract=off",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Werror",
+    "-Igenetik",
+    "apps/campaigns/d5_mathematical_benchmarks.cpp",
+    "-pthread",
+    "-o",
+    "out/runs/d5/mathematical_benchmarks_reproduced"
+  ],
+  "binary_sha256": "030466001446e05cbbd82d8dfc84d54121ee03593487689a705fad1026c4041b",
+  "verification": "At reproduction time, executable sources matchedcc398 with only a non-executable Euclidean-loop comment corrected. Recompilation with the explicit command was byte-identical to the frozen benchmark binary. This check predates ownership repair5e44; no benchmark rerun or outcome selection."
+}

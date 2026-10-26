@@ -1,0 +1,27 @@
+{
+  "source_sha": "5e44bcfaf83e908d0b79a5eb7b23031fffa00284",
+  "name": "tsan",
+  "count": 20,
+  "tests": [
+    "genetik_checkpoint_overlap",
+    "genetik_concurrency_contracts",
+    "genetik_d5_dimension_overlap",
+    "genetik_d5_iteration_overlap",
+    "genetik_d5_recurrence_overlap",
+    "genetik_d5_scientific_overlap",
+    "genetik_d5_symbolic_overlap",
+    "genetik_derivative_overlap",
+    "genetik_derivative_regression_overlap",
+    "genetik_discrete_iteration_overlap",
+    "genetik_discrete_overlap",
+    "genetik_discrete_prime_overlap",
+    "genetik_integral_overlap",
+    "genetik_oop_parallel",
+    "genetik_parsing_overlap",
+    "genetik_prime_exact_overlap",
+    "genetik_scientific_contracts",
+    "genetik_template_overlap",
+    "genetik_typed_overlap",
+    "genetik_typed_preparation_overlap"
+  ]
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "configure",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+      "-S",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/consumers/d5-advanced-multitu/source",
+      "-B",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/consumers/d5-advanced-multitu/build",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCMAKE_PREFIX_PATH=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-c5aa46ac099e-clean-release/tests/genetik-delivery-fixture/relocated prefix B"
+    ],
+    "exit": 0,
+    "seconds": 0.04627283907029778,
+    "source_sha": "5e44bcfaf83e908d0b79a5eb7b23031fffa00284"
+  },
+  {
+    "name": "build",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+      "--build",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/consumers/d5-advanced-multitu/build",
+      "-j1"
+    ],
+    "exit": 0,
+    "seconds": 26.547480628010817,
+    "source_sha": "5e44bcfaf83e908d0b79a5eb7b23031fffa00284"
+  },
+  {
+    "name": "run",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/consumers/d5-advanced-multitu/build/d5_installed_multitu"
+    ],
+    "exit": 0,
+    "seconds": 0.0030169219244271517,
+    "source_sha": "5e44bcfaf83e908d0b79a5eb7b23031fffa00284"
+  }
+]

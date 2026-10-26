@@ -1,0 +1,13 @@
+{
+  "implementation_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8",
+  "instrumented_qualification_sha": "f687be3b95615d1a58ed8943c4fd637d4e5c62e1",
+  "changes": [
+    ".github/workflows/ci.yml",
+    "tests/CMakeLists.txt"
+  ],
+  "mathematical_and_test_program_blobs_identical": true,
+  "native_test_commands_and_properties_identical": true,
+  "notes": "Native Release/Debug/minimum complete passes retain their original sourceSHA. Instrumented-only timeout and job allowance changed; no assertions, workload, mathematical limits or GA settings changed. The initial timeout and configure syntax failure remain retained.",
+  "dimension_sanitizer_binary_unchanged_after_timeout_reconfigure": true,
+  "dimension_sanitizer_binary_sha256": "e71d4044abc10356790b4af6272cb8c680d6ea34bd01656a47d7384a77cc86d5"
+}

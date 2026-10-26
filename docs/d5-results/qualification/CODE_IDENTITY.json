@@ -1,0 +1,9 @@
+{
+  "qualified_sha": "5e44bcfaf83e908d0b79a5eb7b23031fffa00284",
+  "source_archive_sha256": "d008bf86fb19272a03f6f484a8b84c016e096a5ee2d1ad2385b7eb053851842d",
+  "tracked_source_files": 1347,
+  "exact_snapshot_matches_all_committed_blobs": true,
+  "source_snapshot_has_no_git_directory": true,
+  "executable_source_build_configuration_and_test_data_unchanged_since_qualification": true,
+  "final_changes": "documentation and selected evidence only; no later implementation or test changes"
+}

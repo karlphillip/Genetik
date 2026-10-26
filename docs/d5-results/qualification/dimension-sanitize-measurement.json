@@ -1,0 +1,12 @@
+{
+  "source_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8",
+  "command": [
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-cc398131e648-sanitize/tests/genetik_d5_dimension_tests"
+  ],
+  "workload": "unchanged original instrumented executable; default fixture inputs/assertions;600-second original timeout retained separately",
+  "diagnostic_deadline_seconds": 1800,
+  "exit": 0,
+  "seconds": 889.1707268659957,
+  "binary_sha256": "e71d4044abc10356790b4af6272cb8c680d6ea34bd01656a47d7384a77cc86d5",
+  "remedy": "instrumented-only test timeout1800; assertions/workload/mathematical code unchanged"
+}

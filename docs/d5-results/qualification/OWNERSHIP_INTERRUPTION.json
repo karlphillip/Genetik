@@ -1,0 +1,26 @@
+{
+  "source_sha": "f687be3b95615d1a58ed8943c4fd637d4e5c62e1",
+  "reason": "stop superseded qualification after independently demonstrated dimensional selection ownership regression; no complete-pass claim",
+  "processes": [
+    {
+      "pid": 1361324,
+      "ppid": 1361307,
+      "command": "python3 out/runs/d5/qualify_instrumented.py"
+    },
+    {
+      "pid": 1362804,
+      "ppid": 1361324,
+      "command": "/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/cmake -E chdir /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-cc398131e648-sanitize /home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest --output-on-failure"
+    },
+    {
+      "pid": 1362805,
+      "ppid": 1362804,
+      "command": "/home/karlphillip/workspaces/primeResearcher/.tools/lib/python3.12/site-packages/cmake/data/bin/ctest --output-on-failure"
+    },
+    {
+      "pid": 1369985,
+      "ppid": 1362805,
+      "command": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-cc398131e648-sanitize/tests/genetik_d5_integer_tests /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d5-source-c5aa46ac099e/tests/d5-integer-references.tsv"
+    }
+  ]
+}

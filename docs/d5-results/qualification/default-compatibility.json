@@ -1,0 +1,18 @@
+{
+  "schema": "genetik.d5.default-compatibility/1",
+  "baseline": "c08859e462210a1ef378b0c6c47a2b4c520f7353",
+  "implementation": "5e44bcfaf83e908d0b79a5eb7b23031fffa00284",
+  "workers": [
+    1,
+    2,
+    4
+  ],
+  "includes": [
+    "scalar selected expression,fitness,RNG,TrainingWork,VariationStatistics",
+    "complete discrete committed-run checkpoint payload"
+  ],
+  "expected_equal": true,
+  "sha256": "da6ddcaccff952f932668c91357bc6abd8453ff644afb95c3587281aa0b201f0",
+  "probe_source_sha256": "9712ecf2b1fb8f39719f42b881994b8ca149fad7f96cc2a5071df72810813c8b",
+  "source_note": "rebuilt after dimensional ownership/resource repair; exact byte comparison against published0.4 probe"
+}

@@ -1,0 +1,111 @@
+{
+  "schema": "genetik.d5.retained-failures/1",
+  "notes": "Original logs retained unchanged under ignored canonical paths. Full-suite revisions and remedies are in D5_QUALIFICATION.md; no claim that all earlier focused runs used a committed tree.",
+  "records": [
+    {
+      "path": "out/logs/d5/a-contracts.log",
+      "bytes": 38,
+      "sha256": "d210fedce4ed4312f6561a8fe8634f7d2f22e4e5514f4feb47e37fb31e580986"
+    },
+    {
+      "path": "out/logs/d5/e-scan-regression-original.log",
+      "bytes": 95,
+      "sha256": "2cfbe9bd2a101192f4a3333be41325f1d35424f6b2f751c959c8f1fd528992c6"
+    },
+    {
+      "path": "out/logs/d5/e-bounds-before.log",
+      "bytes": 92,
+      "sha256": "2a217e4e595b206354a2b9e6677d046516a93b2857faf85d20063e61175b4253"
+    },
+    {
+      "path": "out/logs/d5/e-work-before.log",
+      "bytes": 68,
+      "sha256": "b917bf08bd27694c3486d37fc7a1cba5c61e3f137b6cf5bb874e353af468ba42"
+    },
+    {
+      "path": "out/logs/d5/e-terminals-before.log",
+      "bytes": 79,
+      "sha256": "a570731f7cfde205daef3b6725f3b87522b1487b37554146b21f974d30bdba91"
+    },
+    {
+      "path": "out/logs/d5/b-recurrence-first-build.log",
+      "bytes": 3884,
+      "sha256": "fe8194063c962b2392b020611930624afeacaee0cbe8f899dbe10b8cd1c832f0"
+    },
+    {
+      "path": "out/logs/d5/c-first-build.log",
+      "bytes": 3990,
+      "sha256": "792ef6041ee0b0c5e51f4732066d33e64298d7b478da2d72205523c1a69df7cd"
+    },
+    {
+      "path": "out/logs/d5/e-first-build.log",
+      "bytes": 3902,
+      "sha256": "0ef445d4bdf58f51b1af7153b27d189b1bcf1164ff3746763c6de3ba8b1bcc41"
+    },
+    {
+      "path": "out/logs/d5/boost-availability-build.log",
+      "bytes": 246,
+      "sha256": "8646147d7a63966cbd576a463994bcbf84f97554a79eff970682fb1faed76228"
+    },
+    {
+      "path": "out/logs/d5/qual-c1fbb28d67d7/final-release-full.log",
+      "bytes": 12725,
+      "sha256": "0912d58fd928586a3b1cf0f5208c25c381a958a53689c3f2c4989332f50f0d5c"
+    },
+    {
+      "path": "out/runs/d5/qualification/c1fbb28d67d7/failure-evidence/LastTest.log",
+      "bytes": 84136,
+      "sha256": "ddad58a8cb74403b329ffc8ae9705dd26d1b183d591abb0e63efa06d9a9bf689"
+    },
+    {
+      "path": "out/runs/d5/qualification/c1fbb28d67d7/failure-evidence/package-commands.log",
+      "bytes": 15412,
+      "sha256": "42f1a7dc4a37d6b7ee93cc104eb127994528a34529659db30c521339eeb557e6"
+    },
+    {
+      "path": "out/runs/d5/qualification/cc398131e648/sanitize-timeout-original/LastTest.log",
+      "bytes": 80411,
+      "sha256": "614cad6c58fd0800b68b4b3e4bb72a56d280fc000ca0ebac1b4490f7dadca475"
+    },
+    {
+      "path": "out/runs/d5/qualification/cc398131e648/sanitize-timeout-original/final-sanitize-full.log",
+      "bytes": 10774,
+      "sha256": "76ad2932c669eee8f0aecba9219fe6fb350446b16d5ecedeaddeef9c92eda921"
+    },
+    {
+      "path": "out/logs/d5/qual-c85b4dda3f0c/final-release-configure.log",
+      "bytes": 147,
+      "sha256": "cbd49e980b9a4735f8c36676e0255aecc87b2852a8a7973e6b4e9d875c583a1a"
+    },
+    {
+      "path": "out/logs/d5/dimension-sanitize-measurement.log",
+      "bytes": 47,
+      "sha256": "5b54cefc133c39598f31fead8c2d1876de3f0d78fae7a337b9c697af6d31219c"
+    },
+    {
+      "path": "out/logs/d5/dimension-ownership-before.log",
+      "bytes": 67,
+      "sha256": "6533ef45f5facd4544be6953560ba759aba24b428796986dfc124d95b71949d3"
+    },
+    {
+      "path": "out/logs/d5/dimension-ownership-repaired.log",
+      "bytes": 47,
+      "sha256": "b2d1f494fe7ca3304e23847901df5c5f6f13cb82809c9c9fd78faa4b6a6ed1c3"
+    },
+    {
+      "path": "out/logs/d5/dimension-owned-contracts.log",
+      "bytes": 47,
+      "sha256": "5b54cefc133c39598f31fead8c2d1876de3f0d78fae7a337b9c697af6d31219c"
+    },
+    {
+      "path": "out/runs/d5/qualification/f687be3b9561/ownership-interruption/interruption.json",
+      "bytes": 1219,
+      "sha256": "46b088dbf983fba31a833355c5e60065252d345c59d15c465a2d91fa780fe201"
+    },
+    {
+      "path": "out/runs/d5/qualification/f687be3b9561/ownership-interruption/final-sanitize-full.log",
+      "bytes": 9341,
+      "sha256": "2e2ff2cc6b908ec97ed29fbc90d2d091ea01f656ddd16ddfdc028e905ddc912c"
+    }
+  ]
+}

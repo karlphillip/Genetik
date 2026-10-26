@@ -1,0 +1,150 @@
+{
+  "format": "Genetik D5 bounded recovery protocol/1",
+  "source_sha": "c1fbb28d67d72cf32259100ba05e4ab931722fb6",
+  "binary_sha256": "6c8be978e9cd68e67cfbceb705a67861dccd85495a5649f09e0bc249b227b9ec",
+  "seeds": [
+    0,
+    1,
+    42
+  ],
+  "workers": 2,
+  "execution": "all24 runs sequential; no concurrent compilation or qualification",
+  "tasks": [
+    "gcd-lcm",
+    "fibonacci",
+    "powers",
+    "trig",
+    "hyperbolic",
+    "polynomial",
+    "energy",
+    "piecewise"
+  ],
+  "evolution": {
+    "population": 24,
+    "elites": 2,
+    "crossover": 0.9,
+    "mutation": 0.35,
+    "initial_depth": 4,
+    "mutation_depth": 3,
+    "default_selection": "existing deterministic rank/complexity/text ordering"
+  },
+  "discrete": {
+    "generations": 40,
+    "loss_attempts": 984,
+    "nodes": 21,
+    "depth": 6,
+    "constants": [
+      0,
+      1,
+      2
+    ],
+    "node_visits": 100000,
+    "operations": 100000,
+    "per_operation_iterations": 64,
+    "aggregate_iterations": 4096,
+    "operators": {
+      "gcd-lcm": [
+        "Add",
+        "Subtract",
+        "Multiply",
+        "Gcd",
+        "Lcm"
+      ],
+      "fibonacci": [
+        "Add",
+        "Subtract",
+        "Multiply"
+      ]
+    },
+    "gcd_lcm_training": "a,b=1..4; independent target a*b",
+    "gcd_lcm_assessment": "a,b=5..7",
+    "recurrence_training": "F0..F10 independent ordinary integer loop",
+    "recurrence_assessment": "F11..F16",
+    "recurrence_initial": [
+      0,
+      1
+    ]
+  },
+  "scalar": {
+    "generations": 30,
+    "loss_attempts": 2048,
+    "candidate_requests": 744,
+    "nodes": 23,
+    "depth": 6,
+    "max_abs_constant": 8,
+    "arithmetic_limit": 1000,
+    "constants": [
+      -2,
+      -1,
+      0,
+      0.5,
+      1,
+      2
+    ],
+    "coordinate_fit_attempts": 64,
+    "fit_interval": 1,
+    "fit_bounds": [
+      -8,
+      8
+    ],
+    "fit_initial_step": 1,
+    "fit_min_step": 1e-08,
+    "fit_max_sweeps": 128,
+    "fit_max_proposals": 8192,
+    "training_MSE_stop": 1e-12,
+    "held_max_error_recovery": 1e-06,
+    "operators_common": [
+      "Add",
+      "Subtract",
+      "Multiply"
+    ],
+    "additional_operators": {
+      "powers": [
+        "Pow"
+      ],
+      "trig": [
+        "Sin"
+      ],
+      "hyperbolic": [
+        "Tanh"
+      ],
+      "energy": [],
+      "piecewise": [
+        "Max"
+      ],
+      "polynomial": []
+    },
+    "power_exponents": [
+      0.5,
+      1,
+      1.5,
+      1.7,
+      2,
+      3
+    ],
+    "power_exponent_trees": false,
+    "training": "[-2,-1,0,1,2]; powers [.25,.5,1,1.5,2]; energy m=[1,2,3] v=[.5,1,2]",
+    "held": "[-3,-1.5,-.5,.5,1.5,3]; powers [.125,.625,1.375,2.5,3]; energy m=[.75,2.5] v=[.75,1.5,2.5]",
+    "targets": {
+      "powers": "3.5*x^1.7",
+      "trig": "1.5*sin(.75*x+.25)",
+      "hyperbolic": "tanh(x)",
+      "polynomial": "(x+2)*(x-2)",
+      "energy": ".5*m*v^2",
+      "piecewise": "max(0,x)"
+    },
+    "unit_planner": {
+      "states": 48,
+      "planning_steps": 50000,
+      "generation_steps": 10000,
+      "workspace": 8388608
+    }
+  },
+  "engineering_repair": "separate production scan/work admission from storage retention cap; original24 results retained; no frozen configuration changes",
+  "reference": "direct analytic formulas/independent integer arithmetic, never the Genetik candidate evaluator",
+  "no_target_injection": true,
+  "assessment": "only after training-selected best frozen; no configuration changes/retries",
+  "platform": "Linux-6.8.12-1021-tegra-aarch64-with-glibc2.39",
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "runtime": "ldd (Ubuntu GLIBC 2.39-0ubuntu8.8) 2.39\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\nWritten by Roland McGrath and Ulrich Drepper.\n"
+}

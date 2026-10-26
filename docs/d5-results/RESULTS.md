@@ -1,6 +1,6 @@
 # D5 bounded mathematical recovery results
 
-The protocols were frozen before the corresponding runs. All seed outcomes are retained. The primary mathematical benchmark source is `c1fbb28d67d72cf32259100ba05e4ab931722fb6`; the original24 pre-repair records are separate, not replaced. No production default changes follow from these small examples.
+The protocols were frozen before the corresponding runs. All seed outcomes are retained. The primary mathematical benchmark source is `cc398131e6480d3263574cedcf58f48e4f1954c8`; the original24 pre-repair and intermediate24 records are separate, not replaced. No production default changes follow from these small examples.
 
 ## Iterator production study
 
@@ -29,32 +29,42 @@ Seeds0,1,42; workers2; all runs sequential. Integer/recurrence attempts<=984, sc
 
 | Task | Seed | Training loss | Held-out matches | Held max abs error | Best gen | Final gen | Attempts | Runtime s | Stop |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| gcd-lcm | 0 | 0 | 9/9 | integer | 6 | 6 | 168 | 0.0571 | exact-fit |
-| gcd-lcm | 1 | 0 | 9/9 | integer | 2 | 2 | 72 | 0.0552 | exact-fit |
-| gcd-lcm | 42 | 0 | 9/9 | integer | 23 | 23 | 576 | 0.0661 | exact-fit |
-| fibonacci | 0 | 0 | 6/6 | integer | 7 | 7 | 192 | 0.0882 | exact-fit |
-| fibonacci | 1 | 0 | 6/6 | integer | 9 | 9 | 240 | 0.0859 | exact-fit |
-| fibonacci | 42 | 0 | 6/6 | integer | 12 | 12 | 312 | 0.0926 | exact-fit |
-| powers | 0 | 0.02536153936 | 0/5 | 0.3981834977667731 | 0 | 0 | 2048 | 0.0610 | loss-budget |
-| powers | 1 | 0.0060498409 | 0/5 | 1.6931163396446394 | 0 | 0 | 2048 | 0.0631 | loss-budget |
-| powers | 42 | 0.05784504339 | 0/5 | 3.555271861619019 | 0 | 0 | 2048 | 0.0686 | loss-budget |
-| trig | 0 | 0.07992119204 | 0/6 | 1.43636870995624 | 0 | 0 | 2048 | 0.0688 | loss-budget |
-| trig | 1 | 0.07992119226 | 0/6 | 1.4363371940003151 | 1 | 1 | 2048 | 0.0648 | loss-budget |
-| trig | 42 | 0.006084219193 | 0/6 | 0.26830695809606764 | 1 | 1 | 2045 | 0.0635 | evaluation_budget |
-| hyperbolic | 0 | 0 | 6/6 | 0 | 0 | 0 | 993 | 0.0539 | exact_training_fit |
-| hyperbolic | 1 | 0 | 6/6 | 0 | 0 | 0 | 723 | 0.0532 | exact_training_fit |
-| hyperbolic | 42 | 0 | 6/6 | 0 | 0 | 0 | 836 | 0.0627 | exact_training_fit |
-| polynomial | 0 | 1.647634414 | 0/6 | 43.012332916259766 | 0 | 0 | 2048 | 0.0687 | loss-budget |
-| polynomial | 1 | 0 | 6/6 | 0 | 0 | 0 | 1014 | 0.0612 | exact_training_fit |
-| polynomial | 42 | 0 | 6/6 | 0 | 0 | 0 | 976 | 0.0597 | exact_training_fit |
-| energy | 0 | 0 | 6/6 | 0 | 0 | 0 | 311 | 0.6529 | exact_training_fit |
-| energy | 1 | 0 | 6/6 | 0 | 0 | 0 | 428 | 0.6708 | exact_training_fit |
-| energy | 42 | 0 | 6/6 | 0 | 0 | 0 | 247 | 0.6967 | exact_training_fit |
-| piecewise | 0 | 0 | 6/6 | 0 | 0 | 0 | 1069 | 0.0597 | exact_training_fit |
-| piecewise | 1 | 0 | 6/6 | 0 | 0 | 0 | 1023 | 0.0594 | exact_training_fit |
-| piecewise | 42 | 0 | 6/6 | 0 | 0 | 0 | 964 | 0.0632 | exact_training_fit |
+| gcd-lcm | 0 | 0 | 9/9 | integer | 6 | 6 | 168 | 0.0565 | exact-fit |
+| gcd-lcm | 1 | 0 | 9/9 | integer | 2 | 2 | 72 | 0.0583 | exact-fit |
+| gcd-lcm | 42 | 0 | 9/9 | integer | 23 | 23 | 576 | 0.0671 | exact-fit |
+| fibonacci | 0 | 0 | 6/6 | integer | 7 | 7 | 192 | 0.0899 | exact-fit |
+| fibonacci | 1 | 0 | 6/6 | integer | 9 | 9 | 240 | 0.0889 | exact-fit |
+| fibonacci | 42 | 0 | 6/6 | integer | 12 | 12 | 312 | 0.0918 | exact-fit |
+| powers | 0 | 0.02536153936 | 0/5 | 0.3981834977667731 | 0 | 0 | 2048 | 0.0621 | loss-budget |
+| powers | 1 | 0.0060498409 | 0/5 | 1.6931163396446394 | 0 | 0 | 2048 | 0.0658 | loss-budget |
+| powers | 42 | 0.05784504339 | 0/5 | 3.555271861619019 | 0 | 0 | 2048 | 0.0581 | loss-budget |
+| trig | 0 | 0.07992119204 | 0/6 | 1.43636870995624 | 0 | 0 | 2048 | 0.0590 | loss-budget |
+| trig | 1 | 0.07992119226 | 0/6 | 1.4363371940003151 | 1 | 1 | 2048 | 0.0638 | loss-budget |
+| trig | 42 | 0.006084219193 | 0/6 | 0.26830695809606764 | 1 | 1 | 2045 | 0.0628 | evaluation_budget |
+| hyperbolic | 0 | 0 | 6/6 | 0 | 0 | 0 | 993 | 0.0657 | exact_training_fit |
+| hyperbolic | 1 | 0 | 6/6 | 0 | 0 | 0 | 723 | 0.0595 | exact_training_fit |
+| hyperbolic | 42 | 0 | 6/6 | 0 | 0 | 0 | 836 | 0.0616 | exact_training_fit |
+| polynomial | 0 | 1.647634414 | 0/6 | 43.012332916259766 | 0 | 0 | 2048 | 0.0615 | loss-budget |
+| polynomial | 1 | 0 | 6/6 | 0 | 0 | 0 | 1014 | 0.0631 | exact_training_fit |
+| polynomial | 42 | 0 | 6/6 | 0 | 0 | 0 | 976 | 0.0577 | exact_training_fit |
+| energy | 0 | 0 | 6/6 | 0 | 0 | 0 | 311 | 0.6722 | exact_training_fit |
+| energy | 1 | 0 | 6/6 | 0 | 0 | 0 | 374 | 0.6887 | exact_training_fit |
+| energy | 42 | 0 | 6/6 | 0 | 0 | 0 | 248 | 0.7216 | exact_training_fit |
+| piecewise | 0 | 0 | 6/6 | 0 | 0 | 0 | 1069 | 0.0653 | exact_training_fit |
+| piecewise | 1 | 0 | 6/6 | 0 | 0 | 0 | 1023 | 0.0715 | exact_training_fit |
+| piecewise | 42 | 0 | 6/6 | 0 | 0 | 0 | 964 | 0.0589 | exact_training_fit |
 
 The direct mathematical reference constructions all had zero training loss, independently of evolution. GCD/LCM targets use positive pairs with target a*b; Fibonacci evolves a transition with fixed order2 and initial0,1. Neither is a prime-discovery claim. Hyperbolic, piecewise and some polynomial successes were initialization plus ordinary coordinate-fitting discoveries, not later-generation achievements. Powers and trigonometry did not recover the frozen held-out target within this small budget. Some scalar runs exhausted their budget during a private generation, retaining the earlier committed population and counting all consumed probes.
+
+Integer/recurrence training loss is the exact mismatch count; scalar loss is
+checked raw-unit MSE. Their magnitudes are not a cross-domain quality comparison.
+The later ownership/resource repair at `5e44bcfaf83e908d0b79a5eb7b23031fffa00284`
+detaches moved unit-policy storage and forwards the problem's inference policy.
+The recorded campaigns used normal owned factory inputs and the same default
+inference policy; no numerical rule, production rule, dataset, fitter or budget
+changed. Their identified-source records remain valid and are retained rather
+than replaced by retuned runs. Final full engineering qualification includes the
+ownership regression and schema-resource boundaries.
 
 ### Actual selected expressions
 
@@ -216,7 +226,7 @@ Nodes7, depth4; rows2799; fitting attempts311. Scalar training exposes row/loss/
 
 x0·(x1·x1)·0.5
 
-Nodes7, depth4; rows3852; fitting attempts428. Scalar training exposes row/loss/probe counts; the conservative arithmetic ceiling is row_attempts*1000, not an actual measured operation total.
+Nodes7, depth4; rows3366; fitting attempts374. Scalar training exposes row/loss/probe counts; the conservative arithmetic ceiling is row_attempts*1000, not an actual measured operation total.
 
 **energy, seed42**
 
@@ -224,7 +234,7 @@ Nodes7, depth4; rows3852; fitting attempts428. Scalar training exposes row/loss/
 
 x0·(x1·x1)·0.5
 
-Nodes7, depth4; rows2223; fitting attempts247. Scalar training exposes row/loss/probe counts; the conservative arithmetic ceiling is row_attempts*1000, not an actual measured operation total.
+Nodes7, depth4; rows2232; fitting attempts248. Scalar training exposes row/loss/probe counts; the conservative arithmetic ceiling is row_attempts*1000, not an actual measured operation total.
 
 **piecewise, seed0**
 
@@ -252,11 +262,15 @@ Nodes3, depth2; rows4820; fitting attempts964. Scalar training exposes row/loss/
 
 ## Retained development failures and interpretation
 
-The first24 benchmark runs are retained under PRE_REPAIR*. The dimensional generator mistakenly used the production-storage cap to truncate operator scanning. With the fixed Add/Subtract/Multiply ordering this could suppress later multiplication/coefficient productions. A structural regression fixture failed before the repair and passed afterward. Work and storage admissions are now separate; no dataset, seeds, operators, fitting or objective budgets were changed. The corrected24 runs changed only the three dimensional outcomes among the reported selection/recovery fields. The original energy failures remain evidence of an engineering defect, not a negative scientific finding about dimensional discovery.
+The first24 benchmark runs are retained under PRE_REPAIR*. The dimensional generator mistakenly used the production-storage cap to truncate operator scanning. With the fixed Add/Subtract/Multiply ordering this could suppress later multiplication/coefficient productions. A structural regression fixture failed before the repair and passed afterward. Work and storage admissions are now separate; no dataset, seeds, operators, fitting or objective budgets were changed. The first corrected24 runs changed only the three dimensional outcomes among the reported selection/recovery fields. A later terminal-coverage audit found that a single unit witness excluded other original variables sharing that unit and continuous coefficient sources. Destination composition limits also needed enforcement. Regression fixtures failed before their respective repairs and passed afterward. The final frozen replay retains the same operators, data, seeds and budgets; all non-dimensional selected outputs reproduce the intermediate runs, while two energy formulas change and all three still recover the held-out target. The qualified typed-production identity rejects earlier unqualified D5 dimensional-run contexts. All earlier records remain retained. The original energy failures remain evidence of an engineering defect, not a negative scientific finding about dimensional discovery.
 
 An unrelated discrete interpreter compatibility audit removed an unnecessary new frame field by reusing an existing integer slot for the third modular-power operand. Legacy frame storage requirements are preserved. The original iterator campaign was reproduced after that repair with identical outcomes/counters.
 
 The dimensional planner is a strong structural prior: it derives a finite unit-correct witness without observations. Recovering E=.5*m*v² in that constrained space does not demonstrate unconstrained physical-law discovery. Training and held-out agreement are finite evidence, not universal identification. The earlier prime experiments remain unchanged and no new prime campaign was run.
+
+## Valid iterator survival audit
+
+A diagnostic-only replay checks fitness validity as well as structural presence. For square sums, the baseline had valid iterator-reference candidates in29/33/34 of41 snapshots, versus41/40/41 with the dependent rules. For divisor counting the counts were32/33/33 versus40/41/40. Maximum valid reference-bearing populations were4/6/5 versus11/8/12 (squares), and5/5/6 versus10/16/28 (divisors). The best valid reference-bearing losses were7 for squares and10/10/10 versus10/9/9 for divisors. These tied or lagged the selected simpler models. Thus the observed limitation is not merely failure to generate or publish valid iterator-dependent structures. No causal claim about a particular edit follows. All original scientific outcomes and counters reproduced exactly; only new diagnostic scans and elapsed time differ. Full records are in iteration/VALIDITY_REPLAY.json and iteration/validity/.
 
 ## Independent reference provenance
 
@@ -265,24 +279,3 @@ The dimensional planner is a strong structural prior: it derives a finite unit-c
 ## Limits and next boundary
 
 These are small frozen engineering/recovery demonstrations, not optimizer or GA superiority comparisons. Iterator-dependent production improved representation coverage without solving the chosen iteration datasets. Grammar discovery, computational cost and sample identifiability remain separate issues. Optional arbitrary precision is incomplete: Boost headers were unavailable and no production bigint backend/codec was qualified. Recurrence order and initial conditions are fixed model context; transition trees evolve. Symbolic factorization and rational coefficient ranges are bounded subsets. No D6 work is begun.
-
-## Valid iterator survival audit
-
-A diagnostic-only replay at `80add5791f563b9b1244deea6d96830644f04f70` reproduced every original scientific field and work counter while distinguishing valid iterator-reference members from invalid ones. It did not add objective evaluations, fitting or RNG draws. All41 snapshots per run are retained.
-
-| Target | Rules | Seed | Snapshots with valid refs /41 | Maximum valid ref members /32 | Best valid-ref loss |
-|---|---|---:|---:|---:|---:|
-| squares | baseline | 0 | 29 | 4 | 7.0 |
-| squares | dependent | 0 | 41 | 11 | 7.0 |
-| squares | baseline | 1 | 33 | 6 | 7.0 |
-| squares | dependent | 1 | 40 | 8 | 7.0 |
-| squares | baseline | 42 | 34 | 5 | 7.0 |
-| squares | dependent | 42 | 41 | 12 | 7.0 |
-| divisors | baseline | 0 | 32 | 5 | 10.0 |
-| divisors | dependent | 0 | 40 | 10 | 10.0 |
-| divisors | baseline | 1 | 33 | 5 | 10.0 |
-| divisors | dependent | 1 | 41 | 16 | 9.0 |
-| divisors | baseline | 42 | 33 | 6 | 10.0 |
-| divisors | dependent | 42 | 40 | 28 | 9.0 |
-
-The iterator-dependent structures were not merely generated and immediately invalidated: valid reference-bearing members survived publication in29–34 baseline snapshots and40–41 opt-in snapshots. Some tied the best loss, but the archive selected simpler plain expressions under the existing tie policy. Presence of an iterator reference does not prove that it contributes to outputs; neither these counts nor the paired outcomes prove a causal explanation for stagnation.

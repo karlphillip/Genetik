@@ -1,0 +1,25 @@
+{
+  "schema": "genetik.d5.qualification-probes/1",
+  "sources": {
+    "out/runs/d5/audit/default_compatibility.cpp": {
+      "sha256": "9712ecf2b1fb8f39719f42b881994b8ca149fad7f96cc2a5071df72810813c8b",
+      "source": "#include <SymbolicRegression.hpp>\n#include <ScalarExpressionCheckpoint.hpp>\n#include <DiscreteRunCheckpoint.hpp>\n#include <fstream>\nint main(int argc,char** argv){if(argc!=2)return 2;CheckpointWriter writer;for(unsigned workers:{1U,2U,4U}){auto problem=RegressionProblem::create({{{0},.1},{{1},1.4},{{2},2.7}});SymbolicRegressionConfig config;config.population=8;config.maxGenerationAttempts=8;config.maxEvaluations=72;config.maxTrainingLossAttempts=72;RandomContext random(42,{workers});auto result=symbolicRegression(problem,config,random);if(!result.best)return 3;writer.text(result.best->text());writer.real(result.best->fitness());writer.text(RunCheckpointAccess::random(random).engine);writeTrainingWork(writer,result.trainingWork);writeVariationStatistics(writer,result.variation);auto p=DiscreteRegressionProblem::create(1,{{{0},1},{{1},2},{{1},3}});DiscreteSearchConfig c;c.population=8;c.elites=1;c.maxGenerations=8;c.maxLossAttempts=72;RandomContext rng(42,{workers});DiscreteEvolutionRun run(p,c,rng);while(!run.stoppingReason())run.step();writer.text(run.checkpoint().payload);}std::ofstream file(argv[1],std::ios::binary);file<<writer.data();return !file;}\n"
+    },
+    "out/consumers/d5-advanced-multitu/source/main.cpp": {
+      "sha256": "0e82dbdd7606e7ccc355fb62fac133f494bd22d7b138920644ddf34b36c835a0",
+      "source": "#include <ScalarMathematicsRun.hpp>\n#include <IntegerRecurrence.hpp>\n#include <SymbolicAlgebra.hpp>\n#include <ExpressionParsing.hpp>\n#include <DiscreteExpressionParsing.hpp>\n#include <iostream>\nint other();\nint main(){\n    IntegerRecurrence f(0,{0,1},parseDiscreteExpression(\"x1+x2\",3));\n    if(f.evaluate(10).value->integer()!=55 || other()!=3)return 1;\n    auto p=SymbolicExpression::fromExpression(parseExpression(\"(x0+2)*(x0-2)\",1)).expandPolynomial();\n    if(p.status!=SymbolicStatus::Success)return 2;\n    auto L=PhysicalDimension::base(SIBaseDimension::Length),T=PhysicalDimension::base(SIBaseDimension::Time);\n    if(DimensionalExpression(parseExpression(\"x0/x1\",2),{L,T}).dimension()!=L/T)return 3;\n    std::cout<<\"Installed advanced headers linked across two translation units\\n\";\n}\n"
+    },
+    "out/consumers/d5-advanced-multitu/source/other.cpp": {
+      "sha256": "3b91efae2e6490e24233ba98060609d295fb80d3904859b7a5f56f96cf44c6f4",
+      "source": "#include <ScalarMathematicsRun.hpp>\n#include <IntegerRecurrence.hpp>\n#include <SymbolicAlgebra.hpp>\n#include <ExpressionParsing.hpp>\n#include <DiscreteExpressionParsing.hpp>\nint other(){\n    auto p=SymbolicExpression::fromExpression(parseExpression(\"powi(x0,2)\",1)).differentiate(0);\n    if(p.status!=SymbolicStatus::Success)return -1;\n    return static_cast<int>(parseDiscreteExpression(\"modular_power(2,3,5)\",0).evaluate({}).value->integer());\n}\n"
+    },
+    "out/consumers/d5-advanced-multitu/source/CMakeLists.txt": {
+      "sha256": "5af06415078a080aa17d5dbc816e858481bfb28e4b350c9394c9e94f14582203",
+      "source": "cmake_minimum_required(VERSION 3.16)\nproject(D5InstalledMultiTU LANGUAGES CXX)\nfind_package(Genetik 0.4 REQUIRED CONFIG)\nadd_executable(d5_installed_multitu main.cpp other.cpp)\ntarget_link_libraries(d5_installed_multitu PRIVATE Genetik::Genetik)\nset(CMAKE_EXPORT_COMPILE_COMMANDS ON)\n"
+    },
+    "out/runs/d5/audit/dimension_ownership.cpp": {
+      "sha256": "4e295258eafde509fb5cfd11f792147483b54b29f0674b482a654f04811169f8",
+      "source": "#include <DimensionalRegression.hpp>\n#include <ExpressionParsing.hpp>\n#include <iostream>\nint main(){\n    std::vector<PhysicalDimension> supplied{PhysicalDimension::base(SIBaseDimension::Length)};\n    auto* retained=supplied.data();\n    DimensionalConstantSelection selection(std::move(supplied));\n    *retained=PhysicalDimension{};\n    if(selection.parameters(parseExpression(\"2*pow(x0,2)\",1)).size()!=1){\n        std::cerr<<\"Moved caller storage must not alias the dimensional fitting policy\\n\";\n        return 1;\n    }\n    std::cout<<\"Detached dimensional policy ownership verified\\n\";\n}\n"
+    }
+  }
+}

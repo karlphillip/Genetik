@@ -12,14 +12,14 @@ It is heuristic search, with no guarantee of a good fit, a particular equation o
 extrapolation accuracy. Prime regression is one application example.
 
 The library uses only the C++ standard library and is [MIT licensed](LICENSE).
-Published0.1.0/0.2.0/0.3.0 assets remain unchanged. This checkout prepares
-**0.4.0 (unreleased)**: optional exact Int64/Bool expressions, scoped bounded
-iteration and controlled discrete-prime research. See [notes](docs/releases/0.4.0/NOTES.md),
-[migration](docs/releases/0.4.0/MIGRATION.md), [scope audit](docs/DISCRETE_RELEASE_INTEGRATION.md)
-and [delivery proposal](docs/RELEASE_0.4.0_PROPOSAL.md). Local preflight and the initial hosted matrix passed; see the
-[measured qualification](docs/DISCRETE_HOSTED_QUALIFICATION.md). The final report
-tip receives the same matrix. Publication requires separate approval. Historical
-qualification applies only to its named commits.
+Published versions through **0.4.0** remain unchanged. This local development
+branch implements optional [D5 advanced mathematics](docs/ADVANCED_MATHEMATICS_D5.md):
+checked number theory and bounded recurrences, extended scalar scientific functions,
+separate symbolic algebra, exact physical dimensions and mathematical constraints.
+Existing grammars and GA defaults remain unchanged. See the
+[frozen recovery results](docs/d5-results/RESULTS.md) and
+[revision-specific local qualification](docs/D5_QUALIFICATION.md).
+D5 is local development, not a new published release or hosted platform qualification.
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
 
@@ -50,20 +50,23 @@ and the required strict floating-point options. Newer C++ standards are allowed.
 - [Bounded root integral models](examples/quickstarts/integrals.cpp): prescribed
   bounds and a local binding, estimated-convergence quadrature, and shared-engine
   integrand discovery/coordinate fitting against complete integral observations.
+- [Advanced mathematical quickstart](examples/quickstarts/advanced_mathematics.cpp):
+  checked modular powers, a bounded first witness, Fibonacci, scientific partials,
+  conditional symbolic transformations, units and bounded shared-engine discovery.
 - [Application-owned permutation consumer](tests/oop_consumer/main.cpp): a non-scalar
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
 
-Obtain the source (use `--branch v0.2.0` for the latest published checkpoint):
+Obtain the source (use `--branch v0.4.0` for the published checkpoint):
 
 ```sh
 git clone https://github.com/karlphillip/Genetik.git Genetik
 cd Genetik
 ```
 
-For this 0.4.0 candidate, use its reviewed source archive and enter `Genetik-0.4.0/`
-when made available. The commands below describe that candidate, not published
-v0.1.0. The older tag contains only the original scalar/symbolic quickstarts and
+For published 0.4.0, use its verified source archive and enter `Genetik-0.4.0/`.
+The optional D5 quickstart and APIs require this development branch. The commands
+below describe the current source tree, not published v0.1.0. The older tag contains only the original scalar/symbolic quickstarts and
 requires its own 0.1 package requests. Do not use 0.4 instructions with that archive.
 From the corresponding source root, install and build the available programs:
 

@@ -1,5 +1,21 @@
 # Current phased development plan
 
+## Current D5 development status
+
+D4 and the published 0.4.0 delivery are completed history. The additive D5
+implementation is locally complete and qualified: scoped iterator-dependent productions,
+checked integer mathematics and first-witness search, bounded recurrence models,
+scientific scalar functions, conservative symbolic algebra, dimensions and
+constraints. See [APIs](ADVANCED_MATHEMATICS_D5.md),
+[frozen results](d5-results/RESULTS.md) and [qualification](D5_QUALIFICATION.md).
+The optional arbitrary-precision backend remains incomplete and unqualified.
+D5 does not promote excluded research optimizers, objectives or mutation strategies,
+change defaults, or publish a release. Older status paragraphs below retain their
+historical scope. Next, only when assigned: **D6 — Scientific and Multidimensional
+Discovery**; **D7** remains competitor benchmarking, hosted qualification and
+release. No additional phase is introduced.
+
+
 **Agreed implementation scope complete locally:** cleanup, typed evaluation/evolution,
 scientific operators, parsing, scalar templates and calculus 7A/7B/7C. The complete implementation has passed combined calculus hosted qualification;
 see [CALCULUS_HOSTED_QUALIFICATION.md](CALCULUS_HOSTED_QUALIFICATION.md). The final

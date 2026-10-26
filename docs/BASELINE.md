@@ -1052,3 +1052,20 @@ The final report tip receives its own complete matrix; exact completion/run/asse
 are recorded under out/runs/discrete-d4/hosted. Implementation scope is complete.
 Only final delivery approval remains after final-tip qualification; no D5–D7 work.
 Existing historical qualification statements retain their original SHA scope.
+
+
+## D5 advanced mathematical development
+
+Local D5 work starts from published0.4.0 commit
+`c08859e462210a1ef378b0c6c47a2b4c520f7353` on
+`feature/advanced-mathematics-d5`. It adds optional mathematical modules without
+changing the generic GA, default production grammars or coordinate fitter.
+The original research branches excluded from0.4 remain excluded.
+[API contracts](ADVANCED_MATHEMATICS_D5.md), [all bounded discovery outcomes](d5-results/RESULTS.md)
+and [source-specific qualification](D5_QUALIFICATION.md) document exact scope.
+Header-only dependent translation units require consistent recompilation; source
+compatibility is not an ABI guarantee. Published0.4 scalar/discrete checkpoints
+retain their codec/identity contract; new models have explicit distinct identities.
+Unqualified early D5 dimensional-run contexts are rejected after production-policy
+corrections. Optional arbitrary precision is incomplete. No remote writes, release
+metadata changes, new prime campaign or D6 work is part of this milestone.

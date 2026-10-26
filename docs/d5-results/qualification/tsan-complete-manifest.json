@@ -1,0 +1,18 @@
+{
+  "source_sha": "5e44bcfaf83e908d0b79a5eb7b23031fffa00284",
+  "name": "tsan-complete",
+  "count": 11,
+  "tests": [
+    "genetik_checkpoint_compatibility",
+    "genetik_d5_dimension_contracts",
+    "genetik_d5_integer_contracts",
+    "genetik_d5_iteration_contracts",
+    "genetik_d5_recurrence_contracts",
+    "genetik_d5_scientific_contracts",
+    "genetik_d5_symbolic_contracts",
+    "genetik_discrete_contracts",
+    "genetik_discrete_iteration_contracts",
+    "genetik_discrete_prime_contracts",
+    "genetik_integral_contracts"
+  ]
+}

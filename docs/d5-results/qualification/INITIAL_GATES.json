@@ -1,0 +1,205 @@
+[
+  {
+    "name": "release-configure",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-S",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d5-source-c5aa46ac099e",
+      "-B",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-c5aa46ac099e-clean-release",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DGENETIK_BUILD_TESTS=ON",
+      "-DGENETIK_BUILD_EXAMPLES=ON",
+      "-DBUILD_TESTING=ON",
+      "-DGENETIK_WARNINGS_AS_ERRORS=ON",
+      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+      "-DGENETIK_RECORDED_REFERENCE=ON",
+      "-DGENETIK_SANITIZERS=OFF",
+      "-DGENETIK_THREAD_SANITIZER=OFF"
+    ],
+    "exit": 0,
+    "seconds": 0.928020108025521,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "release-build",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "--build",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-c5aa46ac099e-clean-release",
+      "-j3"
+    ],
+    "exit": 0,
+    "seconds": 110.17587704502512,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "release-full",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-c5aa46ac099e-clean-release",
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest",
+      "--output-on-failure"
+    ],
+    "exit": 0,
+    "seconds": 430.35357961198315,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "debug-configure",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-S",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d5-source-c5aa46ac099e",
+      "-B",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-c5aa46ac099e-debug",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DGENETIK_BUILD_TESTS=ON",
+      "-DGENETIK_BUILD_EXAMPLES=ON",
+      "-DBUILD_TESTING=ON",
+      "-DGENETIK_WARNINGS_AS_ERRORS=ON",
+      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+      "-DGENETIK_RECORDED_REFERENCE=ON",
+      "-DGENETIK_SANITIZERS=OFF",
+      "-DGENETIK_THREAD_SANITIZER=OFF"
+    ],
+    "exit": 0,
+    "seconds": 0.9225363730220124,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "debug-build",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "--build",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-c5aa46ac099e-debug",
+      "-j3"
+    ],
+    "exit": 0,
+    "seconds": 94.96013112890068,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "debug-full",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-c5aa46ac099e-debug",
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest",
+      "--output-on-failure"
+    ],
+    "exit": 0,
+    "seconds": 461.85348878707737,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "minimum-configure",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+      "-S",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d5-source-c5aa46ac099e",
+      "-B",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-cc398131e648-minimum",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DGENETIK_BUILD_TESTS=ON",
+      "-DGENETIK_BUILD_EXAMPLES=ON",
+      "-DBUILD_TESTING=ON",
+      "-DGENETIK_WARNINGS_AS_ERRORS=ON",
+      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+      "-DGENETIK_RECORDED_REFERENCE=ON",
+      "-DGENETIK_SANITIZERS=OFF",
+      "-DGENETIK_THREAD_SANITIZER=OFF"
+    ],
+    "exit": 0,
+    "seconds": 1.9150140279671177,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "minimum-build",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+      "--build",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-cc398131e648-minimum",
+      "-j3"
+    ],
+    "exit": 0,
+    "seconds": 415.84940492897294,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "minimum-full",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-cc398131e648-minimum",
+      "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/ctest",
+      "--output-on-failure"
+    ],
+    "exit": 0,
+    "seconds": 318.7061327439733,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "sanitize-configure",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-S",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d5-source-c5aa46ac099e",
+      "-B",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-cc398131e648-sanitize",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DGENETIK_BUILD_TESTS=ON",
+      "-DGENETIK_BUILD_EXAMPLES=ON",
+      "-DBUILD_TESTING=ON",
+      "-DGENETIK_WARNINGS_AS_ERRORS=ON",
+      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+      "-DGENETIK_RECORDED_REFERENCE=OFF",
+      "-DGENETIK_SANITIZERS=ON",
+      "-DGENETIK_THREAD_SANITIZER=OFF"
+    ],
+    "exit": 0,
+    "seconds": 1.4138814059551805,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "sanitize-build",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "--build",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-cc398131e648-sanitize",
+      "-j2"
+    ],
+    "exit": 0,
+    "seconds": 666.1774515470024,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "sanitize-manifest-check",
+    "command": [
+      "python3",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d5-source-c5aa46ac099e/scripts/check_ci_manifest.py",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/runs/d5/qualification/cc398131e648/sanitize-portable-manifest.json"
+    ],
+    "exit": 0,
+    "seconds": 0.06415519304573536,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  },
+  {
+    "name": "sanitize-full",
+    "command": [
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/cmake",
+      "-E",
+      "chdir",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/d5-cc398131e648-sanitize",
+      "/home/karlphillip/workspaces/primeResearcher/.tools/bin/ctest",
+      "--output-on-failure"
+    ],
+    "exit": 8,
+    "seconds": 4111.322448518011,
+    "tested_sha": "cc398131e6480d3263574cedcf58f48e4f1954c8"
+  }
+]

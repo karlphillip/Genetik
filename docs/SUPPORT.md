@@ -1,4 +1,19 @@
-# Current 0.4.0 candidate scope
+# Mathematical development and support scope
+
+## D5 development scope
+
+The advanced-mathematics development branch is separate from the published0.4.0
+qualification below. Its local Linux ARM64/GCC13 evidence and exact tested source
+are recorded in [D5_QUALIFICATION.md](D5_QUALIFICATION.md). It has no new hosted
+or cross-platform qualification claim. New APIs require consistent recompilation
+of dependent translation units. Optional arbitrary precision is not implemented
+or qualified; normal consumers retain only standard-library dependencies.
+
+
+## Historical0.4.0 preparation record
+
+The following paragraph retains its pre-publication status. Published0.4.0 is
+`c08859e462210a1ef378b0c6c47a2b4c520f7353`; D5 does not change its assets.
 
 This checkout prepares0.4.0, unreleased, from the published0.3.0 baseline plus the
 selective D1–D3 integration. [Scope](DISCRETE_RELEASE_INTEGRATION.md),

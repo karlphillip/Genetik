@@ -1,0 +1,20 @@
+[
+  {
+    "command": [
+      "python3",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/scripts/references/d5_integer.py"
+    ],
+    "exit": 0,
+    "stdout": "3652\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/scripts/references/d5_scientific.py"
+    ],
+    "exit": 0,
+    "stdout": "70\n",
+    "stderr": ""
+  }
+]

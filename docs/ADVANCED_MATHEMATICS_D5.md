@@ -197,7 +197,8 @@ not ordinary expression text parsing.
 
 `PhysicalDimensions.hpp` supplies exact seven-axis SI exponent vectors.
 Rational exponents normalize to numerator magnitude<=4096, denominator<=64;
-checked intermediates have explicit bounds. Addition/subtraction and min/max/
+checked intermediates have explicit bounds. Dimensions constrain exact SI exponents;
+unit magnitudes and affine temperature conversions are not inferred. Addition/subtraction and min/max/
 clamp require matching units; multiply/divide compose exponents; roots divide
 exponents exactly. Logs/exponentials and unary trig require dimensionless
 arguments (angles in radians); atan2 permits equal operand units and returns a
@@ -205,7 +206,12 @@ dimensionless angle. Dimensionful Pow requires a constant, exactly representable
 bounded dyadic exponent; unrestricted exponent expressions require a
 dimensionless base. Discrete comparisons require matching units, branches match,
 binders inherit bound units, and variable-length products require dimensionless
-bodies. Inference has node, traversal-step and logical workspace caps.
+bodies. This discrete checker conservatively requires dimensionless product
+bodies even for literal bounds; it does not infer a fixed-count dimensional
+power. The constructive dimensional search adapter is scalar; discrete
+expressions have dimension-validation support. Advanced number-theory operators,
+including Euclidean integer division, require dimensionless operands here.
+Inference has node, traversal-step and logical workspace caps.
 
 `DimensionalExpression` owns ordinary strict executable trees and copied units;
 codec `genetik.dimensional-scalar-model/1` preserves units and node metadata.
@@ -222,7 +228,12 @@ several inputs share units, and uses the configured discrete/continuous
 coefficient source. Schema scans consume generation work; insufficient work
 falls back to an owned unit witness. Evolution uses dimensionless coefficient terminals; manually constructed models
 also permit explicit units for constant occurrences. `DimensionalConstantSelection`
-freezes dimensionful constant exponents so fitting cannot change type.
+freezes dimensionful constant exponents so fitting cannot change type. Unit-schema
+counts, inference policy and owned-storage bytes are checked before the schema's
+copy. `DimensionalConstantSelection` detaches even caller rvalues and retains an
+explicit optional `DimensionalLimits`; fitting adapters forward the full problem's
+inference policy. A retained pointer into a moved caller vector cannot change the
+owned fitting policy.
 
 `MathematicalConstraints` owns variable domains, positive/nonzero operator
 arguments, nesting/complexity caps and optional sampled first-partial monotonicity.

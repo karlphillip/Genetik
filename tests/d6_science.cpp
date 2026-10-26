@@ -328,6 +328,25 @@ void complexMath() {
   check(rejected, "branch identity mismatch");
 }
 void statistics() {
+  std::array<double, 10> repeated;
+  repeated.fill(.1);
+  auto zero = finiteStatistics(repeated);
+  check(zero.success() && zero.value.value().mean == .1 &&
+            zero.value.value().variance == 0,
+        "constant decimal population has exactly zero variance");
+  check(finiteCovariance(repeated, repeated, 0, true).status ==
+            ScientificStatus::Invalid,
+        "constant decimal correlation is mathematically invalid");
+  auto wideCovariance =
+      finiteCovariance(std::array{1e200, -1e200}, std::array{1e-200, -1e-200});
+  check(wideCovariance.success(),
+        "plain covariance does not require unrequested variances");
+  near(wideCovariance.value.value(), 1.);
+  check(finiteCovariance(std::array{1e-200, -1e-200},
+                         std::array{1e-200, -1e-200}, 0, true)
+                .status == ScientificStatus::NumericalFailure,
+        "variance underflow is not zero-variance mathematical invalidity");
+
   auto x = std::array{1., 2., 3., 4.};
   auto population = finiteStatistics(x), sample = finiteStatistics(x, 1);
   near(population.value.value().mean, 2.5);
@@ -636,6 +655,7 @@ void overlap() {
           "simultaneous second success/unavailable");
     tensors();
     linear();
+    statistics();
   });
   check(execution.peakTasks() == 4, "forced D6 overlap");
 }

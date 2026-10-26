@@ -18,6 +18,13 @@ finiteStatistics(std::span<const double> x, std::size_t degreesOfFreedom = 0,
         b.storage(x.size(), sizeof(double));
         b.charge(x.size());
         genetik_science::inputs(x);
+        bool constant = true;
+        for (std::size_t i = 1; i < x.size(); ++i) {
+          b.charge();
+          constant = constant && (x[i] == x[0]);
+        }
+        if (constant)
+          return FiniteStatistics{x[0], 0};
         double mean = 0, s = 0;
         for (double v : x)
           mean = b.add(mean, b.div(v, static_cast<double>(x.size())));
@@ -42,6 +49,18 @@ finiteCovariance(std::span<const double> x, std::span<const double> y,
     genetik_science::inputs(x);
     b.charge(y.size());
     genetik_science::inputs(y);
+    bool constantX = true, constantY = true;
+    for (std::size_t i = 1; i < x.size(); ++i) {
+      b.charge(2);
+      constantX = constantX && (x[i] == x[0]);
+      constantY = constantY && (y[i] == y[0]);
+    }
+    if (constantX || constantY) {
+      if (correlation)
+        throw genetik_science::Stop{ScientificStatus::Invalid,
+                                    "correlation of constant data"};
+      return 0.;
+    }
     double a = 0, c = 0, s = 0, vx = 0, vy = 0;
     for (std::size_t i = 0; i < x.size(); ++i) {
       a = b.add(a, b.div(x[i], static_cast<double>(x.size())));
@@ -50,14 +69,16 @@ finiteCovariance(std::span<const double> x, std::span<const double> y,
     for (std::size_t i = 0; i < x.size(); ++i) {
       double dx = b.sub(x[i], a), dy = b.sub(y[i], c);
       s = b.add(s, b.mul(dx, dy));
-      vx = b.add(vx, b.mul(dx, dx));
-      vy = b.add(vy, b.mul(dy, dy));
+      if (correlation) {
+        vx = b.add(vx, b.mul(dx, dx));
+        vy = b.add(vy, b.mul(dy, dy));
+      }
     }
     if (!correlation)
       return b.div(s, static_cast<double>(x.size() - degreesOfFreedom));
     if (vx == 0 || vy == 0)
-      throw genetik_science::Stop{ScientificStatus::Invalid,
-                                  "correlation of zero variance"};
+      throw genetik_science::Stop{ScientificStatus::NumericalFailure,
+                                  "correlation variance underflow"};
     b.charge(2);
     return b.div(b.div(s, std::sqrt(vx)), std::sqrt(vy));
   });

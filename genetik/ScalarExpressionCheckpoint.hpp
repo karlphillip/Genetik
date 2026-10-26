@@ -83,9 +83,15 @@ inline VariationStatistics readVariationStatistics(CheckpointReader& r){Variatio
 // Reviewed forward read from published0.3.0; strict compiler/runtime/FP suffix and
 // unchanged codec payload are still required. Generic loading stays exact-version.
 inline std::optional<CheckpointReadCompatibility> scalarCheckpointCompatibility03(){
-    if(std::string_view(genetikVersion)=="0.4.0")return CheckpointReadCompatibility{"0.3.0",std::string(CandidateCheckpointCodec<ExpressionCandidate>::identifier)};
+    if(std::string_view(genetikVersion)=="0.4.0"||std::string_view(genetikVersion)=="0.5.0")return CheckpointReadCompatibility{"0.3.0",std::string(CandidateCheckpointCodec<ExpressionCandidate>::identifier)};
+    return {};
+}
+inline std::vector<CheckpointReadCompatibility> scalarCheckpointCompatibilities(){
+    const auto version=std::string_view(genetikVersion);const auto codec=std::string(CandidateCheckpointCodec<ExpressionCandidate>::identifier);
+    if(version=="0.5.0")return {{"0.4.0",codec},{"0.3.0",codec}};
+    if(version=="0.4.0")return {{"0.3.0",codec}};
     return {};
 }
 inline CheckpointDocument loadScalarCheckpoint(const std::filesystem::path& path,CheckpointLimits limits={}){
-    return loadCompatibleCheckpoint(path,limits,scalarCheckpointCompatibility03());
+    return loadCompatibleCheckpointWithPolicies(path,limits,scalarCheckpointCompatibilities());
 }

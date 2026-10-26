@@ -86,8 +86,12 @@ private:
 };
 
 // Forward import of the unchanged D2/D3 research profile, under identical runtime.
+inline std::vector<CheckpointReadCompatibility> discreteRunCheckpointCompatibilities(){
+    const auto version=std::string_view(genetikVersion);
+    if(version=="0.5.0")return {{"0.4.0","genetik.discrete-evolution/2"},{"0.3.0","genetik.discrete-evolution/2"}};
+    if(version=="0.4.0")return {{"0.3.0","genetik.discrete-evolution/2"}};
+    return {};
+}
 inline CheckpointDocument loadDiscreteRunCheckpoint(const std::filesystem::path& path,CheckpointLimits limits={}){
-    std::optional<CheckpointReadCompatibility> compatibility;
-    if(std::string_view(genetikVersion)=="0.4.0")compatibility=CheckpointReadCompatibility{"0.3.0","genetik.discrete-evolution/2"};
-    return loadCompatibleCheckpoint(path,limits,std::move(compatibility));
+    return loadCompatibleCheckpointWithPolicies(path,limits,discreteRunCheckpointCompatibilities());
 }

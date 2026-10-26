@@ -5,7 +5,7 @@
 - D7 branch `qualification/advanced-mathematics-d7` starts at `a05b3974ec636f5921184a90a2a06c3d7dbc84d5`.
 - Published tag `v0.4.0` points to `c08859e462210a1ef378b0c6c47a2b4c520f7353`; this is an ancestor of the D7 start. The qualified D6 implementation `c72eaaa3f1ca817ba804d36321069e58ac288e6f` is also an ancestor. No changes were made to the tag, published archives, `main`, or remote refs.
 - The working tree was clean at audit start. There were no active Genetik test, build, qualification, or benchmark processes.
-- The source currently reports `GENETIK_VERSION_STRING "0.4.0"`. The project already contains D5 and D6 as additive APIs and documents `Genetik::Genetik`, C++20, CMake 3.16, and the optional `Genetik::ScientificNumerics` LP64 OpenBLAS/LAPACK component.
+- At audit start the source reported `GENETIK_VERSION_STRING "0.4.0"`; the D7 worktree now sets the candidate to `0.5.0`. The project already contains D5 and D6 as additive APIs and documents `Genetik::Genetik`, C++20, CMake 3.16, and the optional `Genetik::ScientificNumerics` LP64 OpenBLAS/LAPACK component.
 
 ## Source dependency and API boundary
 
@@ -17,20 +17,20 @@ The base target's only discovered external link dependency is `Threads::Threads`
 - D6 implementation source pin `c72eaaa3f1ca817ba804d36321069e58ac288e6f`: Release 90/90, Debug 90/90, exact CMake 3.16.0 90/90, ASan+UBSan 89/89, selected TSan 21 x3 and 13 TSan contracts. The `lgamma`/`signgam` race repair is part of this qualified source. Logs and the original race are retained under `docs/d6-results/qualification/`.
 - The aggregate D6 qualification wrapper failed its final `--workspace` hygiene gate on parent `session.md`. Repository hygiene passes. The script's `WORKSPACE` allowlist and `--self-test` explicitly establish that unexpected parent entries fail the workspace contract; current `out/` contents are all role directories. Do not change or delete the user-owned file. Report this environmental exception accurately in D7.
 
-## Checkpoint A defect to repair
+## Checkpoint A migration repair
 
-The version remains 0.4.0 while preparing a new 0.5.0 package. The scalar and
-discrete checkpoint readers currently enable the 0.3.0 import only when the
-current package version equals 0.4.0. A mechanical bump to 0.5.0 would drop the
-existing 0.3.0 forward-import contract and fail to add the published 0.4.0
-producer contract. Before a release candidate is frozen, add narrow read
-compatibility for 0.4.0 scalar/discrete checkpoint codecs while preserving the
-existing 0.3.0 compatibility; keep generic checkpoint reading exact-version.
-Test an actual checkpoint written by a producer built from the published 0.4.0
-source, full continuation state, wrong codec/runtime rejection, and unchanged
-0.3.0 import. Do not weaken dataset, grammar, worker, numerical runtime, or
-resource-limit identity checks. Do not reinterpret D6 experimental checkpoint
-contexts as published 0.4.0 contracts.
+Resolved in the D7 working tree: metadata is now 0.5.0. Named, additive
+multi-policy import helpers allow only the scalar expression codec and discrete
+evolution/2 codec from v0.4.0 and preserve the previous v0.3.0 path. The generic
+loader stays exact-version; its original optional-policy overload remains
+unambiguous/source-compatible. Test-only writer headers copied byte-for-byte
+from the published v0.4.0 tag exercise actual v0.4.0 envelope/payload writes.
+Scalar and discrete consumers restore committed populations and continue to
+byte-identical expected full state. Wrong codec/runtime rejection, exact generic
+reader rejection, and v0.3 scalar import remain covered. The three targeted
+CTest cases passed in the GCC 13 Release warning-as-error build. No data,
+grammar, worker, runtime/FP, or resource identity check was weakened. D6
+experimental checkpoint contexts are not treated as published v0.4.0 contracts.
 
 ## Environment and competitor acquisition feasibility
 
@@ -55,8 +55,8 @@ reviewed install prefix and pinned compiler/dependencies. Nix is not assumed.
 
 ## Next permitted work
 
-Finish checkpoint A with narrow checkpoint migration tests/repair and verify the
-0.5.0 package metadata. Then freeze `docs/d7/BENCHMARK_PROTOCOL.md` before any
+Checkpoint migration is implemented and targeted tests pass. Finish the A
+release-scope inventory, then freeze `docs/d7/BENCHMARK_PROTOCOL.md` before any
 benchmark-target run. Keep the benchmark suites serial on one CPU allocation;
 record a non-benchmark engineering preflight separately if needed. The hosted
 qualification approval boundary remains untouched.

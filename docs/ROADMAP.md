@@ -16,8 +16,10 @@ implemented and locally qualified on its recorded gates; the workspace-wide
 hygiene check has a documented parent-directory exception. See
 [D6 qualification](D6_QUALIFICATION.md) and the retained
 [scientific results](d6-results/RESULTS.md). **D7 — Competitor Benchmarking,
-Hosted Qualification and Development Release** remains separate and is not started
-by D6 completion. No additional mathematical phase is introduced.
+Hosted Qualification and Development Release** is now active locally on the
+`qualification/advanced-mathematics-d7` branch, targeting Genetik 0.5.0. D7
+does not add mathematical operators or authorize remote qualification or
+publication. No additional mathematical phase is introduced.
 
 
 **Agreed implementation scope complete locally:** cleanup, typed evaluation/evolution,

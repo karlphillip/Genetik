@@ -5,9 +5,9 @@
 - Phase: D7, checkpoint A — integration and qualification baseline.
 - Repository: `/home/karlphillip/workspaces/primeResearcher/Genetik`.
 - Branch: `qualification/advanced-mathematics-d7`.
-- Current SHA: `a05b3974ec636f5921184a90a2a06c3d7dbc84d5` (branch created at the D6 final tip; no D7 implementation changes yet).
+- Current committed SHA: `b2930fa0fc126dbabfc17a01f05f49e3eb32471a`; checkpoint-A source/test repair is in the working tree pending its local commit.
 - Published 0.4.0 tag resolves to `c08859e462210a1ef378b0c6c47a2b4c520f7353`, an ancestor of D6. The qualified D6 implementation `c72eaaa3f1ca817ba804d36321069e58ac288e6f` is also an ancestor. The v0.4.0 tag/assets have not been changed.
-- Version metadata remains `0.4.0`; target candidate version is `0.5.0`.
+- Version metadata is now `0.5.0` in the D7 working tree; release designation remains development pre-release.
 - Working tree was clean at phase start. No active test, qualification, or competitor processes were found.
 - No remote writes, PRs, merges, tags, uploads, or publications are authorized or performed.
 
@@ -19,11 +19,12 @@
 - Existing D6 complete individual suites: Release 90/90, Debug 90/90, CMake 3.16.0 90/90, ASan+UBSan 89/89, TSan selected 21 x3 and contracts 13/13. D6 qualification driver ended with a failed workspace hygiene gate due to `/home/karlphillip/workspaces/primeResearcher/session.md`.
 - Hygiene distinction: repository cleanliness passes; all current `out/` entries are role directories; parent-workspace audit fails because its explicit allowlist permits only `Genetik`, `.tools`, `delivery-tools`, and `archive`. `scripts/check_hygiene.py --self-test` demonstrates that unexpected parent entries are contractually rejected. The 21 MB `session.md` is outside the repository, user-owned, and must not be modified/deleted. Preserve and report the failure; do not change checker scope to hide it.
 - Current host: Ubuntu 24.04.4, Linux 6.8.12-tegra, aarch64 Cortex-A78AE, 8 online CPUs, Python 3.12.3, GCC 13.3, installed workspace CMake 4.4.4, exact minimum CMake 3.16.0. `julia`, `pysr`, and `operon` are not currently on PATH. No benchmark experiment has run in D7.
-- Potential official upstream release pins discovered from remote tags (not yet frozen into a protocol): PySR v2.7.2, SymbolicRegression.jl v2.7.2, Operon v0.6.2. Verify exact peeled commits, licenses and dependency requirements before freezing.
+- Official source pins inspected but not yet frozen into a protocol: PySR v2.7.2 and SymbolicRegression.jl v2.7.2; PyOperon v0.6.2, whose pinned Operon core dependency is commit `fad10f087c592812b1a9ecfabce669f37bf459f7`. The core's v0.6.2 tag is not the dependency pinned by PyOperon. Source licenses were checked (Apache-2.0 for PySR/backend; MIT for PyOperon).
+- Resolved the checkpoint migration issue: generic checkpoint loading is still exact-version; additive named multi-policy helpers allow the v0.5 reader to import only v0.4.0/v0.3.0 scalar-expression and discrete-evolution/2 contracts. Actual v0.4.0 writer headers are vendored test-only with tag/blob/SHA provenance. Scalar v0.4, discrete v0.4 and existing scalar v0.3 full-state continuation fixtures passed three targeted CTest cases (GCC 13 Release, warning-as-error). D6 experimental contexts remain outside the published-v0.4 compatibility claim.
 
 ## Open issues and next actions
 
-1. Complete checkpoint A: verify package/dependency/API/compatibility inventory. A likely compatibility defect needs repair: current `scalarCheckpointCompatibility03()` and `loadDiscreteRunCheckpoint()` grant 0.3.0 import only when `genetikVersion == "0.4.0"`. A 0.5.0 bump would lose 0.3.0 import and currently adds no 0.4.0 import. Add narrowly scoped 0.4.0 compatibility for scalar/discrete codecs, preserve the existing 0.3.0 compatibility, and add fixtures/tests produced by the published 0.4.0 source. Keep generic checkpoint loading exact-version. D6 experimental contexts are not a published 0.4 contract.
+1. Finish checkpoint-A scope inventory and commit the 0.5.0 metadata/checkpoint migration repair. Verify CMake/package behavior for 0.5 while preserving 0.4 consumer requests.
 2. Before any target benchmark, freeze `docs/d7/BENCHMARK_PROTOCOL.md`: versions/commits/licenses, acquisition isolation, datasets/splits/noise/seeds, grammars/complexity, budgets, CPU/memory controls, metrics, and unsupported-comparison rules. Preflight timing must use a non-benchmark task and be recorded separately.
 3. Acquire/build competitor tools only in isolated `out/tmp/d7/` environments. PySR requires its Python/Julia backend; Operon is official C++23 and may require dependencies unavailable on this aarch64 host. If an upstream tool cannot be built/run without changing global packages, document that limitation.
 4. Use a shared independent scorer, preserve every seed/failure/timeout, and do not start concurrent benchmark jobs. Do not tune to recovery outcomes or introduce new operators/search algorithms.

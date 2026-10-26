@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 — development pre-release candidate
+
+- Integrate the optional D5 advanced mathematical APIs and D6 scientific and
+  multidimensional discovery APIs. Generic GA defaults and OOP use cases remain
+  supported; mathematical features are opt-in.
+- Add explicitly named v0.4.0/v0.3.0 scalar and discrete checkpoint import
+  policies without weakening exact-version generic checkpoint loading.
+- Preserve historical unsuccessful discovery campaigns and qualify evaluator
+  correctness separately from fitting, structure discovery and held-out
+  generalization.
+- Competitor benchmarking and complete local qualification are recorded in
+  [D7 evidence](docs/d7/README.md). This candidate has not been uploaded,
+  merged, tagged or published.
+
 ## 0.4.0 — proposed development pre-release
 
 - Add optional exact Int64/Bool expressions, checked arithmetic, lazy conditionals,

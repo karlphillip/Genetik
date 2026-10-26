@@ -1,0 +1,16 @@
+--- a/dependencies.py
++++ b/dependencies.py
+@@ -12,2 +12,1 @@
+-    result = subprocess.run(['cmake-package-check', name], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+-    return result.returncode == 0
++    return False  # fresh isolated prefix; build every upstream-pinned dependency
+@@ -24,1 +24,1 @@
+-        '-DCMAKE_C_COMPILER=clang', '-DCMAKE_CXX_COMPILER=clang++',
++        '-DCMAKE_C_COMPILER=/usr/bin/gcc', '-DCMAKE_CXX_COMPILER=/usr/bin/g++',
+@@ -79,0 +80,3 @@
++        # Operon's upstream Linux preset is x86-64-only; override only its compiler flags for this ARM host.
++        if name == 'operon':
++            cmake_args = cmake_args + ['-DCMAKE_CXX_FLAGS=-Wall -Wextra -Werror -pedantic -fsized-deallocation -fno-math-errno -march=armv8.2-a']
+@@ -82,1 +85,1 @@
+-        subprocess.run(['cmake', '--build', 'build', '-j', f'{cpu_count()}', '-v'], check=True) # build
++        subprocess.run(['cmake', '--build', 'build', '-j', f'{min(cpu_count(), 2)}', '-v'], check=True) # build

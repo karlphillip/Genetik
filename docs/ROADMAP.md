@@ -338,24 +338,27 @@ report tip passes and its source assets are verified. No new mathematical or
 operational feature phase is introduced.
 
 
-## Discrete release D4 (local preparation)
+## Discrete release D4 (historical checkpoint snapshot)
 
 D1–D3 implementation and original evidence are integrated selectively from the
 preserved research history into a clean0.3-based0.4 candidate. See
 [exact scope](DISCRETE_RELEASE_INTEGRATION.md), [release proposal](RELEASE_0.4.0_PROPOSAL.md)
 and [migration](releases/0.4.0/MIGRATION.md). The agreed implementation scope is
-complete. D4 local/hosted qualification and final delivery review remain the only
-current checkpoint; no D5–D7 work is begun. Upload and final publication are separate
-approval boundaries. Local evidence and exact asset/candidate identities are in
+complete at this historical checkpoint. The D4 local/hosted qualification and
+delivery review described here were the active work at the cited commits; D5,
+D6 and D7 subsequently proceeded as described at the top of this roadmap.
+Upload and final publication are separate approval boundaries. Local evidence and exact asset/candidate identities are in
 out/runs/discrete-d4/preflight; hosted claims require actual runs on the final tip.
 
 
-## D4 hosted discrete qualification
+## D4 hosted discrete qualification (historical completion snapshot)
 
 Clean0.4 D1–D3 candidate c7ffaee0ef9763f789464d4863fca86db3df4ea5 passed all
 three hosted jobs:71portable contracts each,15TSanselections three times plus
 five complete contracts. See [measured scope](DISCRETE_HOSTED_QUALIFICATION.md).
-The final report tip receives its own complete matrix; exact completion/run/assets
-are recorded under out/runs/discrete-d4/hosted. Implementation scope is complete.
-Only final delivery approval remains after final-tip qualification; no D5–D7 work.
-Existing historical qualification statements retain their original SHA scope.
+The final report tip was to receive its own complete matrix; exact completion,
+runs and assets are recorded under out/runs/discrete-d4/hosted. Implementation
+scope and D4 final delivery review were completed in that historical series.
+The paragraph above records the status at the original D4 report commits and
+does not describe the current D5–D7 checkpoint. Existing historical
+qualification statements retain their original SHA scope.

@@ -1,0 +1,22 @@
+click==8.5.0
+cloudpickle==3.1.2
+filelock==4.2.4
+joblib==1.6.0
+juliacall==0.9.36
+juliapkg==0.1.28
+mpmath==1.3.0
+narwhals==2.27.1
+numpy==2.5.4
+pandas==3.1.0
+python-dateutil==3.0.0
+scikit-learn==1.9.1
+scipy==1.18.1
+semver==3.1.0
+six==1.17.0
+sympy==1.14.0
+threadpoolctl==3.7.0
+tomli==2.5.0
+tomlkit==0.15.2
+typing_extensions==4.16.0
+tzdata==2026.5
+pysr @ git+https://github.com/MilesCranmer/PySR.git@04d550c446db6594f399e8686831c1bee801975c

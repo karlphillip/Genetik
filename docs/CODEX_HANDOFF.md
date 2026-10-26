@@ -2,14 +2,14 @@
 
 ## D7 state
 
-- Phase: D7, checkpoint A — integration and qualification baseline.
+- Phase: D7, checkpoint B — preflight completed; frozen protocol and harness are prepared for commit; no target runs have started.
 - Repository: `/home/karlphillip/workspaces/primeResearcher/Genetik`.
 - Branch: `qualification/advanced-mathematics-d7`.
-- Current committed SHA: `b2930fa0fc126dbabfc17a01f05f49e3eb32471a`; checkpoint-A source/test repair is in the working tree pending its local commit.
+- Current committed SHA: `daf6c96a8bf437a552ae836c1f0e40edb5859f52`; executable implementation remains at this SHA.
 - Published 0.4.0 tag resolves to `c08859e462210a1ef378b0c6c47a2b4c520f7353`, an ancestor of D6. The qualified D6 implementation `c72eaaa3f1ca817ba804d36321069e58ac288e6f` is also an ancestor. The v0.4.0 tag/assets have not been changed.
 - Version metadata is now `0.5.0` in the D7 working tree; release designation remains development pre-release.
-- Working tree was clean at phase start. No active test, qualification, or competitor processes were found.
-- No remote writes, PRs, merges, tags, uploads, or publications are authorized or performed.
+- Checkpoint-A implementation is committed. Targeted GCC 13 Release tests pass 3/3: scalar v0.3, scalar v0.4, and discrete v0.4 checkpoint continuation/compatibility. Full D7 candidate suites remain outstanding.
+- No active tests, benchmark jobs, or builds. No remote writes, PRs, merges, tags, uploads, or publications have occurred.
 
 ## Completed in checkpoint A
 
@@ -24,12 +24,12 @@
 
 ## Open issues and next actions
 
-1. Finish checkpoint-A scope inventory and commit the 0.5.0 metadata/checkpoint migration repair. Verify CMake/package behavior for 0.5 while preserving 0.4 consumer requests.
-2. Before any target benchmark, freeze `docs/d7/BENCHMARK_PROTOCOL.md`: versions/commits/licenses, acquisition isolation, datasets/splits/noise/seeds, grammars/complexity, budgets, CPU/memory controls, metrics, and unsupported-comparison rules. Preflight timing must use a non-benchmark task and be recorded separately.
-3. Acquire/build competitor tools only in isolated `out/tmp/d7/` environments. PySR requires its Python/Julia backend; Operon is official C++23 and may require dependencies unavailable on this aarch64 host. If an upstream tool cannot be built/run without changing global packages, document that limitation.
-4. Use a shared independent scorer, preserve every seed/failure/timeout, and do not start concurrent benchmark jobs. Do not tune to recovery outcomes or introduce new operators/search algorithms.
-5. Verify D5/D6 and new migration tests with the final derived manifest, then full Release, Debug, CMake 3.16.0, complete ASan+UBSan, TSan three-repeat selections, packaging/consumers, strict FP, workflow and repository hygiene. Keep the parent hygiene exception as a failed gate unless the parent owner resolves it.
-6. Prepare 0.5.0 metadata/release docs/source archive/checksums and the hosted-qualification approval packet. Stop before remote writes. Hosted-upload permission, main integration, tags and publication each require separate authorization.
+1. Review and commit the frozen D7 protocol, source locks, generated data, adapters, assessor, preflight evidence and this handoff. Do not change the task matrix after results begin.
+2. Import the three accepted neutral preflight records into the resumable driver, run the fixed 108-cell matrix serially, and independently assess every result. Preserve timeouts/invalid outputs. No target run has begun.
+3. Analyze retained D5/D6 findings alongside D7 metrics without changing the search algorithm. Complete D5/D6 specialist numerical references and checkpoint compatibility.
+4. Derive the actual final test manifest; run complete Release, Debug, exact CMake 3.16.0, ASan+UBSan, TSan x3 selections, consumers/packaging, strict FP, workflow and hygiene. Preserve the known parent workspace failure on untouched user-owned `session.md`.
+5. Prepare the 0.5.0 documentation, source archive, checksums and final local candidate commit. Confirm no executable source changed after its exact qualified SHA, or rerun affected qualification if a real source defect is repaired.
+6. Prepare the hosted qualification approval packet. Stop before remote writes. Hosted upload requires explicit authorization; main integration, tags and publication each require separate authorization.
 
 ## Evidence pointers
 
@@ -40,3 +40,12 @@
 - Hygiene implementation and self-test: `scripts/check_hygiene.py`.
 
 Update this file after each D7 checkpoint and before handing off context. Keep detailed outputs in repository evidence files and summarize them here; do not paste full logs into context.
+
+## Checkpoint B acquisition and preflight status (2026-10-26)
+
+- Frozen protocol draft prepared at `docs/d7/BENCHMARK_PROTOCOL.md`; generator, fixed data and SHA manifest are `docs/d7/benchmark_data.py` and `docs/d7/data/`. No target run has started.
+- PySR 2.7.2 runs under isolated Julia 1.10.3; archive SHA256 is pinned in `docs/d7/environments/pysr-runtime-sha256.txt`. PyOperon 0.6.2 and its native dependency source commits are locked under `docs/d7/environments/`; a local GCC/aarch64 adaptation patch is retained.
+- Accepted neutral preflights are summarized in `docs/d7/preflight_results.json`; raw process logs are under `out/logs/d7/preflight/`. PySR first failed from an adapter loss-API mistake, then preflighted with corrected `elementwise_loss` and deterministic serial configuration. Its fit call required ~117.5 s for a 60 s native preflight setting because Julia/JIT overhead is inside that call; target runs use a hard external 120 s cap. Preserve all attempts.
+- An initial PySR import without the pinned Julia environment bootstrapped a venv-managed Julia 1.11 and began compiling to the existing user `~/.julia` depot. That process was identified as this task's own setup process and stopped; its logs/failure remain. Do not clean or alter user Julia files. The accepted runs use the private D7 Julia depot/project/runtime.
+- PyOperon setup first failed on the upstream x86-64 preset; the failure log remains. The isolated retry used GCC 13 and a retained aarch64-only build patch. Source checkouts remain unchanged.
+- No background work is running. The last process ended before handoff; resume by checking `ps` before commands.

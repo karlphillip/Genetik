@@ -1,0 +1,138 @@
+{
+  "generator": "docs/d7/benchmark_data.py",
+  "numpy": "2.5.4",
+  "bit_generator": "PCG64",
+  "dataset_seed": 20261026,
+  "split_seed_scheme": "SeedSequence(dataset_seed).spawn(12), paired train/test per task in task order",
+  "noise_seed": 20261027,
+  "noise_sd": "0.01 * RMS(noiseless training targets)",
+  "heldout_noise": false,
+  "files": [
+    {
+      "task": "polynomial_x3",
+      "split": "train-clean",
+      "rows": 160,
+      "sha256": "c5690cf4ba18dbc2c68ef909fe898852285c4b9bea9b80a0bbe7887d0ef74454",
+      "path": "docs/d7/data/polynomial_x3-train-clean.csv"
+    },
+    {
+      "task": "polynomial_x3",
+      "split": "train-noise01",
+      "rows": 160,
+      "sha256": "d19bb847b0bd4c09d6f008ba785f85c91922780232012509d437cbfe1dbf89ce",
+      "path": "docs/d7/data/polynomial_x3-train-noise01.csv"
+    },
+    {
+      "task": "polynomial_x3",
+      "split": "test",
+      "rows": 512,
+      "sha256": "899570e73240b6a2796d10fdcb8238b78d1b9808116a5d81104aa504406586e6",
+      "path": "docs/d7/data/polynomial_x3-test.csv"
+    },
+    {
+      "task": "rational_x2",
+      "split": "train-clean",
+      "rows": 160,
+      "sha256": "436d292f9a11e114fa78897ee3c7ecb3acd8b1d2f91d7ef247e3b2c6388c36df",
+      "path": "docs/d7/data/rational_x2-train-clean.csv"
+    },
+    {
+      "task": "rational_x2",
+      "split": "train-noise01",
+      "rows": 160,
+      "sha256": "929aa544537b0d169ddb6aa40f9b9513dbfb8f8bd15bcb2d88c1d1eda7023a8d",
+      "path": "docs/d7/data/rational_x2-train-noise01.csv"
+    },
+    {
+      "task": "rational_x2",
+      "split": "test",
+      "rows": 512,
+      "sha256": "d8097c08a02d5a81160694c5d5b88afbdcfb879e129285d3a61b807f59f614fa",
+      "path": "docs/d7/data/rational_x2-test.csv"
+    },
+    {
+      "task": "trig_sine",
+      "split": "train-clean",
+      "rows": 160,
+      "sha256": "f1a555b6c5bd32fd872dbcfc1b434359b1633f27cac0572f52432a4b5d67366e",
+      "path": "docs/d7/data/trig_sine-train-clean.csv"
+    },
+    {
+      "task": "trig_sine",
+      "split": "train-noise01",
+      "rows": 160,
+      "sha256": "d16c8e491bf6fa4c3b32e8f6ab7004c7a340d1df5d84792a8cd1bd7c134fcb85",
+      "path": "docs/d7/data/trig_sine-train-noise01.csv"
+    },
+    {
+      "task": "trig_sine",
+      "split": "test",
+      "rows": 512,
+      "sha256": "7c1c2bdd458a45c9109ab2c8fe3b7710b6c2e32adbc0c2f953992440c8a87259",
+      "path": "docs/d7/data/trig_sine-test.csv"
+    },
+    {
+      "task": "exponential_decay",
+      "split": "train-clean",
+      "rows": 160,
+      "sha256": "d2e8ac370602b4b590c8b41678689ddcb20926f40fb8c3639d38a65f4fe06df9",
+      "path": "docs/d7/data/exponential_decay-train-clean.csv"
+    },
+    {
+      "task": "exponential_decay",
+      "split": "train-noise01",
+      "rows": 160,
+      "sha256": "899cac9898d4f13355454b47500465a1a5625c97502f031e638c80da578a5d36",
+      "path": "docs/d7/data/exponential_decay-train-noise01.csv"
+    },
+    {
+      "task": "exponential_decay",
+      "split": "test",
+      "rows": 512,
+      "sha256": "41ac4164dfbac7968ff66b67b0ebd219706cba13abe998328f0b84b3a373f84e",
+      "path": "docs/d7/data/exponential_decay-test.csv"
+    },
+    {
+      "task": "fractional_power_positive",
+      "split": "train-clean",
+      "rows": 160,
+      "sha256": "49e9dcb438d4dcdffa805e7e1195a36abb4a50376b7bbba9fc3500ee75234ee5",
+      "path": "docs/d7/data/fractional_power_positive-train-clean.csv"
+    },
+    {
+      "task": "fractional_power_positive",
+      "split": "train-noise01",
+      "rows": 160,
+      "sha256": "e81384811de0605617742632b29dff38605003e6a011cfe8f1c2a4e05936d4df",
+      "path": "docs/d7/data/fractional_power_positive-train-noise01.csv"
+    },
+    {
+      "task": "fractional_power_positive",
+      "split": "test",
+      "rows": 512,
+      "sha256": "5cbf28130aa5b0f6892bec0f493712cffef4fbcb984223927a450b885e2aaa5e",
+      "path": "docs/d7/data/fractional_power_positive-test.csv"
+    },
+    {
+      "task": "kinetic_energy_mv2",
+      "split": "train-clean",
+      "rows": 256,
+      "sha256": "451edd78090f36f0dfd621df46208f4b4476b528f1f47a52769ddfb99f7da164",
+      "path": "docs/d7/data/kinetic_energy_mv2-train-clean.csv"
+    },
+    {
+      "task": "kinetic_energy_mv2",
+      "split": "train-noise01",
+      "rows": 256,
+      "sha256": "a82f6601054f55d1c4d7af34b18f09b13f1d03a5784e813490a3a94d6f922d71",
+      "path": "docs/d7/data/kinetic_energy_mv2-train-noise01.csv"
+    },
+    {
+      "task": "kinetic_energy_mv2",
+      "split": "test",
+      "rows": 1024,
+      "sha256": "3fe3d236c226ea22378f632cd13de6a9f42a6044384994c334f563e9a1ae1854",
+      "path": "docs/d7/data/kinetic_energy_mv2-test.csv"
+    }
+  ]
+}

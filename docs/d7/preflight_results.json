@@ -1,0 +1,94 @@
+{
+  "protocol_task": "neutral linear y=x0+0.25, 64 rows",
+  "dataset_sha256": "333efef3e9a46f2ffc411d7d2f477cbbe4065ef449b8cc3d06dac43d8be6039f",
+  "target_benchmarks_started": false,
+  "accepted_configuration": {
+    "cpu": 0,
+    "workers": 1,
+    "memory_cap_gib": 6,
+    "adapter_fit_timeout_seconds": 60,
+    "outer_startup_ceiling_seconds": 180,
+    "pysr_deterministic": true
+  },
+  "accepted_runs": [
+    {
+      "framework": "Genetik",
+      "outcome": "completed",
+      "exit_code": 0,
+      "wall_seconds": 3.2954450289253148,
+      "cpu_seconds": 2.65,
+      "peak_rss_gib": 0.004306793212890625,
+      "workers_max_observed": 2,
+      "fit_seconds": 3.25952,
+      "training_mse": 0.0,
+      "candidate_evaluations": 4608,
+      "training_loss_attempts": 224730,
+      "supervisor": "out/logs/d7/preflight/genetik-supervisor.json",
+      "stdout": "out/logs/d7/preflight/genetik-stdout.log",
+      "stderr": "out/logs/d7/preflight/genetik-stderr.log"
+    },
+    {
+      "framework": "PySR",
+      "version": "2.7.2",
+      "julia": "1.10.3",
+      "outcome": "completed",
+      "exit_code": 0,
+      "wall_seconds": 126.41587787400931,
+      "cpu_seconds": 104.09,
+      "peak_rss_gib": 0.9084396363525391,
+      "workers_max_observed": 3,
+      "import_seconds": 7.652154327952303,
+      "fit_seconds": 117.47875728097279,
+      "training_loss": 0.0,
+      "expression": "x0 + 0.25",
+      "supervisor": "out/logs/d7/preflight/pysr-supervisor-final.json",
+      "stdout": "out/logs/d7/preflight/pysr-stdout-final.log",
+      "stderr": "out/logs/d7/preflight/pysr-stderr-final.log"
+    },
+    {
+      "framework": "PyOperon",
+      "version": "0.6.2",
+      "core_commit": "fad10f087c592812b1a9ecfabce669f37bf459f7",
+      "outcome": "completed",
+      "exit_code": 0,
+      "wall_seconds": 62.506729485001415,
+      "cpu_seconds": 52.68,
+      "peak_rss_gib": 0.1397705078125,
+      "workers_max_observed": 2,
+      "import_seconds": 1.4897772829281166,
+      "fit_seconds": 60.030661190045066,
+      "training_mse": 0.40641534391534384,
+      "native_evaluations": 576855,
+      "native_generations": 4542,
+      "supervisor": "out/logs/d7/preflight/operon-supervisor.json",
+      "stdout": "out/logs/d7/preflight/operon-stdout.log",
+      "stderr": "out/logs/d7/preflight/operon-stderr.log"
+    }
+  ],
+  "preserved_nonaccepted_attempts": [
+    {
+      "framework": "PySR",
+      "status": "failed",
+      "reason": "adapter passed the L2DistLoss object through loss_function instead of elementwise_loss",
+      "supervisor": "out/logs/d7/preflight/pysr-supervisor.json",
+      "stdout": "out/logs/d7/preflight/pysr-stdout.log",
+      "stderr": "out/logs/d7/preflight/pysr-stderr.log"
+    },
+    {
+      "framework": "PySR",
+      "status": "completed_with_configuration_warning",
+      "reason": "pre-determinism-flag neutral run; not the accepted frozen configuration",
+      "supervisor": "out/logs/d7/preflight/pysr-supervisor-retry.json",
+      "stdout": "out/logs/d7/preflight/pysr-stdout-retry.log",
+      "stderr": "out/logs/d7/preflight/pysr-stderr-retry.log"
+    },
+    {
+      "framework": "PySR",
+      "status": "completed_warm_preflight",
+      "reason": "neutral cache-warm measurement; retained for startup accounting",
+      "supervisor": "out/logs/d7/preflight/pysr-supervisor-warm.json",
+      "stdout": "out/logs/d7/preflight/pysr-stdout-warm.log",
+      "stderr": "out/logs/d7/preflight/pysr-stderr-warm.log"
+    }
+  ]
+}

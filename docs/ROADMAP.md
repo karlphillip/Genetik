@@ -19,8 +19,9 @@ hygiene check has a documented parent-directory exception. See
 Hosted Qualification and Development Release** has completed its frozen local
 benchmark, engineering qualification and source-archive preflight on
 `qualification/advanced-mathematics-d7`, targeting Genetik 0.5.0. Hosted
-qualification, integration and publication remain separate actions. No
-additional mathematical phase is introduced.
+qualification passed for the pushed candidate; main integration and
+publication remain separate actions. No additional mathematical phase is
+introduced.
 
 
 **Agreed implementation scope complete locally:** cleanup, typed evaluation/evolution,

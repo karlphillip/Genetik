@@ -2,14 +2,14 @@
 
 ## Current state
 
-- Milestone: D7, checkpoint F — frozen benchmark, all required local engineering gates and source-archive preflight passed; exact candidate is ready for its authorized branch push and hosted qualification.
+- Milestone: D7, checkpoint F — frozen benchmark, all required local engineering gates, source-archive preflight and hosted matrix passed. Check the linked Actions page for qualification of the current exact branch tip; no manual dispatch is needed.
 - Repository: `/home/karlphillip/workspaces/primeResearcher/Genetik`.
 - Branch: `qualification/advanced-mathematics-d7`.
 - Qualification source and test-configuration SHA: `20d2e3e0db9fbd312b16ba0d9fe632ff51459786`. The D7 completion commit(s) on top are documentation, benchmark assessment/reporting and result data only; no executable source or test configuration changed after this tested SHA. Read the exact final candidate with `git rev-parse HEAD`.
 - Qualified D6 implementation source: `c72eaaa3f1ca817ba804d36321069e58ac288e6f`.
 - D7 checkpoint A implementation/source-migration commit: `daf6c96a8bf437a552ae836c1f0e40edb5859f52`.
 - D7 protocol/data/tooling checkpoint: `a33c77bac744afe4025441ab63df74b3a70356ff`.
-- Published 0.4.0 baseline/tag: `c08859e462210a1ef378b0c6c47a2b4c520f7353`, unchanged and ancestor. Before the explicitly authorized final branch push, no remote writes, tags, merges, PRs, uploads or publication had occurred.
+- Published 0.4.0 baseline/tag: `c08859e462210a1ef378b0c6c47a2b4c520f7353`, unchanged and ancestor. The qualification branch was pushed and its normal push-triggered workflow completed. No PR, main merge, tag or publication occurred.
 - Executable implementation and frozen protocol have not changed since matrix start. The final local candidate tree is committed and clean.
 
 ## Qualification state
@@ -33,7 +33,7 @@
 
 ## Next actions
 
-1. Create the ignored local approval packet with exact candidate SHA, benchmark/test evidence and source archive SHA256.
-2. Push only `qualification/advanced-mathematics-d7`, as authorized. This may trigger normal `on: push` CI. Do not manually dispatch hosted CI, open a PR, merge, tag or publish.
+1. Consult `out/logs/d7/approval-packet.md` and the current branch workflow for exact evidence and SHA.
+2. Any hosted repair or new qualification run must be scoped to an observed failure and retain the failed evidence. Main integration, PR, tag and publication remain separately unauthorized.
 
-D7 scientific campaigns are complete and must not be repeated. Pushing the qualification branch is authorized after local work is complete; hosted CI may trigger on push. Do not manually dispatch hosted CI without authorization. Keep detailed logs in files and update this handoff at each checkpoint.
+D7 scientific campaigns and qualification are complete. Do not repeat campaigns or manually dispatch hosted CI. Keep detailed logs in files; hosted repair, main integration, PR creation, tagging and publication require further authorization.

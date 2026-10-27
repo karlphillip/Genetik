@@ -17,11 +17,10 @@ hygiene check has a documented parent-directory exception. See
 [D6 qualification](D6_QUALIFICATION.md) and the retained
 [scientific results](d6-results/RESULTS.md). **D7 — Competitor Benchmarking,
 Hosted Qualification and Development Release** has completed its frozen local
-benchmark and local engineering gates on `qualification/advanced-mathematics-d7`,
-targeting Genetik 0.5.0. Release-asset packaging and the exact candidate packet
-are the remaining local preflight work; hosted qualification, integration and
-publication remain separate actions. No additional mathematical phase is
-introduced.
+benchmark, engineering qualification and source-archive preflight on
+`qualification/advanced-mathematics-d7`, targeting Genetik 0.5.0. Hosted
+qualification, integration and publication remain separate actions. No
+additional mathematical phase is introduced.
 
 
 **Agreed implementation scope complete locally:** cleanup, typed evaluation/evolution,

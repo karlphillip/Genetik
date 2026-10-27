@@ -2,17 +2,17 @@
 
 ## Current state
 
-- Milestone: D7, checkpoint D — frozen competitor matrix, Release, Debug, CMake 3.16.0, full ASan+UBSan, workflow-defined TSan and optional LP64 LAPACK consumer gates passed; final hygiene and packaging checks remain.
+- Milestone: D7, checkpoint F — frozen benchmark, all required local engineering gates and source-archive preflight passed; exact candidate is ready for its authorized branch push and hosted qualification.
 - Repository: `/home/karlphillip/workspaces/primeResearcher/Genetik`.
 - Branch: `qualification/advanced-mathematics-d7`.
-- Current HEAD: `20d2e3e` (`Update installed quickstarts to request version 0.5`); full SHA can be read with `git rev-parse HEAD`. This is a test/package metadata repair after the matrix; no executable library code changed after the benchmark implementation SHA.
+- Qualification source and test-configuration SHA: `20d2e3e0db9fbd312b16ba0d9fe632ff51459786`. The D7 completion commit(s) on top are documentation, benchmark assessment/reporting and result data only; no executable source or test configuration changed after this tested SHA. Read the exact final candidate with `git rev-parse HEAD`.
 - Qualified D6 implementation source: `c72eaaa3f1ca817ba804d36321069e58ac288e6f`.
 - D7 checkpoint A implementation/source-migration commit: `daf6c96a8bf437a552ae836c1f0e40edb5859f52`.
 - D7 protocol/data/tooling checkpoint: `a33c77bac744afe4025441ab63df74b3a70356ff`.
-- Published 0.4.0 baseline/tag: `c08859e462210a1ef378b0c6c47a2b4c520f7353`, unchanged and ancestor. No remote writes, tags, merges, PRs, uploads or publication occurred.
-- Executable implementation and frozen protocol have not changed since matrix start. Current uncommitted changes are D7 reports, benchmark results/tooling, release notes and README/changelog/roadmap reconciliation; no executable library code or test configuration changed after the tested candidate.
+- Published 0.4.0 baseline/tag: `c08859e462210a1ef378b0c6c47a2b4c520f7353`, unchanged and ancestor. Before the explicitly authorized final branch push, no remote writes, tags, merges, PRs, uploads or publication had occurred.
+- Executable implementation and frozen protocol have not changed since matrix start. The final local candidate tree is committed and clean.
 
-## Active benchmark process
+## Qualification state
 
 - No benchmark or qualification process remains. ASan+UBSan passed all 90/90 in 4506.15 s (`final-sanitize-test-manifest.json`, `final-sanitize-build.log`, `final-sanitize-ctest.log`); TSan passed all 21 selections three times and complete integral 1/1, discrete/checkpoint 4/4, D5 6/6 and D6 2/2 contracts (`final-tsan-*.log`). Optional LP64 OpenBLAS/LAPACK installed-consumer test passed 1/1 (`final-lapack-build.log`, `final-lapack-optional-package.log`). Long ASan prime/dimension contracts passed in 1375.57 s and 890.45 s. No process was terminated.
 - Frozen protocol SHA256: `b0b07d2ae418ca71b024fbaa1374264348d92f2b8290606efda2969a432f1ffd`.
@@ -33,8 +33,7 @@
 
 ## Next actions
 
-1. Run final hygiene/strict-FP and source archive checks.
-2. Complete the approval packet with exact candidate SHA, results, source archive SHA256 and hosted workflow proposal; update this handoff.
-3. Commit only intended D7 docs/results/tooling. Verify a clean tree and source identity; then push only `qualification/advanced-mathematics-d7` as explicitly authorized. Do not manually dispatch hosted CI, open a PR, merge, tag or publish.
+1. Create the ignored local approval packet with exact candidate SHA, benchmark/test evidence and source archive SHA256.
+2. Push only `qualification/advanced-mathematics-d7`, as authorized. This may trigger normal `on: push` CI. Do not manually dispatch hosted CI, open a PR, merge, tag or publish.
 
 D7 scientific campaigns are complete and must not be repeated. Pushing the qualification branch is authorized after local work is complete; hosted CI may trigger on push. Do not manually dispatch hosted CI without authorization. Keep detailed logs in files and update this handoff at each checkpoint.

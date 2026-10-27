@@ -11,8 +11,9 @@
   correctness separately from fitting, structure discovery and held-out
   generalization.
 - Competitor benchmarking and complete local qualification are recorded in
-  [D7 evidence](docs/d7/README.md). This candidate has not been uploaded,
-  merged, tagged or published.
+  [D7 evidence](docs/d7/README.md). The qualification-branch push is reserved
+  for hosted qualification; no PR, main integration, tag or publication is
+  included in that step.
 
 ## 0.4.0 — proposed development pre-release
 

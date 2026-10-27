@@ -3,8 +3,10 @@
 Genetik remains a general-purpose C++20 genetic-algorithm framework. This
 development pre-release adds optional scientific mathematics and discovery
 APIs while retaining the established GA defaults and generic OOP use cases.
-It is a locally qualified development candidate; hosted qualification and
-publication have not been authorized or performed.
+It is a locally qualified development candidate; no hosted result or
+publication is claimed. The qualification branch may be uploaded for the
+hosted matrix under separate qualification controls; that does not authorize
+main integration, tagging, or publication.
 
 ## Scope
 
@@ -44,5 +46,6 @@ of the release evidence.
 
 This source archive is a development pre-release candidate. Its exact branch,
 commit, engineering gates, checksums and remaining qualification failures are
-listed in the D7 approval packet. Hosted CI, branch upload, PR creation, tags,
-main integration and publication are separate actions and have not occurred.
+listed in the local D7 approval packet. Branch upload is for qualification
+only. PR creation, main integration, tags and publication require separate
+approval and have not occurred.

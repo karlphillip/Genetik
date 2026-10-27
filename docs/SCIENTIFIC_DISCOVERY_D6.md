@@ -125,10 +125,11 @@ Convergence here means eigensolver/residual acceptance and finite arithmetic,
 not a rigorous exponential error bound. Independent diagonal and 2x2 fixtures
 qualify this restricted domain.
 
-The base package has no new dependency. Opt in at build with
-`GENETIK_SCIENTIFIC_NUMERICS=ON`, or installed
-`find_package(Genetik 0.4 COMPONENTS ScientificNumerics REQUIRED)` and link
-`Genetik::ScientificNumerics`. `Genetik::Genetik` stays independent of LAPACK.
+The base package has no new dependency. In the integrated 0.5.0 candidate, opt
+in at build with `GENETIK_SCIENTIFIC_NUMERICS=ON`, or use the installed package
+request
+`find_package(Genetik 0.5 CONFIG REQUIRED COMPONENTS ScientificNumerics)` and
+link `Genetik::ScientificNumerics`. `Genetik::Genetik` stays independent of LAPACK.
 Without the optional target, solve/eigen/exponential return Unavailable.
 Only the local Linux LP64 OpenBLAS/LAPACK configuration is qualified. Set
 `OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1` before launching applications: numerical

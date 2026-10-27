@@ -20,6 +20,13 @@ OPS = {
 FUNCS = {"sin": np.sin, "exp": np.exp, "log": np.log, "ln": np.log}
 SYMBOLS = {"sin": sp.sin, "exp": sp.exp, "log": sp.log, "ln": sp.log}
 
+DOMAINS = {
+    "polynomial_x3": [(-2.0, 2.0)], "rational_x2": [(-2.0, 2.0)],
+    "trig_sine": [(-math.pi, math.pi)], "exponential_decay": [(-2.0, 2.0)],
+    "fractional_power_positive": [(0.1, 3.0)],
+    "kinetic_energy_mv2": [(0.5, 10.0), (0.1, 8.0)],
+}
+
 
 def parse_model(source, nvars):
     tree = ast.parse(source, mode="eval")
@@ -96,6 +103,58 @@ def target_symbolic(task):
     raise ValueError(task)
 
 
+def certify_expression_domain(source, task):
+    """Conservatively reject equivalence when model syntax may be undefined."""
+    tree = ast.parse(source, mode="eval")
+    symbols = [sp.Symbol(f"x{i}", real=True) for i in range(len(DOMAINS[task]))]
+    denominators = []
+    has_log = False
+
+    def symbolic(node):
+        nonlocal has_log
+        if isinstance(node, ast.Expression):
+            return symbolic(node.body)
+        if isinstance(node, ast.Constant) and type(node.value) in (int, float):
+            return sp.Rational(str(node.value))
+        if isinstance(node, ast.Name) and node.id.startswith("x") and node.id[1:].isdigit():
+            return symbols[int(node.id[1:])]
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+            value = symbolic(node.operand)
+            return value if isinstance(node.op, ast.UAdd) else -value
+        if isinstance(node, ast.BinOp) and type(node.op) in OPS:
+            left, right = symbolic(node.left), symbolic(node.right)
+            if isinstance(node.op, ast.Div):
+                denominators.append(right)
+            return op_symbol(type(node.op), left, right)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in FUNCS and len(node.args) == 1:
+            has_log = has_log or node.func.id in ("log", "ln")
+            value = symbolic(node.args[0])
+            return SYMBOLS[node.func.id](value)
+        raise ValueError("unsupported syntax in domain certificate")
+
+    expression = symbolic(tree)
+    if has_log:
+        return False, "logarithm domain not certified over full task domain"
+    for denominator in denominators:
+        if denominator.is_zero is True:
+            return False, "identically zero divisor"
+        if denominator.is_number:
+            if denominator == 0:
+                return False, "identically zero divisor"
+            continue
+        if len(symbols) != 1 or denominator.free_symbols - {symbols[0]}:
+            return False, "multivariate divisor domain not certified"
+        lo, hi = DOMAINS[task][0]
+        try:
+            polynomial = sp.Poly(denominator, symbols[0])
+            interval_roots = polynomial.count_roots(sp.Rational(str(lo)), sp.Rational(str(hi)))
+        except (sp.PolynomialError, NotImplementedError, ValueError, TypeError):
+            return False, "non-polynomial divisor domain not certified"
+        if interval_roots:
+            return False, f"divisor zeros not excluded on [{lo}, {hi}]"
+    return True, "all explicit divisors are constants or certified root-free polynomials on declared domain"
+
+
 def summarize(source, x, y):
     parsed = parse_model(source, x.shape[1])
     fn, symbolic, nodes, depth = parsed
@@ -132,7 +191,8 @@ def assess(record, data_dir):
     symbols = {f"x{i}": sp.Symbol(f"x{i}", real=True) for i in range(xtrain.shape[1])}
     try:
         difference = sp.simplify(sym - target_symbolic(task))
-        equivalence = "symbolically_equivalent" if difference == 0 else "not_proved_equivalent"
+        domain_valid, domain_reason = certify_expression_domain(record["expression"], task)
+        equivalence = "symbolically_equivalent" if difference == 0 and domain_valid else "not_proved_equivalent"
     except Exception as exc:
         equivalence = "unknown"
         record["equivalence_error"] = f"{type(exc).__name__}: {exc}"
@@ -158,6 +218,7 @@ def assess(record, data_dir):
             "expression_nodes": test["nodes"],
             "expression_depth": test["depth"],
             "symbolic_assessment": equivalence,
+            "symbolic_domain_assessment": domain_reason if "domain_reason" in locals() else "unknown",
             "operational_recovery": bool(test["rmse"] is not None and test["rmse"] <= threshold * scale),
             "recovery_relative_threshold": threshold,
             "recovery_absolute_threshold": threshold * scale,

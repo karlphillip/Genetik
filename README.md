@@ -11,15 +11,19 @@ bounded expressions against ordinary multi-input, single-output numerical rows.
 It is heuristic search, with no guarantee of a good fit, a particular equation or
 extrapolation accuracy. Prime regression is one application example.
 
-The library uses only the C++ standard library and is [MIT licensed](LICENSE).
-Published versions through **0.4.0** remain unchanged. This local development
-branch implements optional [D5 advanced mathematics](docs/ADVANCED_MATHEMATICS_D5.md):
-checked number theory and bounded recurrences, extended scalar scientific functions,
-separate symbolic algebra, exact physical dimensions and mathematical constraints.
-Existing grammars and GA defaults remain unchanged. See the
-[frozen recovery results](docs/d5-results/RESULTS.md) and
-[revision-specific local qualification](docs/D5_QUALIFICATION.md).
-D5 is local development, not a new published release or hosted platform qualification.
+The library uses only the C++ standard library by default and is [MIT licensed](LICENSE).
+Published releases through **0.4.0** and their assets remain unchanged. The
+**0.5.0 development pre-release candidate** integrates opt-in
+[D5 advanced mathematics](docs/ADVANCED_MATHEMATICS_D5.md) and
+[D6 scientific discovery](docs/SCIENTIFIC_DISCOVERY_D6.md): checked integer
+math and recurrences, symbolic algebra, dimensions and constraints, coupled
+equation systems, supplied-observation ODE/PDE residuals, bounded matrices and
+tensors, restricted complex regression, statistics, probability and special
+functions. Established GA defaults and generic OOP use cases remain supported.
+See the [D7 local qualification and boundaries](docs/D7_NUMERICAL_QUALIFICATION.md),
+[frozen benchmark protocol and report](docs/d7/BENCHMARK_REPORT.md), and
+[0.5.0 migration guide](docs/releases/0.5.0/MIGRATION.md). This candidate has
+not been published; hosted qualification and publication are separate actions.
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
 
@@ -57,17 +61,19 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
 
-Obtain the source (use `--branch v0.4.0` for the published checkpoint):
+Obtain the source (use `--branch v0.4.0` for the published checkpoint, or
+`--branch qualification/advanced-mathematics-d7` for this development candidate):
 
 ```sh
 git clone https://github.com/karlphillip/Genetik.git Genetik
 cd Genetik
+git switch --track origin/qualification/advanced-mathematics-d7
 ```
 
 For published 0.4.0, use its verified source archive and enter `Genetik-0.4.0/`.
-The optional D5 quickstart and APIs require this development branch. The commands
-below describe the current source tree, not published v0.1.0. The older tag contains only the original scalar/symbolic quickstarts and
-requires its own 0.1 package requests. Do not use 0.4 instructions with that archive.
+The D5/D6 APIs in this candidate require the 0.5.0 development branch. The
+commands below describe that source tree; older release archives retain their
+own package versions and instructions.
 From the corresponding source root, install and build the available programs:
 
 ```sh
@@ -89,7 +95,7 @@ The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a comp
 consumer. In your application, enable CXX and use:
 
 ```cmake
-find_package(Genetik 0.4 CONFIG REQUIRED)
+find_package(Genetik 0.5 CONFIG REQUIRED)
 add_executable(application main.cpp)
 target_link_libraries(application PRIVATE Genetik::Genetik)
 ```
@@ -290,9 +296,7 @@ uses the generic state seams and scalar-expression codec without prime dependenc
 
 Optional discrete modules: [D1](docs/DISCRETE_EXPRESSIONS.md), [D2](docs/DISCRETE_ITERATION.md), [D3 results](docs/DISCRETE_D3_RESULTS.md). They do not replace the generic OOP engine.
 
-Current delivery proposal: [0.4.0 notes](docs/releases/0.4.0/NOTES.md) and [review boundaries](docs/RELEASE_0.4.0_PROPOSAL.md).
-
-Local D6 development adds [scientific system identification, bounded linear algebra,
-tensors, complex regression and statistical mathematics](docs/SCIENTIFIC_DISCOVERY_D6.md).
-These opt-in mathematical modules preserve the generic GA and existing defaults;
-they are not a new published release.
+Current candidate: [Genetik 0.5.0 development pre-release notes](docs/releases/0.5.0/NOTES.md),
+[migration guide](docs/releases/0.5.0/MIGRATION.md),
+[competitor benchmark](docs/d7/BENCHMARK_REPORT.md), and
+[hosted qualification proposal](docs/d7/HOSTED_QUALIFICATION_PROPOSAL.md).

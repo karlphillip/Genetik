@@ -1,0 +1,108 @@
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+Scanning dependencies of target _native
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[  0%] Building CXX object python/CMakeFiles/_native.dir/bindings.cpp.o
+[100%] Linking CXX shared module _native.cpython-312-aarch64-linux-gnu.so
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Built target _native
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+Scanning dependencies of target genetik_arithmetic_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Building CXX object tests/CMakeFiles/genetik_arithmetic_tests.dir/strict_arithmetic.cpp.o
+[100%] Linking CXX executable genetik_arithmetic_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Built target genetik_arithmetic_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+Scanning dependencies of target genetik_expression_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[  0%] Building CXX object tests/CMakeFiles/genetik_expression_tests.dir/expressions.cpp.o
+[100%] Linking CXX executable genetik_expression_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Built target genetik_expression_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+Scanning dependencies of target genetik_fitting_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Building CXX object tests/CMakeFiles/genetik_fitting_tests.dir/constant_fitting.cpp.o
+[100%] Linking CXX executable genetik_fitting_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Built target genetik_fitting_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+Scanning dependencies of target genetik_symbolic_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[  0%] Building CXX object tests/CMakeFiles/genetik_symbolic_tests.dir/symbolic_regression.cpp.o
+[100%] Linking CXX executable genetik_symbolic_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Built target genetik_symbolic_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+Scanning dependencies of target genetik_concurrency_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Building CXX object tests/CMakeFiles/genetik_concurrency_tests.dir/concurrency.cpp.o
+[100%] Linking CXX executable genetik_concurrency_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Built target genetik_concurrency_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+Scanning dependencies of target genetik_oop_consumer
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[ 50%] Building CXX object tests/CMakeFiles/genetik_oop_consumer.dir/oop_consumer/main.cpp.o
+[100%] Linking CXX executable genetik_oop_consumer
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Built target genetik_oop_consumer
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+Scanning dependencies of target genetik_checkpoint_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[  0%] Building CXX object tests/CMakeFiles/genetik_checkpoint_tests.dir/run_checkpoint.cpp.o
+[100%] Linking CXX executable genetik_checkpoint_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Built target genetik_checkpoint_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+Scanning dependencies of target genetik_typed_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Building CXX object tests/CMakeFiles/genetik_typed_tests.dir/typed.cpp.o
+[100%] Linking CXX executable genetik_typed_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+[100%] Built target genetik_typed_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan'

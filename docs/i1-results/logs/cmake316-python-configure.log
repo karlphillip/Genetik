@@ -1,0 +1,23 @@
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for C++ include pthread.h
+-- Looking for C++ include pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+CMake Error at /home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/share/cmake-3.16/Modules/FindPackageHandleStandardArgs.cmake:146 (message):
+  Could NOT find Python (missing: Interpreter Development.Module) (found
+  version "3.12.3")
+Call Stack (most recent call first):
+  /home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/share/cmake-3.16/Modules/FindPackageHandleStandardArgs.cmake:393 (_FPHSA_FAILURE_MESSAGE)
+  /home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/share/cmake-3.16/Modules/FindPython.cmake:347 (find_package_handle_standard_args)
+  python/CMakeLists.txt:1 (find_package)
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-cmake316-python/CMakeFiles/CMakeOutput.log".

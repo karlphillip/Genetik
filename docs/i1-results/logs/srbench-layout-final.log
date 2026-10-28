@@ -1,0 +1,3 @@
+checked 31 algorithms and 45 method directories
+warning: tir: algorithms/tir/regressor.py is ignored; the harness imports experiment/methods/tir/regressor.py
+method layout OK

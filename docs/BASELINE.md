@@ -1076,3 +1076,16 @@ recompilation of dependent translation units; it is not an ABI guarantee.
 No version/release/default grammar/optimizer/prime objective change is intended.
 Revision-specific qualification and frozen outcomes are recorded in
 D6_QUALIFICATION.md and d6-results/, separately from D5 evidence.
+
+
+## I1 native Python interoperability (local)
+
+I1 is based directly on published Genetik 0.5.0
+`f95a204e25a6de36a54230be0cba750bde5e2ff7`. It adds an optional pybind11
+extension and sklearn-compatible scalar regressor over the existing C++
+`symbolicRegression` implementation; no Python search/evaluator or new search
+policy is introduced. The package uses scikit-build-core, while the normal C++
+build remains Python-independent and the extension is disabled by default.
+Local scope, platform limits and qualification are recorded in
+[I1 interoperability](I1_PYTHON_INTEROPERABILITY.md) and
+[I1 qualification](I1_QUALIFICATION.md). This is not a published release.

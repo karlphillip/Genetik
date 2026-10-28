@@ -1,0 +1,56 @@
+{
+  "schema": "genetik.i1.protocol/1",
+  "base_source": "f95a204e25a6de36a54230be0cba750bde5e2ff7",
+  "branch": "feature/python-interoperability-i1",
+  "implementation": {
+    "algorithm": "existing symbolicRegression C++ API through Python-independent facade",
+    "cancellation": "run-owned ExecutionContext cooperative stop; committed generations only; no forced thread interruption",
+    "core_cmake_minimum": "3.16",
+    "python_extension": "optional CMake target; disabled by default",
+    "package_name": "genetik",
+    "binding": "pybind11",
+    "build_backend": "scikit-build-core"
+  },
+  "qualified_environment": {
+    "python": "3.12.3",
+    "compiler": "GCC 13.3.0",
+    "cmake": "3.28.3",
+    "platform": "Linux aarch64, Ubuntu 24.04.4, Jetson Orin NX",
+    "build_dependencies": {
+      "scikit-build-core": "0.10.7",
+      "pybind11": "2.13.6"
+    },
+    "runtime_dependencies": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.5.2",
+      "sympy": "1.13.3",
+      "pytest": "8.3.5"
+    }
+  },
+  "srbench": {
+    "repository": "https://github.com/cavalab/srbench",
+    "branch_at_freeze": "master",
+    "commit": "2aabbb60dad41d6e5d52779ce134191a874b756c",
+    "layout": "algorithms/genetik plus experiment/methods/genetik",
+    "checks": ["official scripts/check_method_layout.py", "official experiment method smoke test", "bounded local fit/predict/model export"]
+  },
+  "equivalence_fixture": {
+    "X": [[-1.0], [0.0], [1.0], [2.0]],
+    "y": [1.0, 1.0, 3.0, 7.0],
+    "seed": 42,
+    "workers": 1,
+    "population": 8,
+    "max_generations": 4,
+    "candidate_budget": 40,
+    "loss_budget": 256,
+    "max_fit_loss_attempts": 8,
+    "node_limit": 15,
+    "depth_limit": 5,
+    "constant_limit": 8,
+    "operators": ["add", "subtract", "multiply"],
+    "continuous_constant_probability": 0.5,
+    "training_threshold": 1e-14,
+    "fit_threshold": 1e-14
+  },
+  "assessment_policy": "No held-out data are used in search. Independent Python expression checks use fixed fixtures only. No full SRBench campaign or external performance claim is part of I1."
+}

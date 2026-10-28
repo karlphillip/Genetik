@@ -1,0 +1,20 @@
+-- The CXX compiler identification is GNU 13.3.0
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for C++ include pthread.h
+-- Looking for C++ include pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Found Python3: /usr/bin/python3 (found suitable version "3.12.3", minimum required is "3.9") found components: Interpreter 
+-- Found Python: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development 
+-- Performing Test HAS_FLTO
+-- Performing Test HAS_FLTO - Success
+-- Found pybind11: /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/i1-venv/lib/python3.12/site-packages/pybind11/include (found version "2.13.6")
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-release

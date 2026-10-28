@@ -1,0 +1,29 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug
+      Start  1: genetik_strict_arithmetic
+ 1/12 Test  #1: genetik_strict_arithmetic .........   Passed    0.04 sec
+      Start  2: genetik_multivariate_contracts
+ 2/12 Test  #2: genetik_multivariate_contracts ....   Passed    0.04 sec
+      Start  3: genetik_fitting_contracts
+ 3/12 Test  #3: genetik_fitting_contracts .........   Passed    0.07 sec
+      Start  4: genetik_symbolic_contracts
+ 4/12 Test  #4: genetik_symbolic_contracts ........   Passed    0.01 sec
+      Start  6: genetik_fitness_publication
+ 5/12 Test  #6: genetik_fitness_publication .......   Passed    0.01 sec
+      Start  7: genetik_contracts
+ 6/12 Test  #7: genetik_contracts .................   Passed    0.02 sec
+      Start 13: genetik_oop_contracts
+ 7/12 Test #13: genetik_oop_contracts .............   Passed    0.01 sec
+      Start 14: genetik_concurrency_contracts
+ 8/12 Test #14: genetik_concurrency_contracts .....   Passed    0.09 sec
+      Start 17: genetik_typed_contracts
+ 9/12 Test #17: genetik_typed_contracts ...........   Passed    0.03 sec
+      Start 34: genetik_checkpoint_contracts
+10/12 Test #34: genetik_checkpoint_contracts ......   Passed    9.51 sec
+      Start 58: genetik_d6_scientific_contracts
+11/12 Test #58: genetik_d6_scientific_contracts ...   Passed    0.23 sec
+      Start 59: genetik_d6_continuation
+12/12 Test #59: genetik_d6_continuation ...........   Passed    3.06 sec
+
+100% tests passed, 0 tests failed out of 12
+
+Total Test time (real) =  13.13 sec

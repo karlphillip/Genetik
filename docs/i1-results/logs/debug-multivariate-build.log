@@ -1,0 +1,12 @@
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_multivariate_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[ 50%] Building CXX object tests/CMakeFiles/genetik_multivariate_tests.dir/multivariate.cpp.o
+[100%] Linking CXX executable genetik_multivariate_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_multivariate_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'

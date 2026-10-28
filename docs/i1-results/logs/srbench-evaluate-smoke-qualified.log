@@ -1,0 +1,62 @@
+========================================
+Evaluating genetik on 
+/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/srbench-generated.tsv
+========================================
+compression: None
+filename: /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/srbench-generated.tsv
+feature_names: ['x0']
+scaling X
+scaling y
+max time: 3
+X_train: <class 'pandas.core.frame.DataFrame'> (18, 1)
+y_train: (18,)
+training GenetikRegressor(evaluation_budget=128, loss_budget=1000, max_depth=5,
+                 max_fit_loss_attempts=8, max_generations=4, max_nodes=15,
+                 max_time=300.0, population_size=8, random_state=42)
+max time set: 3
+Training time measure: 0.0020444393157958984
+WARNING: attempting to store  ('add', 'sub', 'mul') as a str for json
+fitted est: GenetikRegressor(evaluation_budget=128, loss_budget=1000, max_depth=5,
+                 max_fit_loss_attempts=8, max_generations=4, max_nodes=15,
+                 max_time=3, population_size=8, random_state=42)
+symbolic model: x0
+results:
+{
+    "dataset": "srbench-generated",
+    "algorithm": "genetik",
+    "params": {
+        "continuous_probability": 0.5,
+        "evaluation_budget": 128,
+        "fit_constants": true,
+        "fit_threshold": 1e-14,
+        "loss_budget": 1000,
+        "max_abs_constant": 8.0,
+        "max_depth": 5,
+        "max_fit_loss_attempts": 8,
+        "max_generations": 4,
+        "max_nodes": 15,
+        "max_time": 3,
+        "n_jobs": 1,
+        "operators": "('add', 'sub', 'mul')",
+        "population_size": 8,
+        "random_state": 42,
+        "training_threshold": 1e-14
+    },
+    "random_state": 42,
+    "time_time": 0.0020444393157958984,
+    "symbolic_model": "x0",
+    "mse_train": 1.1148994455841666e-31,
+    "mae_train": 2.420902984252077e-16,
+    "r2_train": 1.0,
+    "mse_test": 6.708655972948872e-33,
+    "mae_test": 5.782411586589357e-17,
+    "r2_test": 1.0,
+    "simplicity": -0.0,
+    "complexity_function": "sympy",
+    "model_size": 1,
+    "target_noise": 0.0,
+    "feature_noise": 0.0
+}
+---
+save_file: /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/srbench-results/srbench-generated_genetik_42
+srbench_result /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/srbench-results/srbench-generated_genetik_42.json

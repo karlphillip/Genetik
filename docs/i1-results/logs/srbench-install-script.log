@@ -1,0 +1,15 @@
+Processing ./.
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: genetik
+  Building wheel for genetik (pyproject.toml): started
+  Building wheel for genetik (pyproject.toml): finished with status 'done'
+  Created wheel for genetik: filename=genetik-0.5.0-cp312-cp312-linux_aarch64.whl size=197998 sha256=d16fc476a17fe6abb0dfe2e523eb3d7bc1877c80e7a2da9c39320bbc3ae97d09
+  Stored in directory: /tmp/pip-ephem-wheel-cache-kd87le7z/wheels/c7/7b/e6/47799fa6408b98bb2e9a402c8b59a1553c985e650cf24f9953
+Successfully built genetik
+Installing collected packages: genetik
+  Attempting uninstall: genetik
+    Found existing installation: genetik 0.5.0
+    Uninstalling genetik-0.5.0:
+      Successfully uninstalled genetik-0.5.0
+Successfully installed genetik-0.5.0

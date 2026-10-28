@@ -364,3 +364,16 @@ scope and D4 final delivery review were completed in that historical series.
 The paragraph above records the status at the original D4 report commits and
 does not describe the current D5–D7 checkpoint. Existing historical
 qualification statements retain their original SHA scope.
+
+
+## I1 native Python interoperability (local completion)
+
+I1 adds an optional native Python extension and an sklearn-compatible estimator
+that call the existing C++ symbolic-regression API. Native core defaults and the
+generic GA remain unchanged. Local Python packaging, the pinned SRBench adapter
+smoke, and scoped native/Python verification are recorded in
+[I1 interoperability](I1_PYTHON_INTEROPERABILITY.md) and
+[I1 qualification](I1_QUALIFICATION.md). Qualification is limited to the
+recorded Linux AArch64/Python 3.12 environment; this work is not published.
+Next action is a separate release integration and qualification proposal; no
+release preparation or publication is implied by I1 completion.

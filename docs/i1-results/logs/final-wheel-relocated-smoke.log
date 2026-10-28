@@ -1,0 +1,1 @@
+{"module": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/i1-clean-venv/lib/python3.12/site-packages/genetik/__init__.py", "expression": "((x0 + x0) + x0)", "predictions": [-3.0, 0.0, 3.0, 6.0], "sympy": "((x0 + x0) + x0)", "loss": 4.5}

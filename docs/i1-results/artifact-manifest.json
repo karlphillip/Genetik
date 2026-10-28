@@ -1,0 +1,28 @@
+{
+  "artifacts": {
+    "sdist": {
+      "bytes": 3393829,
+      "filename": "genetik-0.5.0.tar.gz",
+      "sha256": "2f12a77eefe5587b4e2926040031905925372e8984e6858b6fed8f1bed993153"
+    },
+    "wheel": {
+      "bytes": 197998,
+      "filename": "genetik-0.5.0-cp312-cp312-linux_aarch64.whl",
+      "sha256": "c0e79c57efceb4080a7b44aeaa5ab974116711e4a99b32dca9c8a76397dd99d7"
+    }
+  },
+  "branch": "feature/python-interoperability-i1",
+  "platform": "Linux aarch64, Ubuntu 24.04.4",
+  "publication_authorized": false,
+  "python": "3.12.3",
+  "schema": "genetik.i1.artifacts/1",
+  "source_baseline": "f95a204e25a6de36a54230be0cba750bde5e2ff7",
+  "source_distribution_contains_srbench_adapter": true,
+  "source_distribution_excludes_out": true,
+  "source_distribution_repeat_sha256": "2f12a77eefe5587b4e2926040031905925372e8984e6858b6fed8f1bed993153",
+  "source_distribution_reproducible": true,
+  "tested_install_paths": [
+    "wheel in isolated venv",
+    "sdist in isolated venv"
+  ]
+}

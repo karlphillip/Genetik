@@ -1,0 +1,5 @@
+name: Genetik
+authors: Karl Phillip Buhr
+email: karlphillip@gmail.com
+description: C++ genetic algorithm framework with optional symbolic regression.
+url: https://github.com/karlphillip/Genetik

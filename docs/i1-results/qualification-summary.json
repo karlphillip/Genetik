@@ -1,0 +1,65 @@
+{
+  "asan_ubsan": {
+    "failed": 0,
+    "passed": 10,
+    "python_extension_smoke": "passed with ASan runtime preloaded; leak detection disabled",
+    "scope": "targeted"
+  },
+  "full_sklearn_estimator_checks": false,
+  "full_srbench_campaign": false,
+  "installed_cpp_consumer": "passed in original Release run; not rerun after hygiene-only change",
+  "native_debug": {
+    "failed": 0,
+    "passed": 12,
+    "scope": "targeted"
+  },
+  "native_python_parity": {
+    "all_exact": true,
+    "fields": [
+      "raw initial population",
+      "prepared initial population",
+      "selected expression",
+      "RNG state",
+      "objective and fitting counters",
+      "training MSE",
+      "predictions"
+    ]
+  },
+  "native_release": {
+    "after_hygiene_scope": {
+      "failed": 0,
+      "passed": 59
+    },
+    "cmake": "3.16.0",
+    "hygiene_test": {
+      "failed": 0,
+      "passed": 1
+    },
+    "qualification_form": "combined evidence; not a single 60/60 execution"
+  },
+  "other_operating_systems_or_python_abis": false,
+  "parent_workspace_hygiene": {
+    "exit_code": 1,
+    "modified": false,
+    "only_reported_entry": "/home/karlphillip/workspaces/primeResearcher/session.md"
+  },
+  "python_tests": {
+    "failed": 0,
+    "log": "logs/python-tests-qualified-final.log",
+    "passed": 11
+  },
+  "remote_writes": false,
+  "schema": "genetik.i1.qualification/1",
+  "source_baseline": "f95a204e25a6de36a54230be0cba750bde5e2ff7",
+  "srbench": {
+    "import_test": "1 passed, 5 deselected",
+    "layout": "31 algorithms, 45 method directories",
+    "local_evaluator_smoke": "passed; seed 42; 3 seconds; not a full campaign",
+    "upstream_commit": "2aabbb60dad41d6e5d52779ce134191a874b756c"
+  },
+  "tsan": {
+    "failed": 0,
+    "passed": 7,
+    "scope": "targeted overlap contracts"
+  }
+}

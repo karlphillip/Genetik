@@ -1,0 +1,25 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-asan
+      Start  1: genetik_strict_arithmetic
+ 1/10 Test  #1: genetik_strict_arithmetic ........   Passed    9.77 sec
+      Start  3: genetik_fitting_contracts
+ 2/10 Test  #3: genetik_fitting_contracts ........   Passed   28.60 sec
+      Start  4: genetik_symbolic_contracts
+ 3/10 Test  #4: genetik_symbolic_contracts .......   Passed    1.81 sec
+      Start  5: genetik_expression_contracts
+ 4/10 Test  #5: genetik_expression_contracts .....   Passed   46.06 sec
+      Start 13: genetik_oop_contracts
+ 5/10 Test #13: genetik_oop_contracts ............   Passed    0.03 sec
+      Start 14: genetik_concurrency_contracts
+ 6/10 Test #14: genetik_concurrency_contracts ....   Passed   16.62 sec
+      Start 17: genetik_typed_contracts
+ 7/10 Test #17: genetik_typed_contracts ..........   Passed    8.69 sec
+      Start 18: genetik_typed_overlap
+ 8/10 Test #18: genetik_typed_overlap ............   Passed    0.40 sec
+      Start 34: genetik_checkpoint_contracts
+ 9/10 Test #34: genetik_checkpoint_contracts .....   Passed   77.17 sec
+      Start 35: genetik_checkpoint_overlap
+10/10 Test #35: genetik_checkpoint_overlap .......   Passed   89.04 sec
+
+100% tests passed, 0 tests failed out of 10
+
+Total Test time (real) = 278.22 sec

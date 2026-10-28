@@ -1,0 +1,120 @@
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_arithmetic_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Building CXX object tests/CMakeFiles/genetik_arithmetic_tests.dir/strict_arithmetic.cpp.o
+[100%] Linking CXX executable genetik_arithmetic_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_arithmetic_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_symbolic_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[ 50%] Building CXX object tests/CMakeFiles/genetik_symbolic_tests.dir/symbolic_regression.cpp.o
+[100%] Linking CXX executable genetik_symbolic_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_symbolic_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_fitting_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[ 50%] Building CXX object tests/CMakeFiles/genetik_fitting_tests.dir/constant_fitting.cpp.o
+[100%] Linking CXX executable genetik_fitting_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_fitting_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_concurrency_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Building CXX object tests/CMakeFiles/genetik_concurrency_tests.dir/concurrency.cpp.o
+[100%] Linking CXX executable genetik_concurrency_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_concurrency_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_generation_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[  0%] Building CXX object tests/CMakeFiles/genetik_generation_tests.dir/generation.cpp.o
+[100%] Linking CXX executable genetik_generation_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_generation_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Building CXX object tests/CMakeFiles/genetik_tests.dir/tests.cpp.o
+[100%] Linking CXX executable genetik_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_oop_consumer
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[  0%] Building CXX object tests/CMakeFiles/genetik_oop_consumer.dir/oop_consumer/main.cpp.o
+[100%] Linking CXX executable genetik_oop_consumer
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_oop_consumer
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_checkpoint_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[  0%] Building CXX object tests/CMakeFiles/genetik_checkpoint_tests.dir/run_checkpoint.cpp.o
+[100%] Linking CXX executable genetik_checkpoint_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_checkpoint_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_typed_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[  0%] Building CXX object tests/CMakeFiles/genetik_typed_tests.dir/typed.cpp.o
+[100%] Linking CXX executable genetik_typed_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_typed_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[2]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+Scanning dependencies of target genetik_d6_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[3]: Entering directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[ 50%] Building CXX object tests/CMakeFiles/genetik_d6_tests.dir/d6_science.cpp.o
+[100%] Linking CXX executable genetik_d6_tests
+gmake[3]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+[100%] Built target genetik_d6_tests
+gmake[2]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'
+gmake[1]: Leaving directory '/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i1-debug'

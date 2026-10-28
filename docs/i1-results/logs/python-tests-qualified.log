@@ -1,0 +1,40 @@
+.....F....                                                               [100%]
+=================================== FAILURES ===================================
+__________ test_invalid_shapes_types_nonfinite_and_predict_before_fit __________
+
+    def test_invalid_shapes_types_nonfinite_and_predict_before_fit():
+        model = small_model()
+        with pytest.raises(Exception):
+            model.predict(np.ones((1, 1)))
+        with pytest.raises(ValueError):
+            model.fit(np.ones(4), np.ones(4))
+        with pytest.raises(ValueError):
+            model.fit(np.ones((4, 2)), np.ones(3))
+        with pytest.raises(ValueError):
+            model.fit(np.array([[1.0], [np.nan]]), np.array([1.0, 2.0]))
+        with pytest.raises(ValueError):
+>           model.fit(np.array([["a"], ["b"]]), np.array([1.0, 2.0]))
+
+tests/python/test_regressor.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+out/tmp/i1-venv/lib/python3.12/site-packages/genetik/regressor.py:73: in fit
+    self._require_real_numeric(X, "X")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+values = array([['a'],
+       ['b']], dtype='<U1'), name = 'X'
+
+    @staticmethod
+    def _require_real_numeric(values, name):
+        try:
+            array = np.asarray(values)
+        except Exception as exc:
+            raise TypeError("{} must be a real numeric array".format(name)) from exc
+        if array.dtype.kind not in "biuf" or array.dtype.itemsize > 8:
+>           raise TypeError("{} must use bool/integer/float dtypes no wider than 64 bits".format(name))
+E           TypeError: X must use bool/integer/float dtypes no wider than 64 bits
+
+out/tmp/i1-venv/lib/python3.12/site-packages/genetik/regressor.py:252: TypeError
+=========================== short test summary info ============================
+FAILED tests/python/test_regressor.py::test_invalid_shapes_types_nonfinite_and_predict_before_fit
+1 failed, 9 passed in 2.30s

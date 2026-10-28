@@ -1,0 +1,27 @@
+{
+  "purpose": "bounded SRBench evaluator integration smoke; not a scientific or competitive benchmark",
+  "upstream_commit": "2aabbb60dad41d6e5d52779ce134191a874b756c",
+  "dataset_file": "srbench-smoke-data.tsv",
+  "dataset_generation": {
+    "samples": 24,
+    "feature": "x0 = linspace(-2, 2, 24)",
+    "target": "1.5*x0 + 0.25",
+    "noise": 0,
+    "target_is_not_supplied_to_search": true
+  },
+  "srbench_split": "train_test_split(train_size=0.75, test_size=0.25, random_state=42)",
+  "scaling": "SRBench StandardScaler for X and y; dataframe feature names retained",
+  "search": {
+    "random_state": 42,
+    "workers": 1,
+    "evaluation_budget": 128,
+    "loss_budget": 1000,
+    "population_size": 8,
+    "max_generations": 4,
+    "max_nodes": 15,
+    "max_depth": 5,
+    "max_fit_loss_attempts": 8,
+    "max_time_seconds": 3
+  },
+  "evaluation_path": "official experiment/evaluate_model.py with test=true; outputs held-out metrics after fit only"
+}

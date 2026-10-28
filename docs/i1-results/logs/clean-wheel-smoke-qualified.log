@@ -1,0 +1,1 @@
+{"expression": "((x0 + x0) + x0)", "native_module": "genetik._native", "nodes": 5, "package_path": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/i1-clean-venv/lib/python3.12/site-packages/genetik/__init__.py", "predictions": [-3.0, 0.0, 3.0, 6.0], "stop_reason": "generation_limit", "training_mse": 4.5}

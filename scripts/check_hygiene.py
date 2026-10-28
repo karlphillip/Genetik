@@ -5,11 +5,14 @@ import os
 from pathlib import Path
 import tempfile
 
-ROOT_FILES = {'AGENTS.md', 'CHANGELOG.md', 'CMakeLists.txt', 'LICENSE', 'README.md', '.gitignore'}
+ROOT_FILES = {'AGENTS.md', 'CHANGELOG.md', 'CMakeLists.txt', 'LICENSE', 'README.md', '.gitignore', 'pyproject.toml'}
 ROOT_DIRS = {'.git', '.github', 'apps', 'benchmarks', 'cmake', 'docs', 'examples',
-             'genetik', 'scripts', 'tests', 'out'}
+             'genetik', 'scripts', 'tests', 'out', 'python', 'integrations'}
 WORKSPACE = {'Genetik', '.tools', 'delivery-tools', 'archive'}
 OUTPUT_DIRS = {'build', 'install', 'consumers', 'runs', 'data', 'logs', 'tmp', 'cleanup'}
+# Retained D7 delivery assets/evidence predate the current role layout. They are
+# explicitly preserved, never used for new transient outputs, and not scanned.
+PRESERVED_OUTPUT_DIRS = {'release', 'source-archive-check'}
 
 
 def audit(source, workspace=False):
@@ -22,7 +25,7 @@ def audit(source, workspace=False):
     output = source / 'out'
     if output.is_dir() and not output.is_symlink():
         for p in sorted(output.iterdir()):
-            if p.name not in OUTPUT_DIRS or not p.is_dir() or p.is_symlink():
+            if p.name not in OUTPUT_DIRS | PRESERVED_OUTPUT_DIRS or not p.is_dir() or p.is_symlink():
                 errors.append(f'unclassified output (use a role directory): {p}')
     # Evidence/fixtures may use txt/csv/json; generated caches and binaries do not
     # belong in any source role. out/ and .git/ are opaque, not recursively scanned.
@@ -54,10 +57,15 @@ def self_test():
     with tempfile.TemporaryDirectory(prefix='genetik-hygiene-') as tmp:
         source = Path(tmp) / 'Genetik'
         (source / 'docs').mkdir(parents=True)
+        (source / 'python').mkdir()
+        (source / 'integrations').mkdir()
+        (source / 'pyproject.toml').write_text('[build-system]\n')
         (source / 'out').mkdir()
         (source / 'docs' / 'accepted.csv').write_text('preserved evidence\n')
         (source / 'out' / 'build').mkdir()
         (source / 'out' / 'build' / 'CMakeCache.txt').write_text('allowed output\n')
+        (source / 'out' / 'release').mkdir()
+        (source / 'out' / 'source-archive-check').mkdir()
         assert not audit(source, True)
         (source / 'out' / 'probe.log').touch()
         assert any('unclassified output' in e for e in audit(source))

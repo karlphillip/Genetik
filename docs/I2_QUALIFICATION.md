@@ -53,6 +53,12 @@ native timer lambda. Earlier failing smoke logs remain retained. A finite-input
 numerical comparison is not a proof of global symbolic equivalence. Python
 `max_time` is cooperative, not a hard deadline.
 
+The Python sdist explicitly excludes generated `docs/i2-results` artifacts and
+logs while retaining the I2 guides, license, example and SRBench adapter. Two
+independent builds from the packaging-fix source produced byte-identical
+archives; the final-candidate SHA and archive checksum are in the artifact
+manifest.
+
 The scikit-learn `check_estimator` suite was executed in addition to the focused
 tests: 31 checks passed and 11 did not. The unsupported or intentionally
 restricted contracts include complex/object input (the API accepts finite

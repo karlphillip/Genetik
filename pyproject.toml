@@ -43,6 +43,7 @@ sdist.include = [
 ]
 sdist.exclude = [
   "/out/**",
+  "/docs/i2-results/**",
   "/.pytest_cache/**",
   "/Testing/**",
   "**/__pycache__/**",

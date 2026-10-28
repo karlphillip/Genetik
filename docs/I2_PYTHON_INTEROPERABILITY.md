@@ -25,6 +25,8 @@ python -m pip install dist/genetik-0.6.0-*.whl
 Use the qualified requirements file in `docs/i2-results/` for reproduction.
 Wheel platform support is restricted to the platforms and ABI tags actually
 qualified; inspect `docs/I2_QUALIFICATION.md` before redistributing an artifact.
+The source distribution includes the native/Python sources, release guides,
+example and SRBench adapter, and excludes generated qualification logs/artifacts.
 
 ## Estimator
 

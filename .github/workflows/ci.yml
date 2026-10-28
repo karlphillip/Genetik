@@ -160,8 +160,8 @@ jobs:
           python -m pip debug --verbose | head -35
       - name: Install pinned Python qualification dependencies
         run: |
-          python -m venv out/tmp/i2-python
-          out/tmp/i2-python/bin/python -m pip install -r docs/i2-results/requirements-python-cp312.txt
+          python -m venv "$RUNNER_TEMP/i2-python"
+          "$RUNNER_TEMP/i2-python/bin/python" -m pip install -r docs/i2-results/requirements-python-cp312.txt
       - name: Build the native/Python reference consumer
         run: |
           cmake -S . -B out/build/i2-python-reference -DCMAKE_BUILD_TYPE=Release \
@@ -171,9 +171,9 @@ jobs:
           cmake --build out/build/i2-python-reference --target genetik_python_native_reference -j2
       - name: Build and inspect the platform-specific wheel
         run: |
-          out/tmp/i2-python/bin/python -m pip wheel . --no-deps --no-build-isolation --wheel-dir out/wheels/i2
-          out/tmp/i2-python/bin/auditwheel show out/wheels/i2/*.whl
-          out/tmp/i2-python/bin/python - <<'PY'
+          "$RUNNER_TEMP/i2-python/bin/python" -m pip wheel . --no-deps --no-build-isolation --wheel-dir out/wheels/i2
+          "$RUNNER_TEMP/i2-python/bin/auditwheel" show out/wheels/i2/*.whl
+          "$RUNNER_TEMP/i2-python/bin/python" - <<'PY'
           import glob
           import zipfile
           from email.parser import Parser
@@ -195,23 +195,23 @@ jobs:
           GENETIK_NATIVE_REFERENCE: ${{ github.workspace }}/out/build/i2-python-reference/tests/genetik_python_native_reference
           PYTHONPYCACHEPREFIX: ${{ github.workspace }}/out/tmp/python-cache
         run: |
-          out/tmp/i2-python/bin/python -m pip install --no-deps out/wheels/i2/*.whl
-          readelf -d out/tmp/i2-python/lib/python3.12/site-packages/genetik/_native*.so
-          ldd out/tmp/i2-python/lib/python3.12/site-packages/genetik/_native*.so
-          out/tmp/i2-python/bin/python -m pytest -p no:cacheprovider tests/python
+          "$RUNNER_TEMP/i2-python/bin/python" -m pip install --no-deps out/wheels/i2/*.whl
+          readelf -d "$RUNNER_TEMP"/i2-python/lib/python3.12/site-packages/genetik/_native*.so
+          ldd "$RUNNER_TEMP"/i2-python/lib/python3.12/site-packages/genetik/_native*.so
+          "$RUNNER_TEMP/i2-python/bin/python" -m pytest -p no:cacheprovider tests/python
       - name: Verify installed wheel outside the repository
         env:
           GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
           cd "$RUNNER_TEMP"
-          "$GITHUB_WORKSPACE/out/tmp/i2-python/bin/python" - <<'PY'
+          "$RUNNER_TEMP/i2-python/bin/python" - <<'PY'
           from pathlib import Path
           import genetik
           workspace = Path(__import__("os").environ["GITHUB_WORKSPACE"]).resolve()
           assert not Path(genetik.__file__).resolve().is_relative_to(workspace)
           print("wheel import:", genetik.__file__)
           PY
-          "$GITHUB_WORKSPACE/out/tmp/i2-python/bin/python" "$GITHUB_WORKSPACE/examples/python/quickstart.py"
+          "$RUNNER_TEMP/i2-python/bin/python" "$GITHUB_WORKSPACE/examples/python/quickstart.py"
       - name: Verify pinned SRBench layout and import API
         run: |
           git clone --filter=blob:none --no-checkout https://github.com/cavalab/srbench.git out/tmp/srbench-i2
@@ -221,7 +221,7 @@ jobs:
           cd out/tmp/srbench-i2
           python scripts/check_method_layout.py
           cd experiment
-          ../../i2-python/bin/python -m pytest -q test_algorithm.py -k test_import --ml genetik
+          "$RUNNER_TEMP/i2-python/bin/python" -m pytest -q test_algorithm.py -k test_import --ml genetik
       - name: Bounded official SRBench evaluator smoke
         env:
           OPENBLAS_NUM_THREADS: '1'
@@ -231,25 +231,25 @@ jobs:
           cp docs/i1-results/srbench-smoke-data.tsv out/tmp/srbench-generated.tsv
           mkdir -p out/tmp/srbench-results
           cd out/tmp/srbench-i2/experiment
-          ../../i2-python/bin/python evaluate_model.py "$GITHUB_WORKSPACE/out/tmp/srbench-generated.tsv" -ml genetik -results_path "$GITHUB_WORKSPACE/out/tmp/srbench-results" -seed 42 -test -n_jobs 1 -fit_time_limit 3
-          I2_SR_RESULTS="$GITHUB_WORKSPACE/out/tmp/srbench-results" ../../i2-python/bin/python -c 'import json,math,os,pathlib; files=list(pathlib.Path(os.environ["I2_SR_RESULTS"]).glob("*.json")); assert len(files)==1; p=files[0]; d=json.load(open(p)); assert d["symbolic_model"] and math.isfinite(d["mse_test"]); print(p,d["symbolic_model"],d["mse_test"])'
+          "$RUNNER_TEMP/i2-python/bin/python" evaluate_model.py "$GITHUB_WORKSPACE/out/tmp/srbench-generated.tsv" -ml genetik -results_path "$GITHUB_WORKSPACE/out/tmp/srbench-results" -seed 42 -test -n_jobs 1 -fit_time_limit 3
+          I2_SR_RESULTS="$GITHUB_WORKSPACE/out/tmp/srbench-results" "$RUNNER_TEMP/i2-python/bin/python" -c 'import json,math,os,pathlib; files=list(pathlib.Path(os.environ["I2_SR_RESULTS"]).glob("*.json")); assert len(files)==1; p=files[0]; d=json.load(open(p)); assert d["symbolic_model"] and math.isfinite(d["mse_test"]); print(p,d["symbolic_model"],d["mse_test"])'
       - name: Install and test the Python source distribution
         env:
           GENETIK_NATIVE_REFERENCE: ${{ github.workspace }}/out/build/i2-python-reference/tests/genetik_python_native_reference
           PYTHONPYCACHEPREFIX: ${{ github.workspace }}/out/tmp/python-cache
         run: |
-          out/tmp/i2-python/bin/python -m build --sdist --no-isolation --outdir out/sdist/i2
-          out/tmp/i2-python/bin/python -m pip install --force-reinstall --no-build-isolation --no-deps out/sdist/i2/genetik-0.6.0.tar.gz
-          out/tmp/i2-python/bin/python -m pytest -p no:cacheprovider tests/python
+          "$RUNNER_TEMP/i2-python/bin/python" -m build --sdist --no-isolation --outdir out/sdist/i2
+          "$RUNNER_TEMP/i2-python/bin/python" -m pip install --force-reinstall --no-build-isolation --no-deps out/sdist/i2/genetik-0.6.0.tar.gz
+          "$RUNNER_TEMP/i2-python/bin/python" -m pytest -p no:cacheprovider tests/python
           cd "$RUNNER_TEMP"
-          "$GITHUB_WORKSPACE/out/tmp/i2-python/bin/python" - <<'PY'
+          "$RUNNER_TEMP/i2-python/bin/python" - <<'PY'
           from pathlib import Path
           import genetik
           workspace = Path(__import__("os").environ["GITHUB_WORKSPACE"]).resolve()
           assert not Path(genetik.__file__).resolve().is_relative_to(workspace)
           print("sdist import:", genetik.__file__)
           PY
-          "$GITHUB_WORKSPACE/out/tmp/i2-python/bin/python" "$GITHUB_WORKSPACE/examples/python/quickstart.py"
+          "$RUNNER_TEMP/i2-python/bin/python" "$GITHUB_WORKSPACE/examples/python/quickstart.py"
       - name: Retain Python qualification artifacts
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
@@ -269,6 +269,7 @@ jobs:
           retention-days: 14
           path: |
             ${{ runner.temp }}/genetik-qualification
+            ${{ runner.temp }}/i2-python
             out/build/i2-python-reference
             out/wheels/i2
             out/sdist/i2

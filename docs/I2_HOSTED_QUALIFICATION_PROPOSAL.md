@@ -1,53 +1,50 @@
-# I2 hosted qualification proposal
+# Genetik 0.6.0 delivery proposal (approval required)
 
-No remote action has been taken. The release source candidate is
-`93e89fa296511ffb4136158214d270becd2f2d77`. The final local branch tip will
-contain only its artifact manifest/checksums and qualification evidence; the
-hosted matrix must run on that exact final tip. No executable source changes
-are included after the source candidate.
+The release candidate is a development pre-release focused on optional native
+Python interoperability. The authorized qualification branch is
+`qualification/python-interoperability-i2`. The exact candidate SHA and final
+five-job hosted workflow result must be taken from the final completion
+packet after the evidence commit has passed all checks.
 
-## Proposed source branch
+## Proposed integration
 
-`qualification/python-interoperability-i2`
+1. Open a pull request from `qualification/python-interoperability-i2` into
+   `main`, summarizing the native regression facade, optional pybind11
+   extension, `GenetikRegressor`, NumPy input, SymPy export, SRBench adapter,
+   migration notes, qualified platforms and limitations.
+2. After review/approval, fast-forward integrate the exact hosted-qualified
+   candidate into `main` if ancestry permits. Do not squash or add an
+   unqualified merge commit. Verify the required matrix on `main` at the exact
+   candidate SHA.
+3. After main-branch validation and separate approval, create an annotated
+   `v0.6.0` tag at the qualified commit.
+4. Prepare a GitHub development pre-release titled
+   **Genetik 0.6.0 — Python Interoperability Development Pre-release** using
+   reviewed notes and only assets whose source commit, wheel tags, contents
+   and SHA256 values match the tag.
 
-## Native hosted matrix
+The release notes must describe Genetik as a general-purpose C++20 genetic
+algorithm framework with optional symbolic-regression and Python interfaces.
+They must preserve documented mathematical limitations, cooperative (not
+hard real-time) time limits, lack of fitted-estimator pickle support, and
+host-specific wheel compatibility. No search-performance superiority claim
+is proposed.
 
-Reuse the existing `.github/workflows/ci.yml` native jobs without relaxing
-their numerical, sanitizer, manifest or concurrency contracts:
+## Artifact policy
 
-1. GCC 13, Linux x86-64, Release, exact CMake 3.16.0.
-2. Clang 18, Linux x86-64, ASan+UBSan.
-3. GCC 13, Linux ARM64, Release, with the existing separate TSan selections
-   and repeated contracts.
+Build `Genetik-0.6.0-source.tar.gz` from the exact release tag tree. Build the
+canonical Python sdist as `genetik-0.6.0.tar.gz`. Keep the qualified wheels
+host-tagged `cp312-cp312-linux_x86_64` and
+`cp312-cp312-linux_aarch64`; do not relabel them manylinux. Recalculate and
+independently verify every SHA256 after obtaining the final tagged-source
+artifacts. The earlier artifact hashes in `I2_QUALIFICATION.md` are explicitly
+historical and must not be reused for later source bytes.
 
-The native matrix must pass on the uploaded final branch tip. Python checks do
-not substitute for native qualification.
+## Not authorized by this proposal
 
-## Python hosted matrix
-
-The `python-cp312` workflow matrix qualifies Linux x86-64 on `ubuntu-24.04` and
-Linux AArch64 on `ubuntu-24.04-arm`, both CPython 3.12.3. It installs the pinned
-requirements in `docs/i2-results/requirements-python-cp312.txt`, builds a
-wheel, audits its metadata and shared dependencies, installs and tests it,
-checks native/Python parity, runs the quickstart, validates the pinned SRBench
-method layout/import and a short official evaluator smoke, then builds and
-installs the source distribution. Artifacts and failure diagnostics are
-retained by the workflow.
-
-The pinned SRBench source revision is
-`2aabbb60dad41d6e5d52779ce134191a874b756c`. The workflow uses no full SRBench
-campaign and makes no ranking claim.
-
-## Authorization requested after local preflight
-
-Approval is requested only for these actions:
-
-1. Push exact local candidate SHA to `qualification/python-interoperability-i2`.
-2. Run the required hosted native and Python qualification matrix.
-3. Make targeted repairs if a required gate exposes a defect, then requalify
-   the exact repaired tip.
-4. Push the resulting qualification evidence and reports.
-5. Verify the exact final branch tip against all required hosted gates.
-
-This does not request PyPI/TestPyPI uploads, PR creation, merging, tagging, or
-publication. Those remain separate approval boundaries.
+This packet does not itself authorize PR creation, main integration, tag
+creation/push, GitHub release publication, or PyPI/TestPyPI upload. Request
+separate approval for PR/integration/main validation/tag/publication after
+presenting the exact candidate SHA, hosted run, source archive, wheels, sdist,
+checksums and release notes. PyPI and TestPyPI remain separate channels and
+are not proposed here.

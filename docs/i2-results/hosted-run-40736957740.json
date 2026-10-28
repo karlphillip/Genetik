@@ -1,0 +1,19 @@
+{
+  "run_id": 40736957740,
+  "run_url": "https://github.com/karlphillip/Genetik/actions/runs/40736957740",
+  "source_sha": "7411f2771973226317452533e533c43fee815ebb",
+  "status": "success",
+  "jobs": {
+    "gcc13-x64-minimum": {"job_id": 122987979718, "status": "success", "portable_tests": "92/92", "cmake": "3.16.0"},
+    "clang18-x64-sanitizers": {"job_id": 122987979496, "status": "success", "portable_tests": "92/92", "sanitizer": "ASan+UBSan instrumented compile/link and run"},
+    "gcc13-arm64": {"job_id": 122987979555, "status": "success", "release_tests": "92/92", "tsan_repetitions": "21 selected contracts x 3", "additional_tsan_contracts": {"integral": "1/1", "discrete_checkpoint": "4/4", "D5": "6/6", "D6": "2/2"}},
+    "python-cp312-x86_64": {"job_id": 122987979105, "status": "success", "wheel_tests": "21/21", "sdist_tests": "21/21", "python": "3.12.3"},
+    "python-cp312-aarch64": {"job_id": 122987979406, "status": "success", "wheel_tests": "21/21", "sdist_tests": "21/21", "python": "3.12.3"}
+  },
+  "python_artifacts": {
+    "genetik-0.6.0-cp312-cp312-linux_x86_64.whl": "c1e2675388652577beca8d8cbca43392fdda543ec2651b84bbb916aa81b04bb7",
+    "genetik-0.6.0-cp312-cp312-linux_aarch64.whl": "0fe265feddc8fc60d0d74bcc7ec04f0504161ece6f848feb81605d281f00b7ef",
+    "genetik-0.6.0.tar.gz": "2bc4d553c5a698db279123f4679987cf2abeada9c58cc9d07ab283b69b43bcdd"
+  },
+  "note": "Successful repair-validation run, not the later exact-final-documentation-tip run."
+}

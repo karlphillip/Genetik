@@ -1,0 +1,9 @@
+{
+  "source_sha": "7411f2771973226317452533e533c43fee815ebb",
+  "filename": "Genetik-0.6.0-source.tar.gz",
+  "sha256": "40a513bdd23040d8bd3087804f7097897d8062cade9247355361414790e35c91",
+  "archive_entries_verified": 1782,
+  "git_metadata_present": false,
+  "cmake": "3.16.0",
+  "result": "Exact Git-tree match; clean ordinary and relocated multi-TU, generic OOP, symbolic and quickstart consumers passed."
+}

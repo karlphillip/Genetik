@@ -1,9 +1,8 @@
-base=published Genetik 0.5.0 f95a204e25a6de36a54230be0cba750bde5e2ff7
-source_candidate=93e89fa296511ffb4136158214d270becd2f2d77
-base ancestry: source_candidate is a descendant of published 0.5.0 via I1 commit 83c07793b3410b01101003d9626d954f4db961ab
-main=f95a204e25a6de36a54230be0cba750bde5e2ff7 (unchanged)
-release tags: v0.1.0, v0.2.0, v0.3.0, v0.4.0, v0.5.0 (all remain present and unchanged)
-frozen historical evidence: existing preservation record reports 127 files verified; no paths in R1-R9/P1/I1 evidence, campaign result collections, or published release assets changed between I1 and I2 source candidate.
-research branches: retained; no branch deletion or history rewrite performed.
-remote writes: none
-external session.md: not modified
+Published baseline: Genetik 0.5.0, f95a204e25a6de36a54230be0cba750bde5e2ff7.
+Release implementation candidate at hosted repair-validation: 7411f2771973226317452533e533c43fee815ebb.
+Ancestry: published 0.5.0 -> I1 -> I2; no experimental R1-R8 search strategies or reverted P1 optimization included.
+Preserved inventory: reverified 127/127 frozen historical evidence hashes and 15/15 archived published asset hashes against the retained manifests. Current I2 changes are limited to I2 Python package input conventions, workflow qualification fixes, I2 docs and I2 evidence. Original campaigns, negative results, research branches and historical release assets remain retained.
+Published releases/tags v0.1.0 through v0.5.0: unchanged.
+Main: unchanged at the published 0.5.0 baseline.
+Remote writes: authorized qualification-branch pushes only; no PR, main update, tag, GitHub release, PyPI or TestPyPI action.
+External user-owned session.md: not modified.

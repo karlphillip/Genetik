@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import sympy
+from scipy import sparse
 import os
 import subprocess
 import gc
@@ -187,8 +188,26 @@ def test_invalid_shapes_types_nonfinite_and_predict_before_fit():
         model.fit(np.array([[1.0], [np.nan]]), np.array([1.0, 2.0]))
     with pytest.raises(TypeError):
         model.fit(np.array([["a"], ["b"]]), np.array([1.0, 2.0]))
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError, match="Complex data not supported"):
         model.fit(np.array([[1.0 + 2.0j], [3.0 + 4.0j]]), np.array([1.0, 2.0]))
+
+
+def test_sklearn_numeric_object_sparse_and_feature_name_conventions():
+    x, y = fixture()
+    object_model = small_model().fit(x.astype(object), y.astype(object))
+    assert np.all(np.isfinite(object_model.predict(x)))
+
+    with pytest.raises(TypeError, match="argument must be a string or a real number"):
+        small_model().fit(np.array([[{"not": "numeric"}]], dtype=object), np.array([1.0]))
+    with pytest.raises(ValueError, match="Sparse input is not supported"):
+        small_model().fit(sparse.csr_matrix(x), y)
+    with pytest.raises(ValueError, match="got None"):
+        small_model().fit(x, None)
+
+    frame = pd.DataFrame(x, columns=[10])
+    model = small_model().fit(frame, y)
+    assert not hasattr(model, "feature_names_in_")
+    assert "x0" in model.sympy_expression()
 
 
 def test_failed_refit_does_not_leave_stale_fitted_model():

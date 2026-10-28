@@ -1,0 +1,29 @@
+{
+  "estimator": "genetik.GenetikRegressor",
+  "scikit_learn": "1.5.2",
+  "initial_record": {
+    "passed": 31,
+    "failed": 11,
+    "evidence": "logs/sklearn-checks-i2.log"
+  },
+  "rerun_after_input_compatibility_repairs": {
+    "passed": 40,
+    "failed": 2,
+    "evidence": "logs/sklearn-i2-repaired.log",
+    "targeted_repeat_of_initial_score_failures": "logs/sklearn-targets-repeat.log"
+  },
+  "checks": [
+    {"name": "check_complex_data", "initial": "failed", "final": "passed", "disposition": "Real-valued-only contract retained; complex input now raises the sklearn-conventional ValueError."},
+    {"name": "check_dtype_object", "initial": "failed", "final": "passed", "disposition": "Numeric object arrays are converted through sklearn validation; nonnumeric objects are rejected with a clear TypeError."},
+    {"name": "check_estimator_sparse_array", "initial": "failed", "final": "passed", "disposition": "Sparse input remains unsupported and is rejected explicitly with ValueError."},
+    {"name": "check_estimator_sparse_matrix", "initial": "failed", "final": "passed", "disposition": "Sparse input remains unsupported and is rejected explicitly with ValueError."},
+    {"name": "check_estimators_pickle", "initial": "failed", "final": "failed", "disposition": "Fitted native C++ facade has no serialization contract; intentionally unsupported and documented."},
+    {"name": "check_estimators_pickle(readonly_memmap=True)", "initial": "failed", "final": "failed", "disposition": "Same native-object serialization limitation."},
+    {"name": "check_regressors_train", "initial": "failed", "final": "passed", "disposition": "The initial default-score threshold failure did not reproduce on the pinned rerun; no search behavior was changed."},
+    {"name": "check_regressors_train(readonly_memmap=True)", "initial": "failed", "final": "passed", "disposition": "The initial default-score threshold failure did not reproduce on the pinned rerun; no search behavior was changed."},
+    {"name": "check_regressors_train(readonly_memmap=True, X_dtype=float32)", "initial": "failed", "final": "passed", "disposition": "The initial default-score threshold failure did not reproduce on the pinned rerun; no search behavior was changed."},
+    {"name": "check_regressor_data_not_an_array", "initial": "failed", "final": "passed", "disposition": "Non-string DataFrame column labels now use stable x0, x1, ... export names; string labels remain preserved."},
+    {"name": "check_requires_y_none", "initial": "failed", "final": "passed", "disposition": "Missing target now raises the expected ValueError."}
+  ],
+  "claim": "Not fully scikit-learn estimator-check compliant; fitted-object pickling remains unsupported."
+}

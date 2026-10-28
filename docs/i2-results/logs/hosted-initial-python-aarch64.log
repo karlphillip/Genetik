@@ -1,0 +1,523 @@
+﻿2026-10-28T17:15:24.6089257Z Current runner version: '2.338.0'
+2026-10-28T17:15:24.6119855Z ##[group]Runner Image Provisioner
+2026-10-28T17:15:24.6120987Z Hosted Compute Agent
+2026-10-28T17:15:24.6121634Z Version: 20261021.618
+2026-10-28T17:15:24.6122386Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-10-28T17:15:24.6123239Z Build Date: 2026-10-21T00:45:21Z
+2026-10-28T17:15:24.6123968Z Worker ID: {c722a9c7-c006-47a0-bb85-d070a39bcce6}
+2026-10-28T17:15:24.6124773Z Region: eastus
+2026-10-28T17:15:24.6125345Z Cloud: Azure
+2026-10-28T17:15:24.6125985Z ##[endgroup]
+2026-10-28T17:15:24.6128135Z ##[group]Operating System
+2026-10-28T17:15:24.6129145Z Ubuntu
+2026-10-28T17:15:24.6129859Z 24.04.5
+2026-10-28T17:15:24.6130405Z LTS
+2026-10-28T17:15:24.6130929Z ##[endgroup]
+2026-10-28T17:15:24.6131689Z ##[group]Runner Image
+2026-10-28T17:15:24.6132322Z Image: ubuntu-24.04-arm
+2026-10-28T17:15:24.6132986Z Version: 20261025.165.1
+2026-10-28T17:15:24.6134403Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24-arm64/20261025.165/images/ubuntu/Ubuntu2404-Arm64-Readme.md
+2026-10-28T17:15:24.6136156Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24-arm64%2F20261025.165
+2026-10-28T17:15:24.6137115Z ##[endgroup]
+2026-10-28T17:15:24.6138716Z ##[group]GITHUB_TOKEN Permissions
+2026-10-28T17:15:24.6141450Z Contents: read
+2026-10-28T17:15:24.6142386Z Metadata: read
+2026-10-28T17:15:24.6142978Z ##[endgroup]
+2026-10-28T17:15:24.6146256Z Secret source: Actions
+2026-10-28T17:15:24.6147315Z Cache mode: write
+2026-10-28T17:15:24.6148101Z Prepare workflow directory
+2026-10-28T17:15:24.6521765Z Prepare all required actions
+2026-10-28T17:15:24.6572279Z Getting action download info
+2026-10-28T17:15:24.8779271Z Download action repository 'actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd' (SHA:de0fac2e4500dabe0009e67214ff5f5447ce83dd)
+2026-10-28T17:15:25.0110244Z Download action repository 'actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c' (SHA:e797f83bcb11b83ae66e0230d6156d7c80228e7c)
+2026-10-28T17:15:25.5816042Z Download action repository 'actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f' (SHA:b7c566a772e6b6bfb58ed0dc250532a479d7789f)
+2026-10-28T17:15:25.9016838Z Complete job name: python-cp312-aarch64
+2026-10-28T17:15:26.0144036Z ##[group]Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+2026-10-28T17:15:26.0145946Z with:
+2026-10-28T17:15:26.0146749Z   persist-credentials: false
+2026-10-28T17:15:26.0147764Z   repository: karlphillip/Genetik
+2026-10-28T17:15:26.0154578Z   token: ***
+2026-10-28T17:15:26.0155533Z   ssh-strict: true
+2026-10-28T17:15:26.0156290Z   ssh-user: git
+2026-10-28T17:15:26.0156999Z   clean: true
+2026-10-28T17:15:26.0157825Z   sparse-checkout-cone-mode: true
+2026-10-28T17:15:26.0158897Z   fetch-depth: 1
+2026-10-28T17:15:26.0159827Z   fetch-tags: false
+2026-10-28T17:15:26.0160595Z   show-progress: true
+2026-10-28T17:15:26.0161330Z   lfs: false
+2026-10-28T17:15:26.0162133Z   submodules: false
+2026-10-28T17:15:26.0162891Z   set-safe-directory: true
+2026-10-28T17:15:26.0164310Z ##[endgroup]
+2026-10-28T17:15:26.1090970Z Syncing repository: karlphillip/Genetik
+2026-10-28T17:15:26.1093761Z ##[group]Getting Git version info
+2026-10-28T17:15:26.1095290Z Working directory is '/home/runner/work/Genetik/Genetik'
+2026-10-28T17:15:26.1097219Z [command]/usr/bin/git version
+2026-10-28T17:15:26.1146523Z git version 2.56.0
+2026-10-28T17:15:26.1167192Z ##[endgroup]
+2026-10-28T17:15:26.1183975Z Temporarily overriding HOME='/home/runner/work/_temp/b5ce8e9c-93f5-4092-9a1b-5a73fd813973' before making global git config changes
+2026-10-28T17:15:26.1187179Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-28T17:15:26.1189322Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Genetik/Genetik
+2026-10-28T17:15:26.1236633Z Deleting the contents of '/home/runner/work/Genetik/Genetik'
+2026-10-28T17:15:26.1241715Z ##[group]Initializing the repository
+2026-10-28T17:15:26.1246296Z [command]/usr/bin/git init /home/runner/work/Genetik/Genetik
+2026-10-28T17:15:26.1378332Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-28T17:15:26.1380883Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-28T17:15:26.1383261Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-28T17:15:26.1384553Z hint: call:
+2026-10-28T17:15:26.1385428Z hint:
+2026-10-28T17:15:26.1386345Z hint: 	git config --global init.defaultBranch <name>
+2026-10-28T17:15:26.1387399Z hint:
+2026-10-28T17:15:26.1388400Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-28T17:15:26.1390093Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-28T17:15:26.1391359Z hint:
+2026-10-28T17:15:26.1392049Z hint: 	git branch -m <name>
+2026-10-28T17:15:26.1392802Z hint:
+2026-10-28T17:15:26.1393925Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-28T17:15:26.1395492Z Initialized empty Git repository in /home/runner/work/Genetik/Genetik/.git/
+2026-10-28T17:15:26.1400514Z [command]/usr/bin/git remote add origin https://github.com/karlphillip/Genetik
+2026-10-28T17:15:26.1468178Z ##[endgroup]
+2026-10-28T17:15:26.1470167Z ##[group]Disabling automatic garbage collection
+2026-10-28T17:15:26.1471342Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-28T17:15:26.1506780Z ##[endgroup]
+2026-10-28T17:15:26.1508098Z ##[group]Setting up auth
+2026-10-28T17:15:26.1509338Z Removing SSH command configuration
+2026-10-28T17:15:26.1513573Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-28T17:15:26.1546971Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-28T17:15:26.1910834Z Removing HTTP extra header
+2026-10-28T17:15:26.1915425Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-28T17:15:26.1952672Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-28T17:15:26.2164527Z Removing includeIf entries pointing to credentials config files
+2026-10-28T17:15:26.2168771Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-28T17:15:26.2204062Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-28T17:15:26.2426282Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-28T17:15:26.2469121Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/Genetik/Genetik/.git.path /home/runner/work/_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:26.2506845Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/Genetik/Genetik/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:26.2546589Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:26.2585019Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:26.2619192Z ##[endgroup]
+2026-10-28T17:15:26.2620478Z ##[group]Fetching the repository
+2026-10-28T17:15:26.2629018Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +ee0548808d2f250aaba5312de0e286bb1066681f:refs/remotes/origin/qualification/python-interoperability-i2
+2026-10-28T17:15:28.3478606Z From https://github.com/karlphillip/Genetik
+2026-10-28T17:15:28.3480220Z  * [new ref]         ee0548808d2f250aaba5312de0e286bb1066681f -> origin/qualification/python-interoperability-i2
+2026-10-28T17:15:28.3491025Z [command]/usr/bin/git branch --list --remote origin/qualification/python-interoperability-i2
+2026-10-28T17:15:28.3524299Z   origin/qualification/python-interoperability-i2
+2026-10-28T17:15:28.3532161Z [command]/usr/bin/git rev-parse refs/remotes/origin/qualification/python-interoperability-i2
+2026-10-28T17:15:28.3555917Z ee0548808d2f250aaba5312de0e286bb1066681f
+2026-10-28T17:15:28.3559991Z ##[endgroup]
+2026-10-28T17:15:28.3561256Z ##[group]Determining the checkout info
+2026-10-28T17:15:28.3562384Z ##[endgroup]
+2026-10-28T17:15:28.3565518Z [command]/usr/bin/git sparse-checkout disable
+2026-10-28T17:15:28.3619971Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-28T17:15:28.3652979Z ##[group]Checking out the ref
+2026-10-28T17:15:28.3657345Z [command]/usr/bin/git checkout --progress --force -B qualification/python-interoperability-i2 refs/remotes/origin/qualification/python-interoperability-i2
+2026-10-28T17:15:28.4343332Z Switched to a new branch 'qualification/python-interoperability-i2'
+2026-10-28T17:15:28.4349871Z branch 'qualification/python-interoperability-i2' set up to track 'origin/qualification/python-interoperability-i2'.
+2026-10-28T17:15:28.4357370Z ##[endgroup]
+2026-10-28T17:15:28.4402943Z [command]/usr/bin/git log -1 --format=%H
+2026-10-28T17:15:28.4427531Z ee0548808d2f250aaba5312de0e286bb1066681f
+2026-10-28T17:15:28.4437153Z ##[group]Removing auth
+2026-10-28T17:15:28.4437982Z Removing SSH command configuration
+2026-10-28T17:15:28.4441349Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-28T17:15:28.4471464Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-28T17:15:28.4676507Z Removing HTTP extra header
+2026-10-28T17:15:28.4679218Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-28T17:15:28.4708288Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-28T17:15:28.4924192Z Removing includeIf entries pointing to credentials config files
+2026-10-28T17:15:28.4935182Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-28T17:15:28.4960769Z includeif.gitdir:/home/runner/work/Genetik/Genetik/.git.path
+2026-10-28T17:15:28.4961474Z includeif.gitdir:/home/runner/work/Genetik/Genetik/.git/worktrees/*.path
+2026-10-28T17:15:28.4962308Z includeif.gitdir:/github/workspace/.git.path
+2026-10-28T17:15:28.4962911Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-10-28T17:15:28.4970810Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/Genetik/Genetik/.git.path
+2026-10-28T17:15:28.4995779Z /home/runner/work/_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:28.5005325Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/Genetik/Genetik/.git.path /home/runner/work/_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:28.5045786Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/Genetik/Genetik/.git/worktrees/*.path
+2026-10-28T17:15:28.5070152Z /home/runner/work/_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:28.5079042Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/Genetik/Genetik/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:28.5118360Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-10-28T17:15:28.5142786Z /github/runner_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:28.5151275Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:28.5189382Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-10-28T17:15:28.5214472Z /github/runner_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:28.5222347Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config
+2026-10-28T17:15:28.5263802Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-28T17:15:28.5477161Z Removing credentials config '/home/runner/work/_temp/git-credentials-62cde51b-f266-40dd-8e5a-2b6e57a04169.config'
+2026-10-28T17:15:28.5489948Z ##[endgroup]
+2026-10-28T17:15:28.5781411Z ##[group]Run actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
+2026-10-28T17:15:28.5782152Z with:
+2026-10-28T17:15:28.5782494Z   python-version: 3.12.3
+2026-10-28T17:15:28.5782827Z   check-latest: false
+2026-10-28T17:15:28.5785694Z   token: ***
+2026-10-28T17:15:28.5786092Z   update-environment: true
+2026-10-28T17:15:28.5786545Z   allow-prereleases: false
+2026-10-28T17:15:28.5786887Z   freethreaded: false
+2026-10-28T17:15:28.5787184Z ##[endgroup]
+2026-10-28T17:15:28.6961803Z ##[group]Installed versions
+2026-10-28T17:15:28.6975835Z Version 3.12.3 was not found in the local cache
+2026-10-28T17:15:28.7096430Z (node:2309) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-28T17:15:28.7097399Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-28T17:15:29.3794006Z Version 3.12.3 is available for downloading
+2026-10-28T17:15:29.3795347Z Download from "https://github.com/actions/python-versions/releases/download/3.12.3-11057844995/python-3.12.3-linux-24.04-arm64.tar.gz"
+2026-10-28T17:15:30.0717416Z Extract downloaded archive
+2026-10-28T17:15:30.0830353Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/52059963-786f-4b42-83cb-49d9ff7dc92d -f /home/runner/work/_temp/55fda432-932b-453d-a056-6069ffdda1e2
+2026-10-28T17:15:31.6698212Z Execute installation script
+2026-10-28T17:15:31.6792647Z Check if Python hostedtoolcache folder exist...
+2026-10-28T17:15:31.6793702Z Create Python 3.12.3 folder
+2026-10-28T17:15:31.6805185Z Copy Python binaries to hostedtoolcache folder
+2026-10-28T17:15:31.9330335Z Create additional symlinks (Required for the UsePythonVersion Azure Pipelines task and the setup-python GitHub Action)
+2026-10-28T17:15:31.9368301Z Upgrading pip...
+2026-10-28T17:15:34.4275933Z Looking in links: /tmp/tmpwm3xkuby
+2026-10-28T17:15:34.4283719Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.12.3/arm64/lib/python3.12/site-packages (24.0)
+2026-10-28T17:15:36.0821247Z Collecting pip
+2026-10-28T17:15:36.1379534Z Downloading pip-26.2.2-py3-none-any.whl.metadata (4.6 kB)
+2026-10-28T17:15:36.1517091Z Downloading pip-26.2.2-py3-none-any.whl (1.8 MB)
+2026-10-28T17:15:36.2909598Z ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 13.4 MB/s eta 0:00:00
+2026-10-28T17:15:36.2909978Z 
+2026-10-28T17:15:36.3053159Z Installing collected packages: pip
+2026-10-28T17:15:36.3054759Z Attempting uninstall: pip
+2026-10-28T17:15:36.3074348Z Found existing installation: pip 24.0
+2026-10-28T17:15:36.3353689Z Uninstalling pip-24.0:
+2026-10-28T17:15:36.3403480Z Successfully uninstalled pip-24.0
+2026-10-28T17:15:37.1169694Z Successfully installed pip-26.2.2
+2026-10-28T17:15:37.1818046Z Create complete file
+2026-10-28T17:15:37.1857939Z Successfully set up CPython (3.12.3)
+2026-10-28T17:15:37.1859370Z ##[endgroup]
+2026-10-28T17:15:37.2059506Z ##[group]Run uname -a
+2026-10-28T17:15:37.2060298Z [36;1muname -a[0m
+2026-10-28T17:15:37.2060613Z [36;1mpython --version[0m
+2026-10-28T17:15:37.2061013Z [36;1mgcc --version[0m
+2026-10-28T17:15:37.2061284Z [36;1mldd --version | head -1[0m
+2026-10-28T17:15:37.2061661Z [36;1mpython -m pip debug --verbose | head -35[0m
+2026-10-28T17:15:37.2309369Z shell: /usr/bin/bash -e {0}
+2026-10-28T17:15:37.2310045Z env:
+2026-10-28T17:15:37.2310373Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:15:37.2310952Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib/pkgconfig
+2026-10-28T17:15:37.2311426Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:15:37.2311839Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:15:37.2312310Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:15:37.2312735Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib
+2026-10-28T17:15:37.2313323Z ##[endgroup]
+2026-10-28T17:15:37.2414365Z Linux runnervm9u1px 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 19:06:39 UTC 2026 aarch64 aarch64 aarch64 GNU/Linux
+2026-10-28T17:15:37.2431879Z Python 3.12.3
+2026-10-28T17:15:37.2501558Z gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+2026-10-28T17:15:37.2501953Z Copyright (C) 2023 Free Software Foundation, Inc.
+2026-10-28T17:15:37.2502579Z This is free software; see the source for copying conditions.  There is NO
+2026-10-28T17:15:37.2503152Z warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+2026-10-28T17:15:37.2503481Z 
+2026-10-28T17:15:37.2522461Z /usr/bin/ldd: line 41: printf: write error: Broken pipe
+2026-10-28T17:15:37.2522941Z ldd (Ubuntu GLIBC 2.39-0ubuntu8.9) 2.39
+2026-10-28T17:15:37.2523306Z /usr/bin/ldd: line 43: printf: write error: Broken pipe
+2026-10-28T17:15:37.3922479Z WARNING: This command is only meant for debugging. Do not use this with automation for parsing and getting these details, since the output and options of this command may change without notice.
+2026-10-28T17:15:37.4515130Z pip version: pip 26.2.2 from /opt/hostedtoolcache/Python/3.12.3/arm64/lib/python3.12/site-packages/pip (python 3.12)
+2026-10-28T17:15:37.4516255Z ERROR: Pipe to stdout was broken
+2026-10-28T17:15:37.4516666Z sys.version: 3.12.3 (main, Sep 26 2024, 18:31:57) [GCC 13.2.0]
+2026-10-28T17:15:37.4517389Z sys.executable: /opt/hostedtoolcache/Python/3.12.3/arm64/bin/python
+2026-10-28T17:15:37.4517994Z sys.getdefaultencoding: utf-8
+2026-10-28T17:15:37.4518677Z sys.getfilesystemencoding: utf-8
+2026-10-28T17:15:37.4519240Z locale.getencoding: UTF-8
+2026-10-28T17:15:37.4519657Z sys.platform: linux
+2026-10-28T17:15:37.4520181Z sys.implementation:
+2026-10-28T17:15:37.4520534Z   name: cpython
+2026-10-28T17:15:37.4520835Z 'cert' config value: global
+2026-10-28T17:15:37.4521304Z REQUESTS_CA_BUNDLE: None
+2026-10-28T17:15:37.4521703Z CURL_CA_BUNDLE: None
+2026-10-28T17:15:37.4522501Z pip._vendor.certifi.where(): /opt/hostedtoolcache/Python/3.12.3/arm64/lib/python3.12/site-packages/pip/_vendor/certifi/cacert.pem
+2026-10-28T17:15:37.4523286Z pip._vendor.DEBUNDLED: False
+2026-10-28T17:15:37.4523838Z vendored library versions:
+2026-10-28T17:15:37.4524453Z   CacheControl==0.14.4 (Unable to locate actual module version, using vendor.txt specified version)
+2026-10-28T17:15:37.4525055Z   distlib==0.4.2
+2026-10-28T17:15:37.4525520Z   distro==1.9.0
+2026-10-28T17:15:37.4525924Z   msgpack==1.1.2
+2026-10-28T17:15:37.4526264Z   packaging==26.2
+2026-10-28T17:15:37.4526760Z   platformdirs==4.10.0
+2026-10-28T17:15:37.4527169Z   pyproject-hooks==1.2.0
+2026-10-28T17:15:37.4527631Z   requests==2.34.2
+2026-10-28T17:15:37.4528032Z   certifi==2026.10.19
+2026-10-28T17:15:37.4528408Z   idna==3.18
+2026-10-28T17:15:37.4529081Z   urllib3==2.7.0
+2026-10-28T17:15:37.4529632Z   rich==14.2.0 (Unable to locate actual module version, using vendor.txt specified version)
+2026-10-28T17:15:37.4530382Z   pygments==2.20.0
+2026-10-28T17:15:37.4530804Z   resolvelib==1.2.1
+2026-10-28T17:15:37.4531862Z   setuptools==70.3.0 (Unable to locate actual module version, using vendor.txt specified version)
+2026-10-28T17:15:37.4532811Z   tomli==2.4.1
+2026-10-28T17:15:37.4533207Z   tomli-w==1.2.0
+2026-10-28T17:15:37.4533702Z   truststore==0.10.4
+2026-10-28T17:15:37.4534157Z Compatible tags: 690
+2026-10-28T17:15:37.4534559Z   cp312-cp312-manylinux_2_39_aarch64
+2026-10-28T17:15:37.4900407Z ##[group]Run python -m venv out/tmp/i2-python
+2026-10-28T17:15:37.4900914Z [36;1mpython -m venv out/tmp/i2-python[0m
+2026-10-28T17:15:37.4901443Z [36;1mout/tmp/i2-python/bin/python -m pip install -r docs/i2-results/requirements-python-cp312.txt[0m
+2026-10-28T17:15:37.4937169Z shell: /usr/bin/bash -e {0}
+2026-10-28T17:15:37.4937629Z env:
+2026-10-28T17:15:37.4937939Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:15:37.4938394Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib/pkgconfig
+2026-10-28T17:15:37.4939310Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:15:37.4939762Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:15:37.4940268Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:15:37.4940696Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib
+2026-10-28T17:15:37.4941082Z ##[endgroup]
+2026-10-28T17:15:41.0906545Z Collecting auditwheel==6.8.2 (from -r docs/i2-results/requirements-python-cp312.txt (line 1))
+2026-10-28T17:15:41.1529398Z   Downloading auditwheel-6.8.2-py3-none-any.whl.metadata (7.1 kB)
+2026-10-28T17:15:41.1826300Z Collecting build==1.6.1 (from -r docs/i2-results/requirements-python-cp312.txt (line 2))
+2026-10-28T17:15:41.1925453Z   Downloading build-1.6.1-py3-none-any.whl.metadata (5.6 kB)
+2026-10-28T17:15:41.2186183Z Collecting cloudpickle==3.1.2 (from -r docs/i2-results/requirements-python-cp312.txt (line 3))
+2026-10-28T17:15:41.2285853Z   Downloading cloudpickle-3.1.2-py3-none-any.whl.metadata (7.1 kB)
+2026-10-28T17:15:41.2495042Z Collecting iniconfig==2.3.1 (from -r docs/i2-results/requirements-python-cp312.txt (line 4))
+2026-10-28T17:15:41.2595611Z   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+2026-10-28T17:15:41.2912355Z Collecting joblib==1.6.0 (from -r docs/i2-results/requirements-python-cp312.txt (line 5))
+2026-10-28T17:15:41.3011752Z   Downloading joblib-1.6.0-py3-none-any.whl.metadata (6.5 kB)
+2026-10-28T17:15:41.3256272Z Collecting mpmath==1.3.0 (from -r docs/i2-results/requirements-python-cp312.txt (line 6))
+2026-10-28T17:15:41.3356565Z   Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+2026-10-28T17:15:41.5562152Z Collecting numpy==1.26.4 (from -r docs/i2-results/requirements-python-cp312.txt (line 7))
+2026-10-28T17:15:41.5662867Z   Downloading numpy-1.26.4-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl.metadata (62 kB)
+2026-10-28T17:15:41.5843972Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.3/62.3 kB 3.3 MB/s eta 0:00:00
+2026-10-28T17:15:41.6197995Z Collecting packaging==26.3 (from -r docs/i2-results/requirements-python-cp312.txt (line 8))
+2026-10-28T17:15:41.6297573Z   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+2026-10-28T17:15:41.7687078Z Collecting pandas==2.2.3 (from -r docs/i2-results/requirements-python-cp312.txt (line 9))
+2026-10-28T17:15:41.7789022Z   Downloading pandas-2.2.3-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl.metadata (89 kB)
+2026-10-28T17:15:41.7846626Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 89.9/89.9 kB 20.2 MB/s eta 0:00:00
+2026-10-28T17:15:41.8164575Z Collecting pathspec==1.1.1 (from -r docs/i2-results/requirements-python-cp312.txt (line 10))
+2026-10-28T17:15:41.8262958Z   Downloading pathspec-1.1.1-py3-none-any.whl.metadata (14 kB)
+2026-10-28T17:15:41.8510760Z Collecting pluggy==1.7.0 (from -r docs/i2-results/requirements-python-cp312.txt (line 11))
+2026-10-28T17:15:41.8608641Z   Downloading pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+2026-10-28T17:15:41.8917971Z Collecting pybind11==2.13.6 (from -r docs/i2-results/requirements-python-cp312.txt (line 12))
+2026-10-28T17:15:41.9016541Z   Downloading pybind11-2.13.6-py3-none-any.whl.metadata (9.5 kB)
+2026-10-28T17:15:41.9238383Z Collecting pyelftools==0.33 (from -r docs/i2-results/requirements-python-cp312.txt (line 13))
+2026-10-28T17:15:41.9336815Z   Downloading pyelftools-0.33-py3-none-any.whl.metadata (1.0 kB)
+2026-10-28T17:15:41.9525552Z Collecting pyproject_hooks==1.3.3 (from -r docs/i2-results/requirements-python-cp312.txt (line 14))
+2026-10-28T17:15:41.9625106Z   Downloading pyproject_hooks-1.3.3-py3-none-any.whl.metadata (1.3 kB)
+2026-10-28T17:15:42.0171534Z Collecting pytest==8.3.5 (from -r docs/i2-results/requirements-python-cp312.txt (line 15))
+2026-10-28T17:15:42.0271104Z   Downloading pytest-8.3.5-py3-none-any.whl.metadata (7.6 kB)
+2026-10-28T17:15:42.0687671Z Collecting PyYAML==6.0.1 (from -r docs/i2-results/requirements-python-cp312.txt (line 16))
+2026-10-28T17:15:42.0786925Z   Downloading PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl.metadata (2.1 kB)
+2026-10-28T17:15:42.1157301Z Collecting python-dateutil==3.0.0 (from -r docs/i2-results/requirements-python-cp312.txt (line 17))
+2026-10-28T17:15:42.1258061Z   Downloading python_dateutil-3.0.0-py2.py3-none-any.whl.metadata (8.2 kB)
+2026-10-28T17:15:42.1815534Z Collecting pytz==2026.5 (from -r docs/i2-results/requirements-python-cp312.txt (line 18))
+2026-10-28T17:15:42.1916812Z   Downloading pytz-2026.5-py2.py3-none-any.whl.metadata (22 kB)
+2026-10-28T17:15:42.2992296Z Collecting scikit-learn==1.5.2 (from -r docs/i2-results/requirements-python-cp312.txt (line 19))
+2026-10-28T17:15:42.3101066Z   Downloading scikit_learn-1.5.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl.metadata (13 kB)
+2026-10-28T17:15:42.3431765Z Collecting scikit_build_core==0.10.7 (from -r docs/i2-results/requirements-python-cp312.txt (line 20))
+2026-10-28T17:15:42.3546493Z   Downloading scikit_build_core-0.10.7-py3-none-any.whl.metadata (21 kB)
+2026-10-28T17:15:42.4815767Z Collecting scipy==1.17.1 (from -r docs/i2-results/requirements-python-cp312.txt (line 21))
+2026-10-28T17:15:42.4923041Z   Downloading scipy-1.17.1-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl.metadata (62 kB)
+2026-10-28T17:15:42.4966674Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.1/62.1 kB 19.2 MB/s eta 0:00:00
+2026-10-28T17:15:42.5274334Z Collecting six==1.17.0 (from -r docs/i2-results/requirements-python-cp312.txt (line 22))
+2026-10-28T17:15:42.5372715Z   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+2026-10-28T17:15:42.5652321Z Collecting sympy==1.13.3 (from -r docs/i2-results/requirements-python-cp312.txt (line 23))
+2026-10-28T17:15:42.5751585Z   Downloading sympy-1.13.3-py3-none-any.whl.metadata (12 kB)
+2026-10-28T17:15:42.5959339Z Collecting threadpoolctl==3.7.0 (from -r docs/i2-results/requirements-python-cp312.txt (line 24))
+2026-10-28T17:15:42.6057269Z   Downloading threadpoolctl-3.7.0-py3-none-any.whl.metadata (24 kB)
+2026-10-28T17:15:42.6417488Z Collecting tzdata==2026.6 (from -r docs/i2-results/requirements-python-cp312.txt (line 25))
+2026-10-28T17:15:42.6516178Z   Downloading tzdata-2026.6-py2.py3-none-any.whl.metadata (1.4 kB)
+2026-10-28T17:15:42.9008188Z Downloading auditwheel-6.8.2-py3-none-any.whl (65 kB)
+2026-10-28T17:15:42.9052552Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 65.3/65.3 kB 20.2 MB/s eta 0:00:00
+2026-10-28T17:15:42.9151073Z Downloading build-1.6.1-py3-none-any.whl (31 kB)
+2026-10-28T17:15:42.9276159Z Downloading cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+2026-10-28T17:15:42.9485652Z Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+2026-10-28T17:15:42.9607978Z Downloading joblib-1.6.0-py3-none-any.whl (306 kB)
+2026-10-28T17:15:42.9739519Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 306.1/306.1 kB 26.0 MB/s eta 0:00:00
+2026-10-28T17:15:42.9837259Z Downloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+2026-10-28T17:15:42.9956140Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 536.2/536.2 kB 51.5 MB/s eta 0:00:00
+2026-10-28T17:15:43.0055320Z Downloading numpy-1.26.4-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (13.9 MB)
+2026-10-28T17:15:43.1179730Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13.9/13.9 MB 109.4 MB/s eta 0:00:00
+2026-10-28T17:15:43.1286371Z Downloading packaging-26.3-py3-none-any.whl (129 kB)
+2026-10-28T17:15:43.1334748Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 130.0/130.0 kB 38.4 MB/s eta 0:00:00
+2026-10-28T17:15:43.1463115Z Downloading pandas-2.2.3-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (15.2 MB)
+2026-10-28T17:15:43.2915065Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 15.2/15.2 MB 87.0 MB/s eta 0:00:00
+2026-10-28T17:15:43.3018970Z Downloading pathspec-1.1.1-py3-none-any.whl (57 kB)
+2026-10-28T17:15:43.3064726Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 57.3/57.3 kB 16.5 MB/s eta 0:00:00
+2026-10-28T17:15:43.3164924Z Downloading pluggy-1.7.0-py3-none-any.whl (27 kB)
+2026-10-28T17:15:43.3288077Z Downloading pybind11-2.13.6-py3-none-any.whl (243 kB)
+2026-10-28T17:15:43.3339539Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 243.3/243.3 kB 68.5 MB/s eta 0:00:00
+2026-10-28T17:15:43.3484124Z Downloading pyelftools-0.33-py3-none-any.whl (201 kB)
+2026-10-28T17:15:43.3534189Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 201.2/201.2 kB 58.8 MB/s eta 0:00:00
+2026-10-28T17:15:43.3635000Z Downloading pyproject_hooks-1.3.3-py3-none-any.whl (10 kB)
+2026-10-28T17:15:43.3759757Z Downloading pytest-8.3.5-py3-none-any.whl (343 kB)
+2026-10-28T17:15:43.3816202Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 343.6/343.6 kB 84.2 MB/s eta 0:00:00
+2026-10-28T17:15:43.3915276Z Downloading PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (696 kB)
+2026-10-28T17:15:43.3988240Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 696.9/696.9 kB 130.4 MB/s eta 0:00:00
+2026-10-28T17:15:43.4086727Z Downloading python_dateutil-3.0.0-py2.py3-none-any.whl (94 kB)
+2026-10-28T17:15:43.4130469Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 94.7/94.7 kB 30.5 MB/s eta 0:00:00
+2026-10-28T17:15:43.4230966Z Downloading pytz-2026.5-py2.py3-none-any.whl (506 kB)
+2026-10-28T17:15:43.4292170Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 506.3/506.3 kB 113.5 MB/s eta 0:00:00
+2026-10-28T17:15:43.4394636Z Downloading scikit_learn-1.5.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (12.1 MB)
+2026-10-28T17:15:43.5500578Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.1/12.1 MB 101.4 MB/s eta 0:00:00
+2026-10-28T17:15:43.5606000Z Downloading scikit_build_core-0.10.7-py3-none-any.whl (165 kB)
+2026-10-28T17:15:43.5652782Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 165.5/165.5 kB 52.0 MB/s eta 0:00:00
+2026-10-28T17:15:43.5766543Z Downloading scipy-1.17.1-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (32.9 MB)
+2026-10-28T17:15:43.8652027Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 32.9/32.9 MB 53.3 MB/s eta 0:00:00
+2026-10-28T17:15:43.8754247Z Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+2026-10-28T17:15:43.8876634Z Downloading sympy-1.13.3-py3-none-any.whl (6.2 MB)
+2026-10-28T17:15:43.9314690Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.2/6.2 MB 146.6 MB/s eta 0:00:00
+2026-10-28T17:15:43.9419507Z Downloading threadpoolctl-3.7.0-py3-none-any.whl (26 kB)
+2026-10-28T17:15:43.9648696Z Downloading tzdata-2026.6-py2.py3-none-any.whl (348 kB)
+2026-10-28T17:15:43.9702271Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 348.2/348.2 kB 89.8 MB/s eta 0:00:00
+2026-10-28T17:15:44.2818698Z Installing collected packages: pytz, mpmath, tzdata, threadpoolctl, sympy, six, PyYAML, pyproject_hooks, pyelftools, pybind11, pluggy, pathspec, packaging, numpy, iniconfig, cloudpickle, scipy, scikit_build_core, python-dateutil, pytest, joblib, build, auditwheel, scikit-learn, pandas
+2026-10-28T17:16:01.3986647Z Successfully installed PyYAML-6.0.1 auditwheel-6.8.2 build-1.6.1 cloudpickle-3.1.2 iniconfig-2.3.1 joblib-1.6.0 mpmath-1.3.0 numpy-1.26.4 packaging-26.3 pandas-2.2.3 pathspec-1.1.1 pluggy-1.7.0 pybind11-2.13.6 pyelftools-0.33 pyproject_hooks-1.3.3 pytest-8.3.5 python-dateutil-3.0.0 pytz-2026.5 scikit-learn-1.5.2 scikit_build_core-0.10.7 scipy-1.17.1 six-1.17.0 sympy-1.13.3 threadpoolctl-3.7.0 tzdata-2026.6
+2026-10-28T17:16:01.7308721Z 
+2026-10-28T17:16:01.7309533Z [notice] A new release of pip is available: 24.0 -> 26.2.2
+2026-10-28T17:16:01.7310413Z [notice] To update, run: python -m pip install --upgrade pip
+2026-10-28T17:16:01.9534450Z ##[group]Run cmake -S . -B out/build/i2-python-reference -DCMAKE_BUILD_TYPE=Release \
+2026-10-28T17:16:01.9535189Z [36;1mcmake -S . -B out/build/i2-python-reference -DCMAKE_BUILD_TYPE=Release \[0m
+2026-10-28T17:16:01.9535796Z [36;1m  -DGENETIK_BUILD_TESTS=ON -DBUILD_TESTING=ON \[0m
+2026-10-28T17:16:01.9536254Z [36;1m  -DGENETIK_BUILD_EXAMPLES=OFF -DGENETIK_INSTALL=OFF \[0m
+2026-10-28T17:16:01.9536742Z [36;1m  -DGENETIK_BUILD_PYTHON=OFF -DGENETIK_WARNINGS_AS_ERRORS=ON[0m
+2026-10-28T17:16:01.9537324Z [36;1mcmake --build out/build/i2-python-reference --target genetik_python_native_reference -j2[0m
+2026-10-28T17:16:01.9572555Z shell: /usr/bin/bash -e {0}
+2026-10-28T17:16:01.9572867Z env:
+2026-10-28T17:16:01.9573230Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:01.9573741Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib/pkgconfig
+2026-10-28T17:16:01.9574219Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:01.9574823Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:01.9575248Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:01.9575718Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib
+2026-10-28T17:16:01.9576080Z ##[endgroup]
+2026-10-28T17:16:02.8159854Z -- The CXX compiler identification is GNU 13.3.0
+2026-10-28T17:16:02.9339892Z -- Detecting CXX compiler ABI info
+2026-10-28T17:16:03.1020099Z -- Detecting CXX compiler ABI info - done
+2026-10-28T17:16:03.1169073Z -- Check for working CXX compiler: /usr/bin/c++ - skipped
+2026-10-28T17:16:03.1213116Z -- Detecting CXX compile features
+2026-10-28T17:16:03.1260712Z -- Detecting CXX compile features - done
+2026-10-28T17:16:03.3900452Z -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+2026-10-28T17:16:03.4803849Z -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+2026-10-28T17:16:03.4864055Z -- Found Threads: TRUE
+2026-10-28T17:16:03.7548974Z -- Found Python3: /opt/hostedtoolcache/Python/3.12.3/arm64/bin/python3.12 (found suitable version "3.12.3", minimum required is "3.9") found components: Interpreter
+2026-10-28T17:16:03.7590252Z -- Configuring done (1.4s)
+2026-10-28T17:16:03.8788021Z -- Generating done (0.1s)
+2026-10-28T17:16:03.8790457Z -- Build files have been written to: /home/runner/work/Genetik/Genetik/out/build/i2-python-reference
+2026-10-28T17:16:03.9072101Z [  0%] Building CXX object tests/CMakeFiles/genetik_python_native_reference.dir/python/native_reference.cpp.o
+2026-10-28T17:16:12.7252619Z [100%] Linking CXX executable genetik_python_native_reference
+2026-10-28T17:16:12.8972606Z [100%] Built target genetik_python_native_reference
+2026-10-28T17:16:12.9050074Z ##[group]Run out/tmp/i2-python/bin/python -m pip wheel . --no-deps --no-build-isolation --wheel-dir out/wheels/i2
+2026-10-28T17:16:12.9051463Z [36;1mout/tmp/i2-python/bin/python -m pip wheel . --no-deps --no-build-isolation --wheel-dir out/wheels/i2[0m
+2026-10-28T17:16:12.9052441Z [36;1mout/tmp/i2-python/bin/auditwheel show out/wheels/i2/*.whl[0m
+2026-10-28T17:16:12.9053933Z [36;1mout/tmp/i2-python/bin/python -c 'from importlib.metadata import metadata,version; from packaging.specifiers import SpecifierSet; assert version("genetik")=="0.6.0"; assert SpecifierSet(metadata("genetik")["Requires-Python"])==SpecifierSet(">=3.12,<3.13")'[0m
+2026-10-28T17:16:12.9089356Z shell: /usr/bin/bash -e {0}
+2026-10-28T17:16:12.9089668Z env:
+2026-10-28T17:16:12.9090141Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:12.9090615Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib/pkgconfig
+2026-10-28T17:16:12.9091248Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:12.9091686Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:12.9092141Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:12.9092674Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib
+2026-10-28T17:16:12.9093094Z ##[endgroup]
+2026-10-28T17:16:13.2101244Z Processing /home/runner/work/Genetik/Genetik
+2026-10-28T17:16:13.2119432Z   Preparing metadata (pyproject.toml): started
+2026-10-28T17:16:13.6383457Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-10-28T17:16:13.6441273Z Building wheels for collected packages: genetik
+2026-10-28T17:16:13.6448950Z   Building wheel for genetik (pyproject.toml): started
+2026-10-28T17:16:28.3445971Z   Building wheel for genetik (pyproject.toml): finished with status 'done'
+2026-10-28T17:16:28.3454002Z   Created wheel for genetik: filename=genetik-0.6.0-cp312-cp312-linux_aarch64.whl size=198402 sha256=8ccf7a148898274be14a7983d1cc7105caa557b575e84fa35a1bd12a3421900a
+2026-10-28T17:16:28.3455266Z   Stored in directory: /tmp/pip-ephem-wheel-cache-6zlxgt0u/wheels/e0/c4/58/1739eedf17574b484f68428c5dff1f81114cb16845cf14871b
+2026-10-28T17:16:28.3482201Z Successfully built genetik
+2026-10-28T17:16:28.3791427Z 
+2026-10-28T17:16:28.3792190Z [notice] A new release of pip is available: 24.0 -> 26.2.2
+2026-10-28T17:16:28.3792907Z [notice] To update, run: python -m pip install --upgrade pip
+2026-10-28T17:16:28.7196310Z INFO:auditwheel.wheel_abi:setting libc to glibc
+2026-10-28T17:16:28.7536376Z 
+2026-10-28T17:16:28.7536819Z genetik-0.6.0-cp312-cp312-linux_aarch64.whl is consistent with the
+2026-10-28T17:16:28.7537336Z following platform tag: "manylinux_2_39_aarch64".
+2026-10-28T17:16:28.7537734Z 
+2026-10-28T17:16:28.7537941Z The wheel references external versioned symbols in these
+2026-10-28T17:16:28.7538436Z system-provided shared libraries: libgcc_s.so.1 with versions
+2026-10-28T17:16:28.7539172Z {'GCC_3.0'}, libm.so.6 with versions {'GLIBC_2.29', 'GLIBC_2.23',
+2026-10-28T17:16:28.7539638Z 'GLIBC_2.17'}, libc.so.6 with versions {'GLIBC_2.34', 'GLIBC_2.32',
+2026-10-28T17:16:28.7540067Z 'GLIBC_2.17'}, libstdc++.so.6 with versions {'CXXABI_1.3',
+2026-10-28T17:16:28.7540570Z 'CXXABI_1.3.13', 'GLIBCXX_3.4.29', 'GLIBCXX_3.4.21', 'GLIBCXX_3.4.30',
+2026-10-28T17:16:28.7541083Z 'GLIBCXX_3.4.18', 'GLIBCXX_3.4.22', 'GLIBCXX_3.4.20', 'GLIBCXX_3.4',
+2026-10-28T17:16:28.7541565Z 'GLIBCXX_3.4.9', 'CXXABI_1.3.2', 'GLIBCXX_3.4.19', 'GLIBCXX_3.4.31',
+2026-10-28T17:16:28.7542017Z 'CXXABI_1.3.9', 'CXXABI_1.3.11', 'CXXABI_1.3.3', 'GLIBCXX_3.4.14',
+2026-10-28T17:16:28.7542417Z 'GLIBCXX_3.4.26', 'CXXABI_1.3.5', 'GLIBCXX_3.4.11'}
+2026-10-28T17:16:28.7542693Z 
+2026-10-28T17:16:28.7542912Z This constrains the platform tag to "manylinux_2_39_aarch64". In order
+2026-10-28T17:16:28.7543442Z to achieve a more compatible tag, you would need to recompile a new
+2026-10-28T17:16:28.7543979Z wheel from source on a system with earlier versions of these
+2026-10-28T17:16:28.7544802Z libraries, such as a recent manylinux image.
+2026-10-28T17:16:28.8323932Z Traceback (most recent call last):
+2026-10-28T17:16:28.8330767Z   File "/opt/hostedtoolcache/Python/3.12.3/arm64/lib/python3.12/importlib/metadata/__init__.py", line 397, in from_name
+2026-10-28T17:16:28.8332040Z     return next(cls.discover(name=name))
+2026-10-28T17:16:28.8332539Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-28T17:16:28.8332882Z StopIteration
+2026-10-28T17:16:28.8333000Z 
+2026-10-28T17:16:28.8333272Z During handling of the above exception, another exception occurred:
+2026-10-28T17:16:28.8333554Z 
+2026-10-28T17:16:28.8333688Z Traceback (most recent call last):
+2026-10-28T17:16:28.8334078Z   File "<string>", line 1, in <module>
+2026-10-28T17:16:28.8334749Z   File "/opt/hostedtoolcache/Python/3.12.3/arm64/lib/python3.12/importlib/metadata/__init__.py", line 889, in version
+2026-10-28T17:16:28.8335414Z     return distribution(distribution_name).version
+2026-10-28T17:16:28.8335917Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-28T17:16:28.8336551Z   File "/opt/hostedtoolcache/Python/3.12.3/arm64/lib/python3.12/importlib/metadata/__init__.py", line 862, in distribution
+2026-10-28T17:16:28.8337158Z     return Distribution.from_name(distribution_name)
+2026-10-28T17:16:28.8337579Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-28T17:16:28.8338221Z   File "/opt/hostedtoolcache/Python/3.12.3/arm64/lib/python3.12/importlib/metadata/__init__.py", line 399, in from_name
+2026-10-28T17:16:28.8339203Z     raise PackageNotFoundError(name)
+2026-10-28T17:16:28.8339675Z importlib.metadata.PackageNotFoundError: No package metadata was found for genetik
+2026-10-28T17:16:28.8459328Z ##[error]Process completed with exit code 1.
+2026-10-28T17:16:28.8609478Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2026-10-28T17:16:28.8610006Z with:
+2026-10-28T17:16:28.8610385Z   name: python-cp312-aarch64
+2026-10-28T17:16:28.8610686Z   retention-days: 14
+2026-10-28T17:16:28.8611197Z   path: out/wheels/i2/*.whl
+out/sdist/i2/*.tar.gz
+out/build/i2-python-reference/CMakeCache.txt
+out/tmp/srbench-results/*.json
+
+2026-10-28T17:16:28.8611869Z   if-no-files-found: warn
+2026-10-28T17:16:28.8612134Z   compression-level: 6
+2026-10-28T17:16:28.8612419Z   overwrite: false
+2026-10-28T17:16:28.8612712Z   include-hidden-files: false
+2026-10-28T17:16:28.8612993Z env:
+2026-10-28T17:16:28.8613371Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:28.8613825Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib/pkgconfig
+2026-10-28T17:16:28.8614312Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:28.8614745Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:28.8615318Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:28.8615757Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib
+2026-10-28T17:16:28.8616111Z ##[endgroup]
+2026-10-28T17:16:29.0000444Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-10-28T17:16:29.0002799Z The least common ancestor is /home/runner/work/Genetik/Genetik/out. This will be the root directory of the artifact
+2026-10-28T17:16:29.0003622Z With the provided path, there will be 2 files uploaded
+2026-10-28T17:16:29.0029521Z Artifact name is valid!
+2026-10-28T17:16:29.0030463Z Root directory input is valid!
+2026-10-28T17:16:29.1871243Z Beginning upload of artifact content to blob storage
+2026-10-28T17:16:29.3076486Z Uploaded bytes 202337
+2026-10-28T17:16:29.3292295Z Finished uploading artifact content to blob storage!
+2026-10-28T17:16:29.3293045Z SHA256 digest of uploaded artifact zip is 7a2b32e9cd75d0a277c4399c842c196c7c2eb251bce01d5a07dd259f097ea7fc
+2026-10-28T17:16:29.3294358Z Finalizing artifact upload
+2026-10-28T17:16:29.7794584Z Artifact python-cp312-aarch64.zip successfully finalized. Artifact ID 12835144717
+2026-10-28T17:16:29.7795458Z Artifact python-cp312-aarch64 has been successfully uploaded! Final size is 202337 bytes. Artifact ID is 12835144717
+2026-10-28T17:16:29.7800288Z Artifact download URL: https://github.com/karlphillip/Genetik/actions/runs/40733931494/artifacts/12835144717
+2026-10-28T17:16:29.7964619Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2026-10-28T17:16:29.7965432Z with:
+2026-10-28T17:16:29.7965681Z   name: logs-python-aarch64
+2026-10-28T17:16:29.7966104Z   retention-days: 14
+2026-10-28T17:16:29.7966405Z   path: /home/runner/work/_temp/genetik-qualification
+2026-10-28T17:16:29.7966826Z   if-no-files-found: warn
+2026-10-28T17:16:29.7967101Z   compression-level: 6
+2026-10-28T17:16:29.7967351Z   overwrite: false
+2026-10-28T17:16:29.7967755Z   include-hidden-files: false
+2026-10-28T17:16:29.7968054Z env:
+2026-10-28T17:16:29.7968391Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:29.7969603Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib/pkgconfig
+2026-10-28T17:16:29.7970071Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:29.7970638Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:29.7971199Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.3/arm64
+2026-10-28T17:16:29.7971649Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.3/arm64/lib
+2026-10-28T17:16:29.7972021Z ##[endgroup]
+2026-10-28T17:16:29.9365922Z ##[warning]No files were found with the provided path: /home/runner/work/_temp/genetik-qualification. No artifacts will be uploaded.
+2026-10-28T17:16:29.9680828Z Post job cleanup.
+2026-10-28T17:16:30.0432151Z [command]/usr/bin/git version
+2026-10-28T17:16:30.0489078Z git version 2.56.0
+2026-10-28T17:16:30.0515964Z Temporarily overriding HOME='/home/runner/work/_temp/1dfed912-c394-43cf-b48c-55461b549c82' before making global git config changes
+2026-10-28T17:16:30.0516703Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-28T17:16:30.0524279Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Genetik/Genetik
+2026-10-28T17:16:30.0552184Z Removing SSH command configuration
+2026-10-28T17:16:30.0558838Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-28T17:16:30.0595764Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-28T17:16:30.0835102Z Removing HTTP extra header
+2026-10-28T17:16:30.0842950Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-28T17:16:30.0889657Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-28T17:16:30.1085800Z Removing includeIf entries pointing to credentials config files
+2026-10-28T17:16:30.1094778Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-28T17:16:30.1127318Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-28T17:16:30.1497918Z Cleaning up orphan processes

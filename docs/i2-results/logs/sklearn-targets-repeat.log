@@ -1,0 +1,3 @@
+PASS functools.partial(<function check_regressors_train at 0xffff88671a80>, 'GenetikRegressor')
+PASS functools.partial(<function check_regressors_train at 0xffff88671a80>, 'GenetikRegressor', readonly_memmap=True)
+PASS functools.partial(<function check_regressors_train at 0xffff88671a80>, 'GenetikRegressor', readonly_memmap=True, X_dtype='float32')

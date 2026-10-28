@@ -7,6 +7,7 @@ import numbers
 from typing import Optional, Sequence
 
 import numpy as np
+from scipy import sparse
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 
@@ -247,10 +248,22 @@ class GenetikRegressor(RegressorMixin, BaseEstimator):
 
     @staticmethod
     def _require_real_numeric(values, name):
+        if name == "y" and values is None:
+            raise ValueError("Expected array-like (array or non-string sequence), got None")
+        if sparse.issparse(values):
+            raise ValueError("Sparse input is not supported; convert it to a dense array")
         try:
             array = np.asarray(values)
         except Exception as exc:
             raise TypeError("{} must be a real numeric array".format(name)) from exc
+        if array.dtype.kind == "c":
+            raise ValueError("Complex data not supported for {}".format(name))
+        if array.dtype.kind == "O":
+            try:
+                np.asarray(array, dtype=np.float64)
+            except (TypeError, ValueError) as exc:
+                raise TypeError("argument must be a string or a real number") from exc
+            return
         if array.dtype.kind not in "biuf" or array.dtype.itemsize > 8:
             raise TypeError("{} must use bool/integer/float dtypes no wider than 64 bits".format(name))
 
@@ -260,8 +273,12 @@ class GenetikRegressor(RegressorMixin, BaseEstimator):
         if columns is None:
             return None
         names = list(columns)
-        if len(names) != dimensions or any(not isinstance(name, str) for name in names):
-            raise ValueError("DataFrame feature names must be strings matching the feature count")
+        if len(names) != dimensions:
+            raise ValueError("DataFrame feature-name count does not match the feature count")
+        # sklearn records feature_names_in_ only when all names are strings.
+        # For other labels use the estimator's stable x0, x1, ... identifiers.
+        if any(not isinstance(name, str) for name in names):
+            return None
         if len(set(names)) != len(names):
             raise ValueError("DataFrame feature names must be unique")
         return np.asarray(names, dtype=object)

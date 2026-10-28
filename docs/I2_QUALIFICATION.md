@@ -67,14 +67,26 @@ independent builds from the packaging-fix source produced byte-identical
 archives; the final-candidate SHA and archive checksum are in the artifact
 manifest.
 
-The scikit-learn `check_estimator` suite was executed in addition to the focused
-tests: 31 checks passed and 11 did not. The unsupported or intentionally
-restricted contracts include complex/object input (the API accepts finite
-real numeric arrays), sparse matrices, pickling the native fitted object, and
-the check suite's generic training-target accuracy on a small bounded search.
-Non-string DataFrame column labels are also rejected. This is not full
-scikit-learn estimator-check compliance; see
-`docs/i2-results/logs/sklearn-checks-i2.log` for every check outcome.
+The initial scikit-learn 1.5.2 `check_estimator` run recorded 31 passes and 11
+failures in `logs/sklearn-checks-i2.log`. Inspection identified input
+convention defects and native-object serialization limitations. Input handling
+was corrected without changing search behavior: complex arrays now raise the
+expected `ValueError`, convertible numeric object arrays are accepted, sparse
+inputs give an explicit unsupported-input message, non-string DataFrame column
+labels fall back to stable `x0`, `x1`, ... names, and missing `y` raises the
+documented `ValueError` form. Focused Python tests pass for these changes.
+
+A full rerun against the corrected wrapper and pinned scikit-learn 1.5.2
+reported 40 passed and 2 failed. The remaining failures are
+`check_estimators_pickle` and its `readonly_memmap=True` variant: fitted
+estimators hold a native C++ facade that has no serialization contract. This
+is an unsupported persistence feature, not a prediction or fitting failure;
+the package does not claim pickling compatibility. The three initial
+`check_regressors_train` score-threshold failures passed in the rerun; their
+initial discrepancy was not reproduced, and no search-policy change was made.
+The exact rerun output is retained in
+`docs/i2-results/logs/sklearn-i2-repaired.log`. Genetik is not fully
+scikit-learn estimator-check compliant.
 
 ## Distribution artifacts
 

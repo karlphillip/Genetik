@@ -173,7 +173,23 @@ jobs:
         run: |
           out/tmp/i2-python/bin/python -m pip wheel . --no-deps --no-build-isolation --wheel-dir out/wheels/i2
           out/tmp/i2-python/bin/auditwheel show out/wheels/i2/*.whl
-          out/tmp/i2-python/bin/python -c 'from importlib.metadata import metadata,version; from packaging.specifiers import SpecifierSet; assert version("genetik")=="0.6.0"; assert SpecifierSet(metadata("genetik")["Requires-Python"])==SpecifierSet(">=3.12,<3.13")'
+          out/tmp/i2-python/bin/python - <<'PY'
+          import glob
+          import zipfile
+          from email.parser import Parser
+          from packaging.specifiers import SpecifierSet
+
+          wheels = glob.glob("out/wheels/i2/*.whl")
+          assert len(wheels) == 1, wheels
+          with zipfile.ZipFile(wheels[0]) as wheel:
+              metadata_paths = [name for name in wheel.namelist() if name.endswith(".dist-info/METADATA")]
+              assert len(metadata_paths) == 1, metadata_paths
+              metadata = Parser().parsestr(wheel.read(metadata_paths[0]).decode("utf-8"))
+          assert metadata["Name"] == "genetik"
+          assert metadata["Version"] == "0.6.0"
+          assert SpecifierSet(metadata["Requires-Python"]) == SpecifierSet(">=3.12,<3.13")
+          print("Validated wheel metadata:", metadata["Name"], metadata["Version"], metadata["Requires-Python"])
+          PY
       - name: Install wheel and test estimator/native parity
         env:
           GENETIK_NATIVE_REFERENCE: ${{ github.workspace }}/out/build/i2-python-reference/tests/genetik_python_native_reference
@@ -225,9 +241,13 @@ jobs:
             out/build/i2-python-reference/CMakeCache.txt
             out/tmp/srbench-results/*.json
       - name: Retain failure diagnostics
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: logs-python-${{ matrix.arch }}
           retention-days: 14
-          path: ${{ runner.temp }}/genetik-qualification
+          path: |
+            ${{ runner.temp }}/genetik-qualification
+            out/build/i2-python-reference
+            out/wheels/i2
+            out/sdist/i2

@@ -1,0 +1,9 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-tsan
+    Start 60: genetik_d6_scientific_contracts
+1/2 Test #60: genetik_d6_scientific_contracts ...   Passed    0.82 sec
+    Start 61: genetik_d6_continuation
+2/2 Test #61: genetik_d6_continuation ...........   Passed   11.04 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =  11.86 sec

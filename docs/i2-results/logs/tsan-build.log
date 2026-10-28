@@ -1,0 +1,72 @@
+[100%] Building CXX object tests/CMakeFiles/genetik_checkpoint_v03_writer.dir/compatibility/scalar.cpp.o
+[100%] Linking CXX executable genetik_checkpoint_v03_writer
+[100%] Built target genetik_checkpoint_v03_writer
+[  0%] Building CXX object tests/CMakeFiles/genetik_checkpoint_compatibility_tests.dir/compatibility/scalar.cpp.o
+[100%] Linking CXX executable genetik_checkpoint_compatibility_tests
+[100%] Built target genetik_checkpoint_compatibility_tests
+[ 50%] Building CXX object tests/CMakeFiles/genetik_discrete_tests.dir/discrete.cpp.o
+[100%] Linking CXX executable genetik_discrete_tests
+[100%] Built target genetik_discrete_tests
+[  0%] Building CXX object tests/CMakeFiles/genetik_discrete_iteration_tests.dir/discrete_iteration.cpp.o
+[100%] Linking CXX executable genetik_discrete_iteration_tests
+[100%] Built target genetik_discrete_iteration_tests
+[100%] Building CXX object tests/CMakeFiles/genetik_discrete_prime_tests.dir/discrete_prime.cpp.o
+[100%] Linking CXX executable genetik_discrete_prime_tests
+[100%] Built target genetik_discrete_prime_tests
+[  0%] Building CXX object tests/CMakeFiles/genetik_checkpoint_tests.dir/run_checkpoint.cpp.o
+[100%] Linking CXX executable genetik_checkpoint_tests
+[100%] Built target genetik_checkpoint_tests
+[ 50%] Building CXX object tests/CMakeFiles/genetik_prime_exact_tests.dir/prime_exact.cpp.o
+[100%] Linking CXX executable genetik_prime_exact_tests
+[100%] Built target genetik_prime_exact_tests
+[ 50%] Building CXX object tests/CMakeFiles/genetik_concurrency_tests.dir/concurrency.cpp.o
+[100%] Linking CXX executable genetik_concurrency_tests
+[100%] Built target genetik_concurrency_tests
+[  0%] Building CXX object tests/CMakeFiles/genetik_oop_consumer.dir/oop_consumer/main.cpp.o
+[100%] Linking CXX executable genetik_oop_consumer
+[100%] Built target genetik_oop_consumer
+[ 50%] Building CXX object tests/CMakeFiles/genetik_typed_tests.dir/typed.cpp.o
+[100%] Linking CXX executable genetik_typed_tests
+[100%] Built target genetik_typed_tests
+[100%] Building CXX object tests/CMakeFiles/genetik_typed_regression_tests.dir/typed_regression.cpp.o
+[100%] Linking CXX executable genetik_typed_regression_tests
+[100%] Built target genetik_typed_regression_tests
+[100%] Building CXX object tests/CMakeFiles/genetik_scientific_tests.dir/scientific.cpp.o
+[100%] Linking CXX executable genetik_scientific_tests
+[100%] Built target genetik_scientific_tests
+[100%] Building CXX object tests/CMakeFiles/genetik_parsing_tests.dir/parsing.cpp.o
+[100%] Linking CXX executable genetik_parsing_tests
+[100%] Built target genetik_parsing_tests
+[  0%] Building CXX object tests/CMakeFiles/genetik_template_tests.dir/scalar_templates.cpp.o
+[100%] Linking CXX executable genetik_template_tests
+[100%] Built target genetik_template_tests
+[  0%] Building CXX object tests/CMakeFiles/genetik_derivative_tests.dir/derivatives.cpp.o
+[100%] Linking CXX executable genetik_derivative_tests
+[100%] Built target genetik_derivative_tests
+[ 50%] Building CXX object tests/CMakeFiles/genetik_derivative_regression_tests.dir/derivative_regression.cpp.o
+[100%] Linking CXX executable genetik_derivative_regression_tests
+[100%] Built target genetik_derivative_regression_tests
+[ 50%] Building CXX object tests/CMakeFiles/genetik_integral_tests.dir/integrals.cpp.o
+[100%] Linking CXX executable genetik_integral_tests
+[100%] Built target genetik_integral_tests
+[100%] Building CXX object tests/CMakeFiles/genetik_d5_iteration_tests.dir/d5_iteration_discovery.cpp.o
+[100%] Linking CXX executable genetik_d5_iteration_tests
+[100%] Built target genetik_d5_iteration_tests
+[  0%] Building CXX object tests/CMakeFiles/genetik_d5_integer_tests.dir/d5_integer.cpp.o
+[100%] Linking CXX executable genetik_d5_integer_tests
+[100%] Built target genetik_d5_integer_tests
+[ 50%] Building CXX object tests/CMakeFiles/genetik_d5_recurrence_tests.dir/d5_recurrence.cpp.o
+[100%] Linking CXX executable genetik_d5_recurrence_tests
+[100%] Built target genetik_d5_recurrence_tests
+[  0%] Building CXX object tests/CMakeFiles/genetik_d5_scientific_tests.dir/d5_scientific.cpp.o
+[100%] Linking CXX executable genetik_d5_scientific_tests
+[100%] Built target genetik_d5_scientific_tests
+[  0%] Building CXX object tests/CMakeFiles/genetik_d5_symbolic_tests.dir/d5_symbolic.cpp.o
+[100%] Linking CXX executable genetik_d5_symbolic_tests
+[100%] Built target genetik_d5_symbolic_tests
+[  0%] Building CXX object tests/CMakeFiles/genetik_d5_dimension_tests.dir/d5_dimensions.cpp.o
+[100%] Linking CXX executable genetik_d5_dimension_tests
+[100%] Built target genetik_d5_dimension_tests
+[100%] Building CXX object tests/CMakeFiles/genetik_d6_tests.dir/d6_science.cpp.o
+[100%] Linking CXX executable genetik_d6_tests
+[100%] Built target genetik_d6_tests

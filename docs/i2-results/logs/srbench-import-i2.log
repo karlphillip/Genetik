@@ -1,0 +1,17 @@
+
+==================================== ERRORS ====================================
+________________ ERROR collecting experiment/test_algorithm.py _________________
+ImportError while importing test module '/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/srbench-i2/experiment/test_algorithm.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+test_algorithm.py:15: in <module>
+    import symbolic_utils
+symbolic_utils.py:12: in <module>
+    from yaml import Loader, load
+E   ModuleNotFoundError: No module named 'yaml'
+=========================== short test summary info ============================
+ERROR test_algorithm.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 1.15s

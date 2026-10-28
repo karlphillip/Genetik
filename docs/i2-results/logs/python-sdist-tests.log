@@ -1,0 +1,23 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.3.5, pluggy-1.7.0
+rootdir: /home/karlphillip/workspaces/primeResearcher/Genetik
+configfile: pyproject.toml
+collected 19 items
+
+../home/karlphillip/workspaces/primeResearcher/Genetik/tests/python/test_regressor.py . [  5%]
+..........F.......                                                       [100%]
+
+=================================== FAILURES ===================================
+__________________ test_srbench_adapter_model_and_complexity ___________________
+
+    def test_srbench_adapter_model_and_complexity():
+>       from integrations.srbench.experiment.methods.genetik.regressor import (
+            complexity,
+            model as srbench_model,
+        )
+E       ModuleNotFoundError: No module named 'integrations'
+
+/home/karlphillip/workspaces/primeResearcher/Genetik/tests/python/test_regressor.py:159: ModuleNotFoundError
+=========================== short test summary info ============================
+FAILED ../home/karlphillip/workspaces/primeResearcher/Genetik/tests/python/test_regressor.py::test_srbench_adapter_model_and_complexity
+========================= 1 failed, 18 passed in 8.76s =========================

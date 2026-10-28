@@ -1,0 +1,8 @@
+.                                                                        [100%]
+=============================== warnings summary ===============================
+test_algorithm.py:149
+  /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/srbench-i2/experiment/test_algorithm.py:149: PytestUnknownMarkWarning: Unknown pytest.mark.order - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.order(after="test_evaluate")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1 passed, 5 deselected, 1 warning in 2.31s

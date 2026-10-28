@@ -1,0 +1,2 @@
+exec /usr/bin/uname: exec format error
+exit=255

@@ -4,10 +4,10 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "genetik"
-version = "0.5.0"
+version = "0.6.0"
 description = "C++20 genetic algorithms with optional symbolic-regression bindings"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.12,<3.13"
 license = { file = "LICENSE" }
 authors = [{ name = "Karl Phillip Buhr" }]
 dependencies = ["numpy>=1.20", "scikit-learn>=1.0", "sympy>=1.9"]
@@ -30,9 +30,16 @@ sdist.include = [
   "/python/**",
   "/LICENSE",
   "/README.md",
+  "/CHANGELOG.md",
   "/docs/I1_PYTHON_INTEROPERABILITY.md",
   "/docs/I1_QUALIFICATION.md",
+  "/docs/I2_QUALIFICATION.md",
+  "/docs/I2_HOSTED_QUALIFICATION_PROPOSAL.md",
+  "/docs/I2_PYTHON_INTEROPERABILITY.md",
+  "/docs/I2_MIGRATION.md",
+  "/docs/releases/0.6.0/**",
   "/integrations/srbench/**",
+  "/examples/python/**",
 ]
 sdist.exclude = [
   "/out/**",

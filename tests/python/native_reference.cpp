@@ -3,10 +3,11 @@
 #include <iostream>
 #include <vector>
 
-int main() {
+int main(int argc, char** argv) {
+    if (argc > 2) return 2;
     PythonRegressionConfig config;
     config.seed = 42;
-    config.workers = 1;
+    config.workers = argc == 2 ? static_cast<unsigned>(std::stoul(argv[1])) : 1U;
     config.evaluationBudget = 40;
     config.lossBudget = 256;
     config.population = 8;

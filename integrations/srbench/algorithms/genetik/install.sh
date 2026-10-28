@@ -6,7 +6,7 @@ if [[ -z "${CONDA_PREFIX:-}" ]]; then
   exit 2
 fi
 if [[ -z "${GENETIK_SOURCE_DIR:-}" || ! -f "${GENETIK_SOURCE_DIR}/pyproject.toml" ]]; then
-  echo "Set GENETIK_SOURCE_DIR to a checkout of the qualified Genetik I1 source" >&2
+  echo "Set GENETIK_SOURCE_DIR to a checkout of the qualified Genetik 0.6 source" >&2
   exit 2
 fi
 python -m pip install --no-deps --no-build-isolation "${GENETIK_SOURCE_DIR}"

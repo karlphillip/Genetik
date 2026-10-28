@@ -1,0 +1,2461 @@
+{
+  "backtraceGraph" : 
+  {
+    "commands" : 
+    [
+      "add_test"
+    ],
+    "files" : 
+    [
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/CMakeLists.txt"
+    ],
+    "nodes" : 
+    [
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 3,
+        "parent" : 0
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 7,
+        "parent" : 2
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 11,
+        "parent" : 4
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 15,
+        "parent" : 6
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 19,
+        "parent" : 8
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 24,
+        "parent" : 10
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 28,
+        "parent" : 12
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 31,
+        "parent" : 14
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 38,
+        "parent" : 16
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 41,
+        "parent" : 18
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 42,
+        "parent" : 20
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 47,
+        "parent" : 22
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 58,
+        "parent" : 24
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 66,
+        "parent" : 26
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 81,
+        "parent" : 28
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 87,
+        "parent" : 30
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 100,
+        "parent" : 32
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 118,
+        "parent" : 34
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 125,
+        "parent" : 36
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 126,
+        "parent" : 38
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 132,
+        "parent" : 40
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 137,
+        "parent" : 42
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 139,
+        "parent" : 44
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 142,
+        "parent" : 46
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 147,
+        "parent" : 48
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 153,
+        "parent" : 50
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 154,
+        "parent" : 52
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 157,
+        "parent" : 54
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 163,
+        "parent" : 56
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 168,
+        "parent" : 58
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 171,
+        "parent" : 60
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 175,
+        "parent" : 62
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 183,
+        "parent" : 64
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 191,
+        "parent" : 66
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 192,
+        "parent" : 68
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 195,
+        "parent" : 70
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 196,
+        "parent" : 72
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 206,
+        "parent" : 74
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 207,
+        "parent" : 76
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 210,
+        "parent" : 78
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 211,
+        "parent" : 80
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 221,
+        "parent" : 82
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 222,
+        "parent" : 84
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 225,
+        "parent" : 86
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 231,
+        "parent" : 88
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 232,
+        "parent" : 90
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 235,
+        "parent" : 92
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 239,
+        "parent" : 94
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 248,
+        "parent" : 96
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 249,
+        "parent" : 98
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 252,
+        "parent" : 100
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 253,
+        "parent" : 102
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 262,
+        "parent" : 104
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 263,
+        "parent" : 106
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 266,
+        "parent" : 108
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 272,
+        "parent" : 110
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 273,
+        "parent" : 112
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 274,
+        "parent" : 114
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 276,
+        "parent" : 116
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 280,
+        "parent" : 118
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 284,
+        "parent" : 120
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 290,
+        "parent" : 122
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 291,
+        "parent" : 124
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 294,
+        "parent" : 126
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 300,
+        "parent" : 128
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 301,
+        "parent" : 130
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 309,
+        "parent" : 132
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 316,
+        "parent" : 134
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 317,
+        "parent" : 136
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 326,
+        "parent" : 138
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 335,
+        "parent" : 140
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 342,
+        "parent" : 142
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 349,
+        "parent" : 144
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 356,
+        "parent" : 146
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 363,
+        "parent" : 148
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 371,
+        "parent" : 150
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 372,
+        "parent" : 152
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 376,
+        "parent" : 154
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 380,
+        "parent" : 156
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 381,
+        "parent" : 158
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 385,
+        "parent" : 160
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 386,
+        "parent" : 162
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 391,
+        "parent" : 164
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 392,
+        "parent" : 166
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 397,
+        "parent" : 168
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 398,
+        "parent" : 170
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 407,
+        "parent" : 172
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 427,
+        "parent" : 174
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 428,
+        "parent" : 176
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 429,
+        "parent" : 178
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 433,
+        "parent" : 180
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 444,
+        "parent" : 182
+      }
+    ]
+  },
+  "kind" : "ctestInfo",
+  "tests" : 
+  [
+    {
+      "backtrace" : 1,
+      "name" : "genetik_strict_arithmetic",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 3,
+      "name" : "genetik_multivariate_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 5,
+      "name" : "genetik_fitting_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 7,
+      "name" : "genetik_symbolic_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 9,
+      "name" : "genetik_expression_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 11,
+      "name" : "genetik_fitness_publication",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 13,
+      "name" : "genetik_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 15,
+      "command" : 
+      [
+        "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+        "-DGENERATOR=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_multivariate_demo",
+        "-DSEARCH=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_regression_search",
+        "-DWORKSPACE=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/regression-cli",
+        "-P",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/regression_cli.cmake"
+      ],
+      "name" : "genetik_regression_cli",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 17,
+      "name" : "genetik_expression_example",
+      "properties" : 
+      [
+        {
+          "name" : "PASS_REGULAR_EXPRESSION",
+          "value" : 
+          [
+            "Arithmetic invalidity at postfix node 3"
+          ]
+        },
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 19,
+      "name" : "genetik_demo_bounded",
+      "properties" : 
+      [
+        {
+          "name" : "PASS_REGULAR_EXPRESSION",
+          "value" : 
+          [
+            "stopping_reason=generation_limit generations=20"
+          ]
+        },
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 21,
+      "name" : "genetik_demo_zero_budget",
+      "properties" : 
+      [
+        {
+          "name" : "PASS_REGULAR_EXPRESSION",
+          "value" : 
+          [
+            "stopping_reason=generation_limit generations=0"
+          ]
+        },
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 23,
+      "name" : "genetik_demo_invalid_argument",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WILL_FAIL",
+          "value" : true
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 25,
+      "command" : 
+      [
+        "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+        "-DGENETIK_SOURCE=/home/karlphillip/workspaces/primeResearcher/Genetik",
+        "-DDOWNSTREAM_BINARY=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/downstream",
+        "-DCXX_COMPILER=/usr/bin/c++",
+        "-P",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/downstream.cmake"
+      ],
+      "name" : "genetik_downstream",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 27,
+      "command" : 
+      [
+        "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+        "-DCXX_COMPILER=/usr/bin/c++",
+        "-DGENETIK_SOURCE=/home/karlphillip/workspaces/primeResearcher/Genetik",
+        "-P",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/fp_policy.cmake"
+      ],
+      "name" : "genetik_expression_fp_policy",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 29,
+      "name" : "genetik_prime_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 31,
+      "command" : 
+      [
+        "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+        "-DPRIME=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_prime_regression",
+        "-DSEARCH=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_regression_search",
+        "-DWORKSPACE=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/prime-cli",
+        "-P",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/prime_cli.cmake"
+      ],
+      "name" : "genetik_prime_cli",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 33,
+      "name" : "genetik_workspace_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 35,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/package_integration.py",
+        "--source",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik",
+        "--workspace",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik-delivery-fixture",
+        "--cmake",
+        "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+        "--cxx",
+        "/usr/bin/c++"
+      ],
+      "name" : "genetik_installed_package",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 37,
+      "name" : "genetik_scalar_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 39,
+      "name" : "genetik_symbolic_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 41,
+      "name" : "genetik_oop_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 43,
+      "name" : "genetik_concurrency_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 45,
+      "name" : "genetik_oop_parallel",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 47,
+      "name" : "genetik_character_parallel",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 49,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/scripts/check_hygiene.py",
+        "--source",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik",
+        "--self-test"
+      ],
+      "name" : "genetik_repository_hygiene",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 51,
+      "name" : "genetik_typed_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 53,
+      "name" : "genetik_typed_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 55,
+      "name" : "genetik_typed_example",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 57,
+      "name" : "genetik_typed_regression_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 300.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 59,
+      "name" : "genetik_typed_preparation_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 61,
+      "name" : "genetik_typed_search_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 63,
+      "command" : 
+      [
+        "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+        "-DSEARCH=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_typed_regression",
+        "-DWORKSPACE=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/typed-cli",
+        "-P",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/typed_cli.cmake"
+      ],
+      "name" : "genetik_typed_regression_cli",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 65,
+      "name" : "genetik_scientific_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 67,
+      "name" : "genetik_parsing_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 69,
+      "name" : "genetik_parsing_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 71,
+      "name" : "genetik_parsing_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 73,
+      "command" : 
+      [
+        "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+        "-DEVALUATE=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_regression_evaluate",
+        "-DWORKSPACE=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/expression-file",
+        "-P",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/expression_file.cmake"
+      ],
+      "name" : "genetik_expression_file",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 75,
+      "name" : "genetik_template_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 77,
+      "name" : "genetik_template_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 79,
+      "name" : "genetik_templates_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 81,
+      "command" : 
+      [
+        "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+        "-DCAMPAIGN=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_scalar_template_campaign",
+        "-DWORKSPACE=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/template-campaign",
+        "-P",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/template_cli.cmake"
+      ],
+      "name" : "genetik_template_campaign_smoke",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 83,
+      "name" : "genetik_derivative_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 85,
+      "name" : "genetik_derivative_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 87,
+      "name" : "genetik_derivatives_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 89,
+      "name" : "genetik_derivative_regression_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 91,
+      "name" : "genetik_derivative_regression_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 93,
+      "name" : "genetik_derivative_regression_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 95,
+      "command" : 
+      [
+        "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+        "-DCAMPAIGN=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_derivative_regression_campaign",
+        "-DWORKSPACE=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/derivative-regression-cli",
+        "-P",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/derivative_regression_cli.cmake"
+      ],
+      "name" : "genetik_derivative_regression_cli",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 97,
+      "name" : "genetik_integral_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 99,
+      "name" : "genetik_integral_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 101,
+      "name" : "genetik_integrals_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 103,
+      "command" : 
+      [
+        "/home/karlphillip/workspaces/primeResearcher/delivery-tools/cmake-min/bin/cmake",
+        "-DCAMPAIGN=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_integral_campaign",
+        "-DWORKSPACE=/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/integral-cli",
+        "-P",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/integral_cli.cmake"
+      ],
+      "name" : "genetik_integral_cli",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 105,
+      "name" : "genetik_prime_exact_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 107,
+      "name" : "genetik_prime_exact_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 90.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 109,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/prime_exact_cli.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_prime_regression",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/prime-exact-cli"
+      ],
+      "name" : "genetik_prime_exact_cli",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 111,
+      "name" : "genetik_checkpoint_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 113,
+      "name" : "genetik_checkpoint_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 115,
+      "name" : "genetik_formatting_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 117,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/checkpoint_process.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_checkpoint_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/checkpoint-process/checkpoint-fixture"
+      ],
+      "name" : "genetik_checkpoint_process",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 240.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 119,
+      "name" : "genetik_checkpoint_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 30.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 121,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/checkpoint_cli.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_prime_regression",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/checkpoint-cli"
+      ],
+      "name" : "genetik_checkpoint_cli",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 300.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 123,
+      "name" : "genetik_discrete_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 120.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 125,
+      "name" : "genetik_discrete_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 120.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 127,
+      "name" : "genetik_discrete_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 129,
+      "name" : "genetik_discrete_iteration_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 131,
+      "name" : "genetik_discrete_iteration_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 133,
+      "name" : "genetik_discrete_iteration_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 135,
+      "name" : "genetik_discrete_prime_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 137,
+      "name" : "genetik_discrete_prime_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 139,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/discrete_prime_cli.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_discrete_prime_search",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/discrete-prime-cli"
+      ],
+      "name" : "genetik_discrete_prime_cli",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 141,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/compatibility/run.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_checkpoint_v03_writer",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_checkpoint_compatibility_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/checkpoint-compatibility"
+      ],
+      "name" : "genetik_checkpoint_compatibility",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 143,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/compatibility/run.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_checkpoint_v04_writer",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_checkpoint_v04_compatibility_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/checkpoint-v04-compatibility"
+      ],
+      "name" : "genetik_checkpoint_v04_compatibility",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 145,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/compatibility/run.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_discrete_checkpoint_v04_writer",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_discrete_checkpoint_v04_compatibility_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/checkpoint-v04-discrete-compatibility"
+      ],
+      "name" : "genetik_discrete_checkpoint_v04_compatibility",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 147,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/compatibility/run.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_checkpoint_v05_writer",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_checkpoint_v05_compatibility_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/checkpoint-v05-compatibility"
+      ],
+      "name" : "genetik_checkpoint_v05_compatibility",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 149,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/compatibility/run.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_discrete_checkpoint_v05_writer",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/genetik_discrete_checkpoint_v05_compatibility_tests",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/checkpoint-v05-discrete-compatibility"
+      ],
+      "name" : "genetik_discrete_checkpoint_v05_compatibility",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 151,
+      "name" : "genetik_d5_iteration_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 153,
+      "name" : "genetik_d5_iteration_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 155,
+      "name" : "genetik_d5_integer_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 157,
+      "name" : "genetik_d5_recurrence_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 159,
+      "name" : "genetik_d5_recurrence_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 161,
+      "name" : "genetik_d5_scientific_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 300.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 163,
+      "name" : "genetik_d5_scientific_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 300.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 165,
+      "name" : "genetik_d5_symbolic_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 300.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 167,
+      "name" : "genetik_d5_symbolic_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 300.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 169,
+      "name" : "genetik_d5_dimension_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 171,
+      "name" : "genetik_d5_dimension_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 173,
+      "name" : "genetik_advanced_mathematics_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 120.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 175,
+      "name" : "genetik_d6_scientific_contracts",
+      "properties" : 
+      [
+        {
+          "name" : "ENVIRONMENT",
+          "value" : 
+          [
+            "OPENBLAS_NUM_THREADS=1",
+            "OMP_NUM_THREADS=1"
+          ]
+        },
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 177,
+      "name" : "genetik_d6_continuation",
+      "properties" : 
+      [
+        {
+          "name" : "ENVIRONMENT",
+          "value" : 
+          [
+            "OPENBLAS_NUM_THREADS=1",
+            "OMP_NUM_THREADS=1"
+          ]
+        },
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 179,
+      "name" : "genetik_d6_overlap",
+      "properties" : 
+      [
+        {
+          "name" : "ENVIRONMENT",
+          "value" : 
+          [
+            "OPENBLAS_NUM_THREADS=1",
+            "OMP_NUM_THREADS=1"
+          ]
+        },
+        {
+          "name" : "TIMEOUT",
+          "value" : 600.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 181,
+      "name" : "genetik_scientific_discovery_quickstart",
+      "properties" : 
+      [
+        {
+          "name" : "ENVIRONMENT",
+          "value" : 
+          [
+            "OPENBLAS_NUM_THREADS=1",
+            "OMP_NUM_THREADS=1"
+          ]
+        },
+        {
+          "name" : "TIMEOUT",
+          "value" : 60.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    },
+    {
+      "backtrace" : 183,
+      "command" : 
+      [
+        "/usr/bin/python3",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/tests/d6_budget_cli.py",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/genetik_d6_scientific_benchmarks",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests/d6-budget-cli"
+      ],
+      "name" : "genetik_d6_budget_cli",
+      "properties" : 
+      [
+        {
+          "name" : "TIMEOUT",
+          "value" : 180.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-release/tests"
+        }
+      ]
+    }
+  ],
+  "version" : 
+  {
+    "major" : 1,
+    "minor" : 0
+  }
+}

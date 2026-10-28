@@ -12,18 +12,24 @@ It is heuristic search, with no guarantee of a good fit, a particular equation o
 extrapolation accuracy. Prime regression is one application example.
 
 The library uses only the C++ standard library by default and is [MIT licensed](LICENSE).
-Published releases through **0.4.0** and their assets remain unchanged. The
-**0.5.0 development pre-release candidate** integrates opt-in
+Published releases through **0.5.0** and their assets remain unchanged. The
+**0.6.0 development pre-release candidate** adds optional native Python access to
+the established C++ symbolic-regression engine, including NumPy input,
+`GenetikRegressor`, SymPy export and a local SRBench adapter. It does not add a
+search algorithm or change search defaults. It also includes the opt-in
 [D5 advanced mathematics](docs/ADVANCED_MATHEMATICS_D5.md) and
 [D6 scientific discovery](docs/SCIENTIFIC_DISCOVERY_D6.md): checked integer
 math and recurrences, symbolic algebra, dimensions and constraints, coupled
 equation systems, supplied-observation ODE/PDE residuals, bounded matrices and
 tensors, restricted complex regression, statistics, probability and special
 functions. Established GA defaults and generic OOP use cases remain supported.
-See the [D7 local qualification and boundaries](docs/D7_NUMERICAL_QUALIFICATION.md),
-[frozen benchmark protocol and report](docs/d7/BENCHMARK_REPORT.md), and
-[0.5.0 migration guide](docs/releases/0.5.0/MIGRATION.md). This candidate has
-not been published; hosted qualification and publication are separate actions.
+Python is optional; local wheel qualification is Linux AArch64/CPython 3.12,
+with x86-64/CPython 3.12 reserved for the proposed hosted matrix. See
+[I2 Python interoperability](docs/I2_PYTHON_INTEROPERABILITY.md),
+[0.6.0 notes](docs/releases/0.6.0/NOTES.md), [migration](docs/I2_MIGRATION.md),
+[D7 numerical boundaries](docs/D7_NUMERICAL_QUALIFICATION.md), and
+[historical benchmark report](docs/d7/BENCHMARK_REPORT.md). This candidate is
+local and unpublished; hosted qualification and publication are separate actions.
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
 
@@ -37,6 +43,9 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   loss-call budget and four-generation ceiling bound the search. It prints the
   stopping outcome and faithful expression. Exact discovery is not required for
   either program to finish successfully.
+- [Python symbolic-regression example](examples/python/quickstart.py): install the
+  optional `genetik` package, fit through the native C++ engine and inspect the
+  selected canonical and SymPy expressions.
 - [Owned scalar/vector/matrix evaluation](examples/quickstarts/typed.cpp): constructs
   rectangular `A*x+b`, checks `[14,8]`, matrix multiplication, transpose and dot product,
   and handles a local resource limit. This additive evaluator is separate from
@@ -61,17 +70,17 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
 
-Obtain the source (use `--branch v0.4.0` for the published checkpoint, or
-`--branch qualification/advanced-mathematics-d7` for this development candidate):
+Obtain the source (use `--branch v0.5.0` for the published checkpoint, or
+`--branch qualification/python-interoperability-i2` for this local release candidate):
 
 ```sh
 git clone https://github.com/karlphillip/Genetik.git Genetik
 cd Genetik
-git switch --track origin/qualification/advanced-mathematics-d7
+git switch qualification/python-interoperability-i2
 ```
 
-For published 0.4.0, use its verified source archive and enter `Genetik-0.4.0/`.
-The D5/D6 APIs in this candidate require the 0.5.0 development branch. The
+For published 0.5.0, use its verified source archive and enter `Genetik-0.5.0/`.
+The D5/D6 APIs in this candidate require the 0.5.0 release baseline. The
 commands below describe that source tree; older release archives retain their
 own package versions and instructions.
 From the corresponding source root, install and build the available programs:
@@ -95,7 +104,7 @@ The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a comp
 consumer. In your application, enable CXX and use:
 
 ```cmake
-find_package(Genetik 0.5 CONFIG REQUIRED)
+find_package(Genetik 0.6 CONFIG REQUIRED)
 add_executable(application main.cpp)
 target_link_libraries(application PRIVATE Genetik::Genetik)
 ```
@@ -296,7 +305,7 @@ uses the generic state seams and scalar-expression codec without prime dependenc
 
 Optional discrete modules: [D1](docs/DISCRETE_EXPRESSIONS.md), [D2](docs/DISCRETE_ITERATION.md), [D3 results](docs/DISCRETE_D3_RESULTS.md). They do not replace the generic OOP engine.
 
-Current candidate: [Genetik 0.5.0 development pre-release notes](docs/releases/0.5.0/NOTES.md),
-[migration guide](docs/releases/0.5.0/MIGRATION.md),
-[competitor benchmark](docs/d7/BENCHMARK_REPORT.md), and
-[hosted qualification proposal](docs/d7/HOSTED_QUALIFICATION_PROPOSAL.md).
+Current candidate: [Genetik 0.6.0 development pre-release notes](docs/releases/0.6.0/NOTES.md),
+[migration guide](docs/I2_MIGRATION.md),
+[I2 qualification](docs/I2_QUALIFICATION.md), and
+[hosted qualification proposal](docs/I2_HOSTED_QUALIFICATION_PROPOSAL.md).

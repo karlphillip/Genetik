@@ -1,5 +1,15 @@
 # Baseline and first hardening milestone
 
+## Python interoperability I2 (qualification candidate)
+
+I2 is based on the published 0.5.0 tree plus the local I1 native Python
+interoperability changes. The candidate version is 0.6.0. Local qualification
+and exact artifact identities are recorded in `I2_QUALIFICATION.md`; the
+hosted proposal is separate and requires explicit approval. This section is
+updated only with results run against the final candidate SHA. Python remains
+optional, and the native package retains C++20, CMake >=3.16 and
+`Genetik::Genetik`.
+
 Verified 2026-10-19 on the supplied NVIDIA Jetson. Sections through the checkpoint reconciliation describe the original hardening baseline; later sections record the subsequent fitness/publication, expression and polynomial structure-search milestones and supersede historical limitations they explicitly resolve.
 
 ## Starting state

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.0 — Python interoperability development pre-release candidate
+
+- Add an optional pybind11 extension and Python-independent C++ facade over the
+  existing symbolic-regression engine. Provide the `genetik.GenetikRegressor`
+  estimator, NumPy input, native predictions, search statistics and SymPy export.
+- Add the locally qualified SRBench adapter and Python wheel/source packaging.
+  Python remains optional; the native C++20 package and search defaults are
+  retained.
+- Fix cooperative Python timeout cancellation by preserving the timer deadline
+  for the lifetime of its worker thread; add a regression test and retain the
+  pre-fix SRBench failure evidence.
+- Preserve explicit v0.5.0, v0.4.0 and v0.3.0 scalar/discrete checkpoint readers
+  for unchanged codecs and qualified runtime identity; generic loading stays
+  exact-version.
+- This release concerns access and interoperability, not search-performance
+  improvement. See the I2 qualification packet for platform-specific evidence
+  and limits. Hosted qualification and publication are not yet authorized.
+
 ## 0.5.0 — development pre-release candidate
 
 - Integrate the optional D5 advanced mathematical APIs and D6 scientific and

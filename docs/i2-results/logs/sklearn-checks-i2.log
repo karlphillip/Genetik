@@ -1,0 +1,42 @@
+PASS functools.partial(<function check_no_attributes_set_in_init at 0xffff77382160>, 'GenetikRegressor')
+PASS functools.partial(<function check_estimators_dtypes at 0xffff7737f920>, 'GenetikRegressor')
+PASS functools.partial(<function check_fit_score_takes_y at 0xffff7737f7e0>, 'GenetikRegressor')
+PASS functools.partial(<function check_estimators_fit_returns_self at 0xffff77381260>, 'GenetikRegressor')
+PASS functools.partial(<function check_estimators_fit_returns_self at 0xffff77381260>, 'GenetikRegressor', readonly_memmap=True)
+FAIL functools.partial(<function check_complex_data at 0xffff7737e340>, 'GenetikRegressor') TypeError X must use bool/integer/float dtypes no wider than 64 bits
+FAIL functools.partial(<function check_dtype_object at 0xffff7737e2a0>, 'GenetikRegressor') TypeError X must use bool/integer/float dtypes no wider than 64 bits
+PASS functools.partial(<function check_estimators_empty_data_messages at 0xffff7737fb00>, 'GenetikRegressor')
+PASS functools.partial(<function check_pipeline_consistency at 0xffff7737f6a0>, 'GenetikRegressor')
+PASS functools.partial(<function check_estimators_nan_inf at 0xffff7737fc40>, 'GenetikRegressor')
+PASS functools.partial(<function check_estimators_overwrite_params at 0xffff77382020>, 'GenetikRegressor')
+FAIL functools.partial(<function check_estimator_sparse_array at 0xffff7737da80>, 'GenetikRegressor') AssertionError Estimator GenetikRegressor doesn't seem to fail gracefully on sparse data: error message should state explicitly that sparse input is not supported if this is not the case, e.g. by using check_array(X, accept_sparse=False).
+FAIL functools.partial(<function check_estimator_sparse_matrix at 0xffff7737d9e0>, 'GenetikRegressor') AssertionError Estimator GenetikRegressor doesn't seem to fail gracefully on sparse data: error message should state explicitly that sparse input is not supported if this is not the case, e.g. by using check_array(X, accept_sparse=False).
+FAIL functools.partial(<function check_estimators_pickle at 0xffff7737fec0>, 'GenetikRegressor') TypeError cannot pickle 'genetik._native.Regressor' object
+FAIL functools.partial(<function check_estimators_pickle at 0xffff7737fec0>, 'GenetikRegressor', readonly_memmap=True) TypeError cannot pickle 'genetik._native.Regressor' object
+PASS functools.partial(<function check_estimator_get_tags_default_keys at 0xffff77383560>, 'GenetikRegressor')
+FAIL functools.partial(<function check_regressors_train at 0xffff773819e0>, 'GenetikRegressor') AssertionError 
+FAIL functools.partial(<function check_regressors_train at 0xffff773819e0>, 'GenetikRegressor', readonly_memmap=True) AssertionError 
+FAIL functools.partial(<function check_regressors_train at 0xffff773819e0>, 'GenetikRegressor', readonly_memmap=True, X_dtype='float32') AssertionError 
+FAIL functools.partial(<function check_regressor_data_not_an_array at 0xffff77382520>, 'GenetikRegressor') ValueError DataFrame feature names must be strings matching the feature count
+PASS functools.partial(<function check_estimators_partial_fit_n_features at 0xffff77380040>, 'GenetikRegressor')
+PASS functools.partial(<function check_regressors_no_decision_function at 0xffff77381b20>, 'GenetikRegressor')
+PASS functools.partial(<function check_supervised_y_2d at 0xffff773814e0>, 'GenetikRegressor')
+PASS functools.partial(<function check_supervised_y_no_nan at 0xffff7737cae0>, 'GenetikRegressor')
+PASS functools.partial(<function check_regressors_int at 0xffff773818a0>, 'GenetikRegressor')
+PASS functools.partial(<function check_estimators_unfitted at 0xffff773813a0>, 'GenetikRegressor')
+PASS functools.partial(<function check_non_transformer_estimators_n_iter at 0xffff77382980>, 'GenetikRegressor')
+PASS functools.partial(<function check_parameters_default_constructible at 0xffff77382700>, 'GenetikRegressor')
+PASS functools.partial(<function check_methods_sample_order_invariance at 0xffff7737eac0>, 'GenetikRegressor')
+PASS functools.partial(<function check_methods_subset_invariance at 0xffff7737e980>, 'GenetikRegressor')
+PASS functools.partial(<function check_fit2d_1sample at 0xffff7737eca0>, 'GenetikRegressor')
+PASS functools.partial(<function check_fit2d_1feature at 0xffff7737ee80>, 'GenetikRegressor')
+PASS functools.partial(<function check_get_params_invariance at 0xffff77382c00>, 'GenetikRegressor')
+PASS functools.partial(<function check_set_params at 0xffff77382d40>, 'GenetikRegressor')
+PASS functools.partial(<function check_dict_unchanged at 0xffff7737e480>, 'GenetikRegressor')
+PASS functools.partial(<function check_dont_overwrite_parameters at 0xffff7737e660>, 'GenetikRegressor')
+PASS functools.partial(<function check_fit_idempotent at 0xffff773831a0>, 'GenetikRegressor')
+PASS functools.partial(<function check_fit_check_is_fitted at 0xffff77383240>, 'GenetikRegressor')
+PASS functools.partial(<function check_n_features_in at 0xffff773832e0>, 'GenetikRegressor')
+PASS functools.partial(<function check_fit1d at 0xffff7737efc0>, 'GenetikRegressor')
+PASS functools.partial(<function check_fit2d_predict1d at 0xffff7737e7a0>, 'GenetikRegressor')
+FAIL functools.partial(<function check_requires_y_none at 0xffff77383380>, 'GenetikRegressor') TypeError y must use bool/integer/float dtypes no wider than 64 bits

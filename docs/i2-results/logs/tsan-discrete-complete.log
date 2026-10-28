@@ -1,0 +1,13 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-tsan
+    Start 38: genetik_discrete_contracts
+1/4 Test #38: genetik_discrete_contracts .............   Passed    0.76 sec
+    Start 40: genetik_discrete_iteration_contracts
+2/4 Test #40: genetik_discrete_iteration_contracts ...   Passed    8.25 sec
+    Start 42: genetik_discrete_prime_contracts
+3/4 Test #42: genetik_discrete_prime_contracts .......   Passed   13.45 sec
+    Start 44: genetik_checkpoint_compatibility
+4/4 Test #44: genetik_checkpoint_compatibility .......   Passed    2.75 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =  25.21 sec

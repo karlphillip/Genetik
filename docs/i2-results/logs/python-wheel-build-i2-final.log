@@ -1,0 +1,9 @@
+Processing /home/karlphillip/workspaces/primeResearcher/Genetik
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: genetik
+  Building wheel for genetik (pyproject.toml): started
+  Building wheel for genetik (pyproject.toml): finished with status 'done'
+  Created wheel for genetik: filename=genetik-0.6.0-cp312-cp312-linux_aarch64.whl size=198388 sha256=582be1321de7eb7ed1bd0225d717d5a56182b0ac9251d97fc8e8adf99648f4b7
+  Stored in directory: /tmp/pip-ephem-wheel-cache-htwgejgd/wheels/c7/7b/e6/47799fa6408b98bb2e9a402c8b59a1553c985e650cf24f9953
+Successfully built genetik

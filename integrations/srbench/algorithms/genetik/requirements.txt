@@ -1,4 +1,4 @@
-# Qualified I1 environment pins for the SRBench integration.
+# Qualified Python environment pins for the Genetik 0.6 SRBench adapter.
 numpy==1.26.4
 scikit-learn==1.5.2
 sympy==1.13.3

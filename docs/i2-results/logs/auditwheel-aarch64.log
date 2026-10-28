@@ -1,0 +1,20 @@
+INFO:auditwheel.wheel_abi:setting libc to glibc
+
+genetik-0.6.0-cp312-cp312-linux_aarch64.whl is consistent with the
+following platform tag: "manylinux_2_39_aarch64".
+
+The wheel references external versioned symbols in these
+system-provided shared libraries: libgcc_s.so.1 with versions
+{'GCC_3.0'}, libm.so.6 with versions {'GLIBC_2.29', 'GLIBC_2.23',
+'GLIBC_2.17'}, libc.so.6 with versions {'GLIBC_2.32', 'GLIBC_2.34',
+'GLIBC_2.17'}, libstdc++.so.6 with versions {'GLIBCXX_3.4.26',
+'CXXABI_1.3.11', 'GLIBCXX_3.4.31', 'GLIBCXX_3.4.18', 'CXXABI_1.3',
+'CXXABI_1.3.13', 'GLIBCXX_3.4.20', 'GLIBCXX_3.4.30', 'GLIBCXX_3.4.21',
+'GLIBCXX_3.4.9', 'CXXABI_1.3.2', 'GLIBCXX_3.4.22', 'GLIBCXX_3.4.19',
+'CXXABI_1.3.3', 'CXXABI_1.3.9', 'CXXABI_1.3.5', 'GLIBCXX_3.4.29',
+'GLIBCXX_3.4.11', 'GLIBCXX_3.4.14', 'GLIBCXX_3.4'}
+
+This constrains the platform tag to "manylinux_2_39_aarch64". In order
+to achieve a more compatible tag, you would need to recompile a new
+wheel from source on a system with earlier versions of these
+libraries, such as a recent manylinux image.

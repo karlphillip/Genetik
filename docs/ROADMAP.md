@@ -377,3 +377,14 @@ smoke, and scoped native/Python verification are recorded in
 recorded Linux AArch64/Python 3.12 environment; this work is not published.
 Next action is a separate release integration and qualification proposal; no
 release preparation or publication is implied by I1 completion.
+
+
+## I2 Python interoperability release qualification (local candidate)
+
+The I2 candidate upgrades version metadata to 0.6.0 and qualifies the optional
+Python extension, estimator, SymPy export, SRBench adapter, native compatibility
+and distribution artifacts without changing the search algorithm. Local test
+and platform claims are limited to those recorded at the exact final candidate
+SHA in `I2_QUALIFICATION.md`. Hosted x86-64/ARM64 qualification remains a
+separate approval boundary; no remote upload, integration, tag or publication
+is implied by this local work.

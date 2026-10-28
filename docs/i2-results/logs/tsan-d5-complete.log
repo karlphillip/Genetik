@@ -1,0 +1,17 @@
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/build/i2-tsan
+    Start 49: genetik_d5_iteration_contracts
+1/6 Test #49: genetik_d5_iteration_contracts ....   Passed    3.42 sec
+    Start 51: genetik_d5_integer_contracts
+2/6 Test #51: genetik_d5_integer_contracts ......   Passed    0.86 sec
+    Start 52: genetik_d5_recurrence_contracts
+3/6 Test #52: genetik_d5_recurrence_contracts ...   Passed    8.36 sec
+    Start 54: genetik_d5_scientific_contracts
+4/6 Test #54: genetik_d5_scientific_contracts ...   Passed    0.10 sec
+    Start 56: genetik_d5_symbolic_contracts
+5/6 Test #56: genetik_d5_symbolic_contracts .....   Passed    0.47 sec
+    Start 58: genetik_d5_dimension_contracts
+6/6 Test #58: genetik_d5_dimension_contracts ....   Passed   56.50 sec
+
+100% tests passed, 0 tests failed out of 6
+
+Total Test time (real) =  69.72 sec

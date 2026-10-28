@@ -1,0 +1,6 @@
+Collecting PyYAML==6.0.1
+  Downloading PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl.metadata (2.1 kB)
+Downloading PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (696 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 696.9/696.9 kB 11.1 MB/s eta 0:00:00
+Installing collected packages: PyYAML
+Successfully installed PyYAML-6.0.1

@@ -12,6 +12,22 @@ est = GenetikRegressor(
     loss_budget=100000,
 )
 
+# SRBench's official -test path honors eval_kwargs.test_params. Keep this
+# smoke-only configuration small enough to exercise a complete commit within
+# the harness's short adapter test; ordinary evaluations retain the estimator
+# above and receive their normal fit_time_limit.
+eval_kwargs = {
+    "test_params": {
+        "evaluation_budget": 128,
+        "loss_budget": 1000,
+        "population_size": 8,
+        "max_generations": 4,
+        "max_nodes": 15,
+        "max_depth": 5,
+        "max_fit_loss_attempts": 8,
+    }
+}
+
 
 def model(estimator, X=None):
     """Return the selected native expression with the dataset's exact columns."""

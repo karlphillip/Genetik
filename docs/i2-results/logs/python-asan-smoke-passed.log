@@ -1,0 +1,38 @@
+AddressSanitizer: CHECK failed: asan_interceptors.cpp:458 "((__interception::real___cxa_throw)) != (0)" (0x0, 0x0) (tid=2059020)
+    #0 0xffff80b72970 in CheckUnwind ../../../../src/libsanitizer/asan/asan_rtl.cpp:69
+    #1 0xffff80b9a794 in __sanitizer::CheckFailed(char const*, int, char const*, unsigned long long, unsigned long long) ../../../../src/libsanitizer/sanitizer_common/sanitizer_termination.cpp:86
+    #2 0xffff80b5fa98 in __cxa_throw ../../../../src/libsanitizer/asan/asan_interceptors.cpp:458
+    #3 0xffff80b5fa98 in __cxa_throw ../../../../src/libsanitizer/asan/asan_interceptors.cpp:457
+    #4 0xffff4168ba70 in TrainingObjective::measure(Expression const&, TrainingLossKind) /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/ConstantFitting.hpp:137
+    #5 0xffff417472f8 in ConstantFitResult genetik_detail::fitCoordinates<ConstantFitResult, Expression, TrainingObjective, std::vector<unsigned long, std::allocator<unsigned long> >, fitConstants(Expression const&, TrainingObjective&, ConstantFitConfig const&)::{lambda(Expression const&, unsigned long)#1}, fitConstants(Expression const&, TrainingObjective&, ConstantFitConfig const&)::{lambda(Expression const&, unsigned long, double)#1}>(Expression, TrainingObjective&, ConstantFitConfig const&, std::vector<unsigned long, std::allocator<unsigned long> > const&, TrainingWork&, fitConstants(Expression const&, TrainingObjective&, ConstantFitConfig const&)::{lambda(Expression const&, unsigned long)#1}, fitConstants(Expression const&, TrainingObjective&, ConstantFitConfig const&)::{lambda(Expression const&, unsigned long, double)#1}) /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/ConstantFitting.hpp:247
+    #6 0xffff4168fa8c in fitConstants(Expression const&, TrainingObjective&, ConstantFitConfig const&) /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/ConstantFitting.hpp:308
+    #7 0xffff41699ca0 in ConstantRefinement::prepare(Expression const&, RegressionProblem const&, PreparationContext)::{lambda()#2}::operator()() const /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/ConstantFitting.hpp:431
+    #8 0xffff4169d138 in ConstantRefinement::prepare(Expression const&, RegressionProblem const&, PreparationContext) /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/ConstantFitting.hpp:437
+    #9 0xffff416665dc in ExpressionCandidate::prepareEvaluation() /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/Regression.hpp:205
+    #10 0xffff41648930 in EvaluatedCandidate::calculateFitness() /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/EvaluatedCandidate.hpp:30
+    #11 0xffff418070a4 in Population<ExpressionCandidate, RegressionOrdering>::publishGeneration(std::vector<ExpressionCandidate, std::allocator<ExpressionCandidate> > const&) /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/Population.hpp:139
+    #12 0xffff417b482c in GeneticAlgorithm<Population<ExpressionCandidate, RegressionOrdering>, ExpressionCandidate, ExpressionVariation>::evolve(Population<ExpressionCandidate, RegressionOrdering>&) /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/GeneticAlgorithm.hpp:62
+    #13 0xffff41755cec in SymbolicRegressionResult genetik_detail::runSymbolicSearch<ExpressionVariation>(std::shared_ptr<RegressionProblem const>, SymbolicRegressionConfig const&, RandomContext&, std::shared_ptr<TrainingObjective>, std::shared_ptr<ConstantRefinement>, ExpressionVariation) /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/SymbolicRegression.hpp:136
+    #14 0xffff416a3320 in symbolicRegression(std::shared_ptr<RegressionProblem const>, SymbolicRegressionConfig const&, RandomContext&, std::shared_ptr<TrainingObjective>) /home/karlphillip/workspaces/primeResearcher/Genetik/genetik/SymbolicRegression.hpp:184
+    #15 0xffff416b058c in PythonRegressionFacade::fit(std::vector<RegressionRow, std::allocator<RegressionRow> > const&) /home/karlphillip/workspaces/primeResearcher/Genetik/python/RegressionFacade.hpp:134
+    #16 0xffff41621f90 in operator() /home/karlphillip/workspaces/primeResearcher/Genetik/python/bindings.cpp:143
+    #17 0xffff4162e10c in call_impl<pybind11::dict, pybind11_init__native(pybind11::module_&)::<lambda(PythonRegressionFacade&, const pybind11::array&, const pybind11::array&)>&, 0, 1, 2, pybind11::detail::void_type> /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/i2-python/lib/python3.12/site-packages/pybind11/include/pybind11/cast.h:1631
+    #18 0xffff4162af68 in call<pybind11::dict, pybind11::detail::void_type, pybind11_init__native(pybind11::module_&)::<lambda(PythonRegressionFacade&, const pybind11::array&, const pybind11::array&)>&> /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/i2-python/lib/python3.12/site-packages/pybind11/include/pybind11/cast.h:1600
+    #19 0xffff4162787c in operator() /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/i2-python/lib/python3.12/site-packages/pybind11/include/pybind11/pybind11.h:278
+    #20 0xffff41627c10 in _FUN /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/i2-python/lib/python3.12/site-packages/pybind11/include/pybind11/pybind11.h:249
+    #21 0xffff41711534 in pybind11::cpp_function::dispatcher(_object*, _object*, _object*) /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/i2-python/lib/python3.12/site-packages/pybind11/include/pybind11/pybind11.h:971
+    #22 0x503530  (/usr/bin/python3.12+0x503530) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #23 0x4c2b04 in _PyObject_MakeTpCall (/usr/bin/python3.12+0x4c2b04) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #24 0x5639e0 in _PyEval_EvalFrameDefault (/usr/bin/python3.12+0x5639e0) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #25 0x561d30 in PyEval_EvalCode (/usr/bin/python3.12+0x561d30) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #26 0x59ae20  (/usr/bin/python3.12+0x59ae20) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #27 0x680280  (/usr/bin/python3.12+0x680280) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #28 0x67fe54 in _PyRun_SimpleFileObject (/usr/bin/python3.12+0x67fe54) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #29 0x67fc20 in _PyRun_AnyFileObject (/usr/bin/python3.12+0x67fc20) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #30 0x451088 in PyRun_AnyFileExFlags (/usr/bin/python3.12+0x451088) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #31 0x68b040 in Py_RunMain (/usr/bin/python3.12+0x68b040) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #32 0x68a7e4 in Py_BytesMain (/usr/bin/python3.12+0x68a7e4) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+    #33 0xffff807884c0 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #34 0xffff80788594 in __libc_start_main_impl ../csu/libc-start.c:360
+    #35 0x5f5c6c in _start (/usr/bin/python3.12+0x5f5c6c) (BuildId: 5419091a520091f9a2aaa403028839815beca0b2)
+

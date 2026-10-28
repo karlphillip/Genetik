@@ -111,7 +111,9 @@ public:
         if (config_.maxTimeSeconds) {
             const auto deadline = start + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
                 std::chrono::duration<double>(*config_.maxTimeSeconds));
-            timer = std::thread([&] {
+            // deadline is local to this block; capture it by value so the timer
+            // never observes a dangling time_point after setup completes.
+            timer = std::thread([&, deadline] {
                 std::unique_lock lock(timerMutex);
                 if (timerChanged.wait_until(lock, deadline, [&] { return finished.load(); })) return;
                 timedOut.store(true, std::memory_order_release);

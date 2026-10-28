@@ -131,10 +131,103 @@ jobs:
               fi
             fi
           done
+
+  python-cp312:
+    name: python-cp312-${{ matrix.arch }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.12.3'
+      - name: Record interpreter, compiler, libc and architecture
+        run: |
+          uname -a
+          python --version
+          gcc --version
+          ldd --version | head -1
+          python -m pip debug --verbose | head -35
+      - name: Install pinned Python qualification dependencies
+        run: |
+          python -m venv out/tmp/i2-python
+          out/tmp/i2-python/bin/python -m pip install -r docs/i2-results/requirements-python-cp312.txt
+      - name: Build the native/Python reference consumer
+        run: |
+          cmake -S . -B out/build/i2-python-reference -DCMAKE_BUILD_TYPE=Release \
+            -DGENETIK_BUILD_TESTS=ON -DBUILD_TESTING=ON \
+            -DGENETIK_BUILD_EXAMPLES=OFF -DGENETIK_INSTALL=OFF \
+            -DGENETIK_BUILD_PYTHON=OFF -DGENETIK_WARNINGS_AS_ERRORS=ON
+          cmake --build out/build/i2-python-reference --target genetik_python_native_reference -j2
+      - name: Build and inspect the platform-specific wheel
+        run: |
+          out/tmp/i2-python/bin/python -m pip wheel . --no-deps --no-build-isolation --wheel-dir out/wheels/i2
+          out/tmp/i2-python/bin/auditwheel show out/wheels/i2/*.whl
+          out/tmp/i2-python/bin/python -c 'from importlib.metadata import metadata,version; from packaging.specifiers import SpecifierSet; assert version("genetik")=="0.6.0"; assert SpecifierSet(metadata("genetik")["Requires-Python"])==SpecifierSet(">=3.12,<3.13")'
+      - name: Install wheel and test estimator/native parity
+        env:
+          GENETIK_NATIVE_REFERENCE: ${{ github.workspace }}/out/build/i2-python-reference/tests/genetik_python_native_reference
+          PYTHONPYCACHEPREFIX: ${{ github.workspace }}/out/tmp/python-cache
+        run: |
+          out/tmp/i2-python/bin/python -m pip install --no-deps out/wheels/i2/*.whl
+          readelf -d out/tmp/i2-python/lib/python3.12/site-packages/genetik/_native*.so
+          ldd out/tmp/i2-python/lib/python3.12/site-packages/genetik/_native*.so
+          out/tmp/i2-python/bin/python -m pytest -p no:cacheprovider tests/python
+          out/tmp/i2-python/bin/python examples/python/quickstart.py
+      - name: Verify pinned SRBench layout and import API
+        run: |
+          git clone --filter=blob:none --no-checkout https://github.com/cavalab/srbench.git out/tmp/srbench-i2
+          git -C out/tmp/srbench-i2 checkout --detach 2aabbb60dad41d6e5d52779ce134191a874b756c
+          cp -R integrations/srbench/algorithms/genetik out/tmp/srbench-i2/algorithms/
+          cp -R integrations/srbench/experiment/methods/genetik out/tmp/srbench-i2/experiment/methods/
+          cd out/tmp/srbench-i2
+          python scripts/check_method_layout.py
+          cd experiment
+          ../../i2-python/bin/python -m pytest -q test_algorithm.py -k test_import --ml genetik
+      - name: Bounded official SRBench evaluator smoke
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+        run: |
+          cp docs/i1-results/srbench-smoke-data.tsv out/tmp/srbench-generated.tsv
+          mkdir -p out/tmp/srbench-results
+          cd out/tmp/srbench-i2/experiment
+          ../../i2-python/bin/python evaluate_model.py "$GITHUB_WORKSPACE/out/tmp/srbench-generated.tsv" -ml genetik -results_path "$GITHUB_WORKSPACE/out/tmp/srbench-results" -seed 42 -test -n_jobs 1 -fit_time_limit 3
+          I2_SR_RESULTS="$GITHUB_WORKSPACE/out/tmp/srbench-results" ../../i2-python/bin/python -c 'import json,math,os,pathlib; files=list(pathlib.Path(os.environ["I2_SR_RESULTS"]).glob("*.json")); assert len(files)==1; p=files[0]; d=json.load(open(p)); assert d["symbolic_model"] and math.isfinite(d["mse_test"]); print(p,d["symbolic_model"],d["mse_test"])'
+      - name: Install and test the Python source distribution
+        env:
+          GENETIK_NATIVE_REFERENCE: ${{ github.workspace }}/out/build/i2-python-reference/tests/genetik_python_native_reference
+          PYTHONPYCACHEPREFIX: ${{ github.workspace }}/out/tmp/python-cache
+        run: |
+          out/tmp/i2-python/bin/python -m build --sdist --no-isolation --outdir out/sdist/i2
+          out/tmp/i2-python/bin/python -m pip install --force-reinstall --no-build-isolation --no-deps out/sdist/i2/genetik-0.6.0.tar.gz
+          out/tmp/i2-python/bin/python -m pytest -p no:cacheprovider tests/python
+      - name: Retain Python qualification artifacts
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: python-cp312-${{ matrix.arch }}
+          retention-days: 14
+          path: |
+            out/wheels/i2/*.whl
+            out/sdist/i2/*.tar.gz
+            out/build/i2-python-reference/CMakeCache.txt
+            out/tmp/srbench-results/*.json
       - name: Retain failure diagnostics
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: logs-${{ matrix.name }}
+          name: logs-python-${{ matrix.arch }}
           retention-days: 14
           path: ${{ runner.temp }}/genetik-qualification

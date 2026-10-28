@@ -1,0 +1,1 @@
+check_estimator: FAIL TypeError X must use bool/integer/float dtypes no wider than 64 bits

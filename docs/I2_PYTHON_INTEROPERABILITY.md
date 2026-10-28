@@ -49,6 +49,13 @@ numeric arrays with `X` shaped `(n_samples, n_features)` and `y` shaped
 `(n_samples,)`. Data is copied into native-owned storage. Prediction evaluates
 the selected C++ expression; it does not refit.
 
+Dense real numeric values are supported, including convertible object arrays;
+complex and sparse inputs are rejected. Non-string DataFrame column labels use
+the stable `x0`, `x1`, ... expression identifiers because sklearn only
+publishes `feature_names_in_` for string labels. Fitted estimator instances
+are not pickle-serializable because the selected model is held by a native C++
+facade. This limitation is covered in the qualification record.
+
 `max_time`, when supplied, requests cooperative cancellation. It does not
 terminate native computation at a hard deadline. If cancellation occurs, only
 a fully prepared and committed candidate can be exposed; model availability

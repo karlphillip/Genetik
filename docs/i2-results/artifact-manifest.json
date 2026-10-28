@@ -1,0 +1,49 @@
+{
+  "release": "Genetik 0.6.0 — development pre-release",
+  "source_candidate_commit": "93e89fa296511ffb4136158214d270becd2f2d77",
+  "artifact_source_commit": "93e89fa296511ffb4136158214d270becd2f2d77",
+  "build_host": {
+    "os": "Ubuntu 24.04.4 LTS",
+    "architecture": "Linux AArch64",
+    "cpu": "8-core ARM Cortex-A78AE",
+    "glibc": "2.39",
+    "compiler": "GCC 13.3.0",
+    "python": "CPython 3.12.3",
+    "cmake": "3.16.0",
+    "scikit_build_core": "0.10.7",
+    "pybind11": "2.13.6"
+  },
+  "runtime_dependencies": [
+    "numpy>=1.20",
+    "scikit-learn>=1.0",
+    "sympy>=1.9"
+  ],
+  "build_dependencies": [
+    "scikit-build-core==0.10.7",
+    "pybind11==2.13.6"
+  ],
+  "artifact_directory": "out/tmp/i2-artifacts/final-delivery",
+  "artifacts": [
+    {
+      "filename": "Genetik-0.6.0-source.tar.gz",
+      "sha256": "1e6791742c4267dbbb496275eb008811c206da52a648eefa83b76a92cbe4d096",
+      "contents": "Verified byte-for-byte against all 1737 Git tree entries at source_candidate_commit"
+    },
+    {
+      "filename": "genetik-0.6.0-cp312-cp312-linux_aarch64.whl",
+      "sha256": "1f4f7b3563d788334312368cf94c175063628bf66210ce6e915efc4d241875ac",
+      "python_abi_platform": "CPython 3.12 / cp312 / linux_aarch64 (host-specific tag)",
+      "auditwheel_policy_floor": "manylinux_2_39_aarch64; wheel was not retagged",
+      "external_shared_libraries": ["libc.so.6", "libgcc_s.so.1", "libm.so.6", "libstdc++.so.6"],
+      "installation": "Passed 20 Python tests, quickstart, native parity, and pinned SRBench smoke"
+    },
+    {
+      "filename": "genetik-0.6.0-python-sdist.tar.gz",
+      "sha256": "fa2b9e64f29fa16a3cbfce237259208672d3c2f25007abe5b51c465aca68378d",
+      "reproducibility": "Two independent builds from the same source/configuration were byte-identical",
+      "installation": "Built and installed with CMake 3.16.0; passed 20 Python tests and quickstart",
+      "contents": "Native/Python sources, license, I2 guides, Python example and SRBench adapter; generated docs/i2-results excluded"
+    }
+  ],
+  "not_qualified": ["Linux x86-64 wheel", "Windows", "macOS", "CPython 3.11", "CPython 3.13"]
+}

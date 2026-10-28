@@ -1,0 +1,3 @@
+expression: ((x0 * 2.0) + ((-4.6109446287155151) - (-5.6109446191340524)))
+predictions: [-1.00000001 -0.82608697 -0.65217392]
+search statistics: {'training_mse': 9.180442812938481e-17, 'loss_attempts': 5141, 'published_generations': 0, 'search_seconds': 0.019053716, 'stop_reason': 'training_loss_threshold'}

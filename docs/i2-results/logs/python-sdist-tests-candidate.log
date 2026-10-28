@@ -1,0 +1,10 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.3.5, pluggy-1.7.0
+rootdir: /home/karlphillip/workspaces/primeResearcher/Genetik
+configfile: pyproject.toml
+collected 20 items
+
+../home/karlphillip/workspaces/primeResearcher/Genetik/tests/python/test_regressor.py . [  5%]
+...................                                                      [100%]
+
+============================== 20 passed in 2.30s ==============================

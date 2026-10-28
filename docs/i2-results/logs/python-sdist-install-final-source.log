@@ -1,0 +1,15 @@
+Processing ./docs/i2-results/artifacts/genetik-0.6.0-python-sdist.tar.gz
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: genetik
+  Building wheel for genetik (pyproject.toml): started
+  Building wheel for genetik (pyproject.toml): finished with status 'done'
+  Created wheel for genetik: filename=genetik-0.6.0-cp312-cp312-linux_aarch64.whl size=198402 sha256=e291a2900dc98830ce7444da9d965021050ff9e1ce44c8d3f22b0562538b4912
+  Stored in directory: /home/karlphillip/.cache/pip/wheels/ed/f2/6f/bd6e3cf270d7918a01fda4b905245764a4205ebc972c0ee0e0
+Successfully built genetik
+Installing collected packages: genetik
+  Attempting uninstall: genetik
+    Found existing installation: genetik 0.6.0
+    Uninstalling genetik-0.6.0:
+      Successfully uninstalled genetik-0.6.0
+Successfully installed genetik-0.6.0

@@ -1,0 +1,6 @@
+source_commit=93e89fa296511ffb4136158214d270becd2f2d77
+build_command=PATH=../delivery-tools/cmake-min/bin:$PATH python -m build --sdist --no-isolation
+first_sha256=fa2b9e64f29fa16a3cbfce237259208672d3c2f25007abe5b51c465aca68378d
+second_sha256=fa2b9e64f29fa16a3cbfce237259208672d3c2f25007abe5b51c465aca68378d
+result=byte-identical
+excluded=/docs/i2-results/**

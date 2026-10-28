@@ -1,17 +1,25 @@
 # I2 local qualification record
 
-This report applies only to the exact I2 candidate SHA named in the final
-completion report. It separates inherited 0.5.0/I1 results from gates executed
-against the final 0.6.0 source tree.
+The release source candidate is `93e89fa296511ffb4136158214d270becd2f2d77`.
+The final local branch tip adds only the artifact manifest/checksums and
+corresponding qualification evidence. This report separates inherited
+0.5.0/I1 results from gates executed against the 0.6.0 source candidate.
+The full native Release/Debug/ASan+UBSan/TSan matrix ran at
+`f242d7f1153c4445e125d8521af8e61bc96a2582`; the only later source-tree
+change before `93e89fa` was Python-sdist exclusion metadata plus documentation
+and retained packaging evidence. The C++ and Python implementation files are
+identical across these source SHAs.
 
 ## Candidate scope
 
 Version 0.6.0 is based on I1 `83c07793b3410b01101003d9626d954f4db961ab`, a
 direct child of the published 0.5.0 baseline
-`f95a204e25a6de36a54230be0cba750bde5e2ff7`. The I2 native source change is the
-version update and explicit scalar/discrete checkpoint forward compatibility
-from the 0.5.0 codec. Python remains optional. No search algorithm, fitness,
-optimizer, mathematical grammar, or default has been changed.
+`f95a204e25a6de36a54230be0cba750bde5e2ff7`. The C++ library source updates
+version metadata and explicitly enables scalar/discrete checkpoint reading
+from compatible 0.5.0 codecs. The optional Python facade fixes a dangling
+cooperative-timeout deadline capture. Python remains optional. No search
+algorithm, fitness, optimizer, mathematical grammar, or production default has
+changed.
 
 ## Final-source gates
 
@@ -21,10 +29,10 @@ optimizer, mathematical grammar, or default has been changed.
 | Debug portable suite | GCC 13.3, Linux AArch64, 92-test manifest | Passed 92/92; 381.69 s. | `docs/i2-results/logs/debug-configure-cmake316.log`, `debug-build-cmake316.log`, `debug-ctest-cmake316.log` |
 | ASan+UBSan portable suite | GCC 13.3, Linux AArch64, 92-test manifest | Passed 92/92; 4402.42 s. | `docs/i2-results/logs/asan-configure-cmake316.log`, `asan-build-cmake316.log`, `asan-ctest-cmake316.log` |
 | TSan selections and complete contracts | GCC 13, Linux AArch64, CMake 4.4.4, 21-test required manifest plus repeated contracts | Required 21 passed three times (63 executions); additional discrete/checkpoint 4/4, D5 6/6, D6 2/2, integral 1/1. | `docs/i2-results/tsan-manifest.json`, `docs/i2-results/logs/tsan-contracts-repeat3.log`, `tsan-discrete-complete.log`, `tsan-d5-complete.log`, `tsan-d6-complete.log`, `tsan-integral-complete.log` |
-| CPython 3.12 AArch64 wheel, sdist and tests | Ubuntu 24.04 AArch64, CPython 3.12.3, GCC 13.3 | Platform-specific `cp312-cp312-linux_aarch64` wheel; 20/20 Python tests passed on installed wheel and installed sdist. SRBench pinned layout/import and bounded evaluator smoke passed after timer lifetime repair. | `docs/i2-results/logs/python-wheel-build-i2-final.log`, `python-wheel-tests-i2-final.log`, `python-sdist-build-i2-final.log`, `python-sdist-tests-i2-final.log`, `srbench-layout-i2.log`, `srbench-import-i2-final.log`, `srbench-evaluator-i2-repaired.log`, `srbench-evaluator-i2-repaired.json` |
+| CPython 3.12 AArch64 wheel, sdist and tests | Ubuntu 24.04 AArch64, CPython 3.12.3, GCC 13.3, CMake 3.16.0 | Platform-specific `cp312-cp312-linux_aarch64` wheel; 20/20 Python tests passed on installed wheel and installed sdist built from source SHA `93e89fa`. Two sdist builds were byte-identical. | `docs/i2-results/logs/python-wheel-build-final-candidate.log`, `python-wheel-tests-final-source.log`, `python-sdist-build-final-a.log`, `python-sdist-build-final-b.log`, `python-sdist-tests-final-source.log`, `python-wheel-quickstart-final-source.log`, `python-sdist-quickstart-final-source.log` |
 | CPython 3.12 x86-64 wheel, sdist and tests | Hosted qualification required | Not locally available | `docs/i2-results/logs/x86-emulation-preflight.log` |
-| SRBench pinned adapter/layout and bounded smoke | SRBench `2aabbb60dad41d6e5d52779ce134191a874b756c` | Layout 31 algorithms/45 methods; import test passed; bounded official smoke returned `x0` and finite test MSE `6.708655972948872e-33`. Initial failures exposed a dangling deadline capture and are retained; repaired extension and regression test pass. | `docs/i2-results/logs/srbench-layout-i2.log`, `srbench-import-i2-final.log`, `srbench-evaluator-i2-final.log`, `srbench-evaluator-i2-repaired.log`, `srbench-evaluator-i2-repaired.json` |
-| Repository-scoped hygiene | Release, Debug and ASan+UBSan CTest; dedicated workspace audit | Repository hygiene passed in each full suite and a final standalone audit. Workspace audit identifies parent-workspace entries `docs`, `examples`, and user-owned `session.md`; none were deleted or modified. | Full CTest logs; `docs/i2-results/logs/repository-hygiene-final.log`, `workspace-hygiene.log` |
+| SRBench pinned adapter/layout and bounded smoke | SRBench `2aabbb60dad41d6e5d52779ce134191a874b756c` | Layout 31 algorithms/45 methods; import passed; final installed-wheel smoke returned `x0` and finite test MSE `6.708655972948872e-33` in 0.0020 s. Initial failures exposed the dangling deadline capture and are retained. | `docs/i2-results/logs/srbench-layout-i2.log`, `srbench-import-i2-final.log`, `srbench-evaluator-i2-final.log`, `srbench-evaluator-i2-repaired.log`, `srbench-evaluator-final-source.log`, `srbench-evaluator-final-source.json` |
+| Repository-scoped hygiene | Release, Debug and ASan+UBSan CTest; dedicated workspace audit | Repository hygiene passed in each full suite and a final standalone audit. Workspace audit identifies parent-workspace entries `docs`, `examples`, and user-owned `session.md`; none were deleted or modified. | Full CTest logs; `docs/i2-results/logs/repository-hygiene-final.log`, `workspace-hygiene-final.log` |
 | Python extension ASan+UBSan smoke | GCC 13.3, CPython 3.12.3 AArch64, Debug optional module | Instrumented extension built and completed finite fit/predict. LeakSanitizer was disabled only for Python shutdown allocations; initial runtime staging failures are retained. | `docs/i2-results/logs/python-asan-configure.log`, `python-asan-build.log`, `python-asan-smoke-passed.log`, `python-asan-smoke.log.gz`, `python-asan-smoke-retry.log` |
 | Workflow lint | Local pinned `actionlint` binary | Passed after correcting Python matrix artifact naming. | `docs/i2-results/logs/actionlint-i2.log` |
 
@@ -68,9 +76,26 @@ Non-string DataFrame column labels are also rejected. This is not full
 scikit-learn estimator-check compliance; see
 `docs/i2-results/logs/sklearn-checks-i2.log` for every check outcome.
 
+## Distribution artifacts
+
+The exact source commit and all three artifact identities are recorded in
+[`artifact-manifest.json`](i2-results/artifact-manifest.json). The local
+assets are under `out/tmp/i2-artifacts/final-delivery/` with a separate
+`SHA256SUMS`; its checksum is retained in
+`docs/i2-results/release-assets-SHA256SUMS.sha256`. The evidence files under
+`docs/i2-results/` have their own `SHA256SUMS` and sidecar. The native source
+archive is verified against every Git tree entry in source commit `93e89fa`.
+The Python sdist was
+built twice from the same source/configuration and the archives were byte
+identical. The wheel tag is `cp312-cp312-linux_aarch64`; `auditwheel` reports
+the `manylinux_2_39_aarch64` policy floor, but the wheel remains host-tagged and
+was not relabeled. It depends on the platform's glibc/libstdc++ system
+libraries. The source/wheel build toolchain is CPython 3.12.3, GCC 13.3 and
+CMake 3.16.0. No x86-64 artifact has been produced locally.
+
 ## Evidence integrity
 
 Raw logs and structured manifests under `docs/i2-results/` are retained,
-including failures. Release archive and wheel hashes are recorded in
-`docs/i2-results/artifact-manifest.json` and `SHA256SUMS` after the exact
-candidate source commit is established.
+including failures. Artifact hashes are recorded in the artifact manifest and
+the release-assets checksum file; the evidence checksum file independently
+covers all retained records under `docs/i2-results/`.

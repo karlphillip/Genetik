@@ -1,7 +1,10 @@
 # I2 hosted qualification proposal
 
-No remote action has been taken. This proposal is for the exact final local
-candidate SHA to be reported with the I2 completion packet.
+No remote action has been taken. The release source candidate is
+`93e89fa296511ffb4136158214d270becd2f2d77`. The final local branch tip will
+contain only its artifact manifest/checksums and qualification evidence; the
+hosted matrix must run on that exact final tip. No executable source changes
+are included after the source candidate.
 
 ## Proposed source branch
 

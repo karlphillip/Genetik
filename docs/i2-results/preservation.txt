@@ -1,0 +1,9 @@
+base=published Genetik 0.5.0 f95a204e25a6de36a54230be0cba750bde5e2ff7
+source_candidate=93e89fa296511ffb4136158214d270becd2f2d77
+base ancestry: source_candidate is a descendant of published 0.5.0 via I1 commit 83c07793b3410b01101003d9626d954f4db961ab
+main=f95a204e25a6de36a54230be0cba750bde5e2ff7 (unchanged)
+release tags: v0.1.0, v0.2.0, v0.3.0, v0.4.0, v0.5.0 (all remain present and unchanged)
+frozen historical evidence: existing preservation record reports 127 files verified; no paths in R1-R9/P1/I1 evidence, campaign result collections, or published release assets changed between I1 and I2 source candidate.
+research branches: retained; no branch deletion or history rewrite performed.
+remote writes: none
+external session.md: not modified

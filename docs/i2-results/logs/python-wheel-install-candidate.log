@@ -1,0 +1,7 @@
+Processing ./out/tmp/i2-artifacts/wheel-candidate/genetik-0.6.0-cp312-cp312-linux_aarch64.whl
+Installing collected packages: genetik
+  Attempting uninstall: genetik
+    Found existing installation: genetik 0.6.0
+    Uninstalling genetik-0.6.0:
+      Successfully uninstalled genetik-0.6.0
+Successfully installed genetik-0.6.0

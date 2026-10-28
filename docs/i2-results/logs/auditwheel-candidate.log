@@ -1,0 +1,19 @@
+
+genetik-0.6.0-cp312-cp312-linux_aarch64.whl is consistent with the
+following platform tag: "manylinux_2_39_aarch64".
+
+The wheel references external versioned symbols in these
+system-provided shared libraries: libgcc_s.so.1 with versions
+{'GCC_3.0'}, libm.so.6 with versions {'GLIBC_2.29', 'GLIBC_2.17',
+'GLIBC_2.23'}, libc.so.6 with versions {'GLIBC_2.32', 'GLIBC_2.17',
+'GLIBC_2.34'}, libstdc++.so.6 with versions {'GLIBCXX_3.4.14',
+'CXXABI_1.3', 'GLIBCXX_3.4.31', 'GLIBCXX_3.4.26', 'GLIBCXX_3.4.22',
+'CXXABI_1.3.11', 'GLIBCXX_3.4.9', 'CXXABI_1.3.2', 'GLIBCXX_3.4.30',
+'GLIBCXX_3.4.29', 'GLIBCXX_3.4.11', 'CXXABI_1.3.13', 'CXXABI_1.3.5',
+'CXXABI_1.3.9', 'GLIBCXX_3.4.21', 'GLIBCXX_3.4.19', 'CXXABI_1.3.3',
+'GLIBCXX_3.4.18', 'GLIBCXX_3.4', 'GLIBCXX_3.4.20'}
+
+This constrains the platform tag to "manylinux_2_39_aarch64". In order
+to achieve a more compatible tag, you would need to recompile a new
+wheel from source on a system with earlier versions of these
+libraries, such as a recent manylinux image.

@@ -388,3 +388,15 @@ and platform claims are limited to those recorded at the exact final candidate
 SHA in `I2_QUALIFICATION.md`. Hosted x86-64/ARM64 qualification remains a
 separate approval boundary; no remote upload, integration, tag or publication
 is implied by this local work.
+
+## M3 mixed numerical expressions — local research implementation
+
+`MixedExpression` now provides bounded typed integer, binary64, and boolean
+expressions with exact integer fitness, typed variation, and checkpoint
+continuation. The synthetic evolution qualification passed its implementation
+and determinism checks but did not recover the synthetic target (3/16 training,
+0/8 held out for the frozen seed). The five-seed prime campaign was not run.
+The direct-formula representation is available; a campaign application and
+frozen resource protocol remain proposed next work. See
+[implementation](M3_MIXED_NUMERICAL_IMPLEMENTATION.md) and
+[qualification](M3_MIXED_NUMERICAL_QUALIFICATION.md).

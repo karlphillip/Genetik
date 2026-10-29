@@ -50,7 +50,7 @@ if(GENETIK_BUILD_EXAMPLES)
                         genetik_demo_invalid_argument PROPERTIES TIMEOUT 30)
 endif()
 # Each public header must compile as the first and only include.
-foreach(header DiscreteExpression DiscreteExpressionParsing DiscreteExpressionFormatting DiscreteRegression DiscreteVariation DiscreteSymbolicRegression DiscreteExpressionCheckpoint DiscreteRunCheckpoint IntegerRecurrence SymbolicAlgebra PhysicalDimensions DimensionalRegression MathematicalConstraints ScalarMathematicsRun Version RunCheckpoint ScalarExpressionCheckpoint ExpressionFormatting IntegralExpression IntegralRegression DerivativeRegression ExpressionDerivative ScalarExpressionTemplate ScalarTemplateRegression ExpressionParsing TypedExpressionParsing TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)
+foreach(header MixedExpression MixedIntegerCheckpoint DiscreteExpression DiscreteExpressionParsing DiscreteExpressionFormatting DiscreteRegression DiscreteVariation DiscreteSymbolicRegression DiscreteExpressionCheckpoint DiscreteRunCheckpoint IntegerRecurrence SymbolicAlgebra PhysicalDimensions DimensionalRegression MathematicalConstraints ScalarMathematicsRun Version RunCheckpoint ScalarExpressionCheckpoint ExpressionFormatting IntegralExpression IntegralRegression DerivativeRegression ExpressionDerivative ScalarExpressionTemplate ScalarTemplateRegression ExpressionParsing TypedExpressionParsing TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp "#include <${header}.hpp>\n")
     add_library(header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp)
     target_link_libraries(header_${header} PRIVATE genetik_lib)
@@ -164,6 +164,16 @@ add_test(NAME genetik_typed_regression_contracts COMMAND genetik_typed_regressio
 # O0 + ASan stack-use-after-return bookkeeping is costly on native ARM64;
 # keep all fixed numerical/operator fixtures and instrumentation, with a bounded allowance.
 set_tests_properties(genetik_typed_regression_contracts PROPERTIES TIMEOUT 300)
+
+add_executable(genetik_mixed_expression_tests mixed_expression.cpp)
+target_link_libraries(genetik_mixed_expression_tests PRIVATE Genetik::Genetik)
+add_test(NAME genetik_mixed_expression_contracts COMMAND genetik_mixed_expression_tests)
+add_test(NAME genetik_mixed_expression_overlap COMMAND genetik_mixed_expression_tests --overlap)
+set_tests_properties(genetik_mixed_expression_contracts PROPERTIES TIMEOUT 180)
+set_tests_properties(genetik_mixed_expression_overlap PROPERTIES TIMEOUT 60)
+add_executable(genetik_mixed_multitu_tests mixed_multitu_main.cpp mixed_multitu_factory.cpp)
+target_link_libraries(genetik_mixed_multitu_tests PRIVATE Genetik::Genetik)
+add_test(NAME genetik_mixed_multitu_contracts COMMAND genetik_mixed_multitu_tests)
 
 add_test(NAME genetik_typed_preparation_overlap COMMAND genetik_typed_regression_tests --overlap)
 set_tests_properties(genetik_typed_preparation_overlap PROPERTIES TIMEOUT 90)

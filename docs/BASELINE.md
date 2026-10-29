@@ -1099,3 +1099,18 @@ build remains Python-independent and the extension is disabled by default.
 Local scope, platform limits and qualification are recorded in
 [I1 interoperability](I1_PYTHON_INTEROPERABILITY.md) and
 [I1 qualification](I1_QUALIFICATION.md). This is not a published release.
+
+## M3 mixed numerical expression extension — local implementation
+
+`MixedExpression.hpp` adds a bounded `Int64`/`Real64`/`Bool` postfix
+representation. It reuses the existing checked discrete and scalar numerical
+kernels, and is exposed to the generic GA through `EvaluatedCandidate` and
+`MixedIntegerVariation`; generic GA policies and production defaults are
+unchanged. The opt-in `direct-integer-formula/1` grammar contains only finite
+expression operations. Exact integer fitness, mixed candidate serialization,
+and deterministic continuation through the existing run-checkpoint primitives
+are covered by the evidence in `M3_MIXED_NUMERICAL_QUALIFICATION.md`.
+
+Real constants evolve but are not coordinate-fitted across integer rounding.
+The synthetic smoke did not recover its target, and the prime campaign was not
+run. This local research extension is not part of a published release.

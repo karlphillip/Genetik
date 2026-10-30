@@ -17,7 +17,7 @@ from genetik import GenetikRegressor
 
 
 def test_package_version_matches_distribution():
-    assert genetik.__version__ == version("genetik") == "0.6.0"
+    assert genetik.__version__ == version("genetik") == "0.7.0"
 
 
 def small_model(**kwargs):

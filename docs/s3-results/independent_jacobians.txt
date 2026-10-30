@@ -1,0 +1,1 @@
+independent symbolic Jacobian formulas verified: sine, power, exponential, rational, repeated shared parameter

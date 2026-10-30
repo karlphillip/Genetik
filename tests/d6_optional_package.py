@@ -21,7 +21,7 @@ run([a.cmake,'--install',build]);relocated=root/'relocated';shutil.move(prefix,r
 consumer=root/'consumer';consumer.mkdir()
 (consumer/'CMakeLists.txt').write_text('''cmake_minimum_required(VERSION 3.16)
 project(D6Consumer LANGUAGES CXX)
-find_package(Genetik 0.6 CONFIG REQUIRED COMPONENTS ScientificNumerics)
+find_package(Genetik 0.7 CONFIG REQUIRED COMPONENTS ScientificNumerics)
 add_executable(consumer main.cpp other.cpp)
 target_link_libraries(consumer PRIVATE Genetik::ScientificNumerics)
 get_target_property(base Genetik::Genetik INTERFACE_LINK_LIBRARIES)

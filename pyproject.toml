@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "genetik"
-version = "0.6.0"
+version = "0.7.0"
 description = "C++20 genetic algorithms with optional symbolic-regression bindings"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -38,6 +38,12 @@ sdist.include = [
   "/docs/I2_PYTHON_INTEROPERABILITY.md",
   "/docs/I2_MIGRATION.md",
   "/docs/releases/0.6.0/**",
+  "/docs/releases/0.7.0/**",
+  "/docs/S3_MIGRATION.md",
+  "/docs/S3_SCIENTIFIC_BENCHMARKS.md",
+  "/docs/S3_MATHEMATICAL_QUALIFICATION.md",
+  "/docs/S3_RELEASE_PREPARATION.md",
+  "/docs/s3-results/**",
   "/integrations/srbench/**",
   "/examples/python/**",
 ]

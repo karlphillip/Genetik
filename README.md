@@ -12,11 +12,13 @@ It is heuristic search, with no guarantee of a good fit, a particular equation o
 extrapolation accuracy. Prime regression is one application example.
 
 The library uses only the C++ standard library by default and is [MIT licensed](LICENSE).
-Published releases through **0.5.0** and their assets remain unchanged. The
-**0.6.0 development pre-release candidate** adds optional native Python access to
-the established C++ symbolic-regression engine, including NumPy input,
-`GenetikRegressor`, SymPy export and a local SRBench adapter. It does not add a
-search algorithm or change search defaults. It also includes the opt-in
+Published releases through **0.6.0** and their assets remain unchanged. The
+provisional **0.7.0 development pre-release candidate** integrates shared
+parameter derivatives, optional Levenberg–Marquardt fitting, bounded exact
+quantized constraints, domain-aware symbolic assumptions, and an output-only
+accuracy–complexity equation archive. Coordinate fitting and generic GA defaults
+remain unchanged. The candidate also retains optional native Python access with
+NumPy input, `GenetikRegressor`, SymPy export and a local SRBench adapter. It also includes the opt-in
 [D5 advanced mathematics](docs/ADVANCED_MATHEMATICS_D5.md) and
 [D6 scientific discovery](docs/SCIENTIFIC_DISCOVERY_D6.md): checked integer
 math and recurrences, symbolic algebra, dimensions and constraints, coupled
@@ -26,7 +28,7 @@ functions. Established GA defaults and generic OOP use cases remain supported.
 Python is optional; local wheel qualification is Linux AArch64/CPython 3.12,
 with x86-64/CPython 3.12 reserved for the proposed hosted matrix. See
 [I2 Python interoperability](docs/I2_PYTHON_INTEROPERABILITY.md),
-[0.6.0 notes](docs/releases/0.6.0/NOTES.md), [migration](docs/I2_MIGRATION.md),
+[0.7.0 notes](docs/releases/0.7.0/NOTES.md), [migration](docs/I2_MIGRATION.md),
 [D7 numerical boundaries](docs/D7_NUMERICAL_QUALIFICATION.md), and
 [historical benchmark report](docs/d7/BENCHMARK_REPORT.md). This candidate is
 local and unpublished; hosted qualification and publication are separate actions.
@@ -305,7 +307,7 @@ uses the generic state seams and scalar-expression codec without prime dependenc
 
 Optional discrete modules: [D1](docs/DISCRETE_EXPRESSIONS.md), [D2](docs/DISCRETE_ITERATION.md), [D3 results](docs/DISCRETE_D3_RESULTS.md). They do not replace the generic OOP engine.
 
-Current candidate: [Genetik 0.6.0 development pre-release notes](docs/releases/0.6.0/NOTES.md),
+Current candidate: [Genetik 0.7.0 development pre-release notes](docs/releases/0.7.0/NOTES.md),
 [migration guide](docs/I2_MIGRATION.md),
 [I2 qualification](docs/I2_QUALIFICATION.md), and
 [hosted qualification proposal](docs/I2_HOSTED_QUALIFICATION_PROPOSAL.md).

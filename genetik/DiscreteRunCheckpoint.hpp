@@ -88,6 +88,7 @@ private:
 // Forward import of the unchanged D2/D3 research profile, under identical runtime.
 inline std::vector<CheckpointReadCompatibility> discreteRunCheckpointCompatibilities(){
     const auto version=std::string_view(genetikVersion);
+    if(version=="0.7.0")return {{"0.6.0","genetik.discrete-evolution/2"},{"0.5.0","genetik.discrete-evolution/2"},{"0.4.0","genetik.discrete-evolution/2"},{"0.3.0","genetik.discrete-evolution/2"}};
     if(version=="0.6.0")return {{"0.5.0","genetik.discrete-evolution/2"},{"0.4.0","genetik.discrete-evolution/2"},{"0.3.0","genetik.discrete-evolution/2"}};
     if(version=="0.5.0")return {{"0.4.0","genetik.discrete-evolution/2"},{"0.3.0","genetik.discrete-evolution/2"}};
     if(version=="0.4.0")return {{"0.3.0","genetik.discrete-evolution/2"}};

@@ -1,0 +1,20 @@
+Collecting build==1.2.2.post1
+  Downloading build-1.2.2.post1-py3-none-any.whl.metadata (6.5 kB)
+Collecting scikit-build-core==0.10.7
+  Using cached scikit_build_core-0.10.7-py3-none-any.whl.metadata (21 kB)
+Collecting pybind11==2.13.6
+  Using cached pybind11-2.13.6-py3-none-any.whl.metadata (9.5 kB)
+Collecting packaging>=19.1 (from build==1.2.2.post1)
+  Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Collecting pyproject_hooks (from build==1.2.2.post1)
+  Using cached pyproject_hooks-1.3.3-py3-none-any.whl.metadata (1.3 kB)
+Collecting pathspec>=0.10.1 (from scikit-build-core==0.10.7)
+  Using cached pathspec-1.1.1-py3-none-any.whl.metadata (14 kB)
+Downloading build-1.2.2.post1-py3-none-any.whl (22 kB)
+Using cached scikit_build_core-0.10.7-py3-none-any.whl (165 kB)
+Using cached pybind11-2.13.6-py3-none-any.whl (243 kB)
+Using cached packaging-26.3-py3-none-any.whl (129 kB)
+Using cached pathspec-1.1.1-py3-none-any.whl (57 kB)
+Using cached pyproject_hooks-1.3.3-py3-none-any.whl (10 kB)
+Installing collected packages: pyproject_hooks, pybind11, pathspec, packaging, scikit-build-core, build
+Successfully installed build-1.2.2.post1 packaging-26.3 pathspec-1.1.1 pybind11-2.13.6 pyproject_hooks-1.3.3 scikit-build-core-0.10.7

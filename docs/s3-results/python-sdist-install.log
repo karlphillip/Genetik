@@ -1,0 +1,19 @@
+Processing ./out/dist/s3/genetik-0.7.0.tar.gz
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: genetik
+  Building wheel for genetik (pyproject.toml): started
+  Building wheel for genetik (pyproject.toml): finished with status 'done'
+  Created wheel for genetik: filename=genetik-0.7.0-cp312-cp312-linux_aarch64.whl size=226752 sha256=38a9972668831436d2504e8d28bc3204c7ca5f3086c4aeab76b86724c9c42197
+  Stored in directory: /home/karlphillip/.cache/pip/wheels/7f/81/59/4b9f27fed84df250aa860566a1d82da61e3724da5fe6bb6657
+Successfully built genetik
+Installing collected packages: genetik
+  Attempting uninstall: genetik
+    Found existing installation: genetik 0.7.0
+    Uninstalling genetik-0.7.0:
+      Successfully uninstalled genetik-0.7.0
+Successfully installed genetik-0.7.0

@@ -1,0 +1,92 @@
+
+[2913589] signal (15): Terminated
+in expression starting at none:0
++ at ./float.jl:409 [inlined]
+add_sum at ./reduce.jl:27 [inlined]
+macro expansion at ./reduce.jl:265 [inlined]
+macro expansion at ./simdloop.jl:77 [inlined]
+mapreduce_impl at ./reduce.jl:263
+mapreduce_impl at ./reduce.jl:277 [inlined]
+_mapreduce at ./reduce.jl:447 [inlined]
+_mapreduce_dim at ./reducedim.jl:365 [inlined]
+#mapreduce#821 at ./reducedim.jl:357 [inlined]
+mapreduce at ./reducedim.jl:357 [inlined]
+#_sum#831 at ./reducedim.jl:1015 [inlined]
+_sum at ./reducedim.jl:1015 [inlined]
+#_sum#830 at ./reducedim.jl:1014 [inlined]
+_sum at ./reducedim.jl:1014 [inlined]
+#sum#828 at ./reducedim.jl:1010 [inlined]
+sum at ./reducedim.jl:1010 [inlined]
+is_valid_array at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/DynamicExpressions/Ah0kD/src/ValueInterface.jl:21
+#eval_tree_array#2 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/DynamicExpressions/Ah0kD/src/Evaluate.jl:306 [inlined]
+eval_tree_array at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/DynamicExpressions/Ah0kD/src/Evaluate.jl:280 [inlined]
+#eval_tree_array#16 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/DynamicExpressions/Ah0kD/src/Expression.jl:442 [inlined]
+eval_tree_array at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/DynamicExpressions/Ah0kD/src/Expression.jl:435 [inlined]
+#eval_tree_array#1 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/InterfaceDynamicExpressions.jl:106 [inlined]
+eval_tree_array at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/InterfaceDynamicExpressions.jl:80 [inlined]
+eval_tree_dispatch at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/LossFunctions.jl:87 [inlined]
+_eval_loss at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/LossFunctions.jl:124
+#eval_loss#5 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/LossFunctions.jl:188
+eval_loss at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/LossFunctions.jl:167 [inlined]
+#_#2 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/ConstantOptimization.jl:252 [inlined]
+EvaluatorContext at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/ConstantOptimization.jl:251 [inlined]
+#_#3 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/ConstantOptimization.jl:264 [inlined]
+Evaluator at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/ConstantOptimization.jl:262
+unknown function (ip: 0xffff71a99197)
+_jl_invoke at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:2895 [inlined]
+ijl_apply_generic at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:3077
+value!! at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/NLSolversBase/THQGs/src/interface.jl:8
+value! at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/NLSolversBase/THQGs/src/interface.jl:40 [inlined]
+value! at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/Optim/Kazrh/src/Manifolds.jl:30 [inlined]
+ϕ at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/LineSearches/gUVEI/src/LineSearches.jl:27 [inlined]
+BackTracking at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/LineSearches/gUVEI/src/backtracking.jl:156
+BackTracking at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/LineSearches/gUVEI/src/backtracking.jl:64
+BackTracking at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/LineSearches/gUVEI/src/backtracking.jl:53 [inlined]
+perform_linesearch! at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/Optim/Kazrh/src/utilities/perform_linesearch.jl:56
+update_state! at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/Optim/Kazrh/src/multivariate/solvers/first_order/bfgs.jl:163
+optimize at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/Optim/Kazrh/src/multivariate/optimize/optimize.jl:88
+optimize at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/Optim/Kazrh/src/multivariate/optimize/optimize.jl:54 [inlined]
+#optimize#95 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/Optim/Kazrh/src/multivariate/optimize/interface.jl:225
+optimize at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/Optim/Kazrh/src/multivariate/optimize/interface.jl:216 [inlined]
+_optimize_constants_inner at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/ConstantOptimization.jl:221
+_optimize_constants at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/ConstantOptimization.jl:190
+unknown function (ip: 0xffff71a9b66b)
+_jl_invoke at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:2895 [inlined]
+ijl_apply_generic at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:3077
+#optimize_constants#1 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/ConstantOptimization.jl:164
+optimize_constants at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/ConstantOptimization.jl:141 [inlined]
+optimize_and_simplify_population at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SingleIteration.jl:103
+#_dispatch_s_r_cycle#99 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:1424
+_dispatch_s_r_cycle at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:1399 [inlined]
+#84 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:1240 [inlined]
+macro expansion at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SearchUtils.jl:396 [inlined]
+_main_search_loop! at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:1239
+_equation_search at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:710
+unknown function (ip: 0xffff74f375df)
+_jl_invoke at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:2895 [inlined]
+ijl_apply_generic at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:3077
+#equation_search#32 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:695
+equation_search at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:675 [inlined]
+#equation_search#29 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:641 [inlined]
+equation_search at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:583 [inlined]
+#equation_search#30 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:668 [inlined]
+equation_search at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/SymbolicRegression.jl:665
+unknown function (ip: 0xffff96a63247)
+_jl_invoke at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:2895 [inlined]
+ijl_apply_generic at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:3077
+jl_apply at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/julia.h:1982 [inlined]
+do_apply at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/builtins.c:768
+macro expansion at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/PythonCall/x9Db0/src/GIL/GIL.jl:122 [inlined]
+pyjlany_call_nogil at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/PythonCall/x9Db0/src/JlWrap/any.jl:63
+_jl_invoke at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:2895 [inlined]
+ijl_apply_generic at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:3077
+_pyjl_callmethod at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/PythonCall/x9Db0/src/JlWrap/base.jl:71
+_pyjl_callmethod at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/PythonCall/x9Db0/src/JlWrap/C.jl:84
+unknown function (ip: 0xffff9b2691cb)
+_jl_invoke at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:2895 [inlined]
+ijl_apply_generic at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/gf.c:3077
+jlcapi__pyjl_callmethod_9165 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/tmp/d7/julia-depot/compiled/v1.10/PythonCall/WdXsa_L1UA3.so (unknown line)
+unknown function (ip: 0x50356b)
+unknown function (ip: 0x50356b)
+unknown function (ip: (nil))
+Allocations: 161546150 (Pool: 161501934; Big: 44216); GC: 138

@@ -1,0 +1,7 @@
+
+[2913877] signal (15): Terminated
+in expression starting at none:0
+unknown function (ip: 0xffff93d5fdf0)
+#reg_evol_cycle#1 at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/SymbolicRegression/g1JuB/src/RegularizedEvolution.jl:0
+unknown function (ip: (nil))
+Allocations: 175654019 (Pool: 175609887; Big: 44132); GC: 154

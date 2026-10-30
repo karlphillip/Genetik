@@ -1,0 +1,7 @@
+S3 EquationArchive lifecycle-isolation review
+
+Source audit: `genetik/EquationArchive.hpp` depends only on the standard library. `EquationArchive` and `EquationRecord` references occur in that header and `tests/equation_archive.cpp`; no GA, fitness, candidate publication, RNG, mutation, crossover, fitting, objective accounting, or checkpoint code references the archive. The API accepts caller-owned completed records and exposes deterministic text/JSONL serialization.
+
+Contract coverage: `genetik_equation_archive_contracts` passed in Release, Debug, ASan+UBSan, and the selected TSan set. The contracts cover valid/invalid records, two-objective nondominance, canonical-string duplicate handling, deterministic insertion-order output, resource limits, human-readable expressions, constraints, and JSONL fields.
+
+There is no live-run archive enable/disable option or lifecycle call site. Therefore no evolutionary state or accounting can be changed by using the archive; reporting is offline postprocessing after the run. This is structural observational parity, not a runtime speed or before/after experiment.

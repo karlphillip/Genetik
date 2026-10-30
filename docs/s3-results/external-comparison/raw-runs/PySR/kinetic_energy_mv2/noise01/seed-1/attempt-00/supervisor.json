@@ -1,0 +1,38 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "0",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/tmp/d7/venvs/pysr/bin/python",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/docs/d7/run_pysr.py",
+    "--seed",
+    "1",
+    "--task",
+    "kinetic_energy_mv2",
+    "--track",
+    "noise01",
+    "--output-directory",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/benchmark_runs/PySR/kinetic_energy_mv2/noise01/seed-1/attempt-00/pysr-artifacts",
+    "--train",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/docs/d7/data/kinetic_energy_mv2-train-noise01.csv"
+  ],
+  "cwd": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated",
+  "cpu_affinity": [
+    0
+  ],
+  "worker_env": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "wall_cap_seconds": 120.0,
+  "memory_cap_gib": 6.0,
+  "outcome": "wall_timeout",
+  "exit_code": -15,
+  "wall_seconds": 120.23210704792291,
+  "cpu_seconds": 108.62,
+  "peak_rss_gib": 0.8586349487304688,
+  "peak_process_threads": 3,
+  "stdout": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/benchmark_runs/PySR/kinetic_energy_mv2/noise01/seed-1/attempt-00/stdout.log",
+  "stderr": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/benchmark_runs/PySR/kinetic_energy_mv2/noise01/seed-1/attempt-00/stderr.log"
+}

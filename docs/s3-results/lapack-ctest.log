@@ -1,0 +1,12 @@
+Internal ctest changing into directory: /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/build/s3-lapack
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/build/s3-lapack
+    Start 66: genetik_d6_scientific_contracts
+1/3 Test #66: genetik_d6_scientific_contracts ...   Passed    0.08 sec
+    Start 67: genetik_d6_continuation
+2/3 Test #67: genetik_d6_continuation ...........   Passed    0.92 sec
+    Start 69: genetik_d6_optional_package
+3/3 Test #69: genetik_d6_optional_package .......   Passed    8.25 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   9.26 sec

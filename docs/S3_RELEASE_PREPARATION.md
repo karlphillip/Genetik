@@ -26,7 +26,9 @@ The curated integration commits currently resolve as follows (the final S3 commi
 | 3 | `5f8f384` | `ed0225e` | M1 `BoundedBigInteger.hpp` dependency only |
 | 4 | `0c9af5f` | `7e73bee18e0660383d1dfeef7ba7e97323a41fc2` | S1 derivatives and optional LM |
 | 5 | `69c0a91` | `31c131b5b2e185ec82476e5b0b317af83bee3978` | S2 rational constraints and domain assumptions |
-| 6 | pending | three-file source transplant from `e6046fe` | Shared parameter values/evaluation/checkpoint identity only; B2 search code excluded |
+| 6 | `c52f026` | three-file source transplant from `e6046fe` | Shared parameter values/evaluation/checkpoint identity only; B2 search code excluded |
+| 7 | `ecfaf20` | S3 | Equation archive, 0.7 metadata, release documentation and v0.6 checkpoint compatibility |
+| 8 | `ee9d82f` | S3 | Frozen external benchmark protocol |
 
 These are new commits on the local candidate branch; original commits and their research branch remain intact. The reviewed candidate graph is:
 
@@ -48,7 +50,7 @@ The reviewed source/export tree contains no mathematical-program discovery/readi
 
 ## Optional dependencies and platform boundary
 
-Ordinary Genetik remains C++20 and standard-library-only. Exact rationals use Boost.Multiprecision 1.83 in the retained qualification; the public optional rational headers include Boost types, but `Genetik::Genetik` neither finds nor propagates Boost, so exact clients must supply that include dependency themselves. D6's LP64 LAPACK target is separately opt-in through `Genetik::ScientificNumerics`; its imported target propagates the compile definition and LAPACK link dependency. The local qualified backend is OpenBLAS 0.3.26 / system LP64 LAPACK on Linux AArch64. Ordinary builds and installed package clients do not require LAPACK. Python remains optional; package metadata is provisionally 0.7.0 and the final sdist/wheel build is a separate gate. Existing supported-platform limits remain those in `docs/SUPPORT.md`.
+Ordinary Genetik remains C++20 and standard-library-only. Exact rational code uses Boost.Multiprecision 1.83, under the Boost Software License 1.0. Its public optional headers expose Boost types; `Genetik::Genetik` does not find, link, or propagate Boost, so clients that include those headers must provide Boost headers themselves. D6's LP64 LAPACK backend is opt-in through `Genetik::ScientificNumerics`; that imported interface target propagates `GENETIK_HAS_LAPACK` and the LAPACK link libraries. The local qualified backend is OpenBLAS 0.3.26 / system LP64 LAPACK on Linux AArch64, under the upstream BSD-style licenses. Neither optional dependency is required by the ordinary installed package. Python is optional and built with pybind11 2.13.6 as a private extension dependency. The existing support boundary in `docs/SUPPORT.md` remains in force; this local run adds evidence only for CPython 3.12.3 on Linux AArch64, not additional platforms.
 
 The 0.7.0 candidate keeps generic checkpoint decoding exact-version and adds explicit scalar/discrete forward readers for published 0.6.0 alongside the existing 0.5.0, 0.4.0 and 0.3.0 policies. This is now covered by fixtures containing the historical v0.6.0 version/checkpoint headers from the exact published tag; the 0.7 compatibility tests compare resumed trajectories and reject wrong codec/runtime inputs.
 
@@ -58,26 +60,28 @@ The 0.7.0 candidate keeps generic checkpoint decoding exact-version and adds exp
 
 ## Version/artifacts and authorization boundary
 
-The candidate now identifies provisionally as 0.7.0 in C++ and Python package metadata. Do not create final artifact identities until all code and metadata are frozen and qualified. The planned local package includes source archive, SHA256 manifest, extracted-source build/install/relocation evidence, release notes, migration guidance and qualification reports. No remote write, push, PR, tag or publication is authorized. A later hosted qualification request will name the exact local source/archive SHA and CI matrix. PR integration, tagging and publication require separate authorization.
+The candidate identifies provisionally as 0.7.0 in C++ and Python package metadata. The local CPython 3.12.3 AArch64 wheel and Python sdist each passed the 19-test interoperability module (2 tests skipped by their platform conditions). A wheel built locally on x86-64, exact sdist reproducibility, and non-AArch64 wheel tags remain unqualified. The Python build used scikit-build-core 0.10.7, pybind11 2.13.6 and CMake 3.28.3; the native C++ package separately passed the exact-CMake-3.16.0 matrix. These are host-tagged artifacts, not manylinux or cross-platform claims.
 
-## Engineering qualification state
+Final artifact hashes will be generated only after the final documentation/evidence commit. The local package will include the Git-verified native source archive, AArch64 wheel, Python sdist, SHA256 manifest, extracted-source build/install/relocation evidence, release notes, migration guidance and qualification reports. No remote write, push, PR, tag or publication is authorized. The hosted qualification proposal will identify the exact candidate SHA and request CI on the existing x86-64 and AArch64 supported environments, with the full native, sanitizer, Python and packaging matrix. PR integration, tagging and publication require separate authorization.
 
-The curated S3 candidate compiles with the ordinary dependency-free C++20 build. Its integrated Release manifest has 69 tests; all 69 passed, including the extracted-source install/relocation consumers, strict floating-point policy, standalone headers, generic OOP, checkpoint/replay, continuation, S1/S2 mathematical tests, v0.6 scalar/discrete checkpoint producer-consumer fixtures, D6 scientific contracts and the equation archive contracts. Evidence is `docs/s3-results/curated-s3-build.log`, `curated-s3-test-manifest.json`, and `curated-s3-ctest.log`.
+## Engineering qualification state (source `c52f026`)
 
-The 66/66 first curated Release run preceded the S3 archive and v0.6 compatibility fixture integration; it is retained as an intermediate checkpoint. An earlier 75/75 run was against the pre-curation S2 source tree and is not counted for the release scope. The CMake 3.16 first invocation used an unsupported `--test-dir` switch and found no tests; the subsequent corrected 75/75 run was also against that pre-curation tree. Its outputs remain retained as diagnostic evidence, not as final candidate qualification.
+The corrected integrated source passed Release **99/99**, Debug **69/69**, exact CMake **3.16.0 Release 69/69**, ASan+UBSan **69/69**, and the required TSan selection **9/9**. Exact Boost rational contracts passed **1/1**; separately built optional public headers passed standalone compilation. Optional LAPACK/OpenBLAS D6 contracts and package consumer passed **3/3**. Per-configuration test-name manifests are in `docs/s3-results/test-manifests/manifest.json`; configuration-specific full logs are retained under `docs/s3-results/final-*` and `cmake316-final-*`. The suites cover strict floating-point policy, standalone headers, generic OOP isolation, checkpoint/replay and deterministic continuation, parameter-identity and optimizer configuration checks, mathematical contracts, and archive contracts. Existing scalar/discrete checkpoints from v0.6.0 were read with trajectory compatibility checks; generic checkpoint decoding remains exact-version. Dependent header-only translation units require recompilation. The regular C++ target has no Boost/LAPACK link dependency; optional dependency consumers were separately built and installed.
 
-Boost 1.83 exact rational tests and standalone optional headers pass; the optional LP64 LAPACK/OpenBLAS D6 tests and package fixture pass. The corrected-source native test manifests are kept separate by configuration. Python sdist/wheel compatibility, source-archive extraction/build/relocation, benchmark execution, repository hygiene, final source SHA/checksums, and branch finalization remain pending.
+Historical intermediate runs are retained but not pooled with those results: the 66-test first curated Release run preceded the archive and v0.6 compatibility fixture integration, the 75-test pre-curation S2 tree is outside this release scope, and the first CMake 3.16 invocation used an unsupported `--test-dir` switch. The 127 frozen evidence files were verified unchanged against the curated source.
 
-## Version/artifacts and authorization boundary
+The local Python wheel and sdist are temporarily retained under `out/release/s3/`; final source-integrity-qualified artifacts will be rebuilt from the completed Git tree. The exact 108-run external results and independent held-out scoring are in `S3_SCIENTIFIC_BENCHMARKS.md` and `docs/s3-results/external-comparison/`. Repository hygiene passes; `--workspace` is rerun after moving the candidate onto its final branch worktree because this curated checkout currently sits beneath `out/tmp`, where unrelated historical workspace files are intentionally preserved.
 
-The candidate now identifies provisionally as 0.7.0 in C++ and Python package metadata. Do not create final artifact identities until all code and metadata are frozen and qualified. The planned local package includes source archive, SHA256 manifest, extracted-source build/install/relocation evidence, release notes, migration guidance and qualification reports. No remote write, push, PR, tag or publication is authorized. A later hosted qualification request will name the exact local source/archive SHA and CI matrix. PR integration, tagging and publication require separate authorization.
+## Authorization boundary
 
-## Remaining local gates
+No remote writes, pushes, pull requests, tags, or publication have occurred. The proposed next hosted-qualification request will name the final local branch SHA and SHA256 identities of the native source archive, Python sdist and qualified AArch64 wheel, then request execution on the existing supported x86-64 and AArch64 CI environments:
 
-- Complete independent analytic/reference checks and freeze the S3 datasets, seeds, grammars, limits and measurement procedure.
-- Run the full applicable local Release, Debug, exact-CMake-3.16.0, ASan+UBSan, TSan, OOP, standalone-header, strict-FP, checkpoint/replay, package relocation, multi-TU and optional dependency/Python compatibility matrix against one final SHA.
-- Inspect/reuse pinned R9 competitor environments and execute only fair overlapping searches; preserve all outcomes.
-- Select and implement a reviewed production source integration scope, then update version/docs and build checksummed artifacts from the exact tree.
-- Reconcile preserved historical evidence hashes and run workspace/repository hygiene.
+| Hosted job | Requested qualification |
+|---|---|
+| GCC 13 x86-64, minimum CMake 3.16.0 | Release manifest, installed/relocated consumers, standalone headers and multi-translation-unit checks |
+| Clang 18 x86-64 ASan+UBSan | Instrumented build and complete applicable native suite |
+| GCC 13 AArch64 | Release suite, required TSan selections and optional LAPACK package contract |
+| CPython 3.12 x86-64 | Build host-tagged wheel and sdist from the named source; install outside checkout and run Python interoperability tests |
+| CPython 3.12 AArch64 | Rebuild and compare the locally qualified host wheel/sdist path; install outside checkout and run Python interoperability tests |
 
-This file is a progress record, not a claim that these gates have passed.
+This request authorizes only uploading the named candidate/artifacts and running hosted CI. PR integration, changing `main`, tagging, and release publication require separate later authorization.

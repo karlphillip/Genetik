@@ -1,0 +1,36 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "0",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/tmp/d7/venvs/operon/bin/python",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/docs/d7/run_operon.py",
+    "--seed",
+    "1",
+    "--task",
+    "rational_x2",
+    "--track",
+    "clean",
+    "--train",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/docs/d7/data/rational_x2-train-clean.csv"
+  ],
+  "cwd": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated",
+  "cpu_affinity": [
+    0
+  ],
+  "worker_env": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "wall_cap_seconds": 120.0,
+  "memory_cap_gib": 6.0,
+  "outcome": "wall_timeout",
+  "exit_code": -15,
+  "wall_seconds": 120.05210270895623,
+  "cpu_seconds": 97.58,
+  "peak_rss_gib": 0.139984130859375,
+  "peak_process_threads": 2,
+  "stdout": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/benchmark_runs/PyOperon/rational_x2/clean/seed-1/attempt-00/stdout.log",
+  "stderr": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/benchmark_runs/PyOperon/rational_x2/clean/seed-1/attempt-00/stderr.log"
+}

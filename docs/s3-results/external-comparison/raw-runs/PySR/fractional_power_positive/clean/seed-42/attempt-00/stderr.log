@@ -1,0 +1,7 @@
+
+[2913950] signal (15): Terminated
+in expression starting at none:0
+unalias_unionall at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/subtype.c:868
+subtype_unionall at /cache/build/builder-armageddon-3/julialang/julia-release-1-dot-10/src/subtype.c:900
+unknown function (ip: (nil))
+Allocations: 184298986 (Pool: 184253838; Big: 45148); GC: 161

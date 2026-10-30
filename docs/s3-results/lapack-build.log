@@ -1,0 +1,3 @@
+[  0%] Building CXX object tests/CMakeFiles/genetik_d6_tests.dir/d6_science.cpp.o
+[100%] Linking CXX executable genetik_d6_tests
+[100%] Built target genetik_d6_tests

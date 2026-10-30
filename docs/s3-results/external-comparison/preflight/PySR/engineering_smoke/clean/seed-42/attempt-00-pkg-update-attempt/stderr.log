@@ -1,0 +1,8 @@
+
+[2900044] signal (15): Terminated
+in expression starting at none:3
+Allocations: 18820459 (Pool: 18785962; Big: 34497); GC: 25
+    Updating registry at `~/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/tmp/d7/julia-depot/registries/General.toml`
+   Resolving package versions...
+  No Changes to `~/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-project-1103/Project.toml`
+  No Changes to `~/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-project-1103/Manifest.toml`

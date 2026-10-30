@@ -1,0 +1,317 @@
+[  1%] Building CXX object tests/CMakeFiles/genetik_multivariate_tests.dir/multivariate.cpp.o
+[  1%] Building CXX object tests/CMakeFiles/genetik_arithmetic_tests.dir/strict_arithmetic.cpp.o
+[  1%] Linking CXX executable genetik_arithmetic_tests
+[  1%] Built target genetik_arithmetic_tests
+[  1%] Building CXX object tests/CMakeFiles/genetik_fitting_tests.dir/constant_fitting.cpp.o
+[  2%] Linking CXX executable genetik_multivariate_tests
+[  2%] Built target genetik_multivariate_tests
+[  3%] Building CXX object tests/CMakeFiles/genetik_symbolic_tests.dir/symbolic_regression.cpp.o
+[  4%] Linking CXX executable genetik_fitting_tests
+[  4%] Built target genetik_fitting_tests
+[  4%] Building CXX object tests/CMakeFiles/genetik_expression_tests.dir/expressions.cpp.o
+[  5%] Linking CXX executable genetik_symbolic_tests
+[  5%] Built target genetik_symbolic_tests
+[  6%] Building CXX object tests/CMakeFiles/genetik_generation_tests.dir/generation.cpp.o
+[  7%] Linking CXX executable genetik_expression_tests
+[  7%] Built target genetik_expression_tests
+[  7%] Building CXX object tests/CMakeFiles/genetik_tests.dir/tests.cpp.o
+[  7%] Linking CXX executable genetik_generation_tests
+[  7%] Built target genetik_generation_tests
+[  8%] Building CXX object tests/CMakeFiles/genetik_advanced_regression_tests.dir/advanced_regression.cpp.o
+[  9%] Linking CXX executable genetik_tests
+[  9%] Built target genetik_tests
+[  9%] Building CXX object tests/CMakeFiles/header_EquationArchive.dir/header_EquationArchive.cpp.o
+[  9%] Built target header_EquationArchive
+[  9%] Building CXX object tests/CMakeFiles/header_ParameterDerivatives.dir/header_ParameterDerivatives.cpp.o
+[  9%] Built target header_ParameterDerivatives
+[ 10%] Building CXX object tests/CMakeFiles/header_LevenbergMarquardt.dir/header_LevenbergMarquardt.cpp.o
+[ 10%] Built target header_LevenbergMarquardt
+[ 11%] Building CXX object tests/CMakeFiles/header_ScientificLevenbergMarquardt.dir/header_ScientificLevenbergMarquardt.cpp.o
+[ 11%] Built target header_ScientificLevenbergMarquardt
+[ 11%] Building CXX object tests/CMakeFiles/header_MixedExpression.dir/header_MixedExpression.cpp.o
+[ 11%] Built target header_MixedExpression
+[ 11%] Building CXX object tests/CMakeFiles/header_MixedRegression.dir/header_MixedRegression.cpp.o
+[ 11%] Built target header_MixedRegression
+[ 12%] Building CXX object tests/CMakeFiles/header_MixedIntegerCheckpoint.dir/header_MixedIntegerCheckpoint.cpp.o
+[ 12%] Linking CXX executable genetik_advanced_regression_tests
+[ 12%] Built target genetik_advanced_regression_tests
+[ 13%] Building CXX object tests/CMakeFiles/header_DiscreteExpression.dir/header_DiscreteExpression.cpp.o
+[ 13%] Built target header_MixedIntegerCheckpoint
+[ 14%] Building CXX object tests/CMakeFiles/header_DiscreteExpressionParsing.dir/header_DiscreteExpressionParsing.cpp.o
+[ 14%] Built target header_DiscreteExpression
+[ 14%] Building CXX object tests/CMakeFiles/header_DiscreteExpressionFormatting.dir/header_DiscreteExpressionFormatting.cpp.o
+[ 14%] Built target header_DiscreteExpressionParsing
+[ 14%] Building CXX object tests/CMakeFiles/header_DiscreteRegression.dir/header_DiscreteRegression.cpp.o
+[ 14%] Built target header_DiscreteExpressionFormatting
+[ 15%] Building CXX object tests/CMakeFiles/header_DiscreteVariation.dir/header_DiscreteVariation.cpp.o
+[ 15%] Built target header_DiscreteRegression
+[ 15%] Building CXX object tests/CMakeFiles/header_DiscreteSymbolicRegression.dir/header_DiscreteSymbolicRegression.cpp.o
+[ 15%] Built target header_DiscreteVariation
+[ 16%] Building CXX object tests/CMakeFiles/header_DiscreteExpressionCheckpoint.dir/header_DiscreteExpressionCheckpoint.cpp.o
+[ 16%] Built target header_DiscreteSymbolicRegression
+[ 17%] Building CXX object tests/CMakeFiles/header_DiscreteRunCheckpoint.dir/header_DiscreteRunCheckpoint.cpp.o
+[ 17%] Built target header_DiscreteExpressionCheckpoint
+[ 17%] Building CXX object tests/CMakeFiles/header_IntegerRecurrence.dir/header_IntegerRecurrence.cpp.o
+[ 17%] Built target header_DiscreteRunCheckpoint
+[ 18%] Building CXX object tests/CMakeFiles/header_SymbolicAlgebra.dir/header_SymbolicAlgebra.cpp.o
+[ 18%] Built target header_IntegerRecurrence
+[ 19%] Building CXX object tests/CMakeFiles/header_PhysicalDimensions.dir/header_PhysicalDimensions.cpp.o
+[ 19%] Built target header_SymbolicAlgebra
+[ 19%] Building CXX object tests/CMakeFiles/header_DimensionalRegression.dir/header_DimensionalRegression.cpp.o
+[ 19%] Built target header_PhysicalDimensions
+[ 20%] Building CXX object tests/CMakeFiles/header_MathematicalConstraints.dir/header_MathematicalConstraints.cpp.o
+[ 20%] Built target header_DimensionalRegression
+[ 20%] Building CXX object tests/CMakeFiles/header_ScalarMathematicsRun.dir/header_ScalarMathematicsRun.cpp.o
+[ 20%] Built target header_MathematicalConstraints
+[ 21%] Building CXX object tests/CMakeFiles/header_Version.dir/header_Version.cpp.o
+[ 21%] Built target header_Version
+[ 22%] Building CXX object tests/CMakeFiles/header_RunCheckpoint.dir/header_RunCheckpoint.cpp.o
+[ 22%] Built target header_RunCheckpoint
+[ 22%] Building CXX object tests/CMakeFiles/header_ScalarExpressionCheckpoint.dir/header_ScalarExpressionCheckpoint.cpp.o
+[ 22%] Built target header_ScalarMathematicsRun
+[ 22%] Building CXX object tests/CMakeFiles/header_ExpressionFormatting.dir/header_ExpressionFormatting.cpp.o
+[ 22%] Built target header_ExpressionFormatting
+[ 23%] Building CXX object tests/CMakeFiles/header_IntegralExpression.dir/header_IntegralExpression.cpp.o
+[ 23%] Built target header_ScalarExpressionCheckpoint
+[ 23%] Building CXX object tests/CMakeFiles/header_IntegralRegression.dir/header_IntegralRegression.cpp.o
+[ 23%] Built target header_IntegralExpression
+[ 24%] Building CXX object tests/CMakeFiles/header_DerivativeRegression.dir/header_DerivativeRegression.cpp.o
+[ 24%] Built target header_IntegralRegression
+[ 25%] Building CXX object tests/CMakeFiles/header_ExpressionDerivative.dir/header_ExpressionDerivative.cpp.o
+[ 25%] Built target header_DerivativeRegression
+[ 26%] Building CXX object tests/CMakeFiles/header_ScalarExpressionTemplate.dir/header_ScalarExpressionTemplate.cpp.o
+[ 26%] Built target header_ExpressionDerivative
+[ 26%] Building CXX object tests/CMakeFiles/header_ScalarTemplateRegression.dir/header_ScalarTemplateRegression.cpp.o
+[ 26%] Built target header_ScalarExpressionTemplate
+[ 27%] Building CXX object tests/CMakeFiles/header_ExpressionParsing.dir/header_ExpressionParsing.cpp.o
+[ 27%] Built target header_ExpressionParsing
+[ 28%] Building CXX object tests/CMakeFiles/header_TypedExpressionParsing.dir/header_TypedExpressionParsing.cpp.o
+[ 28%] Built target header_ScalarTemplateRegression
+[ 29%] Building CXX object tests/CMakeFiles/header_TypedConstantFitting.dir/header_TypedConstantFitting.cpp.o
+[ 29%] Built target header_TypedExpressionParsing
+[ 30%] Building CXX object tests/CMakeFiles/header_TypedVariation.dir/header_TypedVariation.cpp.o
+[ 30%] Built target header_TypedConstantFitting
+[ 31%] Building CXX object tests/CMakeFiles/header_TypedSymbolicRegression.dir/header_TypedSymbolicRegression.cpp.o
+[ 31%] Built target header_TypedVariation
+[ 31%] Building CXX object tests/CMakeFiles/header_TypedRegression.dir/header_TypedRegression.cpp.o
+[ 31%] Built target header_TypedRegression
+[ 31%] Building CXX object tests/CMakeFiles/header_TypedValue.dir/header_TypedValue.cpp.o
+[ 31%] Built target header_TypedSymbolicRegression
+[ 31%] Building CXX object tests/CMakeFiles/header_TypedExpression.dir/header_TypedExpression.cpp.o
+[ 31%] Built target header_TypedValue
+[ 31%] Building CXX object tests/CMakeFiles/header_Execution.dir/header_Execution.cpp.o
+[ 31%] Built target header_TypedExpression
+[ 31%] Building CXX object tests/CMakeFiles/header_Creature_i.dir/header_Creature_i.cpp.o
+[ 31%] Built target header_Execution
+[ 32%] Building CXX object tests/CMakeFiles/header_Creature.dir/header_Creature.cpp.o
+[ 32%] Built target header_Creature_i
+[ 33%] Building CXX object tests/CMakeFiles/header_Population_i.dir/header_Population_i.cpp.o
+[ 33%] Built target header_Creature
+[ 33%] Building CXX object tests/CMakeFiles/header_Population.dir/header_Population.cpp.o
+[ 33%] Built target header_Population_i
+[ 34%] Building CXX object tests/CMakeFiles/header_GeneticAlgorithm_i.dir/header_GeneticAlgorithm_i.cpp.o
+[ 34%] Built target header_GeneticAlgorithm_i
+[ 34%] Built target header_Population
+[ 34%] Building CXX object tests/CMakeFiles/header_GeneticAlgorithm.dir/header_GeneticAlgorithm.cpp.o
+[ 34%] Building CXX object tests/CMakeFiles/header_RandomContext.dir/header_RandomContext.cpp.o
+[ 34%] Built target header_RandomContext
+[ 35%] Building CXX object tests/CMakeFiles/header_Fitness.dir/header_Fitness.cpp.o
+[ 35%] Built target header_GeneticAlgorithm
+[ 36%] Building CXX object tests/CMakeFiles/header_Expression.dir/header_Expression.cpp.o
+[ 36%] Built target header_Fitness
+[ 37%] Building CXX object tests/CMakeFiles/header_EvaluatedCandidate.dir/header_EvaluatedCandidate.cpp.o
+[ 37%] Built target header_Expression
+[ 38%] Building CXX object tests/CMakeFiles/header_ScalarVariation.dir/header_ScalarVariation.cpp.o
+[ 38%] Built target header_ScalarVariation
+[ 38%] Built target header_EvaluatedCandidate
+[ 39%] Building CXX object tests/CMakeFiles/header_Regression.dir/header_Regression.cpp.o
+[ 40%] Building CXX object tests/CMakeFiles/header_ExpressionVariation.dir/header_ExpressionVariation.cpp.o
+[ 40%] Built target header_Regression
+[ 40%] Building CXX object tests/CMakeFiles/header_SymbolicRegression.dir/header_SymbolicRegression.cpp.o
+[ 40%] Built target header_ExpressionVariation
+[ 40%] Building CXX object tests/CMakeFiles/header_ConstantFitting.dir/header_ConstantFitting.cpp.o
+[ 40%] Built target header_ConstantFitting
+[ 40%] Building CXX object tests/CMakeFiles/example_header_PrimeExactOptions.dir/example_header_PrimeExactOptions.cpp.o
+[ 40%] Built target header_SymbolicRegression
+[ 40%] Building CXX object tests/CMakeFiles/example_header_PrimeExactSearch.dir/example_header_PrimeExactSearch.cpp.o
+[ 40%] Built target example_header_PrimeExactOptions
+[ 41%] Building CXX object tests/CMakeFiles/example_header_PrimeExactReport.dir/example_header_PrimeExactReport.cpp.o
+[ 41%] Built target example_header_PrimeExactSearch
+[ 42%] Building CXX object tests/CMakeFiles/example_header_PrimeExactDisplay.dir/example_header_PrimeExactDisplay.cpp.o
+[ 42%] Built target example_header_PrimeExactReport
+[ 42%] Building CXX object tests/CMakeFiles/example_header_PrimeExactCheckpoint.dir/example_header_PrimeExactCheckpoint.cpp.o
+[ 42%] Built target example_header_PrimeExactDisplay
+[ 43%] Building CXX object tests/CMakeFiles/example_header_ScalarTemplateData.dir/example_header_ScalarTemplateData.cpp.o
+[ 43%] Built target example_header_ScalarTemplateData
+[ 43%] Building CXX object tests/CMakeFiles/example_header_ExpressionTextFile.dir/example_header_ExpressionTextFile.cpp.o
+[ 43%] Built target example_header_PrimeExactCheckpoint
+[ 43%] Building CXX object tests/CMakeFiles/example_header_RegressionData.dir/example_header_RegressionData.cpp.o
+[ 43%] Built target example_header_ExpressionTextFile
+[ 44%] Building CXX object tests/CMakeFiles/example_header_RegressionWorkflow.dir/example_header_RegressionWorkflow.cpp.o
+[ 44%] Built target example_header_RegressionData
+[ 45%] Building CXX object tests/CMakeFiles/example_header_MultivariateData.dir/example_header_MultivariateData.cpp.o
+[ 45%] Built target example_header_MultivariateData
+[ 45%] Building CXX object tests/CMakeFiles/example_header_StrictArithmeticData.dir/example_header_StrictArithmeticData.cpp.o
+[ 45%] Built target example_header_RegressionWorkflow
+[ 46%] Building CXX object tests/CMakeFiles/example_header_ExecutionOptions.dir/example_header_ExecutionOptions.cpp.o
+[ 46%] Built target example_header_StrictArithmeticData
+[ 47%] Building CXX object tests/CMakeFiles/genetik_prime_tests.dir/prime_regression.cpp.o
+[ 47%] Built target example_header_ExecutionOptions
+[ 48%] Building CXX object tests/CMakeFiles/example_header_PrimeRegression.dir/example_header_PrimeRegression.cpp.o
+[ 48%] Built target example_header_PrimeRegression
+[ 48%] Building CXX object tests/CMakeFiles/header_ScopedTiming.dir/header_ScopedTiming.cpp.o
+[ 48%] Built target header_ScopedTiming
+[ 48%] Building CXX object tests/CMakeFiles/genetik_workspace_tests.dir/evaluation_workspace.cpp.o
+[ 48%] Linking CXX executable genetik_prime_tests
+[ 48%] Built target genetik_prime_tests
+[ 48%] Building CXX object tests/CMakeFiles/example_header_EvaluationCorpus.dir/example_header_EvaluationCorpus.cpp.o
+[ 49%] Linking CXX executable genetik_workspace_tests
+[ 49%] Built target genetik_workspace_tests
+[ 50%] Building CXX object tests/CMakeFiles/genetik_oop_consumer.dir/oop_consumer/main.cpp.o
+[ 50%] Built target example_header_EvaluationCorpus
+[ 51%] Building CXX object tests/CMakeFiles/genetik_concurrency_tests.dir/concurrency.cpp.o
+[ 51%] Linking CXX executable genetik_oop_consumer
+[ 51%] Built target genetik_oop_consumer
+[ 51%] Building CXX object tests/CMakeFiles/genetik_typed_tests.dir/typed.cpp.o
+[ 52%] Linking CXX executable genetik_typed_tests
+[ 52%] Built target genetik_typed_tests
+[ 52%] Building CXX object tests/CMakeFiles/genetik_typed_regression_tests.dir/typed_regression.cpp.o
+[ 52%] Linking CXX executable genetik_concurrency_tests
+[ 52%] Built target genetik_concurrency_tests
+[ 53%] Building CXX object tests/CMakeFiles/genetik_mixed_expression_tests.dir/mixed_expression.cpp.o
+[ 53%] Linking CXX executable genetik_mixed_expression_tests
+[ 53%] Built target genetik_mixed_expression_tests
+[ 54%] Building CXX object tests/CMakeFiles/genetik_mixed_multitu_tests.dir/mixed_multitu_main.cpp.o
+[ 55%] Linking CXX executable genetik_typed_regression_tests
+[ 55%] Built target genetik_typed_regression_tests
+[ 56%] Building CXX object tests/CMakeFiles/genetik_scientific_tests.dir/scientific.cpp.o
+[ 56%] Building CXX object tests/CMakeFiles/genetik_mixed_multitu_tests.dir/mixed_multitu_factory.cpp.o
+[ 57%] Linking CXX executable genetik_mixed_multitu_tests
+[ 57%] Built target genetik_mixed_multitu_tests
+[ 58%] Building CXX object tests/CMakeFiles/header_ScientificScalar.dir/header_ScientificScalar.cpp.o
+[ 58%] Built target header_ScientificScalar
+[ 59%] Building CXX object tests/CMakeFiles/genetik_parsing_tests.dir/parsing.cpp.o
+[ 59%] Linking CXX executable genetik_parsing_tests
+[ 59%] Built target genetik_parsing_tests
+[ 59%] Building CXX object tests/CMakeFiles/genetik_template_tests.dir/scalar_templates.cpp.o
+[ 59%] Linking CXX executable genetik_scientific_tests
+[ 59%] Built target genetik_scientific_tests
+[ 59%] Building CXX object tests/CMakeFiles/genetik_derivative_tests.dir/derivatives.cpp.o
+[ 60%] Linking CXX executable genetik_derivative_tests
+[ 60%] Built target genetik_derivative_tests
+[ 60%] Building CXX object tests/CMakeFiles/genetik_derivative_regression_tests.dir/derivative_regression.cpp.o
+[ 61%] Linking CXX executable genetik_template_tests
+[ 61%] Built target genetik_template_tests
+[ 62%] Building CXX object tests/CMakeFiles/genetik_integral_tests.dir/integrals.cpp.o
+[ 63%] Linking CXX executable genetik_derivative_regression_tests
+[ 63%] Built target genetik_derivative_regression_tests
+[ 64%] Building CXX object tests/CMakeFiles/genetik_prime_exact_tests.dir/prime_exact.cpp.o
+[ 64%] Linking CXX executable genetik_integral_tests
+[ 64%] Built target genetik_integral_tests
+[ 65%] Building CXX object tests/CMakeFiles/genetik_checkpoint_tests.dir/run_checkpoint.cpp.o
+[ 65%] Linking CXX executable genetik_prime_exact_tests
+[ 65%] Built target genetik_prime_exact_tests
+[ 65%] Building CXX object tests/CMakeFiles/genetik_discrete_tests.dir/discrete.cpp.o
+[ 65%] Linking CXX executable genetik_checkpoint_tests
+[ 65%] Built target genetik_checkpoint_tests
+[ 66%] Building CXX object tests/CMakeFiles/genetik_discrete_iteration_tests.dir/discrete_iteration.cpp.o
+[ 67%] Linking CXX executable genetik_discrete_tests
+[ 67%] Built target genetik_discrete_tests
+[ 67%] Building CXX object tests/CMakeFiles/genetik_discrete_prime_tests.dir/discrete_prime.cpp.o
+[ 68%] Linking CXX executable genetik_discrete_iteration_tests
+[ 68%] Built target genetik_discrete_iteration_tests
+[ 69%] Building CXX object tests/CMakeFiles/genetik_checkpoint_v03_writer.dir/compatibility/scalar.cpp.o
+[ 70%] Linking CXX executable genetik_checkpoint_v03_writer
+[ 70%] Built target genetik_checkpoint_v03_writer
+[ 71%] Building CXX object tests/CMakeFiles/genetik_checkpoint_compatibility_tests.dir/compatibility/scalar.cpp.o
+[ 72%] Linking CXX executable genetik_discrete_prime_tests
+[ 72%] Built target genetik_discrete_prime_tests
+[ 72%] Building CXX object tests/CMakeFiles/genetik_checkpoint_v04_writer.dir/compatibility/scalar_v04.cpp.o
+[ 72%] Linking CXX executable genetik_checkpoint_compatibility_tests
+[ 72%] Built target genetik_checkpoint_compatibility_tests
+[ 72%] Building CXX object tests/CMakeFiles/genetik_checkpoint_v04_compatibility_tests.dir/compatibility/scalar_v04.cpp.o
+[ 73%] Linking CXX executable genetik_checkpoint_v04_writer
+[ 73%] Built target genetik_checkpoint_v04_writer
+[ 74%] Building CXX object tests/CMakeFiles/genetik_discrete_checkpoint_v04_writer.dir/compatibility/discrete_v04.cpp.o
+[ 75%] Linking CXX executable genetik_checkpoint_v04_compatibility_tests
+[ 75%] Built target genetik_checkpoint_v04_compatibility_tests
+[ 75%] Building CXX object tests/CMakeFiles/genetik_discrete_checkpoint_v04_compatibility_tests.dir/compatibility/discrete_v04.cpp.o
+[ 75%] Linking CXX executable genetik_discrete_checkpoint_v04_writer
+[ 75%] Built target genetik_discrete_checkpoint_v04_writer
+[ 75%] Building CXX object tests/CMakeFiles/genetik_checkpoint_v05_writer.dir/compatibility/scalar_v05.cpp.o
+[ 76%] Linking CXX executable genetik_discrete_checkpoint_v04_compatibility_tests
+[ 76%] Built target genetik_discrete_checkpoint_v04_compatibility_tests
+[ 76%] Building CXX object tests/CMakeFiles/genetik_checkpoint_v05_compatibility_tests.dir/compatibility/scalar_v05.cpp.o
+[ 77%] Linking CXX executable genetik_checkpoint_v05_writer
+[ 77%] Built target genetik_checkpoint_v05_writer
+[ 78%] Building CXX object tests/CMakeFiles/genetik_discrete_checkpoint_v05_writer.dir/compatibility/discrete_v05.cpp.o
+[ 79%] Linking CXX executable genetik_checkpoint_v05_compatibility_tests
+[ 79%] Built target genetik_checkpoint_v05_compatibility_tests
+[ 80%] Building CXX object tests/CMakeFiles/genetik_discrete_checkpoint_v05_compatibility_tests.dir/compatibility/discrete_v05.cpp.o
+[ 80%] Linking CXX executable genetik_discrete_checkpoint_v05_writer
+[ 80%] Built target genetik_discrete_checkpoint_v05_writer
+[ 81%] Building CXX object tests/CMakeFiles/genetik_checkpoint_v06_writer.dir/compatibility/scalar_v06.cpp.o
+[ 81%] Linking CXX executable genetik_discrete_checkpoint_v05_compatibility_tests
+[ 81%] Built target genetik_discrete_checkpoint_v05_compatibility_tests
+[ 81%] Building CXX object tests/CMakeFiles/genetik_checkpoint_v06_compatibility_tests.dir/compatibility/scalar_v06.cpp.o
+[ 81%] Linking CXX executable genetik_checkpoint_v06_writer
+[ 81%] Built target genetik_checkpoint_v06_writer
+[ 82%] Building CXX object tests/CMakeFiles/genetik_discrete_checkpoint_v06_writer.dir/compatibility/discrete_v06.cpp.o
+[ 83%] Linking CXX executable genetik_checkpoint_v06_compatibility_tests
+[ 83%] Built target genetik_checkpoint_v06_compatibility_tests
+[ 84%] Building CXX object tests/CMakeFiles/genetik_discrete_checkpoint_v06_compatibility_tests.dir/compatibility/discrete_v06.cpp.o
+[ 84%] Linking CXX executable genetik_discrete_checkpoint_v06_writer
+[ 84%] Built target genetik_discrete_checkpoint_v06_writer
+[ 85%] Building CXX object tests/CMakeFiles/genetik_python_native_reference.dir/python/native_reference.cpp.o
+[ 85%] Linking CXX executable genetik_discrete_checkpoint_v06_compatibility_tests
+[ 85%] Built target genetik_discrete_checkpoint_v06_compatibility_tests
+[ 86%] Building CXX object tests/CMakeFiles/genetik_d5_iteration_tests.dir/d5_iteration_discovery.cpp.o
+[ 86%] Linking CXX executable genetik_python_native_reference
+[ 86%] Built target genetik_python_native_reference
+[ 87%] Building CXX object tests/CMakeFiles/genetik_d5_integer_tests.dir/d5_integer.cpp.o
+[ 87%] Linking CXX executable genetik_d5_iteration_tests
+[ 87%] Built target genetik_d5_iteration_tests
+[ 88%] Building CXX object tests/CMakeFiles/genetik_d5_recurrence_tests.dir/d5_recurrence.cpp.o
+[ 88%] Linking CXX executable genetik_d5_integer_tests
+[ 88%] Built target genetik_d5_integer_tests
+[ 88%] Building CXX object tests/CMakeFiles/genetik_d5_scientific_tests.dir/d5_scientific.cpp.o
+[ 89%] Linking CXX executable genetik_d5_scientific_tests
+[ 89%] Built target genetik_d5_scientific_tests
+[ 89%] Building CXX object tests/CMakeFiles/genetik_d5_symbolic_tests.dir/d5_symbolic.cpp.o
+[ 90%] Linking CXX executable genetik_d5_recurrence_tests
+[ 90%] Built target genetik_d5_recurrence_tests
+[ 91%] Building CXX object tests/CMakeFiles/genetik_d5_dimension_tests.dir/d5_dimensions.cpp.o
+[ 92%] Linking CXX executable genetik_d5_symbolic_tests
+[ 92%] Built target genetik_d5_symbolic_tests
+[ 93%] Building CXX object tests/CMakeFiles/header_AdvancedInteger.dir/header_AdvancedInteger.cpp.o
+[ 93%] Built target header_AdvancedInteger
+[ 94%] Building CXX object tests/CMakeFiles/header_ScalarOperators.dir/header_ScalarOperators.cpp.o
+[ 94%] Built target header_ScalarOperators
+[ 95%] Building CXX object tests/CMakeFiles/header_ObservedDifferentialSystem.dir/header_ObservedDifferentialSystem.cpp.o
+[ 95%] Built target header_ObservedDifferentialSystem
+[ 96%] Building CXX object tests/CMakeFiles/header_ComplexExpressionParsing.dir/header_ComplexExpressionParsing.cpp.o
+[ 96%] Built target header_ComplexExpressionParsing
+[ 97%] Building CXX object tests/CMakeFiles/header_ScientificWork.dir/header_ScientificWork.cpp.o
+[ 97%] Built target header_ScientificWork
+[ 97%] Building CXX object tests/CMakeFiles/header_ExpressionSecondDerivative.dir/header_ExpressionSecondDerivative.cpp.o
+[ 97%] Built target header_ExpressionSecondDerivative
+[ 97%] Building CXX object tests/CMakeFiles/header_ScientificEquationSystem.dir/header_ScientificEquationSystem.cpp.o
+[ 97%] Linking CXX executable genetik_d5_dimension_tests
+[ 97%] Built target genetik_d5_dimension_tests
+[ 98%] Building CXX object tests/CMakeFiles/header_BoundedTensor.dir/header_BoundedTensor.cpp.o
+[ 98%] Built target header_BoundedTensor
+[ 98%] Building CXX object tests/CMakeFiles/header_ComplexExpression.dir/header_ComplexExpression.cpp.o
+[ 98%] Built target header_ScientificEquationSystem
+[ 98%] Building CXX object tests/CMakeFiles/header_AdvancedLinearAlgebra.dir/header_AdvancedLinearAlgebra.cpp.o
+[ 98%] Built target header_AdvancedLinearAlgebra
+[ 98%] Building CXX object tests/CMakeFiles/header_FiniteStatistics.dir/header_FiniteStatistics.cpp.o
+[ 98%] Built target header_ComplexExpression
+[ 98%] Building CXX object tests/CMakeFiles/header_ScientificRegression.dir/header_ScientificRegression.cpp.o
+[ 98%] Built target header_FiniteStatistics
+[ 98%] Building CXX object tests/CMakeFiles/genetik_d6_tests.dir/d6_science.cpp.o
+[ 98%] Built target header_ScientificRegression
+[ 98%] Building CXX object tests/CMakeFiles/genetik_equation_archive_tests.dir/equation_archive.cpp.o
+[ 99%] Linking CXX executable genetik_equation_archive_tests
+[ 99%] Built target genetik_equation_archive_tests
+[100%] Linking CXX executable genetik_d6_tests
+[100%] Built target genetik_d6_tests

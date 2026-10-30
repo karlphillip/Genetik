@@ -1,0 +1,19 @@
+Collecting pandas==2.2.3
+  Using cached pandas-2.2.3-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl.metadata (89 kB)
+Requirement already satisfied: numpy>=1.26.0 in ./out/tmp/s3-python-consumer/lib/python3.12/site-packages (from pandas==2.2.3) (1.26.4)
+Collecting python-dateutil>=2.8.2 (from pandas==2.2.3)
+  Using cached python_dateutil-3.0.0-py2.py3-none-any.whl.metadata (8.2 kB)
+Collecting pytz>=2020.1 (from pandas==2.2.3)
+  Downloading pytz-2026.6-py2.py3-none-any.whl.metadata (22 kB)
+Collecting tzdata>=2022.7 (from pandas==2.2.3)
+  Using cached tzdata-2026.6-py2.py3-none-any.whl.metadata (1.4 kB)
+Collecting six>=1.6 (from python-dateutil>=2.8.2->pandas==2.2.3)
+  Using cached six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Using cached pandas-2.2.3-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (15.2 MB)
+Using cached python_dateutil-3.0.0-py2.py3-none-any.whl (94 kB)
+Downloading pytz-2026.6-py2.py3-none-any.whl (506 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 506.3/506.3 kB 10.6 MB/s eta 0:00:00
+Using cached tzdata-2026.6-py2.py3-none-any.whl (348 kB)
+Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+Installing collected packages: pytz, tzdata, six, python-dateutil, pandas
+Successfully installed pandas-2.2.3 python-dateutil-3.0.0 pytz-2026.6 six-1.17.0 tzdata-2026.6

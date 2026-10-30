@@ -1,0 +1,6 @@
+[100%] Built target genetik_s2_exact_constraint_tests
+Building CXX object tests/CMakeFiles/optional_header_BoundedBigInteger.dir/optional_header_BoundedBigInteger.cpp.o
+Built target optional_header_BoundedBigInteger
+[100%] Built target optional_header_BoundedRational
+[100%] Building CXX object tests/CMakeFiles/optional_header_QuantizedConstraints.dir/optional_header_QuantizedConstraints.cpp.o
+[100%] Built target optional_header_QuantizedConstraints

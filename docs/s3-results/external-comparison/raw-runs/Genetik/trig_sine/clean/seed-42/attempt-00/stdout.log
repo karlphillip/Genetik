@@ -1,0 +1,11 @@
+seed=42
+dimensions=1
+wall_seconds=120.004
+candidate_evaluations=40460
+training_loss_attempts=2339095
+training_row_attempts=372243966
+initial_best_mse=0.394493
+stop=cancelled
+expression=(((((-0.21831223557635582) - ((1.2035627644236442 / x0) - x0)) + (sin(x0) / sin((x0 / (-7.9922374242909351))))) * (sin(x0) / (-2.2897639451008178))) - (x0 / 1.5473127644236442))
+training_mse=0.00280896
+best_generation=312

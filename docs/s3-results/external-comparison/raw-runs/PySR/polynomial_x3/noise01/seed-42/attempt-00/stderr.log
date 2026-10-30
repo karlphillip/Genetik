@@ -1,0 +1,8 @@
+
+[2911636] signal (15): Terminated
+in expression starting at none:0
+unknown function (ip: 0xffff7dd33440)
+mapreduce_impl at ./reduce.jl:277 [inlined]
+_mapreduce at ./reduce.jl:447
+unknown function (ip: (nil))
+Allocations: 216845034 (Pool: 216800583; Big: 44451); GC: 182

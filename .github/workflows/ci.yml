@@ -186,7 +186,7 @@ jobs:
               assert len(metadata_paths) == 1, metadata_paths
               metadata = Parser().parsestr(wheel.read(metadata_paths[0]).decode("utf-8"))
           assert metadata["Name"] == "genetik"
-          assert metadata["Version"] == "0.6.0"
+          assert metadata["Version"] == "0.7.0"
           assert SpecifierSet(metadata["Requires-Python"]) == SpecifierSet(">=3.12,<3.13")
           print("Validated wheel metadata:", metadata["Name"], metadata["Version"], metadata["Requires-Python"])
           PY
@@ -239,7 +239,7 @@ jobs:
           PYTHONPYCACHEPREFIX: ${{ github.workspace }}/out/tmp/python-cache
         run: |
           "$RUNNER_TEMP/i2-python/bin/python" -m build --sdist --no-isolation --outdir out/sdist/i2
-          "$RUNNER_TEMP/i2-python/bin/python" -m pip install --force-reinstall --no-build-isolation --no-deps out/sdist/i2/genetik-0.6.0.tar.gz
+          "$RUNNER_TEMP/i2-python/bin/python" -m pip install --force-reinstall --no-build-isolation --no-deps out/sdist/i2/genetik-0.7.0.tar.gz
           "$RUNNER_TEMP/i2-python/bin/python" -m pytest -p no:cacheprovider tests/python
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/i2-python/bin/python" - <<'PY'

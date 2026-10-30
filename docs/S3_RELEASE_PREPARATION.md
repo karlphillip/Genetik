@@ -7,7 +7,8 @@ The first-parent history from the published v0.6.0 tag to the S2 source contains
 | History category | S3 candidate decision | Dependency finding |
 |---|---|---|
 | Required mathematical infrastructure | Include M1 `BoundedBigInteger.hpp` for exact rationals and its `DiscreteExpression`/`AdvancedInteger` integer sqrt/root kernel delta | `MixedExpression.hpp` calls `genetik_discrete_detail::integerMath` for its integer square-root operation. `BoundedBigInteger.hpp` is needed by `BoundedRational.hpp`; the bounded-bigint example and mathematical-program API are not needed. |
-| Mixed numerical expressions and shared Real64 parameters | Include M3 `MixedExpression.hpp`, `MixedRegression.hpp` and `MixedIntegerCheckpoint.hpp` | Required by S1 parameter identity and derivative/fitting support. |
+| Mixed numerical expressions | Include the M3 evaluator. | Required by the mixed numerical regression API. |
+| Shared Real64 parameter value/evaluation infrastructure | Transplant only `MixedExpression.hpp`, `MixedRegression.hpp`, and `MixedIntegerCheckpoint.hpp` changes from B2 commit `e6046fe`. | The S2 exact Wythoff witness requires parameter identity, explicit parameter values, and parameter-aware evaluation. The B2 gap solver, evolutionary variation, campaigns, and findings are excluded. |
 | Parameter differentiation and optional LM | Include S1 | Consumes mixed shared-parameter identities; coordinate fitting stays the default. |
 | Exact rational arithmetic, quantized constraints and domain-aware algebra | Include S2 and its narrowly updated `SymbolicAlgebra.hpp` | Consumes shared parameter identities and exact bounded rational interval logic. |
 | Mathematical-program research | Exclude M1 `MathematicalProgram.hpp` and M2/M2.1 evolution/readiness APIs | No include, link or runtime dependency from M3, S1 or S2. |
@@ -25,6 +26,7 @@ The curated integration commits currently resolve as follows (the final S3 commi
 | 3 | `5f8f384` | `ed0225e` | M1 `BoundedBigInteger.hpp` dependency only |
 | 4 | `0c9af5f` | `7e73bee18e0660383d1dfeef7ba7e97323a41fc2` | S1 derivatives and optional LM |
 | 5 | `69c0a91` | `31c131b5b2e185ec82476e5b0b317af83bee3978` | S2 rational constraints and domain assumptions |
+| 6 | pending | three-file source transplant from `e6046fe` | Shared parameter values/evaluation/checkpoint identity only; B2 search code excluded |
 
 These are new commits on the local candidate branch; original commits and their research branch remain intact. The reviewed candidate graph is:
 
@@ -32,8 +34,10 @@ These are new commits on the local candidate branch; original commits and their 
 flowchart LR
   P[Published v0.6.0] --> M3[M3 mixed/shared numerical evaluator]
   K[M1 integer sqrt/root kernels only] --> M3
+  M3 --> B2API[B2 shared-value API delta only]
   M3 --> S1[S1 parameter Jacobians and optional LM]
-  S1 --> S2[S2 exact quantized constraints and domain assumptions]
+  B2API --> S1
+  B2API --> S2[S2 exact quantized constraints and domain assumptions]
   S2 --> S3[S3 qualification and output-only archive]
   M1R[M1 bigint example and mathematical programs] -. excluded .-> P
   M2[M2/M2.1 programs and strategies] -. excluded .-> P
@@ -62,7 +66,7 @@ The curated S3 candidate compiles with the ordinary dependency-free C++20 build.
 
 The 66/66 first curated Release run preceded the S3 archive and v0.6 compatibility fixture integration; it is retained as an intermediate checkpoint. An earlier 75/75 run was against the pre-curation S2 source tree and is not counted for the release scope. The CMake 3.16 first invocation used an unsupported `--test-dir` switch and found no tests; the subsequent corrected 75/75 run was also against that pre-curation tree. Its outputs remain retained as diagnostic evidence, not as final candidate qualification.
 
-Final-scope Debug, exact CMake 3.16.0, ASan+UBSan, required TSan selections, optional Boost and LAPACK consumers, Python package compatibility, and source-archive extraction/build/relocation are pending. The exact candidate manifest and every result are kept separate by build tree. Historical results are never added together to imply a final-tip pass.
+Boost 1.83 exact rational tests and standalone optional headers pass; the optional LP64 LAPACK/OpenBLAS D6 tests and package fixture pass. The corrected-source native test manifests are kept separate by configuration. Python sdist/wheel compatibility, source-archive extraction/build/relocation, benchmark execution, repository hygiene, final source SHA/checksums, and branch finalization remain pending.
 
 ## Version/artifacts and authorization boundary
 

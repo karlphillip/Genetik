@@ -45,23 +45,23 @@ private:
     std::variant<std::int64_t,bool> value_;
 };
 enum class DiscreteKind { Integer, Boolean, Variable, Add, Subtract, Multiply, Negate, Modulo,
-    Equal, NotEqual, LessThan, LessEqual, GreaterThan, GreaterEqual, IfThenElse, Iterator=15, Sum=16, Product=17, IntegerDivide=18, Gcd=19, Lcm=20, IntegerPower=21, ModularPower=22, Factorial=23, Binomial=24, First=25 };
+    Equal, NotEqual, LessThan, LessEqual, GreaterThan, GreaterEqual, IfThenElse, Iterator=15, Sum=16, Product=17, IntegerDivide=18, Gcd=19, Lcm=20, IntegerPower=21, ModularPower=22, Factorial=23, Binomial=24, First=25, IntegerSqrt=26, IntegerRoot=27 };
 inline bool discreteIteration(DiscreteKind k) noexcept {return k==DiscreteKind::Sum||k==DiscreteKind::Product||k==DiscreteKind::First;}
 inline std::size_t discreteArity(DiscreteKind k) {
     switch(k) {
     case DiscreteKind::Integer:case DiscreteKind::Boolean:case DiscreteKind::Variable:case DiscreteKind::Iterator:return 0;
-    case DiscreteKind::Negate:case DiscreteKind::Factorial:return 1;
+    case DiscreteKind::Negate:case DiscreteKind::Factorial:case DiscreteKind::IntegerSqrt:return 1;
     case DiscreteKind::IfThenElse:case DiscreteKind::Sum:case DiscreteKind::Product:case DiscreteKind::First:case DiscreteKind::ModularPower:return 3;
     case DiscreteKind::Add:case DiscreteKind::Subtract:case DiscreteKind::Multiply:case DiscreteKind::Modulo:
     case DiscreteKind::Equal:case DiscreteKind::NotEqual:case DiscreteKind::LessThan:case DiscreteKind::LessEqual:
-    case DiscreteKind::GreaterThan:case DiscreteKind::GreaterEqual:case DiscreteKind::IntegerDivide:case DiscreteKind::Gcd:case DiscreteKind::Lcm:case DiscreteKind::IntegerPower:case DiscreteKind::Binomial:return 2;
+    case DiscreteKind::GreaterThan:case DiscreteKind::GreaterEqual:case DiscreteKind::IntegerDivide:case DiscreteKind::Gcd:case DiscreteKind::Lcm:case DiscreteKind::IntegerPower:case DiscreteKind::Binomial:case DiscreteKind::IntegerRoot:return 2;
     }
     throw std::invalid_argument("unknown discrete operator");
 }
-inline bool advancedIntegerKind(DiscreteKind k) noexcept {return k>=DiscreteKind::IntegerDivide&&k<=DiscreteKind::Binomial;}
+inline bool advancedIntegerKind(DiscreteKind k) noexcept {return (k>=DiscreteKind::IntegerDivide&&k<=DiscreteKind::Binomial)||k==DiscreteKind::IntegerSqrt||k==DiscreteKind::IntegerRoot;}
 inline genetik_discrete_detail::IntegerOperation integerOperation(DiscreteKind k){
  using K=DiscreteKind;using O=genetik_discrete_detail::IntegerOperation;
- switch(k){case K::IntegerDivide:return O::Divide;case K::Gcd:return O::Gcd;case K::Lcm:return O::Lcm;case K::IntegerPower:return O::Power;case K::ModularPower:return O::ModularPower;case K::Factorial:return O::Factorial;case K::Binomial:return O::Binomial;default:throw std::invalid_argument("not advanced integer operation");}
+ switch(k){case K::IntegerDivide:return O::Divide;case K::Gcd:return O::Gcd;case K::Lcm:return O::Lcm;case K::IntegerPower:return O::Power;case K::ModularPower:return O::ModularPower;case K::Factorial:return O::Factorial;case K::Binomial:return O::Binomial;case K::IntegerSqrt:return O::Sqrt;case K::IntegerRoot:return O::Root;default:throw std::invalid_argument("not advanced integer operation");}
 }
 inline std::string_view discreteFunctionName(DiscreteKind k){if(advancedIntegerKind(k))for(auto d:genetik_discrete_detail::integerOperators)if(d.operation==integerOperation(k))return d.name;throw std::invalid_argument("not discrete function");}
 class DiscreteNode {

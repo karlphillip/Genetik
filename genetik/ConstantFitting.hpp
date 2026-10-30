@@ -1,6 +1,7 @@
 #pragma once
 #include <typeinfo>
 #include "Regression.hpp"
+#include "LevenbergMarquardt.hpp"
 #include <exception>
 #include <set>
 #include <array>
@@ -35,6 +36,10 @@ struct PreparationStatistics {
     std::array<std::uint64_t,7> terminations{}; // ConstantFitStop enum order
     bool operator==(const PreparationStatistics&) const = default;
 };
+inline void mergeLMWork(LMWork& a,const LMWork& b){
+    auto add=[](std::size_t& x,std::size_t y){if(y>std::numeric_limits<std::size_t>::max()-x)throw std::overflow_error("optimizer work counter overflow");x+=y;};
+    add(a.objectiveEvaluations,b.objectiveEvaluations);add(a.jacobianEvaluations,b.jacobianEvaluations);add(a.forwardEvaluations,b.forwardEvaluations);add(a.derivativeEvaluations,b.derivativeEvaluations);add(a.rowsProcessed,b.rowsProcessed);add(a.parameterUpdates,b.parameterUpdates);add(a.linearSolves,b.linearSolves);add(a.acceptedSteps,b.acceptedSteps);add(a.rejectedSteps,b.rejectedSteps);add(a.mathematicalOperations,b.mathematicalOperations);add(a.linearAlgebraOperations,b.linearAlgebraOperations);a.peakWorkspaceBytes=std::max(a.peakWorkspaceBytes,b.peakWorkspaceBytes);a.seconds+=b.seconds;if(!std::isfinite(a.seconds))throw std::overflow_error("optimizer runtime accumulator overflow");
+}
 // Optional bounded, run-owned observation. It NEVER supplies fitness or avoids computation.
 struct RefinementDiagnostics {
     struct Entry {Expression expression;std::uint64_t requests=0;bool priorOutput=false;};
@@ -47,6 +52,8 @@ struct RefinementDiagnostics {
     std::uint64_t observed=0,untracked=0,capacityDrops=0,repeated=0,repeatLosses=0,repeatNoChangeLosses=0,repeatImproved=0;
     std::uint64_t previousOutput=0,previousOutputImproved=0,previousOutputUnchanged=0,previousOutputLosses=0;
     double datasetSeconds=0,fittingDatasetSeconds=0,fittingSeconds=0,preparationSeconds=0,generationSeconds=0,publicationSeconds=0;
+    LMWork optimizerWork{};
+    void recordOptimizerWork(const LMWork& w){mergeLMWork(optimizerWork,w);}
     Entry* findOrInsert(const Expression& expression) {
         const auto key=expression.toString();auto it=expressions.find(key);
         if(it!=expressions.end()) {
@@ -156,6 +163,14 @@ public:
     const std::shared_ptr<RefinementDiagnostics>& diagnostics() const noexcept {return diagnostics_;}
     const TrainingWork& work() const noexcept { return work_; }
     const RegressionSupplementalWork& supplementalWork()const noexcept{return supplemental_;}
+    void recordFittingInvocation(){countTrainingWork(work_.fittingInvocations);}
+    void addSupplementalWork(RegressionSupplementalWork work) {
+        if(work.mathematicalOperations>UINT64_MAX-supplemental_.mathematicalOperations ||
+           work.fieldEvaluations>UINT64_MAX-supplemental_.fieldEvaluations)
+            throw std::overflow_error("supplemental training work overflow");
+        supplemental_.mathematicalOperations+=work.mathematicalOperations;
+        supplemental_.fieldEvaluations+=work.fieldEvaluations;
+    }
     void restoreSupplementalWork(RegressionSupplementalWork work){
         if(supplemental_!=RegressionSupplementalWork{}||admission_||execution_)throw std::invalid_argument("fresh supplemental accounting required");
         supplemental_=work;
@@ -195,17 +210,21 @@ private:
     std::uint64_t maximum_;
     std::shared_ptr<RefinementDiagnostics> diagnostics_;
 };
+enum class ConstantFitMethod { Coordinate, LevenbergMarquardt };
 struct ConstantFitConfig {
     double lower = -8, upper = 8, initialStep = 1, minimumStep = 1e-8;
     std::uint64_t maxLossAttempts = 256, maxSweeps = 128, maxProposals = 8192;
     std::optional<double> lossThreshold;
+    ConstantFitMethod method=ConstantFitMethod::Coordinate;
+    LMConfig levenbergMarquardt{};
 };
 inline void validateConstantFitConfigForLimit(const ConstantFitConfig& c, double maximumConstant) {
     if (!std::isfinite(c.lower) || !std::isfinite(c.upper) || c.lower > c.upper ||
         std::abs(c.lower) > maximumConstant || std::abs(c.upper) > maximumConstant ||
         !std::isfinite(c.initialStep) || !std::isfinite(c.minimumStep) || c.minimumStep <= 0 ||
         c.initialStep < c.minimumStep || c.maxLossAttempts == 0 || c.maxSweeps == 0 || c.maxProposals == 0 ||
-        (c.lossThreshold && (!std::isfinite(*c.lossThreshold) || *c.lossThreshold < 0)))
+        (c.lossThreshold && (!std::isfinite(*c.lossThreshold) || *c.lossThreshold < 0)) ||
+        (c.method!=ConstantFitMethod::Coordinate&&c.method!=ConstantFitMethod::LevenbergMarquardt))
         throw std::invalid_argument("invalid constant fit configuration");
 }
 inline void validateConstantFitConfig(const ConstantFitConfig& c,const RegressionProblem& problem) {
@@ -230,6 +249,7 @@ struct ConstantFitResult {
     bool improved = false;
     ConstantFitStop stop = ConstantFitStop::SweepLimit;
     std::uint64_t lossAttempts = 0, sweeps = 0, proposals = 0;
+    LMWork optimizerWork{};
 };
 // Shared deterministic reference algorithm. Representation adapters enumerate parameters,
 // read one coefficient and construct one checked replacement. No RNG or publication here.
@@ -288,6 +308,38 @@ Result fitCoordinates(ExpressionValue expression,Objective& objective,const Cons
 }
 }
 
+inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
+    const Expression& input,TrainingObjective& objective,
+    std::span<const std::size_t> selected,const ConstantFitConfig& config) {
+    validateConstantFitConfig(config,*objective.problem());
+    (void)objective.problem()->checkedExpression(input);
+    const auto& rows=objective.problem()->trainingRows();
+    if(rows.size()!=objective.problem()->sampleCount())
+        throw std::invalid_argument("Levenberg-Marquardt requires native scalar training rows");
+    if(selected.size()>config.levenbergMarquardt.maxParameters)
+        throw std::length_error("LM parameter limit");
+    const auto original=input.nodes();std::vector<double> initial;initial.reserve(selected.size());
+    for(std::size_t i=0;i<selected.size();++i){const auto n=selected[i];if(n>=original.size()||original[n].kind()!=ExpressionKind::Constant||(i&&n<=selected[i-1]))throw std::invalid_argument("LM constant indices must be increasing, distinct constants");const double v=original[n].constantValue();if(v<config.lower||v>config.upper)throw std::invalid_argument("LM starting constant outside fitting bounds");initial.push_back(v);}
+    ConstantFitResult result{input,{},{}};
+    objective.recordFittingInvocation();
+    if(selected.empty()){auto baseline=objective.measure(input,TrainingLossKind::FittingBaseline);result.loss=result.startingLoss=baseline.loss;result.stop=baseline.loss.state()==FitnessState::Invalid?ConstantFitStop::InvalidStart:ConstantFitStop::NoConstants;result.lossAttempts=1;return result;}
+    if(rows.empty())throw std::invalid_argument("LM requires nonempty native observations");
+    std::vector<ExpressionNode> nodes;nodes.reserve(original.size());for(std::size_t node=0;node<original.size();++node){auto found=std::lower_bound(selected.begin(),selected.end(),node);if(found!=selected.end()&&*found==node)nodes.push_back(ExpressionNode::variable(input.variableCount()+static_cast<std::size_t>(found-selected.begin())));else nodes.push_back(original[node]);}
+    Expression parameterExpression(nodes,input.variableCount()+selected.size(),input.limits());
+    std::vector<LMExpressionObservation> observations;observations.reserve(rows.size());for(const auto& r:rows){auto x=r.inputs;x.resize(input.variableCount()+selected.size(),0);observations.push_back({std::move(x),r.target});}
+    std::vector<std::size_t> bindings(selected.size());std::vector<double> lower(selected.size(),config.lower),upper(selected.size(),config.upper);for(std::size_t i=0;i<selected.size();++i)bindings[i]=input.variableCount()+i;
+    auto raw=expressionLeastSquares(parameterExpression,std::move(observations),bindings);
+    Fitness starting=Fitness::invalid(),last=Fitness::invalid();std::vector<double> lastTheta;std::uint64_t calls=0;
+    LMResidualFunction measured=[&](std::span<const double> theta,bool jac,std::size_t allowance){Expression candidate=input;for(std::size_t i=0;i<selected.size();++i)candidate=candidate.withConstant(selected[i],theta[i]);const auto before=objective.supplementalWork();auto score=objective.measure(candidate,calls?TrainingLossKind::FittingProbe:TrainingLossKind::FittingBaseline);const auto after=objective.supplementalWork();if(calls==std::numeric_limits<std::uint64_t>::max())throw std::overflow_error("LM objective call count overflow");++calls;if(score.loss.state()!=FitnessState::Valid)return LMResidualEvaluation{};if(calls==1)starting=score.loss;auto eval=raw(theta,jac,allowance);if(rows.size()>std::numeric_limits<std::size_t>::max()-eval.forwardEvaluations||rows.size()>std::numeric_limits<std::size_t>::max()-eval.rowsProcessed)throw std::overflow_error("LM row accounting overflow");eval.forwardEvaluations+=rows.size();eval.rowsProcessed+=rows.size();eval.mathematicalOperations+=after.mathematicalOperations-before.mathematicalOperations;objective.addSupplementalWork({eval.mathematicalOperations-(after.mathematicalOperations-before.mathematicalOperations),eval.rowsProcessed-rows.size()});if(eval.valid){last=score.loss;lastTheta.assign(theta.begin(),theta.end());}return eval;};
+    auto lm=config.levenbergMarquardt;lm.maxObjectiveEvaluations=std::min<std::uint64_t>(lm.maxObjectiveEvaluations,std::min(config.maxLossAttempts,objective.remaining()));
+    if(!lm.maxObjectiveEvaluations)throw TrainingLossBudgetExceeded();
+    const auto fit=levenbergMarquardt(initial,lower,upper,measured,lm);
+    result.expression=input;for(std::size_t i=0;i<selected.size();++i)result.expression=result.expression.withConstant(selected[i],fit.parameters[i]);
+    result.startingLoss=starting;result.loss=lastTheta==fit.parameters?last:starting;result.improved=result.loss.state()==FitnessState::Valid&&starting.state()==FitnessState::Valid&&result.loss.score()<starting.score();result.lossAttempts=calls;result.optimizerWork=fit.work;
+    switch(fit.stop){case LMStop::LossTolerance:result.stop=ConstantFitStop::LossThreshold;break;case LMStop::GradientTolerance:case LMStop::StepTolerance:result.stop=ConstantFitStop::MinimumStep;break;case LMStop::EvaluationLimit:case LMStop::DerivativeLimit:case LMStop::WorkspaceLimit:result.stop=ConstantFitStop::EvaluationLimit;break;case LMStop::IterationLimit:result.stop=ConstantFitStop::SweepLimit;break;default:result.stop=fit.sumSquaredResiduals?ConstantFitStop::MinimumStep:ConstantFitStop::InvalidStart;break;}
+    return result;
+}
+
 // Always obtains a fresh baseline: no caller-provided numerical cache can certify a different tree.
 // Each occurrence is independent, traversed in postfix order; each coordinate probes +step then
 // -step relative to its value at coordinate entry. Equal/invalid trials keep the incumbent.
@@ -303,6 +355,7 @@ inline ConstantFitResult fitConstants(const Expression& input, TrainingObjective
         if (value < config.lower || value > config.upper) throw std::invalid_argument("starting constant outside fitting bounds");
         parameters.push_back(i);
     }
+    if(config.method==ConstantFitMethod::LevenbergMarquardt)return fitSelectedConstantsLevenbergMarquardt(expression,objective,parameters,config);
     return genetik_detail::fitCoordinates<ConstantFitResult>(std::move(expression),objective,config,parameters,objective.work_,
         [](const Expression& e,std::size_t parameter){return e.nodes()[parameter].constantValue();},
         [](const Expression& e,std::size_t parameter,double value){return e.withConstant(parameter,value);});
@@ -325,6 +378,7 @@ inline ConstantFitResult fitSelectedConstants(const Expression& input,TrainingOb
         if(value<config.lower || value>config.upper)throw std::invalid_argument("selected constant outside fitting bounds");
         parameters.push_back(i);
     }
+    if(config.method==ConstantFitMethod::LevenbergMarquardt)return fitSelectedConstantsLevenbergMarquardt(expression,objective,parameters,config);
     return genetik_detail::fitCoordinates<ConstantFitResult>(std::move(expression),objective,config,parameters,objective.work_,
         [](const Expression& e,std::size_t i){return e.nodes()[i].constantValue();},
         [](const Expression& e,std::size_t i,double v){return e.withConstant(i,v);});
@@ -371,6 +425,7 @@ public:
         mergeTrainingCounter(statistics_.completedUnchanged,b.completedUnchanged,overflow);mergeTrainingCounter(statistics_.noConstants,b.noConstants,overflow);
         mergeTrainingCounter(statistics_.invalidStarts,b.invalidStarts,overflow);mergeTrainingCounter(statistics_.abortedFits,b.abortedFits,overflow);
         for(std::size_t i=0;i<b.terminations.size();++i)mergeTrainingCounter(statistics_.terminations[i],b.terminations[i],overflow);
+        try{mergeLMWork(optimizerWork_,child.optimizerWork_);}catch(...){failure=std::current_exception();}
         if(child.rawInitialBest && (!rawInitialBest || *child.rawInitialBest<*rawInitialBest))rawInitialBest=child.rawInitialBest;
         if(failure)std::rethrow_exception(failure);
         if(overflow)throw std::overflow_error("parallel preparation accounting exceeded uint64 range");
@@ -435,6 +490,7 @@ public:
                 recordDiagnostic(false,objective_->work().fittingImproved!=before.fittingImproved);throw;
             }
         }();
+        if(config_->method==ConstantFitMethod::LevenbergMarquardt){mergeLMWork(optimizerWork_,result.optimizerWork);if(diagnostic)diagnostic->recordOptimizerWork(result.optimizerWork);}
         recordWork();recordDiagnostic(true,result.improved);
         ++statistics_.terminations[static_cast<std::size_t>(result.stop)];
         if(result.improved)++statistics_.completedImproved;
@@ -446,6 +502,8 @@ public:
         return {std::move(result.expression),result.loss};
     }
     const PreparationStatistics& statistics() const noexcept {return statistics_;}
+    const LMWork& optimizerWork()const noexcept{return optimizerWork_;}
+    void restoreOptimizerWork(const LMWork& work){if(optimizerWork_!=LMWork{}||!initializing)throw std::invalid_argument("optimizer work restore requires fresh refinement");optimizerWork_=work;}
     void restoreStatistics(const PreparationStatistics& state,std::optional<double> initial) {
         if(statistics_!=PreparationStatistics{} || !initializing || (initial && !std::isfinite(*initial)))
             throw std::invalid_argument("refinement restore requires fresh state");
@@ -464,4 +522,5 @@ private:
     const std::optional<ConstantFitConfig> config_;
     const std::uint64_t interval_;
     PreparationStatistics statistics_;
+    LMWork optimizerWork_{};
 };

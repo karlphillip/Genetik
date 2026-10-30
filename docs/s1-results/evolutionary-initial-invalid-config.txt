@@ -1,0 +1,8 @@
+S1 evolutionary comparison initial preflight failure
+
+The first attempted application launch was rejected by RegressionProblem
+validation before any valid candidate population or scientific outcome was
+produced. The problem's maxAbsConstant was 4 while fitting bounds were [-8,8].
+The fixed protocol was corrected so the problem limit admits the declared
+fitter bounds. The invalid launch is retained as engineering evidence and is
+not counted as a campaign run.

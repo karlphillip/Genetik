@@ -171,6 +171,7 @@ class ScalarMathematicsRun {
     const RegressionSupplementalWork& supplementalWork()const noexcept{return objective_->supplementalWork();}
     const Algorithm &algorithm() const noexcept { return *algorithm_; }
     PreparationStatistics preparationWork() const noexcept { return preparation_->statistics(); }
+    const LMWork& optimizerWork()const noexcept{return preparation_->optimizerWork();}
     std::optional<SearchStop> stoppingReason() const {
         auto best = population().bestSeen();
         if (!best)
@@ -210,7 +211,8 @@ class ScalarMathematicsRun {
         w.integer(algorithm.published);
         w.integer(static_cast<unsigned>(algorithm.lastOutcome));
         writeTrainingWork(w, work());
-        if(problem_.measured()){w.integer(supplementalWork().mathematicalOperations);w.integer(supplementalWork().fieldEvaluations);}
+        w.integer(supplementalWork().mathematicalOperations);w.integer(supplementalWork().fieldEvaluations);
+        if(!problem_.measured()){const auto& o=preparation_->optimizerWork();for(auto n:{o.objectiveEvaluations,o.jacobianEvaluations,o.forwardEvaluations,o.derivativeEvaluations,o.rowsProcessed,o.parameterUpdates,o.linearSolves,o.acceptedSteps,o.rejectedSteps,o.mathematicalOperations,o.linearAlgebraOperations,o.peakWorkspaceBytes})w.integer(n);w.real(o.seconds);}
         writePreparationStatistics(w, preparation_->statistics());
         w.integer(preparation_->rawInitialBest.has_value());
         if (preparation_->rawInitialBest)
@@ -218,7 +220,7 @@ class ScalarMathematicsRun {
         writeVariationStatistics(w, algorithm_->variation().statistics());
         writeCommittedPopulation(w, state);
         CheckpointDocument d;
-        d.codec = problem_.measured()?"genetik.scientific-measurement-evolution/1":"genetik.scalar-mathematics-evolution/1";
+        d.codec = problem_.measured()?"genetik.scientific-measurement-evolution/1":"genetik.scalar-mathematics-evolution/2";
         d.identity = identity_;
         d.payload = w.data();
         d.generation = state.generation;
@@ -231,7 +233,9 @@ class ScalarMathematicsRun {
                                                          RandomContext &random) {
         auto result =
             std::unique_ptr<ScalarMathematicsRun>(new ScalarMathematicsRun(p, c, random, RestoreTag{}));
-        if (d.codec != (p.measured()?"genetik.scientific-measurement-evolution/1":"genetik.scalar-mathematics-evolution/1") || d.runtime != checkpointRuntime() ||
+        const bool oldNativeCodec=!p.measured()&&d.codec=="genetik.scalar-mathematics-evolution/1";
+        if ((!p.measured()&&d.codec!="genetik.scalar-mathematics-evolution/2"&&!oldNativeCodec) ||
+            (p.measured()&&d.codec!="genetik.scientific-measurement-evolution/1") || d.runtime != checkpointRuntime() ||
             d.identity != result->identity_)
             throw CheckpointError("scalar mathematics run identity/runtime differs");
         CheckpointReader r(d.payload);
@@ -248,7 +252,9 @@ class ScalarMathematicsRun {
         a.lastOutcome = static_cast<GenerationOutcome>(r.count(2));
         auto work = readTrainingWork(r);
         RegressionSupplementalWork supplemental;
-        if(p.measured()){supplemental.mathematicalOperations=r.integer();supplemental.fieldEvaluations=r.integer();}
+        if(p.measured()||!oldNativeCodec){supplemental.mathematicalOperations=r.integer();supplemental.fieldEvaluations=r.integer();}
+        LMWork optimizerWork;
+        if(!p.measured()&&!oldNativeCodec){auto count=[&]{return static_cast<std::size_t>(r.count(std::numeric_limits<std::size_t>::max()));};optimizerWork.objectiveEvaluations=count();optimizerWork.jacobianEvaluations=count();optimizerWork.forwardEvaluations=count();optimizerWork.derivativeEvaluations=count();optimizerWork.rowsProcessed=count();optimizerWork.parameterUpdates=count();optimizerWork.linearSolves=count();optimizerWork.acceptedSteps=count();optimizerWork.rejectedSteps=count();optimizerWork.mathematicalOperations=count();optimizerWork.linearAlgebraOperations=count();optimizerWork.peakWorkspaceBytes=count();optimizerWork.seconds=r.real();if(!std::isfinite(optimizerWork.seconds)||optimizerWork.seconds<0)throw CheckpointError("invalid optimizer runtime");}
         if(p.measured()&&supplemental.fieldEvaluations>work.rowAttempts)throw CheckpointError("scientific field accounting exceeds observation attempts");
         auto preparation = readPreparationStatistics(r);
         std::optional<double> initial;
@@ -280,6 +286,7 @@ class ScalarMathematicsRun {
             RunCheckpointAccess::restorePopulation<ExpressionCandidate, RegressionOrdering>(state, random);
         result->objective_->restoreWork(work);
         result->objective_->restoreSupplementalWork(supplemental);
+        result->preparation_->restoreOptimizerWork(optimizerWork);
         result->preparation_->restoreStatistics(preparation, initial);
         result->preparation_->initializing = false;
         RunCheckpointAccess::restoreAlgorithm(*result->algorithm_, a);
@@ -350,6 +357,14 @@ class ScalarMathematicsRun {
 
             w.real(f.lower);
             w.real(f.upper);
+            // Keep the historical coordinate identity byte-for-byte. Experimental
+            // fitting policies append an explicit identity and all their limits.
+            if(f.method==ConstantFitMethod::LevenbergMarquardt){
+                w.text("constant-fit/levenberg-marquardt-forward-parameter-jacobian/1");
+                const auto& m=f.levenbergMarquardt;
+                for(auto n:{m.maxIterations,m.maxObjectiveEvaluations,m.maxJacobianEvaluations,m.maxParameters,m.maxResiduals,m.maxMathematicalOperations,m.maxWorkspaceBytes})w.integer(n);
+                for(double x:{m.initialDamping,m.gradientTolerance,m.stepTolerance,m.lossTolerance,m.minimumDamping,m.maximumDamping})w.real(x);
+            }
         }
         identity_ = w.data();
         algorithm_ = std::make_unique<Algorithm>(c.crossoverRate, c.mutationRate, random,

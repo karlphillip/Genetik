@@ -1,0 +1,43 @@
+{
+  "milestone": "S2",
+  "branch": "feature/constraint-aware-mathematics-s2",
+  "base_sha": "7e73bee18e0660383d1dfeef7ba7e97323a41fc2",
+  "status": "qualified_bounded_exact_fragment",
+  "toolchain": {
+    "compiler": "GNU 13.3.0",
+    "cxx": "C++20",
+    "workspace_cmake": "4.4.4",
+    "minimum_cmake": "3.16.0",
+    "boost_headers": "retained optional Boost 1.83 tree",
+    "boost_required_by_default": false
+  },
+  "checks": {
+    "release_full_ctest": {"passed": 73, "failed": 0, "duration_seconds": 558.75},
+    "release_full_ctest_includes_installed_relocated_consumers": true,
+    "installed_package_test_seconds": 479.40,
+    "release_remainder_ctest": {"passed": 72, "failed": 0, "duration_seconds": 57.06, "installed_package_excluded": true},
+    "debug_s2_and_d5_symbolic": "passed",
+    "asan_ubsan_s2_and_d5_symbolic": "passed",
+    "tsan_d5_symbolic_overlap": "passed",
+    "cmake_3_16_s2_tests_and_optional_standalone_headers": "passed",
+    "normal_build_boost_independence": "full standard test suite built without Boost on default include paths",
+    "repository_hygiene_test": "passed",
+    "workspace_hygiene_scan": "reported pre-existing parent entries primeResearcher/docs, primeResearcher/examples, and primeResearcher/session.md; left untouched"
+  },
+  "mathematical_results": {
+    "floor_constraints": {"equations": ["floor(10*a)=16", "floor(20*a)=32"], "interval": "[8/5,33/20)"},
+    "affine_offset": {"fixed_alpha": "3/2", "interval_for_beta": "[0,1/2)"},
+    "shared_floor_difference": "bounded exact interval union; gamma dyadic contained for the tested transition",
+    "wythoff_fixed_formula": {"training": "1000/1000", "held_out": "200/200", "reference": "integer isqrt identity", "classification": "fixed-structure formula verification, not discovery"},
+    "binary64_gap": "open interval between adjacent representable doubles was proven to contain no binary64 value",
+    "symbolic": "(powi(x,2)-1)/(x-1) -> x+1 with denominator NonZero assumption; no executable bit-equivalence claim"
+  },
+  "frozen_constraint_limits": {"max_observations": 10000, "max_interval_branches": 50000, "max_interval_workspace_bytes": 4194304, "max_estimated_arithmetic_work": 1000000},
+  "limitations": [
+    "exact rationals and constraint solving are optional Boost-backed headers",
+    "solver scope is one parameter in affine quantized expressions plus bounded shared-floor branching",
+    "no general nonlinear or arbitrary nested-quantifier solving",
+    "no transcendental error certification",
+    "no evolutionary campaign or prime-successor search"
+  ]
+}

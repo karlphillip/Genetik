@@ -78,6 +78,12 @@ class BranchLifecycleTests(unittest.TestCase):
         self.assertEqual(next(item["ahead_commits"] for item in self.inventory()["branches"]
                               if item["name"] == "unmerged" and item["kind"] == "local"), 1)
 
+    def test_unmerged_ahead_branch(self) -> None:
+        run(self.repo, "branch", "ahead")
+        run(self.repo, "checkout", "ahead")
+        commit(self.repo, "ahead.txt", "ahead of base\n")
+        self.assertEqual(self.relation("ahead"), "ahead_unmerged")
+
     def test_squash_tree_match_is_reported_but_not_ancestry_proof(self) -> None:
         run(self.repo, "branch", "squashed")
         run(self.repo, "checkout", "squashed")
@@ -114,8 +120,12 @@ class BranchLifecycleTests(unittest.TestCase):
             "conflict_free", "review_clear", "scope_verified", "compatible", "provenance_known",
         )}
         self.assertTrue(integration_allowed(evidence))
-        evidence["exact_ci_success"] = False
-        self.assertFalse(integration_allowed(evidence))
+        for gate in ("tests_complete", "exact_ci_success", "source_head_unchanged", "conflict_free",
+                     "review_clear", "scope_verified", "compatible", "provenance_known",
+                     "routine_authorized"):
+            blocked = dict(evidence)
+            blocked[gate] = False
+            self.assertFalse(integration_allowed(blocked), gate)
         self.assertFalse(integration_allowed({}))
 
     def test_changed_remote_head_blocks_sha_leased_deletion(self) -> None:

@@ -1,5 +1,28 @@
 # Genetik conventions
 
+## Required source-task branch lifecycle
+
+- At the beginning and end of every source-changing task, read and apply
+  `.agents/skills/genetik-branch-lifecycle/SKILL.md`. This applies automatically
+  to Codex work in this repository.
+- Start each task from fetched `origin/main` on a unique development branch in
+  a task-owned worktree. Inspect the complete branch/worktree/dirty-state audit
+  before editing; preserve existing user changes and research branches.
+- Routine changes may be integrated into `main` only after required tests and
+  qualification pass for the exact pushed SHA, the PR is conflict-free and
+  review-clear, and the scope and compatibility audit passes. This repository
+  grants standing authorization for that routine merge-commit workflow.
+- Keep research, incomplete/failed qualification, incompatible public API or
+  checkpoint changes, significant mathematical-semantic changes, ambiguous
+  provenance, and any task that prohibits merging isolated. Never publish,
+  tag, or modify release assets without specific authorization.
+- After verified integration, clean up only the completed clean task-owned
+  worktree and branch. Verify remote deletion with an exact-SHA lease. Never
+  discard user changes or delete an unknown, dirty, active, or research branch.
+- Use `scripts/branch_audit.py` for the read-only local/fetched-ref inventory;
+  separately verify GitHub PR and CI evidence. Qualify changes to this lifecycle
+  with `python3 scripts/test_branch_lifecycle.py`.
+
 - C++20, CPU-first, standard library only; preserve the MIT license and ordinary GA use.
 - Keep builds out of the source tree. On this Jetson CMake is workspace-local:
   `../.tools/bin/cmake` and `../.tools/bin/ctest` (4.4.4); ordinary `cmake`/`ctest` work when installed.

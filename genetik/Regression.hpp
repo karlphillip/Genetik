@@ -35,6 +35,9 @@ public:
     virtual bool parallelEvaluationSafe() const noexcept {return typeid(*this)==typeid(RegressionProblem);}
     std::size_t dimensions() const noexcept { return dimensions_; }
     virtual std::size_t sampleCount() const noexcept { return rows_.size(); }
+    // Native scalar rows are exposed read-only for optional fixed-topology
+    // numerical methods; full-model adapters keep their own observation types.
+    const std::vector<RegressionRow>& trainingRows() const noexcept { return rows_; }
     ExpressionLimits limits() const noexcept { return limits_; }
     Expression checkedExpression(const Expression& expression) const {
         if (expression.variableCount() != dimensions_) throw std::invalid_argument("expression/problem dimensions differ");

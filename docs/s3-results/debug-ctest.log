@@ -1,0 +1,144 @@
+Internal ctest changing into directory: /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/build/s3-debug
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/build/s3-debug
+      Start  1: genetik_strict_arithmetic
+ 1/69 Test  #1: genetik_strict_arithmetic .......................   Passed    0.03 sec
+      Start  2: genetik_multivariate_contracts
+ 2/69 Test  #2: genetik_multivariate_contracts ..................   Passed    0.04 sec
+      Start  3: genetik_fitting_contracts
+ 3/69 Test  #3: genetik_fitting_contracts .......................   Passed    0.07 sec
+      Start  4: genetik_symbolic_contracts
+ 4/69 Test  #4: genetik_symbolic_contracts ......................   Passed    0.01 sec
+      Start  5: genetik_expression_contracts
+ 5/69 Test  #5: genetik_expression_contracts ....................   Passed    0.09 sec
+      Start  6: genetik_fitness_publication
+ 6/69 Test  #6: genetik_fitness_publication .....................   Passed    0.01 sec
+      Start  7: genetik_contracts
+ 7/69 Test  #7: genetik_contracts ...............................   Passed    0.02 sec
+      Start  8: genetik_advanced_regression_contracts
+ 8/69 Test  #8: genetik_advanced_regression_contracts ...........   Passed    0.18 sec
+      Start  9: genetik_downstream
+ 9/69 Test  #9: genetik_downstream ..............................   Passed   22.42 sec
+      Start 10: genetik_expression_fp_policy
+10/69 Test #10: genetik_expression_fp_policy ....................   Passed   32.50 sec
+      Start 11: genetik_prime_contracts
+11/69 Test #11: genetik_prime_contracts .........................   Passed    0.06 sec
+      Start 12: genetik_workspace_contracts
+12/69 Test #12: genetik_workspace_contracts .....................   Passed    0.00 sec
+      Start 13: genetik_installed_package
+13/69 Test #13: genetik_installed_package .......................   Passed  470.43 sec
+      Start 14: genetik_oop_contracts
+14/69 Test #14: genetik_oop_contracts ...........................   Passed    0.01 sec
+      Start 15: genetik_concurrency_contracts
+15/69 Test #15: genetik_concurrency_contracts ...................   Passed    0.09 sec
+      Start 16: genetik_oop_parallel
+16/69 Test #16: genetik_oop_parallel ............................   Passed    0.01 sec
+      Start 17: genetik_repository_hygiene
+17/69 Test #17: genetik_repository_hygiene ......................   Passed    0.14 sec
+      Start 18: genetik_typed_contracts
+18/69 Test #18: genetik_typed_contracts .........................   Passed    0.03 sec
+      Start 19: genetik_typed_overlap
+19/69 Test #19: genetik_typed_overlap ...........................   Passed    0.01 sec
+      Start 20: genetik_typed_regression_contracts
+20/69 Test #20: genetik_typed_regression_contracts ..............   Passed    0.25 sec
+      Start 21: genetik_mixed_expression_contracts
+21/69 Test #21: genetik_mixed_expression_contracts ..............   Passed    0.24 sec
+      Start 22: genetik_mixed_expression_overlap
+22/69 Test #22: genetik_mixed_expression_overlap ................   Passed    0.00 sec
+      Start 23: genetik_mixed_multitu_contracts
+23/69 Test #23: genetik_mixed_multitu_contracts .................   Passed    0.00 sec
+      Start 24: genetik_typed_preparation_overlap
+24/69 Test #24: genetik_typed_preparation_overlap ...............   Passed    0.00 sec
+      Start 25: genetik_scientific_contracts
+25/69 Test #25: genetik_scientific_contracts ....................   Passed    0.05 sec
+      Start 26: genetik_parsing_contracts
+26/69 Test #26: genetik_parsing_contracts .......................   Passed    0.04 sec
+      Start 27: genetik_parsing_overlap
+27/69 Test #27: genetik_parsing_overlap .........................   Passed    0.01 sec
+      Start 28: genetik_template_contracts
+28/69 Test #28: genetik_template_contracts ......................   Passed    0.10 sec
+      Start 29: genetik_template_overlap
+29/69 Test #29: genetik_template_overlap ........................   Passed    0.01 sec
+      Start 30: genetik_derivative_contracts
+30/69 Test #30: genetik_derivative_contracts ....................   Passed    0.03 sec
+      Start 31: genetik_derivative_overlap
+31/69 Test #31: genetik_derivative_overlap ......................   Passed    0.01 sec
+      Start 32: genetik_derivative_regression_contracts
+32/69 Test #32: genetik_derivative_regression_contracts .........   Passed    0.04 sec
+      Start 33: genetik_derivative_regression_overlap
+33/69 Test #33: genetik_derivative_regression_overlap ...........   Passed    0.01 sec
+      Start 34: genetik_integral_contracts
+34/69 Test #34: genetik_integral_contracts ......................   Passed    0.11 sec
+      Start 35: genetik_integral_overlap
+35/69 Test #35: genetik_integral_overlap ........................   Passed    0.03 sec
+      Start 36: genetik_prime_exact_contracts
+36/69 Test #36: genetik_prime_exact_contracts ...................   Passed    0.02 sec
+      Start 37: genetik_prime_exact_overlap
+37/69 Test #37: genetik_prime_exact_overlap .....................   Passed    0.01 sec
+      Start 38: genetik_checkpoint_contracts
+38/69 Test #38: genetik_checkpoint_contracts ....................   Passed    9.66 sec
+      Start 39: genetik_checkpoint_overlap
+39/69 Test #39: genetik_checkpoint_overlap ......................   Passed    6.33 sec
+      Start 40: genetik_formatting_contracts
+40/69 Test #40: genetik_formatting_contracts ....................   Passed    0.01 sec
+      Start 41: genetik_checkpoint_process
+41/69 Test #41: genetik_checkpoint_process ......................   Passed    3.24 sec
+      Start 42: genetik_discrete_contracts
+42/69 Test #42: genetik_discrete_contracts ......................   Passed    0.15 sec
+      Start 43: genetik_discrete_overlap
+43/69 Test #43: genetik_discrete_overlap ........................   Passed    0.03 sec
+      Start 44: genetik_discrete_iteration_contracts
+44/69 Test #44: genetik_discrete_iteration_contracts ............   Passed    1.93 sec
+      Start 45: genetik_discrete_iteration_overlap
+45/69 Test #45: genetik_discrete_iteration_overlap ..............   Passed    0.53 sec
+      Start 46: genetik_discrete_prime_contracts
+46/69 Test #46: genetik_discrete_prime_contracts ................   Passed    3.48 sec
+      Start 47: genetik_discrete_prime_overlap
+47/69 Test #47: genetik_discrete_prime_overlap ..................   Passed    0.02 sec
+      Start 48: genetik_checkpoint_compatibility
+48/69 Test #48: genetik_checkpoint_compatibility ................   Passed    0.83 sec
+      Start 49: genetik_checkpoint_v04_compatibility
+49/69 Test #49: genetik_checkpoint_v04_compatibility ............   Passed    0.58 sec
+      Start 50: genetik_discrete_checkpoint_v04_compatibility
+50/69 Test #50: genetik_discrete_checkpoint_v04_compatibility ...   Passed    0.42 sec
+      Start 51: genetik_checkpoint_v05_compatibility
+51/69 Test #51: genetik_checkpoint_v05_compatibility ............   Passed    0.59 sec
+      Start 52: genetik_discrete_checkpoint_v05_compatibility
+52/69 Test #52: genetik_discrete_checkpoint_v05_compatibility ...   Passed    0.43 sec
+      Start 53: genetik_checkpoint_v06_compatibility
+53/69 Test #53: genetik_checkpoint_v06_compatibility ............   Passed    0.61 sec
+      Start 54: genetik_discrete_checkpoint_v06_compatibility
+54/69 Test #54: genetik_discrete_checkpoint_v06_compatibility ...   Passed    0.40 sec
+      Start 55: genetik_d5_iteration_contracts
+55/69 Test #55: genetik_d5_iteration_contracts ..................   Passed    0.91 sec
+      Start 56: genetik_d5_iteration_overlap
+56/69 Test #56: genetik_d5_iteration_overlap ....................   Passed    0.33 sec
+      Start 57: genetik_d5_integer_contracts
+57/69 Test #57: genetik_d5_integer_contracts ....................   Passed    0.18 sec
+      Start 58: genetik_d5_recurrence_contracts
+58/69 Test #58: genetik_d5_recurrence_contracts .................   Passed    2.38 sec
+      Start 59: genetik_d5_recurrence_overlap
+59/69 Test #59: genetik_d5_recurrence_overlap ...................   Passed    0.57 sec
+      Start 60: genetik_d5_scientific_contracts
+60/69 Test #60: genetik_d5_scientific_contracts .................   Passed    0.02 sec
+      Start 61: genetik_d5_scientific_overlap
+61/69 Test #61: genetik_d5_scientific_overlap ...................   Passed    0.00 sec
+      Start 62: genetik_d5_symbolic_contracts
+62/69 Test #62: genetik_d5_symbolic_contracts ...................   Passed    0.13 sec
+      Start 63: genetik_d5_symbolic_overlap
+63/69 Test #63: genetik_d5_symbolic_overlap .....................   Passed    0.00 sec
+      Start 64: genetik_d5_dimension_contracts
+64/69 Test #64: genetik_d5_dimension_contracts ..................   Passed   12.44 sec
+      Start 65: genetik_d5_dimension_overlap
+65/69 Test #65: genetik_d5_dimension_overlap ....................   Passed    0.01 sec
+      Start 66: genetik_d6_scientific_contracts
+66/69 Test #66: genetik_d6_scientific_contracts .................   Passed    0.24 sec
+      Start 67: genetik_d6_continuation
+67/69 Test #67: genetik_d6_continuation .........................   Passed    3.09 sec
+      Start 68: genetik_d6_overlap
+68/69 Test #68: genetik_d6_overlap ..............................   Passed    0.10 sec
+      Start 69: genetik_equation_archive_contracts
+69/69 Test #69: genetik_equation_archive_contracts ..............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 69
+
+Total Test time (real) = 576.80 sec

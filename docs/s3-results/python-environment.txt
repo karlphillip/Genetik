@@ -1,0 +1,38 @@
+Linux skynet-jr 6.8.12-1021-tegra #1 SMP PREEMPT Thu Jun 18 10:18:54 CST 2026 aarch64 aarch64 aarch64 GNU/Linux
+c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+cmake version 3.28.3
+Python 3.12.3
+Name: build
+Version: 1.2.2.post1
+Name: scikit_build_core
+Version: 0.10.7
+Name: pybind11
+Version: 2.13.6
+Name: genetik
+Version: 0.7.0
+Name: numpy
+Version: 1.26.4
+Name: lapack-lite
+Name: tempita
+Name: dragon4
+Name: libdivide
+Name: Meson
+Name: spin
+Name: lapack-lite
+Name: tempita
+Name: dragon4
+Name: libdivide
+Name: Meson
+Name: spin
+Name: OpenBLAS
+Name: LAPACK
+Name: GCC runtime library
+Name: libquadmath
+Name: scikit-learn
+Version: 1.5.2
+Name: sympy
+Version: 1.13.3
+Name: pandas
+Version: 2.2.3
+Name: pytest
+Version: 8.3.5

@@ -8,7 +8,7 @@ import tempfile
 ROOT_FILES = {'AGENTS.md', 'CHANGELOG.md', 'CMakeLists.txt', 'LICENSE', 'README.md', '.gitignore', 'pyproject.toml'}
 ROOT_DIRS = {'.git', '.github', 'apps', 'benchmarks', 'cmake', 'docs', 'examples',
              'genetik', 'scripts', 'tests', 'out', 'python', 'integrations'}
-WORKSPACE = {'Genetik', '.tools', 'delivery-tools', 'archive'}
+WORKSPACE = {'Genetik', '.tools', 'delivery-tools', 'archive', 'docs', 'examples', 'session.md'}
 OUTPUT_DIRS = {'build', 'install', 'consumers', 'runs', 'data', 'logs', 'tmp', 'cleanup'}
 # Retained D7 delivery assets/evidence predate the current role layout. They are
 # explicitly preserved, never used for new transient outputs, and not scanned.
@@ -47,7 +47,12 @@ def audit(source, workspace=False):
                 if name == 'scripts' and p.suffix == '.cpp':
                     errors.append(f'compiled application belongs in apps/ or benchmarks/: {p}')
     if workspace:
-        for p in sorted(source.parent.iterdir()):
+        workspace_root = next((
+            parent for parent in source.parents
+            if {'.tools', 'delivery-tools', 'archive', 'Genetik'} <=
+               {child.name for child in parent.iterdir()}
+        ), source.parent)
+        for p in sorted(workspace_root.iterdir()):
             if p.name not in WORKSPACE:
                 errors.append(f'unexpected parent-workspace entry: {p}')
     return errors
@@ -66,6 +71,12 @@ def self_test():
         (source / 'out' / 'build' / 'CMakeCache.txt').write_text('allowed output\n')
         (source / 'out' / 'release').mkdir()
         (source / 'out' / 'source-archive-check').mkdir()
+        (Path(tmp) / '.tools').mkdir()
+        (Path(tmp) / 'delivery-tools').mkdir()
+        (Path(tmp) / 'archive').mkdir()
+        (Path(tmp) / 'docs').mkdir()
+        (Path(tmp) / 'examples').mkdir()
+        (Path(tmp) / 'session.md').write_text('workspace note\n')
         assert not audit(source, True)
         (source / 'out' / 'probe.log').touch()
         assert any('unclassified output' in e for e in audit(source))

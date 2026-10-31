@@ -1,0 +1,25 @@
+S1 engineering evidence (2026-10-30)
+
+Release: complete CMake build passed. Full CTest: 105/105 passed in 458.07 s.
+This included strict floating-point policy, standalone public-header targets,
+multi-translation-unit checks, generic OOP, installed-package relocation and
+the D6 contracts/continuation.
+
+Focused genetik_advanced_regression_tests passed in Release, Debug,
+ASan+UBSan with ASAN_OPTIONS=detect_leaks=1, and TSan. This is targeted
+sanitizer/debug evidence, not a full sanitizer or Debug suite.
+After the final constant-fitter loss-bookkeeping correction, the affected
+Release contracts passed again: fitting, advanced regression, scalar
+checkpoint compatibility, and D6 continuation (4/4). The focused advanced
+test also passed again in Debug, ASan+UBSan, and TSan.
+
+The two-worker continuous/resumed LM test matched candidate expressions,
+fitness, training/refinement counters and optimizer work, and rejected a
+checkpoint restore under a different fitting method. Frozen S1 apps were run
+with seeds 701 and 709 and outputs are in the TSV files.
+
+CMake available in the environment was 3.28.3; exact 3.16 qualification was
+not available. The optional pybind11 extension was not built. Repository
+git diff --check passed. scripts/check_hygiene.py --workspace reported only
+pre-existing parent workspace entries outside Genetik: docs/, examples/, and
+session.md. Those paths were not modified.

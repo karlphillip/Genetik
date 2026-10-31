@@ -1,0 +1,87 @@
+{
+  "record": "Genetik M3 mixed numerical implementation qualification",
+  "date": "2026-10-29",
+  "starting_commit": "c8734fc8eef0088916eceb9586e4aec106a0f2c1",
+  "implementation_branch": "feature/mixed-numerical-expressions-m3",
+  "architecture": "bounded typed postfix MixedExpression; checked Int64 kernels reused from DiscreteExpression; checked Real64 kernels reused from Expression; generic GA is representation-independent",
+  "profile": "direct-integer-formula/1",
+  "numerical_policy": {
+    "int64_to_real64": "deterministic binary64 round-to-nearest ties-to-even; exact for magnitudes <= 2^53",
+    "real64_to_int64": "finite input in [-2^63,2^63); floor, ceil, truncate-toward-zero, or nearest-half-away-from-zero; checked before cast",
+    "real_arithmetic": "strict binary64, checked finite domains and configured magnitude limit; not exact real arithmetic",
+    "fitness": "mismatch count plus a strictly smaller than 0.5 normalized-error tie-break; invalid/resource-limited candidates are invalid fitness"
+  },
+  "synthetic_qualification": {
+    "target": "floor(1.15*n*ln(n) + 0.3*n + 2)",
+    "training_indices": "1..16",
+    "heldout_indices": "17..24; labels not exposed to search or selection",
+    "label_reference": "long double evaluation",
+    "seed": 37,
+    "population": 12,
+    "generations": 5,
+    "mutation_rate": 0.8,
+    "crossover_rate": 0.75,
+    "elite_count": 1,
+    "grammar_depth": 5,
+    "expression_limits": {
+      "nodes": 1023,
+      "depth": 64,
+      "operators_per_expression": 1000000,
+      "real_magnitude": 1e100
+    },
+    "problem_work_limits": {
+      "operators_per_row": 1000000,
+      "operators_per_candidate": 10000000
+    },
+    "best_formula": "iadd(x0, x0)",
+    "training_exact_matches": 3,
+    "training_count": 16,
+    "heldout_exact_matches": 0,
+    "heldout_count": 8,
+    "generations_committed": 5,
+    "result": "synthetic exact recovery not achieved; negative result retained"
+  },
+  "reachability": {
+    "fixed_seed": 37,
+    "generated_initial_candidates": 1000,
+    "observed": [
+      "Real64 constants",
+      "Int64-to-Real64 conversion",
+      "logarithms",
+      "powers",
+      "integer modulo",
+      "typed conditionals"
+    ],
+    "variation_fitness_cycles": 32,
+    "operators": ["typed subtree mutation", "same-type subtree crossover", "integer-output fitness"]
+  },
+  "checkpoint": {
+    "candidate_codec": "genetik.mixed-integer-candidate/1",
+    "expression_representation": "genetik.mixed-expression/1",
+    "continuous_vs_resume": "equal committed population expressions, fitness, best-seen archive, algorithm counters, candidate-attempt count, and MT19937 state after split at generation 2 and continuation to generation 5",
+    "workers": [1, 2, 4],
+    "worker_replay": "same-seed population and RNG state matched for each worker count"
+  },
+  "engineering_tests": {
+    "full_release_ctest": {"result": "passed", "passed": 102, "failed": 0, "seconds": 484.52, "scope_note": "The implementation was final. A subsequent synthetic run-identity fixture string added coefficient-fitting=disabled; the three mixed Release targets were rerun successfully afterward."},
+    "final_release_mixed_targets": {"result": "passed", "passed": 3, "failed": 0, "seconds": 0.08},
+    "debug_mixed_targets": {"result": "passed", "passed": 3, "failed": 0, "seconds": 0.24},
+    "asan_ubsan_mixed_targets": {"result": "passed", "passed": 3, "failed": 0, "seconds": 53.34},
+    "tsan_forced_overlap": {"result": "passed", "passed": 1, "failed": 0, "seconds": 0.03},
+    "cmake_3_16_mixed_targets": {"result": "passed", "passed": 3, "failed": 0, "seconds": 0.08},
+    "standalone_headers": "passed in full Release build",
+    "multi_translation_unit": "passed in Release, Debug, ASan+UBSan and CMake 3.16 targets",
+    "installed_relocated_mixed_header_consumer": "passed after copying the install prefix, deleting the original prefix, and compiling/running a two-translation-unit C++20 consumer",
+    "strict_floating_point": "passed in full Release suite",
+    "generic_oop_and_legacy_checkpoint_compatibility": "passed in full Release suite",
+    "repository_hygiene_ctest": "passed in full Release suite",
+    "workspace_hygiene_script": "reported pre-existing parent entries outside this repository: ../docs, ../examples, ../session.md; left untouched",
+    "python_binding": "not rebuilt; no Python binding sources or behavior were changed",
+    "trace_quiet_parity": "not applicable; no command-line application was added"
+  },
+  "prime_campaign": {
+    "launched": false,
+    "eligible_prime_formula_discovered": false,
+    "readiness": "mixed representation and generic evolution are qualified; campaign application, training-corpus adapter, and frozen global campaign budget remain to be prepared before a separate campaign authorization"
+  }
+}

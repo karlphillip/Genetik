@@ -1,0 +1,39 @@
+# S3 Mathematical Qualification
+
+## Source identity and inherited evidence
+
+S1 was implemented by `7e73bee` and S2 by `31c131b` on top of mixed-expression commit `6570ff4`. The S1 full Release result (105 tests) preceded its final fitter bookkeeping correction; the correction was followed by four affected Release checks and focused advanced-regression Debug, ASan+UBSan, and TSan checks. It is not a full final-tip run. S2's 73/73 Release run preceded its final constraint-boundary additions; the unchanged package consumer passed in that run and the 72-test remainder passed after the additions. These results are not combined as a single final-source suite.
+
+The inherited analytic derivative fixtures cover `a sin(bx+c)`, `a x^b`, `a exp(-bx)`, `a/(1+bx^2)`, and repeated `a sin(ax)`. The S1 record documents invalid logarithm and real-power domains, rank deficiency, and explicit unavailable derivatives. Parameter Jacobian assembly calls the scalar partial evaluator separately for each parameter; it is not single-pass differentiation. No finite-difference fallback is used for unsupported derivatives.
+
+The S1 fixed-topology comparison uses identical expression structures, datasets and initial values for coordinate and LM fitting. For the supplied fractional-power start, coordinate fitting recovered `[3.2000000000000064, 1.79375]` with training MSE `6.38398e-2` and held-out RMSE `0.2674`; LM recovered `[3.4999999999992455, 1.7000000000002276]` with training MSE `3.91662e-25` and held-out RMSE `6.63e-13`. On the sine, exponential and rational fixtures both methods recovered the supplied parameters to numerical tolerance; exact parameter vectors, training/held-out results, objective calls, row evaluations, mathematical/derivative/linear-algebra work, accepts/rejects, solve counts and runtimes are in `s1-results/fixed-structure.tsv`. D6 coupled-oscillator rows are included. These are supplied topologies, not structure discovery. The two-seed evolutionary comparison was mixed and LM selected poor structures in both seeds; coordinate fitting remains the default. Full measurements and retained failed/pre-correction launches are in `s1-results/`.
+
+S2's exact fixture independently establishes `floor(10 alpha)=16` and `floor(20 alpha)=32` as `[8/5,33/20)`. Exact endpoint analysis yields a closed lower endpoint and open upper endpoint; the independent `fractions.Fraction` implementation obtains the same intersection. Contracts cover canonical normalization, open/closed comparisons, interval intersection, contradictory observations, positive/negative/zero coefficients, shared Real64 identities, bounded shared-floor unions, resource exhaustion, unsupported/unknown results, binary64 witness selection and executable witness verification. The Wythoff topology matched 1,000 exact training and 200 exact held-out outputs, but this was fixed-structure parameter recovery. The executable uses and verifies a binary64 witness; rational feasibility alone does not imply representability. The solver is limited to its documented one-parameter affine and finite shared-floor fragment, not unrestricted nonlinear constraint solving.
+
+## S3 independent work
+
+An independent standard-library Python `fractions.Fraction` fixture reconstructs the two floor cells and their intersection without calling Genetik, asserting exactly `[8/5,33/20)` and checking both integer outputs. Its executable is `s3-results/independent_exact_interval.py`; captured output and hash are retained there. A separate SymPy derivation proves symbolic equality of the analytic Jacobians for all four required families and a repeated shared parameter; the C++ S1 fixture compares the implementation against those formulas. S3 adds C++ cases for the zero sine boundary, singular rational denominator, exponential overflow, unsupported active derivative and a deliberately exhausted operation budget. The S2 exact tests exercise the solver's bounded branching/resource statuses. The new output-only archive has focused deterministic contract coverage. No new mathematical kernel or optimizer was introduced.
+
+## Symbolic domain behavior
+
+The D5 fixture retains the executable expression `(x^2-1)/(x-1)` and emits a separate symbolic result `x+1` with the `NonZero(x-1)` assumption. Valid points away from the denominator root are tested; `x=1` remains excluded from the original domain. This establishes mathematical equivalence under the assumption, not bit-exact binary64 equivalence. Transformation status, assumptions, original/transformed expressions and structural complexity remain distinct. Transformation work/complexity limits are explicit; general rational-function simplification is unsupported.
+
+## Integrated candidate execution record
+
+The curated candidate is based on published `v0.6.0` with the M3 mixed evaluator, the minimal B2 shared-parameter value/evaluation/checkpoint API delta (three files only), only the M1 integer sqrt/root kernels and optional exact integer backend dependency, S1, S2 and the S3 archive. The exact S2 Wythoff test initially exposed the missing parameter-aware `MixedExpression` constructor/evaluation overloads; these were transplanted from B2 commit `e6046fe`, then the candidate’s Release, Debug, minimum-CMake, ASan+UBSan and TSan gates were rerun. B2 gap-search and evolutionary code remain excluded. The initial curated implementation passed 66/66 Release tests before S3 files were added. The corrected-source manifests pass Release 99/99 (examples enabled), Debug 69/69, CMake 3.16.0 Release 69/69, ASan+UBSan 69/69, and selected TSan 9/9. Boost 1.83 exact-constraint contracts passed 1/1 and its optional public headers compiled; optional LP64 LAPACK/OpenBLAS D6 numerical and installed-package checks passed 3/3. CPython 3.12.3 AArch64 wheel and Python sdist each passed 19/21 Python tests, with two platform-conditional skips. Per-configuration logs and CTest name manifests are retained in `s3-results/`; no historical S1/S2 totals are combined with these results. The equation archive has no live GA call site: it is called only by the offline contract test and consumes caller-supplied records after a run. Its API is separate from fitness, population, selection, mutation, crossover, RNG and checkpoint code; lifecycle parity follows this structural isolation, and no runtime toggle/performance claim is made. The exact final candidate and artifact identities are reported in the release-preparation handoff.
+
+The independent LM source review found two edge cases and the deterministic
+regression tests are retained in `tests/advanced_regression.cpp`: a successful
+trial could be followed by a Jacobian callback after the objective-call budget
+was spent, and a failed later Jacobian could be rewritten as `IterationLimit`.
+Implementation commit `b0b84e5ba5975bf2397e325469e0f45645486228` routes
+objective, trial and Jacobian calls through shared limit accounting, retains
+reported mathematical work on over-budget callbacks, and reports
+`IterationLimit` only after the configured loop is exhausted. The fixtures
+assert two objective callbacks for a two-call budget, preservation of initial
+mathematical-work exhaustion, `InvalidStart` after a failed later Jacobian, and
+rollback of invalid trial state. The focused test passed Release, Debug,
+ASan+UBSan and TSan. The complete Release suite passed 99/99. The six-job
+hosted matrix also passed at this implementation SHA; see
+`S3_RELEASE_PREPARATION.md` for run and artifact links. Coordinate fitting
+remains the default and successful fitting checks pass.

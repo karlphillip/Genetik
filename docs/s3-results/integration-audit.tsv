@@ -1,0 +1,12 @@
+order	category	candidate_commit	origin_commit	decision	dependency evidence
+0	Published baseline	3f0815c94f3ea5968233a01b95cf070ec7f71ae0	v0.6.0 tag	include	Starting source/API baseline
+1	Mixed numerical expressions	9b7ded1	6570ff456a16a2e4cd565560e5a2c8978f53b1fe	include M3	Mixed evaluator public API
+1a	Shared Real64 parameter value/evaluation infrastructure	e6046fe (three-file transplant)	e6046fe	include minimal delta	S1/S2 require parameter identities, explicit value vectors and evaluation overloads; omit B2 gap solver, evolutionary variation, campaigns and findings
+2	Required mathematical infrastructure	6de661f	ed0225e	include minimal delta	MixedExpression IntegerSqrt calls checked integerMath; only sqrt/root operator delta from DiscreteExpression/AdvancedInteger imported
+3	Required exact integer backend	5f8f384	ed0225e	include one header	BoundedRational includes BoundedBigInteger for optional Boost cpp_int exact fractions
+4	Parameter differentiation and optional LM	0c9af5f	7e73bee18e0660383d1dfeef7ba7e97323a41fc2	include S1	Requires M3 shared Real64 identities; coordinate fitting remains default
+5	Exact rational arithmetic, quantized constraints, domain-aware algebra	69c0a91	31c131b5b2e185ec82476e5b0b317af83bee3978	include S2	Requires M3 evaluator plus shared parameter value/evaluation delta and optional exact rational backend
+6	Mathematical-program research	—	M1/M2/M2.1	exclude	No source/API dependency from M3/S1/S2; absent from candidate tree and install export
+7	Prime and successor-discovery experiments	—	M1/B1/B1.1/B2	exclude	Research campaigns/apps excluded; original branches/evidence preserved; baseline v0.6 prime regression retained
+8	Research-only evolutionary strategies	—	M2/M2.1	exclude	No S1/S2 API dependency; original branches/evidence preserved
+9	Qualification and historical evidence	—	S1/S2 and 127 frozen evidence files	preserve	No historical commit, tag, branch or evidence inventory rewritten or removed

@@ -36,6 +36,8 @@ struct SymbolicRegressionResult {
     std::uint64_t attemptedGenerations = 0, publishedGenerations = 0, candidateEvaluations = 0;
     VariationStatistics variation;
     TrainingWork trainingWork;
+    RegressionSupplementalWork supplementalWork;
+    LMWork optimizerWork;
     PreparationStatistics preparationWork;
     TrainingWork initialWork;
     std::vector<std::string> preparedInitialExpressions;
@@ -151,6 +153,8 @@ inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const Regressi
     result.best = population.bestSeen(); result.bestGeneration = population.bestGeneration();
     result.attemptedGenerations = ga.attempts(); result.publishedGenerations = ga.evolutions();
     result.trainingWork = objective->work();
+    result.supplementalWork=objective->supplementalWork();
+    result.optimizerWork=preparation->optimizerWork();
     result.preparationWork=preparation->statistics();
     result.unpublishedLossAttempts=result.trainingWork.lossAttempts-committedLosses;
     result.unpublishedRowAttempts=result.trainingWork.rowAttempts-committedRows;

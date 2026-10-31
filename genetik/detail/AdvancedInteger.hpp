@@ -7,7 +7,7 @@
 #include <string_view>
 #include <stdexcept>
 namespace genetik_discrete_detail {
-enum class IntegerOperation { Divide, Gcd, Lcm, Power, ModularPower, Factorial, Binomial };
+enum class IntegerOperation { Divide, Gcd, Lcm, Power, ModularPower, Factorial, Binomial, Sqrt, Root };
 struct IntegerOperatorDescription {
     IntegerOperation operation;
     std::string_view name;
@@ -20,7 +20,9 @@ inline constexpr std::array integerOperators{
     IntegerOperatorDescription{IntegerOperation::Power, "integer_power", 2},
     IntegerOperatorDescription{IntegerOperation::ModularPower, "modular_power", 3},
     IntegerOperatorDescription{IntegerOperation::Factorial, "factorial", 1},
-    IntegerOperatorDescription{IntegerOperation::Binomial, "binomial", 2}};
+    IntegerOperatorDescription{IntegerOperation::Binomial, "binomial", 2},
+    IntegerOperatorDescription{IntegerOperation::Sqrt, "isqrt", 1},
+    IntegerOperatorDescription{IntegerOperation::Root, "iroot", 2}};
 inline std::uint64_t integerMagnitude(std::int64_t a) {
     return a < 0 ? std::uint64_t(-(a + 1)) + 1 : static_cast<std::uint64_t>(a);
 }
@@ -176,6 +178,52 @@ std::optional<std::int64_t> integerMath(IntegerOperation op, std::int64_t a, std
             result *= x;
         }
         return static_cast<std::int64_t>(result);
+    }
+    case IntegerOperation::Sqrt: {
+        if (a < 0)
+            return {};
+        // Binary search in [0, floor(sqrt(INT64_MAX))+1). Division avoids
+        // overflowing a candidate square and never rounds through floating point.
+        std::uint64_t low = 0, high = 3037000500ULL;
+        const auto n = static_cast<std::uint64_t>(a);
+        while (low + 1 < high) {
+            charge();
+            const auto mid = low + (high - low) / 2;
+            if (mid <= n / mid)
+                low = mid;
+            else
+                high = mid;
+        }
+        return static_cast<std::int64_t>(low);
+    }
+    case IntegerOperation::Root: {
+        if (a < 0 || b <= 0)
+            return {};
+        const auto n = static_cast<std::uint64_t>(a);
+        if (n <= 1 || b == 1)
+            return a;
+        if (b >= 63)
+            return 1;
+        const auto atMost = [&](std::uint64_t base) {
+            std::uint64_t product = 1;
+            for (std::int64_t i = 0; i < b; ++i) {
+                charge();
+                if (base && product > n / base)
+                    return false;
+                product *= base;
+            }
+            return product <= n;
+        };
+        std::uint64_t low = 1, high = n;
+        while (low + 1 < high) {
+            charge();
+            const auto mid = low + (high - low) / 2;
+            if (atMost(mid))
+                low = mid;
+            else
+                high = mid;
+        }
+        return static_cast<std::int64_t>(low);
     }
     }
     throw std::invalid_argument("unknown integer operation");

@@ -39,6 +39,17 @@ void contracts() {
     for (auto a : simplified.expression->assumptions())
         nonzero |= a.kind == SymbolicAssumptionKind::NonZero;
     check(nonzero && !simplified.bitExactExecutableEquivalence, "nonzero obligation retained");
+    auto quotient=symbolic("(powi(x0,2)-1)/(x0-1)").simplify();
+    check(quotient.status==SymbolicStatus::Success&&quotient.expression->toString()=="+(x0,1)",
+          "domain-aware difference-of-squares cancellation");
+    bool denominatorDomain=false;
+    for(auto a:quotient.expression->assumptions())denominatorDomain|=a.kind==SymbolicAssumptionKind::NonZero;
+    check(denominatorDomain&&!quotient.bitExactExecutableEquivalence,
+          "symbolic quotient carries x!=1 obligation and makes no bit-exact claim");
+    auto originalQuotient=parseExpression("(powi(x0,2)-1)/(x0-1)",1);
+    auto transformedQuotient=quotient.expression->toExecutable().expression;
+    for(double x:{-3.,-1.,0.,2.,4.}){auto lhs=originalQuotient.evaluate(std::array{x}),rhs=transformedQuotient.evaluate(std::array{x});check(lhs.valid()&&rhs.valid()&&lhs.value()==rhs.value(),"domain-restricted quotient agrees with transformed expression");}
+    check(!originalQuotient.evaluate(std::array{1.}).valid()&&transformedQuotient.evaluate(std::array{1.}).valid(),"transformation preserves a nonzero-domain obligation rather than claiming equivalence at the pole");
     check(!symbolic("(x0+1)*(x0+1)").commonSubexpressions().empty(),
           "collision-free common structure identification");
     const std::array<std::pair<const char *, double>, 25> cases{

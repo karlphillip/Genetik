@@ -1,0 +1,35 @@
+Host
+Linux skynet-jr 6.8.12-1021-tegra #1 SMP PREEMPT Thu Jun 18 10:18:54 CST 2026 aarch64 aarch64 aarch64 GNU/Linux
+Architecture:                            aarch64
+CPU(s):                                  8
+On-line CPU(s) list:                     0-7
+Vendor ID:                               ARM
+Model name:                              Cortex-A78AE
+Thread(s) per core:                      1
+Core(s) per cluster:                     8
+Socket(s):                               -
+CPU(s) scaling MHz:                      76%
+NUMA node0 CPU(s):                       0-7
+
+NVIDIA platform
+# R39 (release), REVISION: 2.0, GCID: 45755727, BOARD: generic, EABI: aarch64, DATE: Mon Jun  1 09:28:48 PM UTC 2026
+# KERNEL_VARIANT: oot
+TARGET_USERSPACE_LIB_DIR=nvidia
+TARGET_USERSPACE_LIB_DIR_PATH=usr/lib/aarch64-linux-gnu/nvidia
+
+Python
+Python 3.12.3
+
+C++ build
+c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+
+Benchmark environments
+julia version 1.10.3
+Name: pysr
+Version: 2.7.2
+Name: pyoperon
+Version: 0.6.2
+82b5f5e3878bc2035aa96730adf82354a3bee1b1950299deb489b6f31310b732  out/tmp/d7/julia-project-1103/Project.toml
+d5a286d5926b088ed4a3935c59750ab6fbedd7b57486c33cfee16c9e2605140d  out/tmp/d7/julia-project-1103/Manifest.toml
+
+PyOperon core pinned in docs/d7/run_operon.py: core_commit": "fad10f087c592812b1a9ecfabce669f37bf459f7

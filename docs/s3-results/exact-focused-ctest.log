@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/build/s3-exact
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/build/s3-exact
+    Start 9: genetik_s2_exact_constraint_contracts
+1/1 Test #9: genetik_s2_exact_constraint_contracts ...   Passed    0.01 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.01 sec

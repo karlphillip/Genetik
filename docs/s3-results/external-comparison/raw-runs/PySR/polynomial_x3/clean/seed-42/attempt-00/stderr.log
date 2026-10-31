@@ -1,0 +1,8 @@
+
+[2908781] signal (15): Terminated
+in expression starting at none:0
+deg2_l0_r0_eval at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/DynamicExpressions/Ah0kD/src/Evaluate.jl:875
+macro expansion at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/DynamicExpressions/Ah0kD/src/Evaluate.jl:518 [inlined]
+dispatch_deg2_eval at /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/d7/julia-depot/packages/DynamicExpressions/Ah0kD/src/Evaluate.jl:489
+unknown function (ip: (nil))
+Allocations: 169174632 (Pool: 169130670; Big: 43962); GC: 151

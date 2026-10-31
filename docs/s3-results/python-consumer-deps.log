@@ -1,0 +1,42 @@
+Collecting numpy==1.26.4
+  Using cached numpy-1.26.4-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl.metadata (62 kB)
+Collecting scikit-learn==1.5.2
+  Using cached scikit_learn-1.5.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl.metadata (13 kB)
+Collecting sympy==1.13.3
+  Using cached sympy-1.13.3-py3-none-any.whl.metadata (12 kB)
+Collecting pytest==8.3.5
+  Using cached pytest-8.3.5-py3-none-any.whl.metadata (7.6 kB)
+Collecting scipy>=1.6.0 (from scikit-learn==1.5.2)
+  Using cached scipy-1.18.1-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl.metadata (62 kB)
+Collecting joblib>=1.2.0 (from scikit-learn==1.5.2)
+  Using cached joblib-1.6.0-py3-none-any.whl.metadata (6.5 kB)
+Collecting threadpoolctl>=3.1.0 (from scikit-learn==1.5.2)
+  Using cached threadpoolctl-3.7.0-py3-none-any.whl.metadata (24 kB)
+Collecting mpmath<1.4,>=1.1.0 (from sympy==1.13.3)
+  Using cached mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+Collecting iniconfig (from pytest==8.3.5)
+  Using cached iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+Collecting packaging (from pytest==8.3.5)
+  Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Collecting pluggy<2,>=1.5 (from pytest==8.3.5)
+  Using cached pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+Collecting cloudpickle>=3.0 (from joblib>=1.2.0->scikit-learn==1.5.2)
+  Using cached cloudpickle-3.1.2-py3-none-any.whl.metadata (7.1 kB)
+INFO: pip is looking at multiple versions of scipy to determine which version is compatible with other requirements. This could take a while.
+Collecting scipy>=1.6.0 (from scikit-learn==1.5.2)
+  Using cached scipy-1.18.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl.metadata (62 kB)
+  Using cached scipy-1.17.1-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl.metadata (62 kB)
+Using cached numpy-1.26.4-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (13.9 MB)
+Using cached scikit_learn-1.5.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (12.1 MB)
+Using cached sympy-1.13.3-py3-none-any.whl (6.2 MB)
+Using cached pytest-8.3.5-py3-none-any.whl (343 kB)
+Using cached joblib-1.6.0-py3-none-any.whl (306 kB)
+Using cached mpmath-1.3.0-py3-none-any.whl (536 kB)
+Using cached pluggy-1.7.0-py3-none-any.whl (27 kB)
+Using cached scipy-1.17.1-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (32.9 MB)
+Using cached threadpoolctl-3.7.0-py3-none-any.whl (26 kB)
+Using cached iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+Using cached packaging-26.3-py3-none-any.whl (129 kB)
+Using cached cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+Installing collected packages: mpmath, threadpoolctl, sympy, pluggy, packaging, numpy, iniconfig, cloudpickle, scipy, pytest, joblib, scikit-learn
+Successfully installed cloudpickle-3.1.2 iniconfig-2.3.1 joblib-1.6.0 mpmath-1.3.0 numpy-1.26.4 packaging-26.3 pluggy-1.7.0 pytest-8.3.5 scikit-learn-1.5.2 scipy-1.17.1 sympy-1.13.3 threadpoolctl-3.7.0

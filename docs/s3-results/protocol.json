@@ -1,0 +1,19 @@
+{
+  "milestone": "S3",
+  "status": "frozen inherited protocols; new comparative runs not launched",
+  "seed": "See immutable S1, S2 and D7 protocol identities; no post-result seed selection",
+  "categories": {
+    "A_mathematical_correctness": ["S1 analytic Jacobian fixtures", "S2 exact interval and witness fixtures", "D5 symbolic domain fixture"],
+    "B_fixed_structure_fitting": ["S1 coordinate versus optional LM", "S1 D6 coupled oscillator", "S2 Wythoff 1000/200 exact split"],
+    "C_autonomous_discovery": ["S1 two-seed coordinate/LM comparison", "D7 108-run PySR/PyOperon/Genetik matrix"]
+  },
+  "external_competitors": {
+    "PySR": "2.7.2; SymbolicRegression.jl 2.7.2; see docs/d7/BENCHMARK_PROTOCOL.md",
+    "PyOperon": "0.6.2; core fad10f087c592812b1a9ecfabce669f37bf459f7; see docs/d7/BENCHMARK_PROTOCOL.md"
+  },
+  "limitations": [
+    "D7 external comparison was measured on its recorded 0.5.0 candidate source, not the S1/S2 source SHA.",
+    "No new S3-specific external run has been launched.",
+    "Exact quantized constraints have no fair competitor comparison in the retained matrix."
+  ]
+}

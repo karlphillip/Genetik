@@ -133,10 +133,10 @@ shutil.rmtree(producer);shutil.rmtree(build)
 assert not producer.exists() and not build.exists() and src.is_dir()
 consume(prefix_b,'relocated consumer build')
 no_version=consume(prefix_b,'no version',('-DREQUEST_NO_VERSION=ON',),False)
-if (no_version/'resolved.txt').read_text().splitlines()[1]!='0.6.0':
+if (no_version/'resolved.txt').read_text().splitlines()[1]!='0.7.0':
     raise RuntimeError('package version metadata missing without version request')
-consume(prefix_b,'exact version',('-DREQUEST_VERSION=0.6.0','-DREQUEST_EXACT=ON'),False)
-for version in ['0.1.0','0.1.99','0.2.0','0.2.99','0.3.0','0.3.99','0.4.0','0.4.99','0.5.0','0.5.99','1.0']:
+consume(prefix_b,'exact version',('-DREQUEST_VERSION=0.7.0','-DREQUEST_EXACT=ON'),False)
+for version in ['0.1.0','0.1.99','0.2.0','0.2.99','0.3.0','0.3.99','0.4.0','0.4.99','0.5.0','0.5.99','0.6.0','1.0']:
     consume(prefix_b,'rejected '+version,(f'-DREQUEST_VERSION={version}',),False,True)
 message=consume(prefix_b,'required component',('-DREQUEST_COMPONENT=imaginary',),False,True)
 if 'unsupported Genetik component' not in message:raise RuntimeError('unclear component diagnostic')

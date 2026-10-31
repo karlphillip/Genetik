@@ -1,0 +1,18 @@
+tests/equation_archive.cpp:1:#include <EquationArchive.hpp>
+tests/equation_archive.cpp:7:    EquationArchive a({3});
+tests/equation_archive.cpp:20:    EquationArchive replay({3});
+tests/equation_archive.cpp:25:    EquationArchive b({2});
+tests/equation_archive.cpp:32:    try { EquationArchive tiny({2, 8, 8}); tiny.insert({1, 1, true, 0, 0, "too-long", "too-long", ""}); }
+genetik/EquationArchive.hpp:18:struct EquationRecord {
+genetik/EquationArchive.hpp:29:struct EquationArchiveLimits {
+genetik/EquationArchive.hpp:39:class EquationArchive {
+genetik/EquationArchive.hpp:41:    explicit EquationArchive(EquationArchiveLimits limits = {}) : limits_(limits) {
+genetik/EquationArchive.hpp:46:    void insert(EquationRecord record) {
+genetik/EquationArchive.hpp:65:    const std::vector<EquationRecord>& records() const noexcept { return records_; }
+genetik/EquationArchive.hpp:87:    static std::size_t textBytes(const EquationRecord& r) noexcept {
+genetik/EquationArchive.hpp:102:    static bool dominates(const EquationRecord& a, const EquationRecord& b) noexcept {
+genetik/EquationArchive.hpp:105:    static bool order(const EquationRecord& a, const EquationRecord& b) noexcept {
+genetik/EquationArchive.hpp:110:    static bool betterRecord(const EquationRecord& a, const EquationRecord& b) noexcept {
+genetik/EquationArchive.hpp:132:    EquationArchiveLimits limits_;
+genetik/EquationArchive.hpp:133:    std::vector<EquationRecord> records_;
+tests/CMakeLists.txt:71:foreach(header EquationArchive ParameterDerivatives LevenbergMarquardt ScientificLevenbergMarquardt MixedExpression MixedRegression MixedIntegerCheckpoint DiscreteExpression DiscreteExpressionParsing DiscreteExpressionFormatting DiscreteRegression DiscreteVariation DiscreteSymbolicRegression DiscreteExpressionCheckpoint DiscreteRunCheckpoint IntegerRecurrence SymbolicAlgebra PhysicalDimensions DimensionalRegression MathematicalConstraints ScalarMathematicsRun Version RunCheckpoint ScalarExpressionCheckpoint ExpressionFormatting IntegralExpression IntegralRegression DerivativeRegression ExpressionDerivative ScalarExpressionTemplate ScalarTemplateRegression ExpressionParsing TypedExpressionParsing TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting)

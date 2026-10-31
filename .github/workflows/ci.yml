@@ -131,6 +131,51 @@ jobs:
               fi
             fi
           done
+      - name: Upload native qualification diagnostics
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: native-${{ matrix.name }}
+          retention-days: 14
+          path: ${{ runner.temp }}/genetik-qualification
+
+  optional-math:
+    name: gcc13-x64-optional-math
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CC: gcc-13
+      CXX: g++-13
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install optional mathematical dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends libboost-dev libopenblas-dev
+      - name: Configure optional exact rational and LP64 numerical features
+        run: >-
+          cmake -S . -B out/build/optional-math -DCMAKE_BUILD_TYPE=Release
+          -DGENETIK_WARNINGS_AS_ERRORS=ON -DBUILD_TESTING=ON
+          -DGENETIK_BUILD_TESTS=ON -DGENETIK_BUILD_EXAMPLES=OFF
+          -DGENETIK_BUILD_EXACT_RATIONAL_TESTS=ON -DGENETIK_SCIENTIFIC_NUMERICS=ON
+          -DGENETIK_RECORDED_REFERENCE=OFF
+      - name: Compile optional contracts and standalone headers
+        run: cmake --build out/build/optional-math -j2
+      - name: Run exact rational and optional numerical package contracts
+        run: >-
+          cmake -E chdir out/build/optional-math ctest --output-on-failure
+          -R 'genetik_s2_exact_constraint_contracts|genetik_d6_scientific_contracts|genetik_d6_continuation|genetik_d6_optional_package'
+      - name: Upload optional dependency diagnostics
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: optional-math-gcc13-x64
+          retention-days: 14
+          path: |
+            out/build/optional-math/CMakeCache.txt
+            out/build/optional-math/Testing/Temporary
 
   python-cp312:
     name: python-cp312-${{ matrix.arch }}
@@ -158,6 +203,12 @@ jobs:
           gcc --version
           ldd --version | head -1
           python -m pip debug --verbose | head -35
+      - name: Build source archive from the exact candidate commit
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir -p out/sources/i2
+          git archive --format=tar --prefix=Genetik-0.7.0/ "$GITHUB_SHA" | gzip -n > out/sources/i2/Genetik-0.7.0-source.tar.gz
+          sha256sum out/sources/i2/Genetik-0.7.0-source.tar.gz | tee out/sources/i2/SHA256SUMS
       - name: Install pinned Python qualification dependencies
         run: |
           python -m venv "$RUNNER_TEMP/i2-python"
@@ -186,7 +237,7 @@ jobs:
               assert len(metadata_paths) == 1, metadata_paths
               metadata = Parser().parsestr(wheel.read(metadata_paths[0]).decode("utf-8"))
           assert metadata["Name"] == "genetik"
-          assert metadata["Version"] == "0.6.0"
+          assert metadata["Version"] == "0.7.0"
           assert SpecifierSet(metadata["Requires-Python"]) == SpecifierSet(">=3.12,<3.13")
           print("Validated wheel metadata:", metadata["Name"], metadata["Version"], metadata["Requires-Python"])
           PY
@@ -239,7 +290,7 @@ jobs:
           PYTHONPYCACHEPREFIX: ${{ github.workspace }}/out/tmp/python-cache
         run: |
           "$RUNNER_TEMP/i2-python/bin/python" -m build --sdist --no-isolation --outdir out/sdist/i2
-          "$RUNNER_TEMP/i2-python/bin/python" -m pip install --force-reinstall --no-build-isolation --no-deps out/sdist/i2/genetik-0.6.0.tar.gz
+          "$RUNNER_TEMP/i2-python/bin/python" -m pip install --force-reinstall --no-build-isolation --no-deps out/sdist/i2/genetik-0.7.0.tar.gz
           "$RUNNER_TEMP/i2-python/bin/python" -m pytest -p no:cacheprovider tests/python
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/i2-python/bin/python" - <<'PY'
@@ -252,6 +303,12 @@ jobs:
           "$RUNNER_TEMP/i2-python/bin/python" "$GITHUB_WORKSPACE/examples/python/quickstart.py"
       - name: Retain Python qualification artifacts
         if: always()
+        run: |
+          mkdir -p out/qualification/i2
+          find out/wheels/i2 out/sdist/i2 out/sources/i2 -maxdepth 1 -type f -print0 2>/dev/null | sort -z | xargs -0 -r sha256sum > out/qualification/i2/SHA256SUMS
+          cat out/qualification/i2/SHA256SUMS
+      - name: Upload Python and source qualification artifacts
+        if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: python-cp312-${{ matrix.arch }}
@@ -259,6 +316,9 @@ jobs:
           path: |
             out/wheels/i2/*.whl
             out/sdist/i2/*.tar.gz
+            out/sources/i2/Genetik-0.7.0-source.tar.gz
+            out/sources/i2/SHA256SUMS
+            out/qualification/i2/SHA256SUMS
             out/build/i2-python-reference/CMakeCache.txt
             out/tmp/srbench-results/*.json
       - name: Retain failure diagnostics

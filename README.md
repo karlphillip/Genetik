@@ -12,11 +12,13 @@ It is heuristic search, with no guarantee of a good fit, a particular equation o
 extrapolation accuracy. Prime regression is one application example.
 
 The library uses only the C++ standard library by default and is [MIT licensed](LICENSE).
-Published releases through **0.5.0** and their assets remain unchanged. The
-**0.6.0 development pre-release candidate** adds optional native Python access to
-the established C++ symbolic-regression engine, including NumPy input,
-`GenetikRegressor`, SymPy export and a local SRBench adapter. It does not add a
-search algorithm or change search defaults. It also includes the opt-in
+Published releases through **0.6.0** and their assets remain unchanged. The
+provisional **0.7.0 development pre-release candidate** integrates shared
+parameter derivatives, optional Levenberg–Marquardt fitting, bounded exact
+quantized constraints, domain-aware symbolic assumptions, and an output-only
+accuracy–complexity equation archive. Coordinate fitting and generic GA defaults
+remain unchanged. The candidate also retains optional native Python access with
+NumPy input, `GenetikRegressor`, SymPy export and a local SRBench adapter. It also includes the opt-in
 [D5 advanced mathematics](docs/ADVANCED_MATHEMATICS_D5.md) and
 [D6 scientific discovery](docs/SCIENTIFIC_DISCOVERY_D6.md): checked integer
 math and recurrences, symbolic algebra, dimensions and constraints, coupled
@@ -24,12 +26,17 @@ equation systems, supplied-observation ODE/PDE residuals, bounded matrices and
 tensors, restricted complex regression, statistics, probability and special
 functions. Established GA defaults and generic OOP use cases remain supported.
 Python is optional; local wheel qualification is Linux AArch64/CPython 3.12,
-with x86-64/CPython 3.12 reserved for the proposed hosted matrix. See
+and hosted wheel qualification has passed on Ubuntu 24.04 with CPython 3.12 on
+both x86-64 and AArch64. Other Python versions and operating systems remain
+unqualified. See
 [I2 Python interoperability](docs/I2_PYTHON_INTEROPERABILITY.md),
-[0.6.0 notes](docs/releases/0.6.0/NOTES.md), [migration](docs/I2_MIGRATION.md),
+[0.7.0 notes](docs/releases/0.7.0/NOTES.md), [migration](docs/I2_MIGRATION.md),
 [D7 numerical boundaries](docs/D7_NUMERICAL_QUALIFICATION.md), and
 [historical benchmark report](docs/d7/BENCHMARK_REPORT.md). This candidate is
-local and unpublished; hosted qualification and publication are separate actions.
+hosted-qualified and unpublished; integration and publication are separate actions.
+The qualification branch is `qualification/scientific-regression-s3`; its current
+implementation commit and hosted run are recorded in
+[S3 release preparation](docs/S3_RELEASE_PREPARATION.md).
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
 
@@ -70,19 +77,19 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
 
-Obtain the source (use `--branch v0.5.0` for the published checkpoint, or
-`--branch qualification/python-interoperability-i2` for this local release candidate):
+Obtain the source (use `--branch v0.6.0` for the published checkpoint, or
+`--branch qualification/scientific-regression-s3` for this 0.7.0 development candidate):
 
 ```sh
 git clone https://github.com/karlphillip/Genetik.git Genetik
 cd Genetik
-git switch qualification/python-interoperability-i2
+git switch qualification/scientific-regression-s3
 ```
 
-For published 0.5.0, use its verified source archive and enter `Genetik-0.5.0/`.
-The D5/D6 APIs in this candidate require the 0.5.0 release baseline. The
-commands below describe that source tree; older release archives retain their
-own package versions and instructions.
+For published 0.6.0, use its verified source archive and enter `Genetik-0.6.0/`.
+This candidate builds on v0.6.0; D5/D6 APIs first appeared in the 0.5.0 series.
+The commands below describe the 0.7.0 candidate tree; older release archives
+retain their own package versions and instructions.
 From the corresponding source root, install and build the available programs:
 
 ```sh
@@ -104,7 +111,7 @@ The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a comp
 consumer. In your application, enable CXX and use:
 
 ```cmake
-find_package(Genetik 0.6 CONFIG REQUIRED)
+find_package(Genetik 0.7 CONFIG REQUIRED)
 add_executable(application main.cpp)
 target_link_libraries(application PRIVATE Genetik::Genetik)
 ```
@@ -305,7 +312,8 @@ uses the generic state seams and scalar-expression codec without prime dependenc
 
 Optional discrete modules: [D1](docs/DISCRETE_EXPRESSIONS.md), [D2](docs/DISCRETE_ITERATION.md), [D3 results](docs/DISCRETE_D3_RESULTS.md). They do not replace the generic OOP engine.
 
-Current candidate: [Genetik 0.6.0 development pre-release notes](docs/releases/0.6.0/NOTES.md),
-[migration guide](docs/I2_MIGRATION.md),
-[I2 qualification](docs/I2_QUALIFICATION.md), and
-[hosted qualification proposal](docs/I2_HOSTED_QUALIFICATION_PROPOSAL.md).
+Current candidate: [Genetik 0.7.0 development pre-release notes](docs/releases/0.7.0/NOTES.md),
+[S3 migration guide](docs/S3_MIGRATION.md),
+[S3 mathematical qualification](docs/S3_MATHEMATICAL_QUALIFICATION.md),
+[S3 benchmark findings](docs/S3_SCIENTIFIC_BENCHMARKS.md), and
+[release preparation and hosted artifacts](docs/S3_RELEASE_PREPARATION.md).

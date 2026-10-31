@@ -1,0 +1,30 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "0",
+    "out/build/s3-benchmark/run_genetik",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/preflight/neutral-linear-smoke.csv",
+    "42",
+    "60"
+  ],
+  "cwd": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated",
+  "cpu_affinity": [
+    0
+  ],
+  "worker_env": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "wall_cap_seconds": 180.0,
+  "memory_cap_gib": 6.0,
+  "outcome": "completed",
+  "exit_code": 0,
+  "wall_seconds": 3.0892428641673177,
+  "cpu_seconds": 2.72,
+  "peak_rss_gib": 0.00435638427734375,
+  "peak_process_threads": 2,
+  "stdout": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/preflight/Genetik/engineering_smoke/clean/seed-42/attempt-00/stdout.log",
+  "stderr": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/preflight/Genetik/engineering_smoke/clean/seed-42/attempt-00/stderr.log"
+}

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.0 — Advanced Scientific Regression Development Pre-release (provisional)
+
+- Add optional shared-parameter derivatives and Levenberg–Marquardt fitting;
+  keep coordinate fitting as the default.
+- Add optional exact rational quantized constraints for a bounded mathematical
+  fragment and preserve domain assumptions in symbolic simplification.
+- Add the output-only bounded accuracy–complexity Pareto equation archive.
+- Preserve explicit forward checkpoint readers for published scalar/discrete
+  0.6.0 data while keeping generic loading exact-version.
+- Record mathematical qualification, historical benchmark evidence, explicit
+  limitations and release preparation in the S3 reports. This is a local
+  development candidate; hosted qualification and publication require separate
+  authorization.
+
 ## 0.6.0 — Python interoperability development pre-release candidate
 
 - Add an optional pybind11 extension and Python-independent C++ facade over the

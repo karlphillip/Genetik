@@ -26,7 +26,7 @@ int main(int argc,char** argv){try{
     CheckpointReader r(d.payload);RandomCheckpoint random;random.seed=static_cast<std::uint32_t>(r.integer());random.threads=static_cast<unsigned>(r.integer());random.candidateAttempts=r.integer();random.engine=r.text();AlgorithmCheckpoint algorithm;algorithm.attempts=r.integer();algorithm.published=static_cast<unsigned>(r.integer());algorithm.lastOutcome=static_cast<GenerationOutcome>(r.integer());auto stats=readVariationStatistics(r);auto state=readCommittedPopulation<ExpressionCandidate>(r,ScalarCheckpointContext{p,{}});r.finish();
     RandomContext rng(41,ExecutionConfig{2});auto population=RunCheckpointAccess::restorePopulation<ExpressionCandidate,RegressionOrdering>(state,rng);A a(.9,.35,rng,variation(p),1);RunCheckpointAccess::restoreRandom(rng,random);RunCheckpointAccess::restoreAlgorithm(a,algorithm);a.variation().restoreStatistics(stats);for(int n=3;n<8;++n)if(a.evolve(*population)!=GenerationOutcome::Committed)throw std::runtime_error("v0.5 imported continuation failed");
     std::ifstream expected(root/"expected-v05.bin",std::ios::binary);std::string bytes((std::istreambuf_iterator<char>(expected)),{});if(payload(*population,a,rng)!=bytes)throw std::runtime_error("v0.5 imported trajectory differs");
-    std::cout<<"published0.5 producer ->0.6 consumer: population, fitness, archive, RNG, counters and continued trajectory exact\n";
+    std::cout<<"published0.5 producer ->0.7 consumer: population, fitness, archive, RNG, counters and continued trajectory exact\n";
 #endif
     return 0;
 }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

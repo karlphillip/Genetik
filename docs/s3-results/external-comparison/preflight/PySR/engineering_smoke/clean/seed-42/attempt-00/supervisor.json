@@ -1,0 +1,37 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "0",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/tmp/d7/venvs/pysr/bin/python",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/docs/d7/run_pysr.py",
+    "--seed",
+    "42",
+    "--task",
+    "engineering_smoke",
+    "--track",
+    "clean",
+    "--output-directory",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/preflight/PySR/engineering_smoke/clean/seed-42/attempt-00/pysr-artifacts",
+    "--preflight"
+  ],
+  "cwd": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated",
+  "cpu_affinity": [
+    0
+  ],
+  "worker_env": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "wall_cap_seconds": 180.0,
+  "memory_cap_gib": 6.0,
+  "outcome": "completed",
+  "exit_code": 0,
+  "wall_seconds": 158.45938284206204,
+  "cpu_seconds": 106.81,
+  "peak_rss_gib": 0.8722419738769531,
+  "peak_process_threads": 5,
+  "stdout": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/preflight/PySR/engineering_smoke/clean/seed-42/attempt-00/stdout.log",
+  "stderr": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/preflight/PySR/engineering_smoke/clean/seed-42/attempt-00/stderr.log"
+}

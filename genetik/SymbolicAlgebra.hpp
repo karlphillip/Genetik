@@ -655,7 +655,24 @@ inline SymbolicTransformResult SymbolicExpression::simplify(SymbolicLimits limit
             const auto constant = [&](std::size_t id, std::int64_t value) {
                 return b.nodes[id].kind == K::Constant && b.nodes[id].value == ExactRational(value);
             };
-            if ((n.kind == K::Add || n.kind == K::Subtract) && constant(c, 0))
+            // Exact difference-of-squares cancellation. The quotient is x+1
+            // only on the original denominator domain x!=1; keep that proof
+            // obligation attached to the transformed DAG.
+            if (n.kind == K::Divide && b.nodes[a].kind == K::Subtract &&
+                     b.nodes[c].kind == K::Subtract) {
+                const auto numeratorLeft=b.nodes[a].children[0], numeratorRight=b.nodes[a].children[1];
+                const auto denominatorLeft=b.nodes[c].children[0], denominatorRight=b.nodes[c].children[1];
+                const auto &power=b.nodes[numeratorLeft]; const auto &one=b.nodes[numeratorRight];
+                const auto &variable=b.nodes[denominatorLeft]; const auto &denominatorOne=b.nodes[denominatorRight];
+                const bool pattern=power.kind==K::Powi&&power.exponent==2&&
+                    b.nodes[power.children[0]].kind==K::Variable&&variable.kind==K::Variable&&
+                    b.nodes[power.children[0]].variable==variable.variable&&
+                    one.kind==K::Constant&&one.value==ExactRational(1)&&
+                    denominatorOne.kind==K::Constant&&denominatorOne.value==ExactRational(1);
+                if(pattern){b.assume(A::NonZero,c);root=b.op(K::Add,denominatorLeft,b.constant(1));}
+                else root=b.append(next);
+            }
+            else if ((n.kind == K::Add || n.kind == K::Subtract) && constant(c, 0))
                 root = a;
             else if (n.kind == K::Add && constant(a, 0))
                 root = c;

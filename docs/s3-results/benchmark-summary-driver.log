@@ -1,0 +1,1 @@
+{"candidate_outputs": 68, "missing_candidate_outputs": 40, "process_outcomes_by_framework": {"Genetik": {"completed": 17, "failed_or_timeout": 19}, "PyOperon": {"failed_or_timeout": 36}, "PySR": {"failed_or_timeout": 36}}, "total_runs": 108}

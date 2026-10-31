@@ -1,0 +1,30 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "0",
+    "out/build/s3-benchmark/run_genetik",
+    "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/docs/d7/data/fractional_power_positive-train-clean.csv",
+    "0",
+    "120"
+  ],
+  "cwd": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated",
+  "cpu_affinity": [
+    0
+  ],
+  "worker_env": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "wall_cap_seconds": 120.0,
+  "memory_cap_gib": 6.0,
+  "outcome": "wall_timeout",
+  "exit_code": 0,
+  "wall_seconds": 120.02286243485287,
+  "cpu_seconds": 109.37,
+  "peak_rss_gib": 0.0044708251953125,
+  "peak_process_threads": 2,
+  "stdout": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/benchmark_runs/Genetik/fractional_power_positive/clean/seed-0/attempt-00/stdout.log",
+  "stderr": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/logs/d7/benchmark_runs/Genetik/fractional_power_positive/clean/seed-0/attempt-00/stderr.log"
+}

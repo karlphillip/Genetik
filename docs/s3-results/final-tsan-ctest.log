@@ -1,0 +1,24 @@
+Internal ctest changing into directory: /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/build/s3-tsan
+Test project /home/karlphillip/workspaces/primeResearcher/Genetik/out/tmp/s3-curated/out/build/s3-tsan
+    Start 19: genetik_typed_overlap
+1/9 Test #19: genetik_typed_overlap ...................   Passed    0.03 sec
+    Start 22: genetik_mixed_expression_overlap
+2/9 Test #22: genetik_mixed_expression_overlap ........   Passed    0.03 sec
+    Start 24: genetik_typed_preparation_overlap
+3/9 Test #24: genetik_typed_preparation_overlap .......   Passed    0.03 sec
+    Start 27: genetik_parsing_overlap
+4/9 Test #27: genetik_parsing_overlap .................   Passed    0.05 sec
+    Start 31: genetik_derivative_overlap
+5/9 Test #31: genetik_derivative_overlap ..............   Passed    0.04 sec
+    Start 33: genetik_derivative_regression_overlap
+6/9 Test #33: genetik_derivative_regression_overlap ...   Passed    0.06 sec
+    Start 39: genetik_checkpoint_overlap
+7/9 Test #39: genetik_checkpoint_overlap ..............   Passed   22.55 sec
+    Start 68: genetik_d6_overlap
+8/9 Test #68: genetik_d6_overlap ......................   Passed    0.35 sec
+    Start 69: genetik_equation_archive_contracts
+9/9 Test #69: genetik_equation_archive_contracts ......   Passed    0.03 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =  23.17 sec

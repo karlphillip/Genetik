@@ -1,0 +1,1 @@
+independent exact intersection=[8/5,33/20)

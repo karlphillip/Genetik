@@ -85,6 +85,25 @@ python3 scripts/branch_audit.py --repo . --base origin/main --json
 
 The helper reports local and fetched remote refs, SHA, ancestry/tree relation, ahead/behind counts against the base and configured upstream, commits unique by ancestry, patch-equivalent commits, tracking ref, active worktrees, and dirty worktree status. `identical_tree_possible_squash_or_equivalent` is only a lead: it does not prove a reviewed/qualified PR. The helper deliberately cannot verify GitHub reviews, CI, task ownership, or branch protection. Inspect those separately before integration or deletion. If the base ref is absent, fetch it explicitly; the helper will not fetch for you.
 
+## Research archival and retirement
+
+Treat branch disposition as one of three states:
+
+1. **Fully merged development branches** may use ordinary CLEANUP after exact PR, CI, ancestry, cleanliness, and remote-head lease checks pass.
+2. **Unmerged research branches** must be preserved. Similar production functionality or patch-equivalent content does not replace research history, protocols, negative results, or evidence.
+3. **Ambiguous or active work** (including a branch with an active/dirty/unknown worktree, unclear ownership, or unresolved experiment) must remain untouched. Do not archive it as a reason to remove its live reference.
+
+Archiving an unmerged research ref does not itself authorize retiring it. Before requesting retirement, require all of the following for each exact branch tip:
+
+- Record the full branch name, observed commit SHA, tree SHA, ancestry/relationships, unique commits, changed paths, and tracked research evidence.
+- Create a non-overwriting bundle containing every intended research ref and a context ref for `main`; record its SHA256 and a machine-readable ref-to-SHA manifest.
+- Run `git bundle verify`, restore into a disposable repository, and compare each recovered ref's exact commit and tree SHA to the manifest.
+- Review tracked contents for credentials/private material and inventory relevant untracked or ignored experiment outputs separately. A Git bundle does not include these outputs.
+- Confirm a durable, independently verifiable backup on a different device or storage failure domain. Two directories on one device are not independent.
+- Obtain explicit authorization to retire the named refs. Confirm no active/dirty/ambiguous worktree remains immediately before any deletion.
+
+All conditions are mandatory. The read-only `research_retirement_allowed` policy helper in `scripts/branch_audit.py` must fail closed when any evidence is missing; it never deletes refs. Exercise it with `python3 scripts/test_branch_lifecycle.py`. Until every condition and explicit authorization are present, retain the unmerged branch locally/remotely as applicable. Never publish the archive or create public archive tags without separate authorization.
+
 Qualify helper/policy changes against disposable repositories with:
 
 ```sh

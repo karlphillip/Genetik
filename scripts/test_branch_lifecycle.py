@@ -11,7 +11,9 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from branch_audit import audit, integration_allowed, remote_delete_allowed  # noqa: E402
+from branch_audit import (  # noqa: E402
+    audit, integration_allowed, remote_delete_allowed, research_retirement_allowed,
+)
 
 
 def run(repo: Path, *args: str) -> str:
@@ -139,6 +141,31 @@ class BranchLifecycleTests(unittest.TestCase):
                                               integrated=True, active_worktree=False, dirty_worktree=False))
         self.assertFalse(remote_delete_allowed(expected_sha=expected, observed_sha=expected,
                                                integrated=True, active_worktree=False, dirty_worktree=True))
+
+    def test_research_retirement_requires_independent_backup_and_authorization(self) -> None:
+        evidence = dict(
+            exact_tip_covered=True,
+            bundle_verified=True,
+            restoration_verified=True,
+            off_device_backup_verified=True,
+            explicitly_authorized=True,
+            active_worktree=False,
+            dirty_worktree=False,
+            ambiguous_or_active=False,
+        )
+        self.assertTrue(research_retirement_allowed(**evidence))
+        for gate in ("exact_tip_covered", "bundle_verified", "restoration_verified",
+                     "off_device_backup_verified", "explicitly_authorized"):
+            blocked = dict(evidence)
+            blocked[gate] = False
+            self.assertFalse(research_retirement_allowed(**blocked), gate)
+        for blocker in ("active_worktree", "dirty_worktree", "ambiguous_or_active"):
+            blocked = dict(evidence)
+            blocked[blocker] = True
+            self.assertFalse(research_retirement_allowed(**blocked), blocker)
+        # A locally verified bundle alone cannot authorize retirement.
+        local_only = dict(evidence, off_device_backup_verified=False)
+        self.assertFalse(research_retirement_allowed(**local_only))
 
     def test_actual_remote_head_change_is_detected_before_delete(self) -> None:
         bare = self.root / "remote.git"

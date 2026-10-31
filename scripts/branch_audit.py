@@ -56,6 +56,28 @@ def remote_delete_allowed(
     )
 
 
+def research_retirement_allowed(
+    *, exact_tip_covered: bool, bundle_verified: bool, restoration_verified: bool,
+    off_device_backup_verified: bool, explicitly_authorized: bool,
+    active_worktree: bool, dirty_worktree: bool, ambiguous_or_active: bool = False,
+) -> bool:
+    """Fail closed before retiring an unmerged research ref.
+
+    A local bundle is useful evidence, but it is not an independent backup.
+    This is a policy check only; it never deletes or changes a reference.
+    """
+    return bool(
+        exact_tip_covered
+        and bundle_verified
+        and restoration_verified
+        and off_device_backup_verified
+        and explicitly_authorized
+        and not active_worktree
+        and not dirty_worktree
+        and not ambiguous_or_active
+    )
+
+
 def _worktrees(repo: Path) -> list[dict[str, Any]]:
     raw = git(repo, "worktree", "list", "--porcelain").stdout
     entries: list[dict[str, Any]] = []

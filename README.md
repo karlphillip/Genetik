@@ -317,9 +317,11 @@ historical approximation modes are unchanged. Exact recovery of this supplied fi
 prefix would not establish a general formula for all primes.
 
 Run-owned [checkpoint/resume and human progress](docs/RUN_CHECKPOINTING.md) are
-available for this exact-prime application. Add `--checkpoint out/runs/prime-exact/seed42/checkpoints`
-and optionally `--metrics-file out/runs/prime-exact/seed42/metrics.jsonl`. Continue with
-`--resume out/runs/prime-exact/seed42/checkpoints/latest.gtkc --loss-budget 2000000`
+available for this exact-prime application. Add
+`--checkpoint ../Genetik-data/research-runs/prime-exact/seed42/checkpoints` and
+optionally `--metrics-file ../Genetik-data/research-runs/prime-exact/seed42/metrics.jsonl`.
+Continue with
+`--resume ../Genetik-data/research-runs/prime-exact/seed42/checkpoints/latest.gtkc --loss-budget 2000000`
 (the **total**, including prior work). `--report-format raw` retains dense diagnostics.
 The installed [checkpoint/formatter quickstart](examples/quickstarts/checkpoint.cpp)
 uses the generic state seams and scalar-expression codec without prime dependencies.

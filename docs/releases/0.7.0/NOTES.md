@@ -1,7 +1,10 @@
 # Genetik 0.7.0 — Advanced Scientific Regression Development Pre-release
 
-This is a local development candidate. It has not been published and must not
-be treated as a stable release.
+This is a hosted-qualified development pre-release candidate. It has not been
+merged to `main`, tagged, or published, and must not be treated as a stable
+release. The independently reviewed LM resource-limit and stop-reason fixes are
+included in implementation commit
+[`b0b84e5ba5975bf2397e325469e0f45645486228`](https://github.com/karlphillip/Genetik/commit/b0b84e5ba5975bf2397e325469e0f45645486228).
 
 ## Candidate scope
 
@@ -57,17 +60,37 @@ recoveries (17/36 processes completed). PySR timed out on all 36 processes;
 its separately assessed persisted Hall-of-Fame snapshots recovered 30/36 held-
 out cases. PyOperon timed out on all 36 and returned no model. These finite-seed
 results are limited to the pinned grammar and 120-second allowance and support
-no general superiority claim. See the S3 benchmark report for every run and
-assessment.
+no general superiority claim. See the [S3 benchmark report](../../S3_SCIENTIFIC_BENCHMARKS.md)
+for the protocol, per-task results, and interpretation.
 
 ## Dependencies and platforms
 
 Ordinary Genetik remains C++20 and standard-library-only. Boost.Multiprecision
 1.83 is optional and required only by exact rational clients/tests. LP64
-LAPACK is an independent optional scientific target. Python remains optional;
-the locally built 0.7.0 wheel is tagged for CPython 3.12 on Linux AArch64 only.
-Existing platform limits remain in force. See the qualification reports for
-numerical behavior, source and artifact hashes, and the proposed hosted gate.
+LAPACK is an independent optional scientific target. Python remains optional.
+Hosted wheel and sdist qualification passed on Ubuntu 24.04 with CPython 3.12.3
+for both x86-64 and AArch64. Wheels are platform-tagged
+`cp312-cp312-linux_x86_64` and `cp312-cp312-linux_aarch64`; they are not
+manylinux wheels. Other Python minor versions and operating systems remain
+unqualified. See the [S3 release preparation report](../../S3_RELEASE_PREPARATION.md)
+for exact hosted jobs, artifact identities, and checksums.
+
+Native hosted qualification also passed with GCC 13/Release and exact CMake
+3.16.0 on Ubuntu 24.04 x86-64, Clang 18/Debug ASan+UBSan on Ubuntu 24.04
+x86-64, and GCC 13/Release on Ubuntu 24.04 AArch64 with a separate TSan
+qualification. These tested configurations do not qualify Windows, macOS,
+AppleClang, libc++, other compiler/runtime versions, or arbitrary Linux images.
+
+## Hosted qualification
+
+The six-job workflow [41170361397](https://github.com/karlphillip/Genetik/actions/runs/41170361397)
+passed at implementation SHA `b0b84e5ba5975bf2397e325469e0f45645486228`.
+It includes GCC 13 x86-64 with CMake 3.16.0, Clang 18 x86-64 ASan+UBSan,
+GCC 13 AArch64 and its TSan gate, optional mathematical dependencies, and
+CPython 3.12 wheels/sdists on both architectures. The run retains source,
+sdist, wheel, native diagnostic, and optional-math artifacts. Its source archive
+was built from the exact tested commit; documentation-only release preparation
+changes require fresh checks on the resulting final commit.
 
 ## Migration
 
@@ -78,7 +101,8 @@ feasibility is distinct from selecting and verifying an executable binary64
 witness. Consumers of changed header-only APIs must recompile dependent
 translation units.
 
-Hosted qualification, remote writes, PR integration, tagging and publication
-require separate authorization.
+The draft PR is for review only. Merge, tag creation or movement, GitHub Release
+publication, PyPI upload, and changes to published v0.6.0 assets remain separate
+actions requiring their own authorization.
 
 See [migration notes](../../S3_MIGRATION.md) before recompiling consumers.

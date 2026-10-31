@@ -62,11 +62,11 @@ cmake -S . -B out/build/discrete-d3-release -DCMAKE_BUILD_TYPE=Release
 cmake --build out/build/discrete-d3-release -j2
 out/build/discrete-d3-release/genetik_discrete_prime_search \
   --task primality --seed 42 --threads 4 --loss-budget 20000 \
-  --report-seconds 30 --checkpoint ../Genetik-data/research-runs/discrete-prime/p42/checkpoints \
-  --output ../Genetik-data/research-runs/discrete-prime/p42
+  --report-seconds 30 --checkpoint out/runs/discrete-prime/p42/checkpoints \
+  --output out/runs/discrete-prime/p42
 out/build/discrete-d3-release/genetik_discrete_prime_search \
   --task nth-prime --seed 42 --threads 4 --loss-budget 5000 \
-  --output ../Genetik-data/research-runs/discrete-prime/n42
+  --output out/runs/discrete-prime/n42
 ```
 
 `--help` lists options. `--checkpoint` names a run-owned directory; numbered

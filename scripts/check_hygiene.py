@@ -9,7 +9,7 @@ ROOT_FILES = {'AGENTS.md', 'CHANGELOG.md', 'CMakeLists.txt', 'LICENSE', 'README.
 ROOT_DIRS = {'.agents', '.git', '.github', 'apps', 'benchmarks', 'cmake', 'docs', 'examples',
              'genetik', 'scripts', 'tests', 'out', 'python', 'integrations'}
 WORKSPACE = {'Genetik', '.tools', 'delivery-tools', 'archive', 'docs', 'examples', 'session.md'}
-OUTPUT_DIRS = {'build', 'install', 'consumers', 'runs', 'data', 'logs', 'tmp', 'cleanup'}
+OUTPUT_DIRS = {'build', 'install', 'consumers', 'runs', 'data', 'logs', 'tmp', 'cleanup', 'worktrees'}
 # Retained D7 delivery assets/evidence predate the current role layout. They are
 # explicitly preserved, never used for new transient outputs, and not scanned.
 PRESERVED_OUTPUT_DIRS = {'release', 'source-archive-check'}
@@ -70,6 +70,7 @@ def self_test():
         (source / 'docs' / 'accepted.csv').write_text('preserved evidence\n')
         (source / 'out' / 'build').mkdir()
         (source / 'out' / 'build' / 'CMakeCache.txt').write_text('allowed output\n')
+        (source / 'out' / 'worktrees').mkdir()
         (source / 'out' / 'release').mkdir()
         (source / 'out' / 'source-archive-check').mkdir()
         (Path(tmp) / '.tools').mkdir()

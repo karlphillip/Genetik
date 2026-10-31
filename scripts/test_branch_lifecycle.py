@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import sys
 import tempfile
 import unittest
@@ -166,9 +167,14 @@ class BranchLifecycleTests(unittest.TestCase):
     def test_audit_does_not_modify_repository_state(self) -> None:
         before = run(self.repo, "status", "--porcelain")
         refs_before = run(self.repo, "show-ref", "--heads", "--hash")
+        index_path = Path(run(self.repo, "rev-parse", "--git-path", "index"))
+        if not index_path.is_absolute():
+            index_path = self.repo / index_path
+        index_before = hashlib.sha256(index_path.read_bytes()).hexdigest()
         self.inventory()
         self.assertEqual(run(self.repo, "status", "--porcelain"), before)
         self.assertEqual(run(self.repo, "show-ref", "--heads", "--hash"), refs_before)
+        self.assertEqual(hashlib.sha256(index_path.read_bytes()).hexdigest(), index_before)
 
 
 if __name__ == "__main__":

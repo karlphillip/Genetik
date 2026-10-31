@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 
 ROOT_FILES = {'AGENTS.md', 'CHANGELOG.md', 'CMakeLists.txt', 'LICENSE', 'README.md', '.gitignore', 'pyproject.toml'}
-ROOT_DIRS = {'.git', '.github', 'apps', 'benchmarks', 'cmake', 'docs', 'examples',
+ROOT_DIRS = {'.agents', '.git', '.github', 'apps', 'benchmarks', 'cmake', 'docs', 'examples',
              'genetik', 'scripts', 'tests', 'out', 'python', 'integrations'}
 WORKSPACE = {'Genetik', '.tools', 'delivery-tools', 'archive', 'docs', 'examples', 'session.md'}
 OUTPUT_DIRS = {'build', 'install', 'consumers', 'runs', 'data', 'logs', 'tmp', 'cleanup'}
@@ -62,6 +62,7 @@ def self_test():
     with tempfile.TemporaryDirectory(prefix='genetik-hygiene-') as tmp:
         source = Path(tmp) / 'Genetik'
         (source / 'docs').mkdir(parents=True)
+        (source / '.agents').mkdir()
         (source / 'python').mkdir()
         (source / 'integrations').mkdir()
         (source / 'pyproject.toml').write_text('[build-system]\n')

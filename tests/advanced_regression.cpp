@@ -26,6 +26,47 @@ void derivatives(){
     check(evaluateParameterJacobian(parse("log(x0)",1),std::array{-1.},std::array<std::size_t,1>{0}).status==ParameterJacobianStatus::PrimalInvalidity,"invalid domain is primal invalidity");
 }
 void scalarFit(){
+    // Reproduces the post-acceptance Jacobian budget hole: the initial
+    // Jacobian and successful trial consume the entire objective allowance.
+    std::size_t boundedCalls=0;
+    LMResidualFunction boundedObjective=[&](std::span<const double> t,bool jac,std::size_t){
+        ++boundedCalls;LMResidualEvaluation e;e.valid=true;e.residuals={t[0]-2};if(jac)e.jacobian={1};return e;
+    };
+    LMConfig twoCalls;twoCalls.maxObjectiveEvaluations=2;twoCalls.maxJacobianEvaluations=4;
+    auto budgeted=levenbergMarquardt(std::array{0.},std::array{-4.},std::array{4.},boundedObjective,twoCalls);
+    check(boundedCalls==2&&budgeted.work.objectiveEvaluations==2&&budgeted.work.jacobianEvaluations==1&&budgeted.stop==LMStop::EvaluationLimit,
+          "LM objective budget includes Jacobians after accepted trials");
+
+    // A callback that reports more mathematical work than its allowance must
+    // stop at the initial evaluation without another invocation.
+    std::size_t overBudgetCalls=0;
+    LMResidualFunction overBudget=[&](std::span<const double>,bool jac,std::size_t allowance){
+        ++overBudgetCalls;LMResidualEvaluation e;e.valid=true;e.residuals={1};if(jac)e.jacobian={1};e.mathematicalOperations=allowance+1;return e;
+    };
+    LMConfig tinyMath;tinyMath.maxMathematicalOperations=5;
+    auto exhaustedInitially=levenbergMarquardt(std::array{0.},std::array{-4.},std::array{4.},overBudget,tinyMath);
+    check(overBudgetCalls==1&&exhaustedInitially.work.objectiveEvaluations==1&&exhaustedInitially.work.jacobianEvaluations==1&&exhaustedInitially.stop==LMStop::EvaluationLimit,
+          "LM preserves initial mathematical resource exhaustion");
+
+    // A genuine failure in a later Jacobian must retain InvalidStart.
+    std::size_t jacobianCalls=0;
+    LMResidualFunction failedJacobian=[&](std::span<const double> t,bool jac,std::size_t){
+        LMResidualEvaluation e;++jacobianCalls;
+        if(jac&&jacobianCalls>1)return e;
+        e.valid=true;e.residuals={t[0]-2};if(jac)e.jacobian={1};return e;
+    };
+    auto invalidAfterStep=levenbergMarquardt(std::array{0.},std::array{-4.},std::array{4.},failedJacobian);
+    check(invalidAfterStep.stop==LMStop::InvalidStart&&invalidAfterStep.work.acceptedSteps==1&&invalidAfterStep.parameters[0]>0,
+          "LM preserves failed subsequent Jacobian status and accepted parameters");
+
+    // Invalid trial work is private: it must not replace the accepted start.
+    LMResidualFunction invalidTrial=[](std::span<const double> t,bool jac,std::size_t){
+        LMResidualEvaluation e;if(jac){e.valid=true;e.residuals={t[0]-2};e.jacobian={1};}return e;
+    };
+    auto rolledBack=levenbergMarquardt(std::array{0.},std::array{-4.},std::array{4.},invalidTrial);
+    check(rolledBack.parameters==std::vector<double>{0.}&&rolledBack.sumSquaredResiduals==4.0&&rolledBack.work.acceptedSteps==0,
+          "LM failed trial preserves accepted parameter and loss ownership");
+
     auto x=Expression::variable(0,3),a=Expression::variable(1,3),b=Expression::variable(2,3);auto e=Expression::binary(ExpressionKind::Multiply,a,Expression::binary(ExpressionKind::Pow,x,b));std::vector<LMExpressionObservation> rows;for(int i=1;i<=30;++i){double xx=.2+i*.1;rows.push_back({{xx,0,0},3.5*std::pow(xx,1.7)});}std::array<double,2> initial{2.,1.2},lo{.1,.1},hi{8.,3.};LMConfig c;c.maxIterations=100;c.maxObjectiveEvaluations=300;c.maxJacobianEvaluations=3000;c.lossTolerance=1e-22;auto result=levenbergMarquardt(initial,lo,hi,expressionLeastSquares(e,rows,{1,2}),c);check(result.sumSquaredResiduals&&*result.sumSquaredResiduals<1e-17,"LM recovers fractional-power coefficients");near(result.parameters[0],3.5,1e-7);near(result.parameters[1],1.7,1e-7);check(result.work.derivativeEvaluations>0&&result.work.linearSolves>0&&result.work.acceptedSteps>0,"LM work accounting populated");
     auto constantModel=Expression::binary(ExpressionKind::Multiply,Expression::constant(2,1),Expression::binary(ExpressionKind::Pow,Expression::variable(0,1),Expression::constant(1.2,1)));auto problem=RegressionProblem::create({{{.5},3.5*std::pow(.5,1.7)},{{1.},3.5},{{2.},3.5*std::pow(2.,1.7)},{{3.},3.5*std::pow(3.,1.7)}},{31,8,8});TrainingObjective objective(problem,100);ConstantFitConfig fit;fit.method=ConstantFitMethod::LevenbergMarquardt;fit.maxLossAttempts=50;fit.levenbergMarquardt.maxIterations=50;fit.levenbergMarquardt.maxObjectiveEvaluations=50;fit.levenbergMarquardt.maxJacobianEvaluations=500;fit.levenbergMarquardt.lossTolerance=1e-22;auto trained=fitConstants(constantModel,objective,fit);check(trained.loss.state()==FitnessState::Valid&&trained.loss.score()<1e-17&&trained.optimizerWork.acceptedSteps>0,"LM opt-in constant fitter integrates with TrainingObjective");
     LMResidualFunction deficient=[](std::span<const double> t,bool jac,std::size_t){LMResidualEvaluation e;e.valid=true;for(double x:{1.,2.,3.}){e.residuals.push_back((t[0]+t[1])*x-2*x);if(jac){e.jacobian.push_back(x);e.jacobian.push_back(x);}}e.rowsProcessed=3;e.forwardEvaluations=3;return e;};std::array<double,2> q0{.5,.5},lo2{-4,-4},hi2{4,4};auto singular=levenbergMarquardt(q0,lo2,hi2,deficient);check(singular.stop==LMStop::SingularSystem&&singular.work.linearAlgebraOperations>0,"rank-deficient parameters rejected explicitly before damping");

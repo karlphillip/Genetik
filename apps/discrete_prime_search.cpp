@@ -1,5 +1,6 @@
 #include "examples/DiscretePrimeResearch.hpp"
 #include "examples/PrimeRunMonitoring.hpp"
+#include "examples/ResearchPaths.hpp"
 #include <charconv>
 #include <fstream>
 #include <iostream>
@@ -16,7 +17,7 @@ int main(int argc,char** argv){try{
  std::string task;std::uint32_t seed=0;unsigned threads=1;std::optional<std::uint64_t> budget;std::optional<std::uint32_t> generations;double reportSeconds=30,checkpointSeconds=300;std::filesystem::path output,checkpoint,resume;
  for(int i=1;i<argc;++i){std::string_view key=argv[i];if(key=="--help"){std::cout<<"Discrete prime research (no built-in prime oracle)\n--task primality|nth-prime --seed N --threads N --loss-budget N\n--report-seconds N (default30) --checkpoint DIRECTORY --checkpoint-seconds N\n--resume FILE --output DIRECTORY --generation-limit N\nReporting/checkpointing use idle committed publication boundaries. Ctrl+C/SIGTERM\nrequests a stop after the bounded active generation drains; SIGKILL cannot save.\nResume requires identical task/seed/workers/budget/generation limit and policy.\n";return 0;}if(++i==argc)throw std::invalid_argument("missing option value");std::string_view value=argv[i];
  if(key=="--task")task=value;else if(key=="--seed"){auto n=number(value);if(n>UINT32_MAX)throw std::invalid_argument("seed range");seed=static_cast<std::uint32_t>(n);}else if(key=="--threads"){auto n=number(value);if(!n||n>256)throw std::invalid_argument("worker range");threads=static_cast<unsigned>(n);}else if(key=="--loss-budget"){auto n=number(value);if(n<32||n>1000000000)throw std::invalid_argument("budget32..1e9");budget=n;}else if(key=="--generation-limit"){auto n=number(value);if(n>UINT32_MAX)throw std::invalid_argument("generation range");generations=static_cast<std::uint32_t>(n);}else if(key=="--report-seconds")reportSeconds=seconds(value);else if(key=="--checkpoint-seconds")checkpointSeconds=seconds(value);else if(key=="--output")output=value;else if(key=="--checkpoint")checkpoint=value;else if(key=="--resume")resume=value;else throw std::invalid_argument("unknown option");}
- validateTask(task);if(output.empty())output=std::filesystem::path("out/runs/discrete-prime")/(task+"-seed"+std::to_string(seed));if(checkpoint.empty())checkpoint=output/"checkpoints";
+ validateTask(task);if(output.empty())output=prime_example::researchRunPath(std::filesystem::path("discrete-prime")/(task+"-seed"+std::to_string(seed)));if(checkpoint.empty())checkpoint=output/"checkpoints";
  if(resume.empty()&&std::filesystem::exists(output/"result.json"))throw std::invalid_argument("output already has a result; use fresh directory or --resume");
  std::filesystem::create_directories(output);
  auto cfg=config(task,budget.value_or(task=="primality"?20000:5000));if(generations)cfg.maxGenerations=*generations;auto p=problem(task);

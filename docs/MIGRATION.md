@@ -37,12 +37,27 @@ are not interchangeable fitness contexts. See [API index](API.md),
 [0.2 notes](releases/0.2.0/NOTES.md) and the individual contracts before migrating.
 
 Fresh builds use `build/`, installed prefixes `out/install/`, consumers
-`out/consumers/` and compatibility run paths remain under `out/runs/`. New durable
-datasets, research runs, experimental evidence and benchmark results belong in the
-sibling `../Genetik-data/`; benchmark executables stay under `build/benchmarks/`.
+`out/consumers/`. Historical runs now reside in sibling
+`../Genetik-data/research-runs/`; on this workspace `out/runs/` is the approved
+compatibility symlink to that location. New durable datasets, research runs,
+experimental evidence and benchmark results belong in sibling `../Genetik-data/`;
+benchmark executables stay under `build/benchmarks/`. Setting `GENETIK_DATA_ROOT`
+to the Genetik-data root opts supported default-output applications into
+`$GENETIK_DATA_ROOT/research-runs/`; when unset, their historical `out/runs/`
+defaults remain unchanged. Explicit output arguments continue to take precedence.
 Campaign sources moved to
 `apps/campaigns/` while executable names/explicit output options are preserved.
 Historical commands and evidence intentionally keep their original paths.
+The 2026-10-31 migration used a same-filesystem directory rename after recording
+file inventory, sizes, symlinks and representative SHA-256 checksums. Its
+preflight record is in `Genetik-data/experimental-evidence/`; it is provenance on
+the same device, not an independent backup. The two `/dev/full` links are retained
+as fault-injection fixtures.
+Legacy generated CMake build trees and compiled files found inside the historical
+runs were preserved under `build/historical-runs-migration-2026-10-31/`; links
+inside `Genetik-data/research-runs/` keep their prior paths usable. This ignored
+archive is retained and is not a reusable build cache. Its file-level mapping and
+integrity record are in `Genetik-data/experimental-evidence/`.
 
 ## Build and includes
 

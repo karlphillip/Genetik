@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 # Fail before configuring: source-code directories are not a supported output location.
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
-    message(FATAL_ERROR "Use an out-of-source build: cmake -S . -B build/release")
+    message(FATAL_ERROR "Use an out-of-source build: cmake -S . -B build/release (or another dedicated build/ directory)")
 endif()
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/genetik/Version.hpp" _genetik_version_line REGEX "^#define GENETIK_VERSION_STRING ")
 string(REGEX REPLACE "^#define GENETIK_VERSION_STRING \"([0-9]+\\.[0-9]+\\.[0-9]+)\"$" "\\1" _genetik_version "${_genetik_version_line}")

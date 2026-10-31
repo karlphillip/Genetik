@@ -238,9 +238,13 @@ remains unchanged; this feature branch is subsequent development.
 
 Current output conventions and retained workspace records: [ORGANIZATION.md](docs/ORGANIZATION.md)
 and [Phase 1 cleanup evidence](docs/CLEANUP.md). Use `build/` for fresh builds,
-`out/install/` and `out/consumers/` for delivery, and `out/runs/`, `out/data/`,
-`out/logs/`, `out/tmp/` for compatibility and transient output. Put durable datasets,
-research runs, experimental evidence and benchmark results in sibling `Genetik-data/`.
+`out/install/` and `out/consumers/` for delivery, and `out/logs/` and `out/tmp/`
+for operational output. Historical runs live in sibling
+`Genetik-data/research-runs/`; the local `out/runs/` compatibility link preserves
+old paths. Durable datasets, research runs, experimental evidence and benchmark
+results belong in sibling `Genetik-data/`. `GENETIK_DATA_ROOT` optionally changes
+supported default research outputs to `$GENETIK_DATA_ROOT/research-runs/`; unset
+preserves historical defaults and explicit output paths still take precedence.
 Do not move configured CMake caches. Configure a dedicated benchmark build with
 `cmake -S . -B build/benchmarks -DCMAKE_BUILD_TYPE=Release`; benchmark source stays
 in `benchmarks/` and resulting executables stay in that build directory.
@@ -313,9 +317,11 @@ historical approximation modes are unchanged. Exact recovery of this supplied fi
 prefix would not establish a general formula for all primes.
 
 Run-owned [checkpoint/resume and human progress](docs/RUN_CHECKPOINTING.md) are
-available for this exact-prime application. Add `--checkpoint out/runs/prime-exact/seed42/checkpoints`
-and optionally `--metrics-file out/runs/prime-exact/seed42/metrics.jsonl`. Continue with
-`--resume out/runs/prime-exact/seed42/checkpoints/latest.gtkc --loss-budget 2000000`
+available for this exact-prime application. Add
+`--checkpoint ../Genetik-data/research-runs/prime-exact/seed42/checkpoints` and
+optionally `--metrics-file ../Genetik-data/research-runs/prime-exact/seed42/metrics.jsonl`.
+Continue with
+`--resume ../Genetik-data/research-runs/prime-exact/seed42/checkpoints/latest.gtkc --loss-budget 2000000`
 (the **total**, including prior work). `--report-format raw` retains dense diagnostics.
 The installed [checkpoint/formatter quickstart](examples/quickstarts/checkpoint.cpp)
 uses the generic state seams and scalar-expression codec without prime dependencies.

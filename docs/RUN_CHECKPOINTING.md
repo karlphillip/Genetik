@@ -161,13 +161,13 @@ ownership. Concurrent calls share only immutable expression data.
 ## Prime CLI and human display
 
 ```sh
-out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 \
+build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 \
   --loss-budget 1000000 --report-seconds 30 --formula-precision 6 \
-  --checkpoint out/runs/prime-exact/seed42/checkpoints --checkpoint-seconds 300 \
-  --checkpoint-keep 3 --metrics-file out/runs/prime-exact/seed42/metrics.jsonl
+  --checkpoint ../Genetik-data/research-runs/prime-exact/seed42/checkpoints --checkpoint-seconds 300 \
+  --checkpoint-keep 3 --metrics-file ../Genetik-data/research-runs/prime-exact/seed42/metrics.jsonl
 
-out/build/release/genetik_prime_regression \
-  --resume out/runs/prime-exact/seed42/checkpoints/latest.gtkc --loss-budget 2000000
+build/release/genetik_prime_regression \
+  --resume ../Genetik-data/research-runs/prime-exact/seed42/checkpoints/latest.gtkc --loss-budget 2000000
 ```
 
 Default `--report-format pretty` displays one current committed best individual,

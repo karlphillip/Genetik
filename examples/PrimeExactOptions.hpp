@@ -1,6 +1,7 @@
 #pragma once
 #include "ExecutionOptions.hpp"
 #include "PrimeExactSearch.hpp"
+#include "ResearchPaths.hpp"
 namespace prime_example {
 inline bool exactModeRequested(int argc,char** argv) {
     for(int i=1;i<argc;++i) {
@@ -98,7 +99,7 @@ inline int exactMain(int argc,char** argv) {
         if(!options.specified.contains("--fit-every"))options.fitEvery=saved.fitEvery;
         if(!options.specified.contains("--no-fit"))options.noFit=!saved.fitting;
         if(options.seed!=saved.seed||options.execution.threads!=saved.threads)throw CheckpointError("resume seed/worker count differs");
-        if(options.checkpointDirectory.empty()){options.checkpointDirectory=options.resumePath.parent_path();if(options.checkpointDirectory.empty())options.checkpointDirectory=std::filesystem::path("out/runs/prime-exact")/("seed"+std::to_string(options.seed))/"checkpoints";}
+        if(options.checkpointDirectory.empty()){options.checkpointDirectory=options.resumePath.parent_path();if(options.checkpointDirectory.empty())options.checkpointDirectory=researchRunPath(std::filesystem::path("prime-exact")/("seed"+std::to_string(options.seed))/"checkpoints");}
     }
     io.checkpointDirectory=options.checkpointDirectory;io.checkpointKeep=options.checkpointKeep;
     io.checkpointInterval=std::chrono::duration_cast<ExactClock::duration>(std::chrono::duration<double>(options.checkpointSeconds));

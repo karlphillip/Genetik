@@ -8,9 +8,9 @@ existing `GeneticAlgorithm::evolve()` at a time and inspects the existing const
 `Population::selectionView()` only after synchronous preparation/publication drains.
 
 ```sh
-cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
-cmake --build out/build/release --target genetik_prime_regression -j2
-out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
+cmake --build build/release --target genetik_prime_regression -j2
+build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30
 ```
 
 This mode defaults to seed 42, one worker, 1,000,000 actual loss attempts, 30 seconds
@@ -27,7 +27,9 @@ are reused. Inputs are x0=double(n)/1000.0, normalized targets double(p_n)/10000
 n=1..1000; the faithful standalone predictor is 10000.0*g(double(n)/1000.0).
 Optional --prime-file validates the supplied exact prefix before randomness/search.
 --output DIR explicitly exports the existing reference datasets; without it, this
-mode writes only console output. Redirect logs into out/runs/ or out/logs/ yourself.
+mode writes only console output. Redirect logs into
+`../Genetik-data/research-runs/` or `out/logs/` yourself. The optional
+`GENETIK_DATA_ROOT` setting controls supported default research output paths.
 The examined 1001..1200 range is neither training nor assessment for this mode.
 
 ## Objective and rounding

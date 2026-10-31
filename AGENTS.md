@@ -88,8 +88,11 @@
   timing measurements concurrently with development builds or qualification suites.
 
 - Run `python3 scripts/check_hygiene.py --workspace` after local workflows. The
-  parent permits only Genetik/, .tools/, delivery-tools/ and archive/; inspect and
+  parent permits Genetik/, Genetik-data/, .tools/, delivery-tools/ and archive/; inspect and
   manifest unexpected material before archiving. Never move configured CMake caches.
+  Task worktree cleanup must target only the verified worktree root. Durable data
+  is in sibling Genetik-data/; never recursively target or resolve out/runs or its
+  Genetik-data/research-runs destination during cleanup.
   The minimum tool remains ../delivery-tools/cmake-min/bin/cmake (3.16.0), and
   ../.tools/bin/cmake is 4.4.4. Parent archive/genetik/ holds indexed retained records
   and the authoritative v0.1.0 source asset; preserve the 127 frozen evidence hashes.
@@ -157,7 +160,10 @@
   context/runtime/limits validation. Preserve post-failure RNG and actual work.
   Format1 and codec IDs are explicit compatibility contracts; Version.hpp is the
   authoritative package version read by CMake. Checkpoint directories
-  are run-owned under out/runs/; fsync/rename writes precede retention cleanup.
+  are run-owned under the configured research-runs directory. Existing relative
+  defaults remain under out/runs/; GENETIK_DATA_ROOT optionally selects a
+  Genetik-data root for new defaults. The local out/runs compatibility link
+  resolves to ../Genetik-data/research-runs. fsync/rename writes precede cleanup.
   SIGINT/SIGTERM handlers only request cancellation. See RUN_CHECKPOINTING.md;
   include genetik_checkpoint_overlap in separate TSan gates. Pretty/LaTeX never
   replace canonical export or affect numerical evaluation and ranking.

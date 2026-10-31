@@ -88,7 +88,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # Application support headers also compile without accidental preceding includes.
-foreach(header PrimeExactOptions PrimeExactSearch PrimeExactReport PrimeExactDisplay PrimeExactCheckpoint ScalarTemplateData ExpressionTextFile RegressionData RegressionWorkflow MultivariateData StrictArithmeticData ExecutionOptions)
+foreach(header PrimeExactOptions PrimeExactSearch PrimeExactReport PrimeExactDisplay PrimeExactCheckpoint ResearchPaths ScalarTemplateData ExpressionTextFile RegressionData RegressionWorkflow MultivariateData StrictArithmeticData ExecutionOptions)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp "#include <${PROJECT_SOURCE_DIR}/examples/${header}.hpp>\n")
     add_library(example_header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/example_header_${header}.cpp)
     target_link_libraries(example_header_${header} PRIVATE genetik_lib)
@@ -117,6 +117,8 @@ add_executable(genetik_workspace_tests evaluation_workspace.cpp)
 target_link_libraries(genetik_workspace_tests PRIVATE genetik_lib)
 add_test(NAME genetik_workspace_contracts COMMAND genetik_workspace_tests)
 set_tests_properties(genetik_workspace_contracts PROPERTIES TIMEOUT 30)
+add_executable(genetik_research_paths_tests research_paths.cpp)
+add_test(NAME genetik_research_paths COMMAND genetik_research_paths_tests)
 if(GENETIK_BUILD_EXAMPLES AND GENETIK_RECORDED_REFERENCE)
     add_test(NAME genetik_evaluation_reference COMMAND ${CMAKE_COMMAND}
         -DEVIDENCE=$<TARGET_FILE:genetik_evaluation_workspace>

@@ -38,7 +38,14 @@ def audit(source, workspace=False):
     output = source / 'out'
     if output.is_dir() and not output.is_symlink():
         for p in sorted(output.iterdir()):
-            if p.name not in OUTPUT_DIRS | PRESERVED_OUTPUT_DIRS or not p.is_dir() or p.is_symlink():
+            if p.is_symlink():
+                workspace_root = next((parent for parent in source.parents
+                                       if (parent / 'Genetik-data').is_dir()), None)
+                expected = (workspace_root / 'Genetik-data' / 'research-runs').resolve() if workspace_root else None
+                if p.name != 'runs' or expected is None or p.resolve() != expected:
+                    errors.append(f'unclassified output (use a role directory): {p}')
+                continue
+            if p.name not in OUTPUT_DIRS | PRESERVED_OUTPUT_DIRS or not p.is_dir():
                 errors.append(f'unclassified output (use a role directory): {p}')
     # New CMake output is confined to the ignored root build/. Legacy out/ is
     # opaque during migration. Build content is allowed but must never be tracked.
@@ -90,7 +97,12 @@ def audit(source, workspace=False):
 
 def self_test():
     with tempfile.TemporaryDirectory(prefix='genetik-hygiene-') as tmp:
-        source = Path(tmp) / 'Genetik'
+        workspace_root = Path(tmp) / 'primeResearcher'
+        for name in ('.tools', 'delivery-tools', 'archive', 'docs', 'examples'):
+            (workspace_root / name).mkdir(parents=True, exist_ok=True)
+        (workspace_root / 'session.md').write_text('workspace note\n')
+        (workspace_root / 'Genetik-data' / 'research-runs').mkdir(parents=True)
+        source = workspace_root / 'Genetik'
         (source / 'docs').mkdir(parents=True)
         (source / 'tests').mkdir()
         (source / '.agents').mkdir()
@@ -110,13 +122,16 @@ def self_test():
         (source / 'out' / 'worktrees').mkdir()
         (source / 'out' / 'release').mkdir()
         (source / 'out' / 'source-archive-check').mkdir()
-        (Path(tmp) / '.tools').mkdir()
-        (Path(tmp) / 'delivery-tools').mkdir()
-        (Path(tmp) / 'archive').mkdir()
-        (Path(tmp) / 'docs').mkdir()
-        (Path(tmp) / 'examples').mkdir()
-        (Path(tmp) / 'session.md').write_text('workspace note\n')
+        (source / 'out' / 'runs').symlink_to('../../Genetik-data/research-runs', target_is_directory=True)
         assert not audit(source, True)
+        (source / 'out' / 'unexpected').symlink_to('../../Genetik-data/research-runs', target_is_directory=True)
+        assert any('unclassified output' in e for e in audit(source))
+        (source / 'out' / 'unexpected').unlink()
+        (source / 'out' / 'runs').unlink()
+        (source / 'out' / 'runs').symlink_to('../../somewhere-else', target_is_directory=True)
+        assert any('unclassified output' in e for e in audit(source))
+        (source / 'out' / 'runs').unlink()
+        (source / 'out' / 'runs').symlink_to('../../Genetik-data/research-runs', target_is_directory=True)
         (source / 'tests' / 'generated').mkdir()
         (source / 'tests' / 'generated' / 'CMakeCache.txt').touch()
         assert any('source-tree file' in e for e in audit(source))
@@ -151,7 +166,7 @@ def self_test():
         (source / 'docs' / 'CMakeCache.txt').touch()
         assert any('source-tree file' in e for e in audit(source))
         (source / 'docs' / 'CMakeCache.txt').unlink()
-        (Path(tmp) / 'build-old').mkdir()
+        (workspace_root / 'build-old').mkdir()
         assert any('parent-workspace' in e for e in audit(source, True))
         # A link outside the source is never scanned.
         (source / 'docs' / 'external').symlink_to(Path(tmp), target_is_directory=True)

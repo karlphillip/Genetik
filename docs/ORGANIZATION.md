@@ -19,7 +19,8 @@ target `genetik_lib`, executable names and explicit output options remain intact
 | Contracts, accepted experiment evidence and historical reproductions | `docs/` |
 | Fresh configured builds (each worktree owns its caches) | `build/{release,debug,asan-ubsan,tsan,benchmarks}` |
 | Manual installs and external builds | `out/install/`, `out/consumers/` |
-| Transient runs/logs and disposable copies | `out/runs/`, `out/logs/`, `out/tmp/` (legacy data paths preserved) |
+| Historical and future research runs | `../Genetik-data/research-runs/`; local `out/runs/` is a compatibility symlink |
+| Operational logs and temporary files | `out/logs/`, `out/tmp/` (legacy data paths preserved) |
 | Durable datasets, research runs, evidence and benchmark results | sibling `../Genetik-data/` |
 | Compact retained parent-workspace history and published assets | `../archive/genetik/` |
 
@@ -48,7 +49,7 @@ nonmathematical OOP and multi-TU usage. Library-only installation needs no Pytho
 
 Prime/cadence applications require an explicit `--output DIR`; multivariate data
 has an explicit generation destination. Other programs write stdout/stderr: redirect
-under `out/logs/` or `out/runs/`. Never overwrite accepted experiment results. Use
+under `out/logs/` or `../Genetik-data/research-runs/`. Never overwrite accepted experiment results. Use
 managed Git worktrees for future additional source checkouts; disposable delivery
 fixtures remain temporary copies under a build/output directory.
 
@@ -57,7 +58,10 @@ it permits intentional .txt/.csv/.json evidence and fixtures. `out/` is opaque l
 and operational output; root `build/` is recognized generated output and Git-checked
 for tracked files. `--workspace` additionally checks the local parent entry names
 (`Genetik/`, `Genetik-data/`, `.tools/`, `delivery-tools/`, `archive/`); it does not
-modify anything or follow links.
+modify anything or follow links. The only allowed local output link is
+`out/runs` resolving to `../Genetik-data/research-runs`; CI does not require
+that sibling directory or link. Migration inventory and sampled checksums are in
+`Genetik-data/experimental-evidence/genetik-runs-migration-2026-10-31/`.
 The self-test exercises misplaced output and symlink handling. CI runs repository
 mode because a hosted parent workspace is owned by the runner. In-source CMake
 configuration is rejected with an out-of-source command hint. Root entries are an
@@ -74,13 +78,13 @@ The Phase 1 action manifest and old-to-new paths are in `out/cleanup/` and copie
 to `../archive/genetik/`; see [CLEANUP.md](CLEANUP.md) for completed actions/evidence.
 The obsolete original main sketch remains `docs/history/main.cpp`, not an API example.
 
-Typed discovery and fixed-structure fitting use explicit `--output out/runs/NEW_DIR`;
-retained small Phase 3 reports/data live in docs/typed-regression-results/. No old
-evidence path or output convention changed. See TYPED_REGRESSION.md.
+Typed discovery and fixed-structure fitting use explicit `--output ../Genetik-data/research-runs/NEW_DIR`;
+retained small Phase 3 reports/data live in docs/typed-regression-results/. Existing
+historical output paths remain usable through the compatibility link. See TYPED_REGRESSION.md.
 
 The scientific campaign lives in apps/campaigns/scientific_campaign.cpp. Its
 required --data and new --output directory keep generation/reporting under caller
-control; recommended output is out/runs/. Independent fixtures live under
+control; recommended output is ../Genetik-data/research-runs/. Independent fixtures live under
 tests/fixtures/scientific; accepted new reports under docs/scientific-results/.
 
 Phase 5 adds apps/regression_evaluate.cpp (supplied-formula evaluation, no search),
@@ -92,7 +96,7 @@ Phase 6A follows this layout: public scalar-template headers remain in `genetik/
 compiled installed usage is `examples/quickstarts/templates.cpp`, and the bounded
 campaign is `apps/campaigns/scalar_template_campaign.cpp` (target
 `genetik_scalar_template_campaign`). It requires an explicit fresh `--output`
-directory; use `out/runs/templates/…`. Frozen selected new evidence lives in
+directory; use `../Genetik-data/research-runs/templates/…`. Frozen selected new evidence lives in
 `docs/scalar-template-results/`; existing historical evidence is untouched.
 
 Python syntax-only checks should use ast.parse, or set

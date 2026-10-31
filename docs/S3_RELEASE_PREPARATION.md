@@ -1,6 +1,13 @@
 # Genetik 0.7.0 Development Pre-release — Preparation and Qualification
 
-## Current qualification status
+> **Historical preparation record.** The branch, draft-PR, authorization, and
+> unpublished-status statements below describe the pre-publication S3
+> qualification period. Genetik 0.7.0 is now integrated on `main` and published
+> as a GitHub development pre-release. Current release scope and migration
+> guidance are in [0.7.0 release notes](releases/0.7.0/NOTES.md); the GitHub
+> release page is the authority for the published asset set.
+
+## Initial implementation qualification snapshot
 
 The authorized release branch is `qualification/scientific-regression-s3`.
 Its reviewed implementation commit
@@ -31,9 +38,10 @@ Linux tags, not manylinux. These artifact links follow GitHub's configured
 14-day retention. Any follow-on documentation commit must be validated at its
 own exact SHA; the workflow regenerates its source archive and checksum files.
 
-The working release remains unpublished. A draft PR is authorized for review;
-merging, tag operations, GitHub Release publication, PyPI upload, and changes to
-published v0.6.0 assets are not authorized here.
+At the time of this preparation snapshot, the working release remained
+unpublished. A draft PR was authorized for review; merge, tag operations,
+GitHub Release publication, PyPI upload, and changes to published v0.6.0 assets
+were outside that snapshot's authorization.
 
 ## Integration audit
 
@@ -103,10 +111,10 @@ package also passed exact-CMake-3.16.0 qualification. These are host-tagged
 artifacts, not manylinux or cross-platform claims. Artifact links and checksums
 for implementation commit `b0b84e5` appear in the current qualification status.
 
-The draft PR review commit must receive its own complete hosted run, which will
-regenerate the exact-tip source archive and checksum manifests. These host-tagged
-artifacts do not qualify other Python versions, manylinux compatibility, or
-other operating systems.
+The later draft-PR review commit required its own complete hosted run, which
+regenerated the exact-tip source archive and checksum manifests. These
+host-tagged artifacts do not qualify other Python versions, manylinux
+compatibility, or other operating systems.
 
 ## Earlier integrated-source qualification (source `c52f026`)
 
@@ -138,7 +146,7 @@ executed successfully, as linked above:
 | CPython 3.12 x86-64 | Build host-tagged wheel and sdist from the named source; install outside checkout and run Python interoperability tests |
 | CPython 3.12 AArch64 | Build host-tagged wheel and sdist from the named source; install outside checkout and run Python interoperability tests |
 
-That hosted qualification did not include main integration, tagging, or
-publication. A draft PR is authorized for review; merging, tag creation or
-movement, GitHub Release publication, PyPI upload, and changes to published
-v0.6.0 assets remain separate authorization boundaries.
+That initial hosted qualification did not include main integration, tagging,
+or publication. Those steps were completed separately after this snapshot;
+PyPI upload and changes to published v0.6.0 assets remain outside the release
+scope.

@@ -1,12 +1,11 @@
-# Genetik 0.7.0 — Advanced Scientific Regression Development Pre-release
+# Genetik 0.7.0 — Advanced Scientific Regression
 
-This is a hosted-qualified development pre-release candidate. It has not been
-merged to `main`, tagged, or published, and must not be treated as a stable
+Genetik 0.7.0 is published on GitHub as a development pre-release, not a stable
 release. The independently reviewed LM resource-limit and stop-reason fixes are
-included in implementation commit
+included in the integrated implementation commit
 [`b0b84e5ba5975bf2397e325469e0f45645486228`](https://github.com/karlphillip/Genetik/commit/b0b84e5ba5975bf2397e325469e0f45645486228).
 
-## Candidate scope
+## Release scope
 
 - Shared Real64 parameter identities in mixed numerical expressions.
 - Analytic parameter Jacobians and optional Levenberg–Marquardt fitting.
@@ -40,11 +39,15 @@ the structural duplicate key; matching sampled predictions do not establish
 symbolic equivalence. Display text may contain Unicode or caller-generated
 LaTeX, but the archive does not derive either representation.
 
-Coordinate fitting remains the default. The GA does not consult the equation
-archive. Mathematical constraints are limited to the documented exact affine
-and bounded shared-floor fragment. The S1 derivative evaluator recomputes the
-scalar partial evaluator for each parameter. Mathematical symbolic equivalence
-under assumptions does not imply bit-exact floating-point equivalence.
+Coordinate fitting remains the default; Levenberg–Marquardt is optional.
+Parameter fitting optimizes numeric parameters for a supplied fixed expression
+topology and does not perform autonomous mathematical discovery. The GA does not
+consult the equation archive, which is output-only. Mathematical constraints are
+limited to the documented exact affine and bounded shared-floor fragment.
+Exact rational feasibility does not guarantee an executable binary64 witness.
+The S1 derivative evaluator recomputes the scalar partial evaluator for each
+parameter. Mathematical symbolic equivalence under assumptions does not imply
+bit-exact floating-point equivalence.
 
 ## Research interpretation
 
@@ -69,7 +72,8 @@ Ordinary Genetik remains C++20 and standard-library-only. Boost.Multiprecision
 1.83 is optional and required only by exact rational clients/tests. LP64
 LAPACK is an independent optional scientific target. Python remains optional.
 Hosted wheel and sdist qualification passed on Ubuntu 24.04 with CPython 3.12.3
-for both x86-64 and AArch64. Wheels are platform-tagged
+for both x86-64 and AArch64. Python qualification is limited to CPython 3.12 on
+Linux x86-64 and ARM64. Wheels are platform-tagged
 `cp312-cp312-linux_x86_64` and `cp312-cp312-linux_aarch64`; they are not
 manylinux wheels. Other Python minor versions and operating systems remain
 unqualified. See the [S3 release preparation report](../../S3_RELEASE_PREPARATION.md)
@@ -80,6 +84,9 @@ Native hosted qualification also passed with GCC 13/Release and exact CMake
 x86-64, and GCC 13/Release on Ubuntu 24.04 AArch64 with a separate TSan
 qualification. These tested configurations do not qualify Windows, macOS,
 AppleClang, libc++, other compiler/runtime versions, or arbitrary Linux images.
+The ARM64 job ran its selected TSan qualification; full-suite TSan coverage was
+not claimed. The external benchmark results do not establish general
+superiority over PySR.
 
 ## Hosted qualification
 
@@ -101,8 +108,11 @@ feasibility is distinct from selecting and verifying an executable binary64
 witness. Consumers of changed header-only APIs must recompile dependent
 translation units.
 
-The draft PR is for review only. Merge, tag creation or movement, GitHub Release
-publication, PyPI upload, and changes to published v0.6.0 assets remain separate
-actions requiring their own authorization.
+The published `v0.7.0` tag identifies the qualified release source. Existing
+v0.6.0 consumers and scalar/discrete checkpoints have explicit forward-reader
+coverage; generic checkpoint decoding remains exact-version. Recompile
+translation units that include changed header-only APIs. Python installation is
+available from the attached source distribution and CPython 3.12 Linux wheels;
+PyPI publication is not part of this release.
 
 See [migration notes](../../S3_MIGRATION.md) before recompiling consumers.

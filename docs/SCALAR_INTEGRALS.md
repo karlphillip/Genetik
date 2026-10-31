@@ -81,12 +81,12 @@ The compiled installed example is examples/quickstarts/integrals.cpp. It also ch
 an external-parameter-dependent integrand. Canonical commands, from the checkout:
 
 ```sh
-cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release
-cmake --build out/build/release -j2
-out/build/release/genetik_integrals_quickstart --threads 2
-out/build/release/genetik_integral_campaign --output out/runs/integral-new --threads 1
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+cmake --build build/release -j2
+build/release/genetik_integrals_quickstart --threads 2
+build/release/genetik_integral_campaign --output out/runs/integral-new --threads 1
 # Bounded integration smoke; campaign seeds remain sequential:
-out/build/release/genetik_integral_campaign --smoke --output out/runs/integral-smoke-new --threads 2
+build/release/genetik_integral_campaign --smoke --output out/runs/integral-smoke-new --threads 2
 ```
 
 IntegralRestrictions can supply original-index variable and operator subsets. With

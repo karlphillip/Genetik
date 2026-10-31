@@ -36,8 +36,11 @@ channels; integral regression scores complete numerical integrals. These objecti
 are not interchangeable fitness contexts. See [API index](API.md),
 [0.2 notes](releases/0.2.0/NOTES.md) and the individual contracts before migrating.
 
-Fresh builds use `out/build/`, installed prefixes `out/install/`, consumers
-`out/consumers/` and generated runs `out/runs/`. Campaign sources moved to
+Fresh builds use `build/`, installed prefixes `out/install/`, consumers
+`out/consumers/` and compatibility run paths remain under `out/runs/`. New durable
+datasets, research runs, experimental evidence and benchmark results belong in the
+sibling `../Genetik-data/`; benchmark executables stay under `build/benchmarks/`.
+Campaign sources moved to
 `apps/campaigns/` while executable names/explicit output options are preserved.
 Historical commands and evidence intentionally keep their original paths.
 

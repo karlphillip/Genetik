@@ -1,4 +1,5 @@
 # New generated output; committed historical evidence remains visible.
+/build/
 /out/
 __pycache__/
 *.pyc

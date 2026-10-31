@@ -164,8 +164,8 @@ const auto result = f.evaluate(inputs);
 Build it against an installation (ordinary CMake >=3.16):
 
 ```sh
-cmake -S . -B out/build/library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/out/install/typed"
-cmake --install out/build/library
+cmake -S . -B build/library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/out/install/typed"
+cmake --install build/library
 cmake -S examples/quickstarts -B out/consumers/typed -DCMAKE_PREFIX_PATH="$PWD/out/install/typed"
 cmake --build out/consumers/typed -j2
 out/consumers/typed/typed_quickstart

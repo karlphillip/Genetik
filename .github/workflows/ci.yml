@@ -62,45 +62,45 @@ jobs:
           make install
           echo "$RUNNER_TEMP/cmake-min/bin" >> "$GITHUB_PATH"
       - name: Record qualified environment and verify compiler choice
-        run: python3 scripts/ci_command.py --log out/build/ci/environment.log --title "Qualified environment" --report -- bash scripts/ci_environment.sh '${{ matrix.arch }}' '${{ matrix.minimum }}'
+        run: python3 scripts/ci_command.py --log build/ci/environment.log --title "Qualified environment" --report -- bash scripts/ci_environment.sh '${{ matrix.arch }}' '${{ matrix.minimum }}'
       - name: Configure
         run: >-
-          cmake -S . -B out/build/ci -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          cmake -S . -B build/ci -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_SANITIZERS=${{ matrix.sanitizers }}
           -DGENETIK_RECORDED_REFERENCE=OFF -DBUILD_TESTING=ON
           -DGENETIK_BUILD_TESTS=ON -DGENETIK_BUILD_EXAMPLES=ON
           -DGENETIK_THREAD_SANITIZER=OFF
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       - name: Compile contracts, standalone headers, and quickstarts
-        run: python3 scripts/ci_command.py --log out/build/ci/compile.log --title "Compilation diagnostics" -- cmake --build out/build/ci -j2
+        run: python3 scripts/ci_command.py --log build/ci/compile.log --title "Compilation diagnostics" -- cmake --build build/ci -j2
       - name: Verify the portable test manifest
         run: |
-          cmake -E chdir out/build/ci ctest --show-only=json-v1 > out/build/ci/test-manifest.json
-          python3 scripts/check_ci_manifest.py out/build/ci/test-manifest.json
+          cmake -E chdir build/ci ctest --show-only=json-v1 > build/ci/test-manifest.json
+          python3 scripts/check_ci_manifest.py build/ci/test-manifest.json
       - name: Run bounded contracts, installed relocation, and public workflows
         # -E chdir works with CTest 3.16, which predates --test-dir.
-        run: python3 scripts/ci_command.py --log out/build/ci/contracts.log --title "Portable contracts" --report -- cmake -E chdir out/build/ci ctest --output-on-failure
+        run: python3 scripts/ci_command.py --log build/ci/contracts.log --title "Portable contracts" --report -- cmake -E chdir build/ci ctest --output-on-failure
       - name: Separate ThreadSanitizer concurrency qualification
         if: matrix.name == 'gcc13-arm64'
         run: |
-          cmake -S . -B out/build/tsan -DCMAKE_BUILD_TYPE=Debug -DGENETIK_THREAD_SANITIZER=ON -DGENETIK_SANITIZERS=OFF -DBUILD_TESTING=ON -DGENETIK_BUILD_TESTS=ON -DGENETIK_BUILD_EXAMPLES=OFF -DGENETIK_RECORDED_REFERENCE=OFF -DGENETIK_WARNINGS_AS_ERRORS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-          python3 scripts/ci_command.py --log out/build/tsan/compile.log --title "TSan compilation" -- cmake --build out/build/tsan --target genetik_checkpoint_v03_writer genetik_checkpoint_compatibility_tests genetik_discrete_tests genetik_discrete_iteration_tests genetik_discrete_prime_tests genetik_checkpoint_tests genetik_prime_exact_tests genetik_concurrency_tests genetik_oop_consumer genetik_typed_tests genetik_typed_regression_tests genetik_scientific_tests genetik_parsing_tests genetik_template_tests genetik_derivative_tests genetik_derivative_regression_tests genetik_integral_tests genetik_d5_iteration_tests genetik_d5_integer_tests genetik_d5_recurrence_tests genetik_d5_scientific_tests genetik_d5_symbolic_tests genetik_d5_dimension_tests genetik_d6_tests -j2
-          cmake -E chdir out/build/tsan ctest -R 'genetik_d6_overlap|genetik_d5_iteration_overlap|genetik_d5_recurrence_overlap|genetik_d5_scientific_overlap|genetik_d5_symbolic_overlap|genetik_d5_dimension_overlap|genetik_discrete_overlap|genetik_discrete_iteration_overlap|genetik_discrete_prime_overlap|genetik_concurrency_contracts|genetik_oop_parallel|genetik_typed_overlap|genetik_typed_preparation_overlap|genetik_scientific_contracts|genetik_parsing_overlap|genetik_template_overlap|genetik_derivative_overlap|genetik_derivative_regression_overlap|genetik_integral_overlap|genetik_prime_exact_overlap|genetik_checkpoint_overlap' --show-only=json-v1 > out/build/tsan/test-manifest.json
-          python3 scripts/check_ci_manifest.py out/build/tsan/test-manifest.json --tsan
+          cmake -S . -B build/tsan -DCMAKE_BUILD_TYPE=Debug -DGENETIK_THREAD_SANITIZER=ON -DGENETIK_SANITIZERS=OFF -DBUILD_TESTING=ON -DGENETIK_BUILD_TESTS=ON -DGENETIK_BUILD_EXAMPLES=OFF -DGENETIK_RECORDED_REFERENCE=OFF -DGENETIK_WARNINGS_AS_ERRORS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          python3 scripts/ci_command.py --log build/tsan/compile.log --title "TSan compilation" -- cmake --build build/tsan --target genetik_checkpoint_v03_writer genetik_checkpoint_compatibility_tests genetik_discrete_tests genetik_discrete_iteration_tests genetik_discrete_prime_tests genetik_checkpoint_tests genetik_prime_exact_tests genetik_concurrency_tests genetik_oop_consumer genetik_typed_tests genetik_typed_regression_tests genetik_scientific_tests genetik_parsing_tests genetik_template_tests genetik_derivative_tests genetik_derivative_regression_tests genetik_integral_tests genetik_d5_iteration_tests genetik_d5_integer_tests genetik_d5_recurrence_tests genetik_d5_scientific_tests genetik_d5_symbolic_tests genetik_d5_dimension_tests genetik_d6_tests -j2
+          cmake -E chdir build/tsan ctest -R 'genetik_d6_overlap|genetik_d5_iteration_overlap|genetik_d5_recurrence_overlap|genetik_d5_scientific_overlap|genetik_d5_symbolic_overlap|genetik_d5_dimension_overlap|genetik_discrete_overlap|genetik_discrete_iteration_overlap|genetik_discrete_prime_overlap|genetik_concurrency_contracts|genetik_oop_parallel|genetik_typed_overlap|genetik_typed_preparation_overlap|genetik_scientific_contracts|genetik_parsing_overlap|genetik_template_overlap|genetik_derivative_overlap|genetik_derivative_regression_overlap|genetik_integral_overlap|genetik_prime_exact_overlap|genetik_checkpoint_overlap' --show-only=json-v1 > build/tsan/test-manifest.json
+          python3 scripts/check_ci_manifest.py build/tsan/test-manifest.json --tsan
           # This job uses runner CTest (>=3.17), not the x64-only 3.16 bootstrap.
-          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log out/build/tsan/contracts.log --title "TSan contracts" --report -- cmake -E chdir out/build/tsan ctest -R 'genetik_d6_overlap|genetik_d5_iteration_overlap|genetik_d5_recurrence_overlap|genetik_d5_scientific_overlap|genetik_d5_symbolic_overlap|genetik_d5_dimension_overlap|genetik_discrete_overlap|genetik_discrete_iteration_overlap|genetik_discrete_prime_overlap|genetik_concurrency_contracts|genetik_oop_parallel|genetik_typed_overlap|genetik_typed_preparation_overlap|genetik_scientific_contracts|genetik_parsing_overlap|genetik_template_overlap|genetik_derivative_overlap|genetik_derivative_regression_overlap|genetik_integral_overlap|genetik_prime_exact_overlap|genetik_checkpoint_overlap' --repeat until-fail:3 --output-on-failure
+          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log build/tsan/contracts.log --title "TSan contracts" --report -- cmake -E chdir build/tsan ctest -R 'genetik_d6_overlap|genetik_d5_iteration_overlap|genetik_d5_recurrence_overlap|genetik_d5_scientific_overlap|genetik_d5_symbolic_overlap|genetik_d5_dimension_overlap|genetik_discrete_overlap|genetik_discrete_iteration_overlap|genetik_discrete_prime_overlap|genetik_concurrency_contracts|genetik_oop_parallel|genetik_typed_overlap|genetik_typed_preparation_overlap|genetik_scientific_contracts|genetik_parsing_overlap|genetik_template_overlap|genetik_derivative_overlap|genetik_derivative_regression_overlap|genetik_integral_overlap|genetik_prime_exact_overlap|genetik_checkpoint_overlap' --repeat until-fail:3 --output-on-failure
           # Complete integral contracts include transactional split/failure cases
           # beyond the forced-overlap selection. Keep the established local gate.
-          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log out/build/tsan/integral-contracts.log --title "TSan complete integral contracts" --report -- cmake -E chdir out/build/tsan ctest -R '^genetik_integral_contracts$' --output-on-failure
+          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log build/tsan/integral-contracts.log --title "TSan complete integral contracts" --report -- cmake -E chdir build/tsan ctest -R '^genetik_integral_contracts$' --output-on-failure
           # Complete discrete contracts cover lazy/scoped resource and resume paths.
-          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log out/build/tsan/discrete-contracts.log --title "TSan complete discrete contracts" --report -- cmake -E chdir out/build/tsan ctest -R '^(genetik_discrete(_iteration|_prime)?_contracts|genetik_checkpoint_compatibility)$' --output-on-failure
-          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log out/build/tsan/d5-complete-contracts.log --title "TSan complete D5 contracts" --report -- cmake -E chdir out/build/tsan ctest -R '^genetik_d5_(integer|iteration|recurrence|scientific|symbolic|dimension)_contracts$' --output-on-failure
-          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log out/build/tsan/d6-complete-contracts.log --title "TSan complete D6 contracts" --report -- cmake -E chdir out/build/tsan ctest -R '^genetik_d6_(scientific_contracts|continuation)$' --output-on-failure
+          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log build/tsan/discrete-contracts.log --title "TSan complete discrete contracts" --report -- cmake -E chdir build/tsan ctest -R '^(genetik_discrete(_iteration|_prime)?_contracts|genetik_checkpoint_compatibility)$' --output-on-failure
+          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log build/tsan/d5-complete-contracts.log --title "TSan complete D5 contracts" --report -- cmake -E chdir build/tsan ctest -R '^genetik_d5_(integer|iteration|recurrence|scientific|symbolic|dimension)_contracts$' --output-on-failure
+          TSAN_OPTIONS=halt_on_error=1 python3 scripts/ci_command.py --log build/tsan/d6-complete-contracts.log --title "TSan complete D6 contracts" --report -- cmake -E chdir build/tsan ctest -R '^genetik_d6_(scientific_contracts|continuation)$' --output-on-failure
       - name: Stage diagnostic artifacts
         if: always()
         run: |
           mkdir -p "$RUNNER_TEMP/genetik-qualification"
-          for build in out/build/ci out/build/tsan; do
+          for build in build/ci build/tsan; do
             if [[ -d "$build" ]]; then
               destination="$RUNNER_TEMP/genetik-qualification/$(basename "$build")"
               mkdir -p "$destination"
@@ -156,16 +156,16 @@ jobs:
           sudo apt-get install --no-install-recommends libboost-dev libopenblas-dev
       - name: Configure optional exact rational and LP64 numerical features
         run: >-
-          cmake -S . -B out/build/optional-math -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build/optional-math -DCMAKE_BUILD_TYPE=Release
           -DGENETIK_WARNINGS_AS_ERRORS=ON -DBUILD_TESTING=ON
           -DGENETIK_BUILD_TESTS=ON -DGENETIK_BUILD_EXAMPLES=OFF
           -DGENETIK_BUILD_EXACT_RATIONAL_TESTS=ON -DGENETIK_SCIENTIFIC_NUMERICS=ON
           -DGENETIK_RECORDED_REFERENCE=OFF
       - name: Compile optional contracts and standalone headers
-        run: cmake --build out/build/optional-math -j2
+        run: cmake --build build/optional-math -j2
       - name: Run exact rational and optional numerical package contracts
         run: >-
-          cmake -E chdir out/build/optional-math ctest --output-on-failure
+          cmake -E chdir build/optional-math ctest --output-on-failure
           -R 'genetik_s2_exact_constraint_contracts|genetik_d6_scientific_contracts|genetik_d6_continuation|genetik_d6_optional_package'
       - name: Upload optional dependency diagnostics
         if: always()
@@ -174,8 +174,8 @@ jobs:
           name: optional-math-gcc13-x64
           retention-days: 14
           path: |
-            out/build/optional-math/CMakeCache.txt
-            out/build/optional-math/Testing/Temporary
+            build/optional-math/CMakeCache.txt
+            build/optional-math/Testing/Temporary
 
   python-cp312:
     name: python-cp312-${{ matrix.arch }}
@@ -215,11 +215,11 @@ jobs:
           "$RUNNER_TEMP/i2-python/bin/python" -m pip install -r docs/i2-results/requirements-python-cp312.txt
       - name: Build the native/Python reference consumer
         run: |
-          cmake -S . -B out/build/i2-python-reference -DCMAKE_BUILD_TYPE=Release \
+          cmake -S . -B build/i2-python-reference -DCMAKE_BUILD_TYPE=Release \
             -DGENETIK_BUILD_TESTS=ON -DBUILD_TESTING=ON \
             -DGENETIK_BUILD_EXAMPLES=OFF -DGENETIK_INSTALL=OFF \
             -DGENETIK_BUILD_PYTHON=OFF -DGENETIK_WARNINGS_AS_ERRORS=ON
-          cmake --build out/build/i2-python-reference --target genetik_python_native_reference -j2
+          cmake --build build/i2-python-reference --target genetik_python_native_reference -j2
       - name: Build and inspect the platform-specific wheel
         run: |
           "$RUNNER_TEMP/i2-python/bin/python" -m pip wheel . --no-deps --no-build-isolation --wheel-dir out/wheels/i2
@@ -243,7 +243,7 @@ jobs:
           PY
       - name: Install wheel and test estimator/native parity
         env:
-          GENETIK_NATIVE_REFERENCE: ${{ github.workspace }}/out/build/i2-python-reference/tests/genetik_python_native_reference
+          GENETIK_NATIVE_REFERENCE: ${{ github.workspace }}/build/i2-python-reference/tests/genetik_python_native_reference
           PYTHONPYCACHEPREFIX: ${{ github.workspace }}/out/tmp/python-cache
         run: |
           "$RUNNER_TEMP/i2-python/bin/python" -m pip install --no-deps out/wheels/i2/*.whl
@@ -286,7 +286,7 @@ jobs:
           I2_SR_RESULTS="$GITHUB_WORKSPACE/out/tmp/srbench-results" "$RUNNER_TEMP/i2-python/bin/python" -c 'import json,math,os,pathlib; files=list(pathlib.Path(os.environ["I2_SR_RESULTS"]).glob("*.json")); assert len(files)==1; p=files[0]; d=json.load(open(p)); assert d["symbolic_model"] and math.isfinite(d["mse_test"]); print(p,d["symbolic_model"],d["mse_test"])'
       - name: Install and test the Python source distribution
         env:
-          GENETIK_NATIVE_REFERENCE: ${{ github.workspace }}/out/build/i2-python-reference/tests/genetik_python_native_reference
+          GENETIK_NATIVE_REFERENCE: ${{ github.workspace }}/build/i2-python-reference/tests/genetik_python_native_reference
           PYTHONPYCACHEPREFIX: ${{ github.workspace }}/out/tmp/python-cache
         run: |
           "$RUNNER_TEMP/i2-python/bin/python" -m build --sdist --no-isolation --outdir out/sdist/i2
@@ -319,7 +319,7 @@ jobs:
             out/sources/i2/Genetik-0.7.0-source.tar.gz
             out/sources/i2/SHA256SUMS
             out/qualification/i2/SHA256SUMS
-            out/build/i2-python-reference/CMakeCache.txt
+            build/i2-python-reference/CMakeCache.txt
             out/tmp/srbench-results/*.json
       - name: Retain failure diagnostics
         if: failure()
@@ -330,6 +330,6 @@ jobs:
           path: |
             ${{ runner.temp }}/genetik-qualification
             ${{ runner.temp }}/i2-python
-            out/build/i2-python-reference
+            build/i2-python-reference
             out/wheels/i2
             out/sdist/i2

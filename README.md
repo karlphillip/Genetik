@@ -97,9 +97,9 @@ retain their own package versions and instructions.
 From the corresponding source root, install and build the available programs:
 
 ```sh
-cmake -S . -B out/build/library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/out/install/local"
-cmake --build out/build/library
-cmake --install out/build/library
+cmake -S . -B build/library -DBUILD_TESTING=OFF -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/out/install/local"
+cmake --build build/library
+cmake --install build/library
 cmake -S examples/quickstarts -B out/consumers/quickstarts -DCMAKE_PREFIX_PATH="$PWD/out/install/local"
 cmake --build out/consumers/quickstarts -j2
 out/consumers/quickstarts/scalar_quickstart
@@ -141,10 +141,10 @@ type, optimization level or C++ standard. See [package details](docs/PACKAGING.m
 ## Develop and verify
 
 ```sh
-cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
-cmake --build out/build/release -j2
-cmake -E chdir out/build/release ctest --output-on-failure
-out/build/release/genetik_demo 42 1000
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
+cmake --build build/release -j2
+cmake -E chdir build/release ctest --output-on-failure
+build/release/genetik_demo 42 1000
 python3 scripts/check_hygiene.py --workspace # optional local parent-workspace audit
 ```
 
@@ -189,7 +189,7 @@ Applications use the same public search path:
 For example, after generating ordinary numerical files as described in the guides:
 
 ```sh
-out/build/release/genetik_regression_search training.csv --inputs first,second --target target --seed 42 --loss-budget 4096 --operators add,sub,mul,div,log --fit-every 1
+build/release/genetik_regression_search training.csv --inputs first,second --target target --seed 42 --loss-budget 4096 --operators add,sub,mul,div,log --fit-every 1
 ```
 
 Tests and examples use deterministic execution bounds; stochastic recovery is
@@ -209,8 +209,10 @@ out/consumers/oop/permutation_consumer
 ```
 
 Demos live in examples/, numerical file search in apps/, performance harnesses in
-benchmarks/, compiled campaigns in apps/campaigns/ and development helpers in scripts/. Executable names and explicit output
-options are unchanged. Put new generated results under out/build/, out/runs/, out/data/, out/logs/ or out/tmp/;
+benchmarks/, compiled campaigns in apps/campaigns/ and development helpers in scripts/.
+Executable names and explicit output options are unchanged. Put compiled output under
+build/; keep transient runs/logs/tmp under out/ and durable datasets, experimental
+evidence and benchmark results under ../Genetik-data/.
 accepted evidence remains in docs/. [Layout and historical path mapping](docs/ORGANIZATION.md).
 Population evaluation/refinement has an opt-in library-owned CPU backend. Use
 `RandomContext(42, ExecutionConfig{4})` or `--threads 4` in evolution applications;
@@ -219,7 +221,7 @@ qualification; immutable regression data and independent built-in refiners are
 supported. [Ownership, budgets, cancellation and repeatability](docs/CONCURRENCY.md).
 
 ```sh
-out/build/release/genetik_demo 42 20 --threads 4
+build/release/genetik_demo 42 20 --threads 4
 out/consumers/quickstarts/symbolic_quickstart --threads 4
 out/consumers/oop/permutation_consumer --threads 3
 ```
@@ -235,9 +237,13 @@ accumulated typed/scientific feature candidate. The published v0.1.0 pre-release
 remains unchanged; this feature branch is subsequent development.
 
 Current output conventions and retained workspace records: [ORGANIZATION.md](docs/ORGANIZATION.md)
-and [Phase 1 cleanup evidence](docs/CLEANUP.md). Use `out/build/` for fresh builds,
+and [Phase 1 cleanup evidence](docs/CLEANUP.md). Use `build/` for fresh builds,
 `out/install/` and `out/consumers/` for delivery, and `out/runs/`, `out/data/`,
-`out/logs/`, `out/tmp/` for generated work. Do not move configured CMake caches.
+`out/logs/`, `out/tmp/` for compatibility and transient output. Put durable datasets,
+research runs, experimental evidence and benchmark results in sibling `Genetik-data/`.
+Do not move configured CMake caches. Configure a dedicated benchmark build with
+`cmake -S . -B build/benchmarks -DCMAKE_BUILD_TYPE=Release`; benchmark source stays
+in `benchmarks/` and resulting executables stay in that build directory.
 
 ### Additive typed symbolic regression (post-v0.1.0 development)
 
@@ -266,7 +272,7 @@ owned aggregate literals, canonical round trips and diagnostics.
 Evaluate a supplied expression without evolution:
 
 ```sh
-out/build/release/genetik_regression_evaluate training.csv \
+build/release/genetik_regression_evaluate training.csv \
   --expression formula.txt --inputs first,second --target target
 ```
 
@@ -299,7 +305,7 @@ rounded matches, with committed top-five reports (including duplicates) after ro
 30 seconds at safe generation boundaries:
 
 ```sh
-out/build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30 --formula-precision 6
+build/release/genetik_prime_regression --search-exact --seed 42 --threads 4 --loss-budget 1000000 --report-seconds 30 --formula-precision 6
 ```
 
 Ctrl+C cooperatively cancels; loss and generation limits remain finite. The default

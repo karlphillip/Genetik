@@ -73,8 +73,8 @@ budgets, fresh baselines and caller-retained objective diagnostics on exceptions
 From the repository root, after building Release:
 
 ```sh
-out/build/release/genetik_multivariate_demo --generate out/data/multivariate
-out/build/release/genetik_regression_search out/data/multivariate/training.csv \
+build/release/genetik_multivariate_demo --generate out/data/multivariate
+build/release/genetik_regression_search out/data/multivariate/training.csv \
   --inputs first,second --target target --seed 42 --loss-budget 100000 \
   --evaluate out/data/multivariate/interior.csv --evaluate out/data/multivariate/exterior.csv
 ```

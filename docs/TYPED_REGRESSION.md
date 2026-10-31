@@ -181,11 +181,11 @@ auto result=typedSymbolicRegression(p,c,run);
 Application commands (stdout/files remain under explicit destinations):
 
 ```sh
-cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release
-cmake --build out/build/release -j2
-out/build/release/genetik_typed_regression --output out/runs/typed-discovery-new
-out/build/release/genetik_typed_regression --smoke --fit --threads 2 --output out/runs/typed-search-smoke-new
-out/build/release/genetik_typed_regression --fit-fixture --output out/runs/typed-fitting-new
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+cmake --build build/release -j2
+build/release/genetik_typed_regression --output out/runs/typed-discovery-new
+build/release/genetik_typed_regression --smoke --fit --threads 2 --output out/runs/typed-search-smoke-new
+build/release/genetik_typed_regression --fit-fixture --output out/runs/typed-fitting-new
 ```
 
 Default discovery uses the frozen no-fit protocol. --fit enables bounded default

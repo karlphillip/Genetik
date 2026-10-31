@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.0 — Advanced Scientific Regression Development Pre-release (provisional)
+## 0.7.0 — Advanced Scientific Regression Development Pre-release
 
 - Add optional shared-parameter derivatives and Levenberg–Marquardt fitting;
   keep coordinate fitting as the default.
@@ -10,9 +10,8 @@
 - Preserve explicit forward checkpoint readers for published scalar/discrete
   0.6.0 data while keeping generic loading exact-version.
 - Record mathematical qualification, historical benchmark evidence, explicit
-  limitations and release preparation in the S3 reports. This is a local
-  development candidate; hosted qualification and publication require separate
-  authorization.
+  limitations and release preparation in the S3 reports. The GitHub pre-release
+  is qualified for the documented platforms; it is not a stable release.
 
 ## 0.6.0 — Python interoperability development pre-release candidate
 

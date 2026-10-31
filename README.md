@@ -12,12 +12,14 @@ It is heuristic search, with no guarantee of a good fit, a particular equation o
 extrapolation accuracy. Prime regression is one application example.
 
 The library uses only the C++ standard library by default and is [MIT licensed](LICENSE).
-Published releases through **0.6.0** and their assets remain unchanged. The
-provisional **0.7.0 development pre-release candidate** integrates shared
-parameter derivatives, optional Levenberg–Marquardt fitting, bounded exact
-quantized constraints, domain-aware symbolic assumptions, and an output-only
+**Genetik 0.7.0 — Advanced Scientific Regression** is published on GitHub as a
+development pre-release, not a stable release. It adds shared-parameter
+derivatives, optional Levenberg–Marquardt fitting, bounded exact quantized
+constraints, domain-aware symbolic assumptions, and an output-only
 accuracy–complexity equation archive. Coordinate fitting and generic GA defaults
-remain unchanged. The candidate also retains optional native Python access with
+remain unchanged. Parameter fitting optimizes a supplied fixed expression
+topology; it does not perform autonomous mathematical discovery. The release
+also retains optional native Python access with
 NumPy input, `GenetikRegressor`, SymPy export and a local SRBench adapter. It also includes the opt-in
 [D5 advanced mathematics](docs/ADVANCED_MATHEMATICS_D5.md) and
 [D6 scientific discovery](docs/SCIENTIFIC_DISCOVERY_D6.md): checked integer
@@ -27,15 +29,19 @@ tensors, restricted complex regression, statistics, probability and special
 functions. Established GA defaults and generic OOP use cases remain supported.
 Python is optional; local wheel qualification is Linux AArch64/CPython 3.12,
 and hosted wheel qualification has passed on Ubuntu 24.04 with CPython 3.12 on
-both x86-64 and AArch64. Other Python versions and operating systems remain
-unqualified. See
+both x86-64 and AArch64. Python qualification covers CPython 3.12 on Linux
+x86-64 and ARM64 only; other Python versions and operating systems remain
+unqualified. The quantized solver supports only its documented bounded
+mathematical fragment, and exact rational feasibility does not guarantee an
+executable binary64 witness. The equation archive is output-only and does not
+affect evolutionary selection. The external benchmarks do not establish general
+superiority over PySR. ARM64 TSan qualification covers the selected checks, not
+the full suite. See
 [I2 Python interoperability](docs/I2_PYTHON_INTEROPERABILITY.md),
 [0.7.0 notes](docs/releases/0.7.0/NOTES.md), [migration](docs/I2_MIGRATION.md),
 [D7 numerical boundaries](docs/D7_NUMERICAL_QUALIFICATION.md), and
-[historical benchmark report](docs/d7/BENCHMARK_REPORT.md). This candidate is
-hosted-qualified and unpublished; integration and publication are separate actions.
-The qualification branch is `qualification/scientific-regression-s3`; its current
-implementation commit and hosted run are recorded in
+[historical benchmark report](docs/d7/BENCHMARK_REPORT.md). The release source is
+the `v0.7.0` tag; its hosted qualification and release assets are recorded in
 [S3 release preparation](docs/S3_RELEASE_PREPARATION.md).
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
@@ -77,18 +83,16 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   scheduling genome with custom fitness and virtual selection/variation, no symbolic
   headers, and deterministic correctness checks independent of discovering an optimum.
 
-Obtain the source (use `--branch v0.6.0` for the published checkpoint, or
-`--branch qualification/scientific-regression-s3` for this 0.7.0 development candidate):
+Obtain the v0.7.0 development pre-release source:
 
 ```sh
-git clone https://github.com/karlphillip/Genetik.git Genetik
+git clone --branch v0.7.0 https://github.com/karlphillip/Genetik.git Genetik
 cd Genetik
-git switch qualification/scientific-regression-s3
 ```
 
 For published 0.6.0, use its verified source archive and enter `Genetik-0.6.0/`.
-This candidate builds on v0.6.0; D5/D6 APIs first appeared in the 0.5.0 series.
-The commands below describe the 0.7.0 candidate tree; older release archives
+This release builds on v0.6.0; D5/D6 APIs first appeared in the 0.5.0 series.
+The commands below describe the v0.7.0 source tree; older release archives
 retain their own package versions and instructions.
 From the corresponding source root, install and build the available programs:
 
@@ -312,7 +316,7 @@ uses the generic state seams and scalar-expression codec without prime dependenc
 
 Optional discrete modules: [D1](docs/DISCRETE_EXPRESSIONS.md), [D2](docs/DISCRETE_ITERATION.md), [D3 results](docs/DISCRETE_D3_RESULTS.md). They do not replace the generic OOP engine.
 
-Current candidate: [Genetik 0.7.0 development pre-release notes](docs/releases/0.7.0/NOTES.md),
+Current release: [Genetik 0.7.0 development pre-release notes](docs/releases/0.7.0/NOTES.md),
 [S3 migration guide](docs/S3_MIGRATION.md),
 [S3 mathematical qualification](docs/S3_MATHEMATICAL_QUALIFICATION.md),
 [S3 benchmark findings](docs/S3_SCIENTIFIC_BENCHMARKS.md), and

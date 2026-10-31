@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -163,6 +164,14 @@ class BranchLifecycleTests(unittest.TestCase):
         self.assertNotEqual(expected, observed)
         self.assertFalse(remote_delete_allowed(expected_sha=expected, observed_sha=observed,
                                                integrated=True, active_worktree=False, dirty_worktree=False))
+        rejected = subprocess.run(
+            ["git", "-C", str(first), "push",
+             f"--force-with-lease=refs/heads/task:{expected}",
+             "origin", ":refs/heads/task"],
+            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        self.assertNotEqual(rejected.returncode, 0, "stale SHA lease must reject remote deletion")
+        self.assertEqual(run(self.root, "ls-remote", str(bare), "refs/heads/task").split()[0], observed)
 
     def test_audit_does_not_modify_repository_state(self) -> None:
         before = run(self.repo, "status", "--porcelain")

@@ -118,6 +118,11 @@ def audit(repo: Path, base_ref: str = "origin/main") -> dict[str, Any]:
         equivalent = git(repo, "cherry", base, sha).stdout.splitlines()
         unique = git(repo, "log", "--format=%H %s", f"{base}..{sha}").stdout.splitlines()
         active = by_branch.get(name, []) if not is_remote else []
+        upstream_result = git(repo, "rev-parse", "--abbrev-ref", f"{name}@{{upstream}}", check=False) if not is_remote else None
+        upstream_ref = upstream_result.stdout.strip() if upstream_result and upstream_result.returncode == 0 else None
+        upstream_sha = git(repo, "rev-parse", "--verify", upstream_ref, check=False).stdout.strip() if upstream_ref else None
+        tracking_ahead = int(git(repo, "rev-list", "--count", f"{upstream_sha}..{sha}").stdout.strip()) if upstream_sha else None
+        tracking_behind = int(git(repo, "rev-list", "--count", f"{sha}..{upstream_sha}").stdout.strip()) if upstream_sha else None
         if ancestry.returncode == 0:
             relation = "fully_merged"
         elif sha == base:
@@ -140,7 +145,10 @@ def audit(repo: Path, base_ref: str = "origin/main") -> dict[str, Any]:
             "patch_equivalent_in_base": [line[1:] for line in equivalent if line.startswith("-")],
             "unique_commits": unique,
             "active_worktrees": active,
-            "remote_tracking_ref": None if is_remote else git(repo, "rev-parse", "--abbrev-ref", f"{name}@{{upstream}}", check=False).stdout.strip() or None,
+            "remote_tracking_ref": upstream_ref,
+            "remote_tracking_sha": upstream_sha,
+            "ahead_of_tracking": tracking_ahead,
+            "behind_tracking": tracking_behind,
         })
     return {
         "repository": str(repo),
@@ -175,6 +183,9 @@ def main() -> int:
         for branch in result["branches"]:
             print(f"{branch['kind'].upper():6} {branch['name']} {branch['sha']} {branch['relation_to_base']} "
                   f"ahead={branch['ahead_commits']} behind={branch['behind_commits']} "
+                  f"tracking={branch['remote_tracking_ref'] or '-'}"
+                  f"(+{branch['ahead_of_tracking'] if branch['ahead_of_tracking'] is not None else '-'}"
+                  f"/-{branch['behind_tracking'] if branch['behind_tracking'] is not None else '-'}) "
                   f"active_worktrees={len(branch['active_worktrees'])}")
             for commit in branch["unique_commits"]:
                 print(f"  UNIQUE {commit}")

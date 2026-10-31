@@ -162,6 +162,14 @@ class BranchLifecycleTests(unittest.TestCase):
         run(second, "push", "origin", "task")
         observed = run(self.root, "ls-remote", str(bare), "refs/heads/task").split()[0]
         self.assertNotEqual(expected, observed)
+        run(first, "fetch", "origin")
+        local_branch = next(
+            item for item in audit(first, "refs/remotes/origin/task")["branches"]
+            if item["kind"] == "local" and item["name"] == "task"
+        )
+        self.assertEqual(local_branch["remote_tracking_sha"], observed)
+        self.assertEqual(local_branch["ahead_of_tracking"], 0)
+        self.assertEqual(local_branch["behind_tracking"], 1)
         self.assertFalse(remote_delete_allowed(expected_sha=expected, observed_sha=observed,
                                                integrated=True, active_worktree=False, dirty_worktree=False))
         rejected = subprocess.run(

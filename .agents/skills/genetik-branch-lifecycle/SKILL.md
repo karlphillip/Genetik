@@ -83,7 +83,7 @@ python3 scripts/branch_audit.py --repo . --base origin/main
 python3 scripts/branch_audit.py --repo . --base origin/main --json
 ```
 
-The helper reports local and fetched remote refs, SHA, ancestry/tree relation, ahead/behind counts, commits unique by ancestry, patch-equivalent commits, tracking ref, active worktrees, and dirty worktree status. `identical_tree_possible_squash_or_equivalent` is only a lead: it does not prove a reviewed/qualified PR. The helper deliberately cannot verify GitHub reviews, CI, task ownership, or branch protection. Inspect those separately before integration or deletion. If the base ref is absent, fetch it explicitly; the helper will not fetch for you.
+The helper reports local and fetched remote refs, SHA, ancestry/tree relation, ahead/behind counts against the base and configured upstream, commits unique by ancestry, patch-equivalent commits, tracking ref, active worktrees, and dirty worktree status. `identical_tree_possible_squash_or_equivalent` is only a lead: it does not prove a reviewed/qualified PR. The helper deliberately cannot verify GitHub reviews, CI, task ownership, or branch protection. Inspect those separately before integration or deletion. If the base ref is absent, fetch it explicitly; the helper will not fetch for you.
 
 Qualify helper/policy changes against disposable repositories with:
 

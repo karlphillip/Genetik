@@ -93,6 +93,9 @@
   Task worktree cleanup must target only the verified worktree root. Durable data
   is in sibling Genetik-data/; never recursively target or resolve out/runs or its
   Genetik-data/research-runs destination during cleanup.
+  `build/historical-runs-migration-2026-10-31/` is a retained archive of legacy
+  generated build trees and binaries, not a disposable build cache; do not remove
+  it or reuse its archived CMake state.
   The minimum tool remains ../delivery-tools/cmake-min/bin/cmake (3.16.0), and
   ../.tools/bin/cmake is 4.4.4. Parent archive/genetik/ holds indexed retained records
   and the authoritative v0.1.0 source asset; preserve the 127 frozen evidence hashes.

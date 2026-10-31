@@ -53,6 +53,11 @@ file inventory, sizes, symlinks and representative SHA-256 checksums. Its
 preflight record is in `Genetik-data/experimental-evidence/`; it is provenance on
 the same device, not an independent backup. The two `/dev/full` links are retained
 as fault-injection fixtures.
+Legacy generated CMake build trees and compiled files found inside the historical
+runs were preserved under `build/historical-runs-migration-2026-10-31/`; links
+inside `Genetik-data/research-runs/` keep their prior paths usable. This ignored
+archive is retained and is not a reusable build cache. Its file-level mapping and
+integrity record are in `Genetik-data/experimental-evidence/`.
 
 ## Build and includes
 

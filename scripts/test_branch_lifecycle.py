@@ -181,9 +181,9 @@ class BranchLifecycleTests(unittest.TestCase):
             index_path = self.repo / index_path
         index_before = hashlib.sha256(index_path.read_bytes()).hexdigest()
         self.inventory()
+        self.assertEqual(hashlib.sha256(index_path.read_bytes()).hexdigest(), index_before)
         self.assertEqual(run(self.repo, "status", "--porcelain"), before)
         self.assertEqual(run(self.repo, "show-ref", "--heads", "--hash"), refs_before)
-        self.assertEqual(hashlib.sha256(index_path.read_bytes()).hexdigest(), index_before)
 
 
 if __name__ == "__main__":

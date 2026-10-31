@@ -10,7 +10,7 @@ Read and apply this skill at the **start and end of every source-changing task**
 ## Safety rules
 
 - Never reset, clean, stash, overwrite, or delete uncommitted user work. If provenance or ownership is uncertain, stop and report it.
-- Never force-push or rewrite `main`, a research branch, or a task branch.
+- Never force-push or rewrite commit history. The only `--force-with-lease` use is deleting a task branch already proven integrated, under CLEANUP below; it must never update a branch to another commit.
 - Preserve research evidence, failed qualification branches, and unrelated worktrees. A branch being old or having an empty diff is not sufficient evidence to delete it.
 - Never infer PR integration or CI success from ancestry alone. Verify the PR, exact tested head SHA, all required checks, review/blocking state, and mergeability with GitHub.
 - Do not modify or move tags, publish releases/packages, or modify published assets unless the task explicitly authorizes that specific action.

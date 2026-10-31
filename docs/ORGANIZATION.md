@@ -17,20 +17,21 @@ target `genetik_lib`, executable names and explicit output options remain intact
 | Python/shell development and reporting helpers | `scripts/` |
 | Package helpers | `cmake/` |
 | Contracts, accepted experiment evidence and historical reproductions | `docs/` |
-| Fresh configured builds (never moved caches) | `out/build/{release,debug,sanitize,minimum,tsan}` |
+| Fresh configured builds (each worktree owns its caches) | `build/{release,debug,asan-ubsan,tsan,benchmarks}` |
 | Manual installs and external builds | `out/install/`, `out/consumers/` |
-| New experiments, generated data, logs, disposable copies | `out/runs/`, `out/data/`, `out/logs/`, `out/tmp/` |
+| Transient runs/logs and disposable copies | `out/runs/`, `out/logs/`, `out/tmp/` (legacy data paths preserved) |
+| Durable datasets, research runs, evidence and benchmark results | sibling `../Genetik-data/` |
 | Compact retained parent-workspace history and published assets | `../archive/genetik/` |
 
 Current ordinary-tool commands, from the repository root:
 
 ```sh
-cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
-cmake --build out/build/release -j2
-cmake -E chdir out/build/release ctest --output-on-failure
-mkdir -p out/logs out/data
-out/build/release/genetik_demo 42 20 --threads 2 > out/logs/character.txt
-out/build/release/genetik_prime_regression --generate --output out/data/prime-new
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON
+cmake --build build/release -j2
+cmake -E chdir build/release ctest --output-on-failure
+mkdir -p out/logs ../Genetik-data/datasets
+build/release/genetik_demo 42 20 --threads 2 > out/logs/character.txt
+build/release/genetik_prime_regression --generate --output ../Genetik-data/datasets/prime-new
 python3 scripts/check_hygiene.py --workspace
 ```
 
@@ -52,9 +53,11 @@ managed Git worktrees for future additional source checkouts; disposable deliver
 fixtures remain temporary copies under a build/output directory.
 
 `check_hygiene.py` checks root roles and generated caches/objects under source roles;
-it permits intentional .txt/.csv/.json evidence and fixtures. `out/` is opaque and
-ignored. `--workspace` additionally checks the local parent entry names (`Genetik/`,
-`.tools/`, `delivery-tools/`, `archive/`); it does not modify anything or follow links.
+it permits intentional .txt/.csv/.json evidence and fixtures. `out/` is opaque legacy
+and operational output; root `build/` is recognized generated output and Git-checked
+for tracked files. `--workspace` additionally checks the local parent entry names
+(`Genetik/`, `Genetik-data/`, `.tools/`, `delivery-tools/`, `archive/`); it does not
+modify anything or follow links.
 The self-test exercises misplaced output and symlink handling. CI runs repository
 mode because a hosted parent workspace is owned by the runner. In-source CMake
 configuration is rejected with an out-of-source command hint. Root entries are an

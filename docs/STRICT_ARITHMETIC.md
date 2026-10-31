@@ -109,8 +109,8 @@ have different trajectories. Within-build repeated searches remain deterministic
 ## File workflow
 
 ```sh
-out/build/release/genetik_multivariate_demo --arithmetic --generate out/data/arithmetic
-out/build/release/genetik_regression_search out/data/arithmetic/training.csv \
+build/release/genetik_multivariate_demo --arithmetic --generate out/data/arithmetic
+build/release/genetik_regression_search out/data/arithmetic/training.csv \
   --inputs first,second --target target --seed 42 --loss-budget 100000 \
   --operators add,sub,mul,div,log \
   --evaluate out/data/arithmetic/interior.csv --evaluate out/data/arithmetic/exterior.csv

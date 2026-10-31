@@ -50,8 +50,8 @@ rejects `x0-x0`, reparses its complete export and reports the stopping outcome.
 Acceptance of that program does not depend on exact stochastic discovery.
 
 ```sh
-cmake -S . -B out/build/library -DGENETIK_BUILD_TESTS=OFF -DBUILD_TESTING=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/out/install/local"
-cmake --install out/build/library
+cmake -S . -B build/library -DGENETIK_BUILD_TESTS=OFF -DBUILD_TESTING=OFF -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$PWD/out/install/local"
+cmake --install build/library
 cmake -S examples/quickstarts -B out/consumers/quickstarts -DCMAKE_PREFIX_PATH="$PWD/out/install/local"
 cmake --build out/consumers/quickstarts -j2
 out/consumers/quickstarts/templates_quickstart --threads 2
@@ -174,11 +174,11 @@ binding-limit trajectories retain the existing qualified concurrency scope.
 Run the fixed no-fit discovery campaign once per new output directory:
 
 ```sh
-cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release
-cmake --build out/build/release -j2
-out/build/release/genetik_scalar_template_campaign --output out/runs/templates/my-campaign --threads 1
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+cmake --build build/release -j2
+build/release/genetik_scalar_template_campaign --output out/runs/templates/my-campaign --threads 1
 # Bounded integration smoke, not the research protocol:
-out/build/release/genetik_scalar_template_campaign --output out/runs/templates/my-smoke --smoke --threads 2
+build/release/genetik_scalar_template_campaign --output out/runs/templates/my-smoke --smoke --threads 2
 ```
 
 [All five outcomes and separate fitting evidence](SCALAR_TEMPLATE_RESULTS.md) and

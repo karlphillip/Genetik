@@ -136,18 +136,18 @@ workspace campaign artifacts remain unchanged.
 Public commands use ordinary cmake/ctest (README). On this Jetson:
 
 ```sh
-../.tools/bin/cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_RECORDED_REFERENCE=ON
-../.tools/bin/cmake --build out/build/release -j2
-../.tools/bin/ctest --test-dir out/build/release --output-on-failure
-../.tools/bin/cmake -S . -B out/build/debug -DCMAKE_BUILD_TYPE=Debug -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_RECORDED_REFERENCE=ON
-../.tools/bin/cmake --build out/build/debug -j2
-../.tools/bin/ctest --test-dir out/build/debug --output-on-failure
-../.tools/bin/cmake -S . -B out/build/sanitize -DCMAKE_BUILD_TYPE=Debug -DGENETIK_SANITIZERS=ON -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_RECORDED_REFERENCE=ON
-../.tools/bin/cmake --build out/build/sanitize -j2
-../.tools/bin/ctest --test-dir out/build/sanitize --output-on-failure
-../delivery-tools/cmake-min/bin/cmake -S . -B out/build/minimum -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_RECORDED_REFERENCE=ON
-../delivery-tools/cmake-min/bin/cmake --build out/build/minimum -j2
-../delivery-tools/cmake-min/bin/cmake -E chdir out/build/minimum "$PWD/../delivery-tools/cmake-min/bin/ctest" --output-on-failure
+../.tools/bin/cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_RECORDED_REFERENCE=ON
+../.tools/bin/cmake --build build/release -j2
+../.tools/bin/ctest --test-dir build/release --output-on-failure
+../.tools/bin/cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_RECORDED_REFERENCE=ON
+../.tools/bin/cmake --build build/debug -j2
+../.tools/bin/ctest --test-dir build/debug --output-on-failure
+../.tools/bin/cmake -S . -B build/asan-ubsan -DCMAKE_BUILD_TYPE=Debug -DGENETIK_SANITIZERS=ON -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_RECORDED_REFERENCE=ON
+../.tools/bin/cmake --build build/asan-ubsan -j2
+../.tools/bin/ctest --test-dir build/asan-ubsan --output-on-failure
+../delivery-tools/cmake-min/bin/cmake -S . -B build/release-minimum -DCMAKE_BUILD_TYPE=Release -DGENETIK_WARNINGS_AS_ERRORS=ON -DGENETIK_RECORDED_REFERENCE=ON
+../delivery-tools/cmake-min/bin/cmake --build build/release-minimum -j2
+../delivery-tools/cmake-min/bin/cmake -E chdir build/release-minimum "$PWD/../delivery-tools/cmake-min/bin/ctest" --output-on-failure
 ```
 
 To build the minimum tool: download cmake-3.16.0.tar.gz and its SHA-256 listing
@@ -275,7 +275,8 @@ rewrite, tag or release publication occurred. Version remains 0.1.0 unreleased.
 
 ## Current workspace convention
 
-Fresh qualification now uses `out/build/{release,debug,sanitize,minimum,tsan}`;
+Fresh qualification now uses `build/{release,debug,asan-ubsan,tsan}`; use a
+separate `build/release-minimum/` for CMake 3.16.0.
 installed fixtures and disposable producer paths stay under those build trees.
 For manual installation use `out/install/` and `out/consumers/`. Historical commands
 and evidence retain their original paths; see [CLEANUP.md](CLEANUP.md). The local

@@ -150,12 +150,12 @@ The companion application uses the **same existing finite numerical table reader
 ordered column mapping, checked regression loss and all-row reporting**:
 
 ```sh
-cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release
-cmake --build out/build/release -j2
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+cmake --build build/release -j2
 mkdir -p out/data/formula
 printf 'x,y\n-1,-1.75\n0,0\n1,1.75\n' > out/data/formula/training.csv
 printf '1.0*x0\n' > out/data/formula/expression.txt
-out/build/release/genetik_regression_evaluate out/data/formula/training.csv \
+build/release/genetik_regression_evaluate out/data/formula/training.csv \
   --expression out/data/formula/expression.txt --inputs x --target y \
   --fit --fit-budget 128
 ```

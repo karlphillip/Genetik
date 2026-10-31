@@ -24,16 +24,21 @@
   with `python3 scripts/test_branch_lifecycle.py`.
 
 - C++20, CPU-first, standard library only; preserve the MIT license and ordinary GA use.
-- Keep builds out of the source tree. On this Jetson CMake is workspace-local:
+- Keep builds out of source-code directories. The repository-root `build/` is
+  ignored generated output; each worktree owns its own caches. Use separate
+  trees for incompatible configurations. On this Jetson CMake is workspace-local:
   `../.tools/bin/cmake` and `../.tools/bin/ctest` (4.4.4); ordinary `cmake`/`ctest` work when installed.
 - Verified from this repository:
   ```sh
-  ../.tools/bin/cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release
-  ../.tools/bin/cmake --build out/build/release -j2
-  ../.tools/bin/ctest --test-dir out/build/release --output-on-failure
-  timeout 10s out/build/release/genetik_demo 42 1000
+  ../.tools/bin/cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+  ../.tools/bin/cmake --build build/release -j2
+  ../.tools/bin/ctest --test-dir build/release --output-on-failure
+  timeout 10s build/release/genetik_demo 42 1000
   ```
-- Use separate Debug and sanitizer directories; sanitizer option is `-DGENETIK_SANITIZERS=ON`.
+- Use separate `build/debug/` and `build/asan-ubsan/` directories; sanitizer
+  option is `-DGENETIK_SANITIZERS=ON`. Use `build/tsan/` with
+  `-DGENETIK_THREAD_SANITIZER=ON` and sanitizers OFF. Configure benchmark-only
+  work in `build/benchmarks/`.
 - Tests must check outcomes with runtime failures, including with `NDEBUG`; never require stochastic target discovery. Set CTest timeouts and bound examples.
 - One explicit, caller-owned `RandomContext(seed, ExecutionConfig{N})` per run (default N=1). Population and algorithm borrow the same context; it must outlive them. No hidden engines/reseeding. Custom creatures accept `std::mt19937&` for initialization and mutation.
 - `genetik_lib` is a header-only CMake interface target and propagates C++20 to consumers. Each public header must compile alone; verify the downstream consumer fixture.
@@ -67,8 +72,11 @@
   See docs/ARCHITECTURE.md and tests/oop_consumer; no symbolic dependency in core.
 - Active layout: examples/ (including quickstarts), apps/ for file regression,
   benchmarks/ for evaluation harness/corpus, scripts/ for campaigns/helpers.
-  New output uses out/build/, out/install/, out/consumers/, out/runs/, out/data/, out/logs/ and out/tmp/. Preserve accepted
-  docs evidence and historical source locations; do not blanket-ignore logs.
+  New compiled output uses build/ (release/, debug/, asan-ubsan/, tsan/ and
+  benchmarks/ are conventions). Keep install/consumers/runs/logs/tmp under out/;
+  durable datasets, research runs and benchmark results belong in sibling
+  Genetik-data/. Preserve accepted docs evidence and historical source locations;
+  do not blanket-ignore logs.
 - Generic concurrency uses an explicitly run-owned ExecutionContext (default 1,
   no workers). Coordinator owns RNG, variation, ordering and publication; workers
   require explicit capability and private candidate/refinement/scratch state.

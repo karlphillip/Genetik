@@ -99,13 +99,13 @@ search independent of discovering an exact equation. Installation commands are i
 PACKAGING.md; build its installed target `derivative_regression_quickstart`.
 
 ```sh
-cmake -S . -B out/build/release -DCMAKE_BUILD_TYPE=Release
-cmake --build out/build/release -j2
-out/build/release/genetik_derivative_regression_quickstart --threads 2
-out/build/release/genetik_derivative_regression_campaign \
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+cmake --build build/release -j2
+build/release/genetik_derivative_regression_quickstart --threads 2
+build/release/genetik_derivative_regression_campaign \
   --output out/runs/derivative-regression-new --threads 1
 # Bounded public application smoke (also exercised by CTest):
-out/build/release/genetik_derivative_regression_campaign \
+build/release/genetik_derivative_regression_campaign \
   --smoke --output out/runs/derivative-regression-smoke-new --threads 2
 ```
 

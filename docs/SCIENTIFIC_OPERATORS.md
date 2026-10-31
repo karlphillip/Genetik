@@ -77,7 +77,7 @@ back to a validated witness after its finite proposal allowance.
 File workflow (ordinary build commands are in ORGANIZATION.md):
 
 ```sh
-out/build/release/genetik_regression_search tests/fixtures/scientific/decay-training.csv \
+build/release/genetik_regression_search tests/fixtures/scientific/decay-training.csv \
   --inputs x --target y --seed 2 --loss-budget 10000 --no-fit --discrete-only \
   --population 128 --nodes 15 --depth 5 --loss-threshold 1e-24 \
   --operators add,sub,mul,exp --exponents 2,3 --threads 1 \

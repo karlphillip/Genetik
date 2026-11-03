@@ -114,7 +114,8 @@ int main() {
 
         const std::array<double,3> safeInputs{-1.8,0,1.8};
         const auto safe=assessRationalDomain(model,safeInputs,{-1.8,1.8});
-        require(safe.status==DomainStatus::Valid,"outward interval check certifies denominator away from zero");
+        require(safe.status==DomainStatus::Valid&&safe.assessedInterval.lower==-1.8&&safe.assessedInterval.upper==1.8,
+                "outward interval check certifies denominator away from zero and reports the assessed interval");
         auto nearPoleModel=model;nearPoleModel.denominator={1,.4};nearPoleModel.denominatorDegree=1;
         const auto crossing=assessRationalDomain(nearPoleModel,safeInputs,{-3,0});
         require(crossing.status==DomainStatus::Invalid&&!crossing.possiblePoleIntervals.empty(),"denominator root in domain reported invalid");

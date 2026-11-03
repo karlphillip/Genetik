@@ -47,7 +47,8 @@ also remains available as a simple optional-valued convenience call. No
 denominator is clipped and the core expression evaluator is unchanged.
 
 `assessRationalDomain()` applies outward-rounded interval Horner bounds with a
-bounded subdivision count over a caller-supplied closed interval. It returns:
+bounded subdivision count over a caller-supplied closed interval and echoes that
+interval in `PoleDiagnostic::assessedInterval`. It returns:
 
 - `Valid` when the denominator is numerically separated from zero over the
   entire interval under the configured absolute floor and scale-aware rounding

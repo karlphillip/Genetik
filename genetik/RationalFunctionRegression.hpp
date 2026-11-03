@@ -501,6 +501,7 @@ inline const char* domainStatusName(DomainStatus status) {
 struct Interval { double lower = 0, upper = 0; };
 struct PoleDiagnostic {
     DomainStatus status = DomainStatus::Uncertain;
+    Interval assessedInterval{};
     unsigned numeratorDegree = 0, denominatorDegree = 0;
     double maximumNumeratorCoefficient = 0, maximumDenominatorCoefficient = 0;
     double minimumObservedAbsoluteDenominator = std::numeric_limits<double>::infinity();
@@ -548,6 +549,7 @@ inline PoleDiagnostic assessRationalDomain(const RationalModel& model,
                                            std::size_t maximumCells = 65536,
                                            double maximumAbsoluteCoefficient = std::numeric_limits<double>::max()) {
     PoleDiagnostic out;
+    out.assessedInterval=predictionDomain;
     out.numeratorDegree=model.numeratorDegree;
     out.denominatorDegree=model.denominatorDegree;
     for(double x:model.numerator)out.maximumNumeratorCoefficient=std::max(out.maximumNumeratorCoefficient,std::abs(x));

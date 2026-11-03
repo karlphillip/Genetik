@@ -20,6 +20,12 @@ whose denominator is zero at zero (for example `1/x`). Coefficient bounds can
 also exclude otherwise equivalent representations. Common factors, redundant
 degree choices, and finite-data non-identifiability remain possible.
 
+`maximumAbsoluteCoefficient` bounds free numerator and denominator
+coefficients. The fixed normalization coefficient `Q(0)=1` is not a free
+coefficient and is checked separately. A free-coefficient bound below one is
+supported, while an `ExpressionLimits::maxAbsConstant` below one is rejected
+because the executable normalized model contains the constant one.
+
 ## Fitting and model selection
 
 For each eligible degree pair, a bounded column-pivoted Householder QR solve
@@ -32,6 +38,13 @@ cross multiplication weights the prediction residual by the squared denominator.
 Optional refinement uses Genetik's existing bounded Levenberg–Marquardt fitter
 on the original quotient expression. It is off by default. QR failure is not
 silently replaced with another method, and LM stopping/work data is returned.
+`maximumLinearAlgebraOperations` bounds the sum of estimated QR work and
+reported LM linear-algebra work. Before LM starts, a conservative per-iteration
+upper bound reserves allowance for matrix construction, rank checking, and all
+damped-solve retries. LM iterations are reduced to fit the remaining allowance;
+fitting returns `ResourceLimit` if even one iteration cannot be reserved. QR is
+still an estimated-work accounting unit while LM reports its solver counter;
+these are bounded work units, not hardware-independent FLOP counts.
 
 Degree candidates are selected with the existing training-only BIC-style score
 and a smaller-expression tie break. Held-out observations are not part of this
@@ -62,6 +75,16 @@ does not certify arbitrary extrapolation or global model correctness. Noisy
 extrapolation near poles remains unreliable: S13.1's noisy improper-rational
 case had a large near-pole error despite finite predictions. Keep prediction
 domains explicit and treat `Uncertain` as unresolved.
+
+`RationalModel` keeps public coefficient and expression fields for this
+development API. Before checked prediction or interval assessment can return
+`Valid`, the implementation verifies that the coefficient vectors and both
+stored canonical Genetik expressions encode the same degrees and exact
+binary64 constants. An inconsistent or caller-mutated representation returns
+`Invalid` with reason `inconsistent_model_representation`; it cannot receive a
+domain certificate. `Valid` concerns pole/domain separation for the represented
+denominator, not confidence in every prediction and not accuracy relative to
+the unknown true function.
 
 ## Example
 

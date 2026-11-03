@@ -35,8 +35,67 @@ static Expression nonrationalReference() {
         ExpressionNode::binary(K::Multiply),ExpressionNode::unary(K::Sin),ExpressionNode::constant(.2),ExpressionNode::binary(K::Add)};
     return Expression(nodes,1,{31,8,8,128});
 }
+static RationalModel modelFromCoefficients(std::vector<double> numerator, std::vector<double> denominator) {
+    RationalConfig config;
+    RationalModel model;
+    model.numeratorDegree=static_cast<unsigned>(numerator.size()-1);
+    model.denominatorDegree=static_cast<unsigned>(denominator.size()-1);
+    model.numerator=numerator;model.denominator=denominator;
+    std::vector<double> theta(model.denominatorDegree+model.numeratorDegree+1);
+    for(unsigned j=1;j<=model.denominatorDegree;++j)theta[j-1]=denominator[j];
+    for(unsigned j=0;j<=model.numeratorDegree;++j)theta[model.denominatorDegree+j]=numerator[j];
+    double bound=1;for(double value:theta)bound=std::max(bound,std::abs(value));
+    const auto parameterized=genetik_rational_detail::parameterizedExpression(
+        model.numeratorDegree,model.denominatorDegree,theta.size(),config);
+    model.expression=genetik_rational_detail::materialize(parameterized,theta,bound);
+    model.denominatorExpression=genetik_rational_detail::materializeDenominator(
+        model.denominatorDegree,theta,config.expressionLimits,bound);
+    return model;
+}
 int main() {
     try {
+
+        // Review regression: caller mutations cannot leave diagnostics and
+        // the executable expressions with different mathematical models.
+        auto reviewModel = modelFromCoefficients({1.0}, {1.0, 0.4});
+        reviewModel.denominator[1] = 0.1; // executable expression still has root -2.5
+        const auto inconsistentDomain = assessRationalDomain(reviewModel, {}, {-3.0, 0.0});
+        const auto inconsistentPoint = predictRationalChecked(reviewModel, -2.5);
+        require(inconsistentDomain.status == DomainStatus::Invalid &&
+                inconsistentDomain.reason == "inconsistent_model_representation" &&
+                inconsistentPoint.status == RationalPredictionStatus::Invalid &&
+                inconsistentPoint.reason == "inconsistent_model_representation",
+                "inconsistent coefficients and expressions cannot produce a valid domain certificate or prediction");
+        auto expressionOnlyMutation=modelFromCoefficients({1.0},{1.0,0.4});
+        expressionOnlyMutation.denominatorExpression=modelFromCoefficients({1.0},{1.0,0.1}).denominatorExpression;
+        require(assessRationalDomain(expressionOnlyMutation,{}, {-3.0,0.0}).status==DomainStatus::Invalid&&
+                predictRationalChecked(expressionOnlyMutation,-2.5).reason=="inconsistent_model_representation",
+                "expression-only denominator mutation is rejected by diagnostics and prediction");
+
+        const std::vector<std::vector<double>> tinyFullRank{{1e-20, 0.0}, {0.0, 1e-20}};
+        const std::vector<double> tinyRhs{1e-20, 2e-20};
+        const auto tinySolved = genetik_rational_detail::householderLeastSquaresDetailed(tinyFullRank, tinyRhs);
+        near(tinySolved.coefficients[0], 1.0, 1e-12, "scale-aware QR solves small full-rank system x0");
+        near(tinySolved.coefficients[1], 2.0, 1e-12, "scale-aware QR solves small full-rank system x1");
+        const std::vector<std::vector<double>> largeFullRank{{1e20,0.0},{0.0,1e20}};
+        const std::vector<double> largeRhs{1e20,2e20};
+        const auto largeSolved=genetik_rational_detail::householderLeastSquaresDetailed(largeFullRank,largeRhs);
+        near(largeSolved.coefficients[0],1.0,1e-12,"large uniformly scaled QR solution x0");
+        near(largeSolved.coefficients[1],2.0,1e-12,"large uniformly scaled QR solution x1");
+        bool rankRejected=false;
+        try { (void)genetik_rational_detail::householderLeastSquaresDetailed(
+            {{1.0,2.0},{2.0,4.0},{3.0,6.0}},{1.0,2.0,3.0}); }
+        catch(const std::invalid_argument&) { rankRejected=true; }
+        require(rankRejected,"genuinely rank-deficient QR system remains rejected");
+        const auto nearlyDependent=genetik_rational_detail::householderLeastSquaresDetailed(
+            {{1.0,1.0},{1.0,1.0+1e-13},{1.0,1.0-1e-13}},{2.0,2.0,2.0});
+        require(nearlyDependent.pivotRatio>0.0&&nearlyDependent.pivotRatio<1e-10,
+                "nearly dependent columns retain an explicit small pivot diagnostic");
+        bool nonfiniteQrRejected=false;
+        try { (void)genetik_rational_detail::householderLeastSquaresDetailed(
+            {{1.0,std::numeric_limits<double>::infinity()},{0.0,1.0}},{1.0,2.0}); }
+        catch(const std::invalid_argument&) { nonfiniteQrRejected=true; }
+        require(nonfiniteQrRejected,"nonfinite QR input rejected");
 
         const Expression zeroDomain(std::array{ExpressionNode::variable(0),ExpressionNode::variable(0),
             ExpressionNode::binary(ExpressionKind::Divide)},1);
@@ -52,6 +111,40 @@ int main() {
         }
         require(refA.nodeCount()<=31&&refB.depth()<=8&&refControl.arithmeticCost()<=128,"reference expression resource preflight");
         const auto rational = data([](double x){return (2.3*x+0.7)/(x*x+1.5);}, {-2,-1.5,-1,-.5,-.2,.2,.5,1,1.5,2});
+        auto subunitCoefficients=RationalConfig{};
+        subunitCoefficients.maximumNumeratorDegree=1;subunitCoefficients.maximumDenominatorDegree=0;
+        subunitCoefficients.maximumAbsoluteCoefficient=.5;
+        const auto smallPolynomial=data([](double x){return .2+.1*x;},{-1,0,1});
+        const auto smallPolynomialFit=fitRationalFunction(smallPolynomial,subunitCoefficients);
+        require(smallPolynomialFit.status==RationalStatus::Success&&smallPolynomialFit.selected,
+                "coefficient bound below one applies to free coefficients while Q(0)=1 remains representable");
+        require(assessRationalDomain(smallPolynomialFit.models[*smallPolynomialFit.selected],{},
+                                     {-1,1},1e-10,65536,.5).status==DomainStatus::Valid,
+                "domain diagnostics apply coefficient bounds to free coefficients, not fixed Q(0)=1");
+        auto impossibleNormalization=subunitCoefficients;
+        impossibleNormalization.expressionLimits.maxAbsConstant=.5;
+        bool fixedNormalizationRejected=false;
+        try { (void)fitRationalFunction(smallPolynomial,impossibleNormalization); }
+        catch(const std::invalid_argument&) { fixedNormalizationRejected=true; }
+        require(fixedNormalizationRejected,"expression constant limit below fixed Q(0)=1 is rejected as configuration error");
+        auto lmBudget = RationalConfig{};
+        lmBudget.refineWithLM = true;
+        lmBudget.lm.maxIterations = 8;
+        lmBudget.lm.maxObjectiveEvaluations = 24;
+        const auto lmUnboundedReference = fitRationalFunction(rational,lmBudget);
+        require(lmUnboundedReference.status == RationalStatus::Success, "unbounded LM budget reference succeeds");
+        const auto unboundedLinearWork=lmUnboundedReference.linearAlgebraOperations+
+                                       lmUnboundedReference.lmWork.linearAlgebraOperations;
+        lmBudget.maximumLinearAlgebraOperations=lmUnboundedReference.linearAlgebraOperations+
+            lmUnboundedReference.lmWork.linearAlgebraOperations/2;
+        const auto lmBounded = fitRationalFunction(rational, lmBudget);
+        const auto boundedLinearWork=lmBounded.linearAlgebraOperations+lmBounded.lmWork.linearAlgebraOperations;
+        require(unboundedLinearWork>lmBudget.maximumLinearAlgebraOperations,
+                "LM fixture has enough work to cross the configured combined allowance without enforcement");
+        require(boundedLinearWork<=lmBudget.maximumLinearAlgebraOperations &&
+                (lmBounded.status==RationalStatus::ResourceLimit || lmBounded.lmWork.linearAlgebraOperations<
+                 lmUnboundedReference.lmWork.linearAlgebraOperations),
+                "QR and LM together obey the configured linear algebra allowance");
         RationalConfig c;
         const auto s8Development=data([](double x){return x/(1+x*x);},{-2,-1.5,-1,-.5,-.2,.2,.5,1,1.5,2});
         auto dev=fitRationalFunction(s8Development,c);require(dev.status==RationalStatus::Success,"S8 rational development fit");
@@ -101,7 +194,13 @@ int main() {
             ExpressionNode::constant(2),ExpressionNode::binary(ExpressionKind::Multiply)},1);
         const auto invalidPrediction=predictRationalChecked(overflowingModel,0.0);
         require(invalidPrediction.status==RationalPredictionStatus::Invalid&&!invalidPrediction.value&&
-                invalidPrediction.reason=="invalid_rational_expression","overflow remains an explicit invalid prediction");
+                invalidPrediction.reason=="inconsistent_model_representation",
+                "mismatched executable expression is rejected before it can contradict coefficient diagnostics");
+        const auto consistentOverflow=modelFromCoefficients({0,0,0,1e6},{1});
+        const auto overflowResult=predictRationalChecked(consistentOverflow,1e200);
+        require(overflowResult.status==RationalPredictionStatus::Invalid&&!overflowResult.value&&
+                overflowResult.reason=="invalid_rational_expression",
+                "overflow remains invalid for a coefficient-consistent rational model");
         auto noisy=rational;for(std::size_t i=0;i<noisy.size();++i)noisy[i].y+=((i%2)?1:-1)*1e-4;
         auto noise=fitRationalFunction(noisy,c);require(noise.status==RationalStatus::Success && std::isfinite(noise.models[*noise.selected].trainingSSE),"noisy fit");
         const auto nonrational=data([](double x){return std::sin(x);},{-2,-1.5,-1,-.5,0,.5,1,1.5,2});
@@ -116,16 +215,16 @@ int main() {
         const auto safe=assessRationalDomain(model,safeInputs,{-1.8,1.8});
         require(safe.status==DomainStatus::Valid&&safe.assessedInterval.lower==-1.8&&safe.assessedInterval.upper==1.8,
                 "outward interval check certifies denominator away from zero and reports the assessed interval");
-        auto nearPoleModel=model;nearPoleModel.denominator={1,.4};nearPoleModel.denominatorDegree=1;
+        auto nearPoleModel=modelFromCoefficients({1},{1,.4});
         const auto crossing=assessRationalDomain(nearPoleModel,safeInputs,{-3,0});
         require(crossing.status==DomainStatus::Invalid&&!crossing.possiblePoleIntervals.empty(),"denominator root in domain reported invalid");
         const auto nearPole=assessRationalDomain(nearPoleModel,safeInputs,{-2.4,-2.0});
         require(nearPole.status==DomainStatus::Valid,"near-pole interval separated from zero is certifiable");
         require(std::abs(genetik_rational_detail::polynomialValue(nearPoleModel.denominator,-2.4))>.039,"small denominator is reported as near pole rather than singular");
-        auto repeatedRoot=nearPoleModel;repeatedRoot.denominator={1,2,1};repeatedRoot.denominatorDegree=2;
+        auto repeatedRoot=modelFromCoefficients({1},{1,2,1});
         const auto evenPole=assessRationalDomain(repeatedRoot,safeInputs,{-2,0});
         require(evenPole.status==DomainStatus::Invalid,"even-multiplicity denominator zero is found");
-        auto positiveQuadratic=nearPoleModel;positiveQuadratic.denominator={1,0,1};positiveQuadratic.denominatorDegree=2;
+        auto positiveQuadratic=modelFromCoefficients({1},{1,0,1});
         const auto boundedUncertain=assessRationalDomain(positiveQuadratic,safeInputs,{-1,1},1e-10,1);
         require(boundedUncertain.status==DomainStatus::Uncertain,"diagnostic resource exhaustion remains uncertain");
         auto nonfiniteDiagnostic=nearPoleModel;nonfiniteDiagnostic.denominator={1,std::numeric_limits<double>::infinity()};

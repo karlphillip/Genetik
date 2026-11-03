@@ -6,8 +6,10 @@
 #include "LevenbergMarquardt.hpp"
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <optional>
 #include <span>
@@ -95,7 +97,9 @@ inline LeastSquaresResult householderLeastSquaresDetailed(
     for (std::size_t k = d; k-- > 0;) {
         long double value = b[k];
         for (std::size_t j = k + 1; j < d; ++j) value -= a[k][j] * x[j];
-        if (std::abs(a[k][k]) <= 64 * std::numeric_limits<long double>::epsilon())
+        const auto rankThreshold = largestDiagonal * 128 * std::numeric_limits<long double>::epsilon() *
+                                   static_cast<long double>(std::max(n, d));
+        if (!std::isfinite(a[k][k]) || std::abs(a[k][k]) <= rankThreshold)
             throw std::invalid_argument("rank-deficient triangular system");
         x[k] = value / a[k][k];
         const auto original = permutation[k];
@@ -163,17 +167,66 @@ struct Model {
     LMWork lmWork{};
     LMStop lmStop = LMStop::InvalidStart;
     bool refined = false;
-    std::optional<double> predict(double x, double minimumDenominator = 1e-10) const {
-        if (!std::isfinite(x) || !std::isfinite(minimumDenominator) || minimumDenominator < 0) return {};
-        // The denominator check is explicit; the final quotient is evaluated
-        // through Genetik's checked Expression evaluator below.
-        const auto q=denominatorExpression.evaluate(std::array{x});
-        if (!q.valid() || std::abs(q.value()) < minimumDenominator) return {};
-        const auto value = expression.evaluate(std::array{x});
-        if (!value.valid()) return {};
-        return value.value();
-    }
+    std::optional<double> predict(double x, double minimumDenominator = 1e-10) const;
 };
+
+inline Expression parameterizedExpression(unsigned m, unsigned n, std::size_t parameters, const Config& c);
+inline Expression materialize(const Expression& parameterized, std::span<const double> theta,
+                              double maximumAbsoluteCoefficient);
+inline Expression materializeDenominator(unsigned degree, std::span<const double> theta,
+                                         const ExpressionLimits& limits, double coefficientBound);
+
+inline bool sameNode(const ExpressionNode& a, const ExpressionNode& b) {
+    if (a.kind() != b.kind()) return false;
+    if (a.kind() == ExpressionKind::Variable) return a.variableIndex() == b.variableIndex();
+    if (a.kind() == ExpressionKind::Constant)
+        return std::bit_cast<std::uint64_t>(a.constantValue()) == std::bit_cast<std::uint64_t>(b.constantValue());
+    if (expressionPowerMetadata(a.kind())) return a.exponent() == b.exponent();
+    return true;
+}
+inline bool sameNodes(const Expression& a, const Expression& b) {
+    if (a.variableCount() != b.variableCount() || a.nodeCount() != b.nodeCount()) return false;
+    const auto an = a.nodes(), bn = b.nodes();
+    for (std::size_t i = 0; i < an.size(); ++i) if (!sameNode(an[i], bn[i])) return false;
+    return true;
+}
+inline bool representationConsistent(const Model& model) {
+    if (model.numeratorDegree > 3 || model.denominatorDegree > 3 ||
+        model.numerator.size() != static_cast<std::size_t>(model.numeratorDegree) + 1 ||
+        model.denominator.size() != static_cast<std::size_t>(model.denominatorDegree) + 1 ||
+        model.denominator.empty() ||
+        std::bit_cast<std::uint64_t>(model.denominator.front()) != std::bit_cast<std::uint64_t>(1.0))
+        return false;
+    for (double value : model.numerator) if (!std::isfinite(value)) return false;
+    for (double value : model.denominator) if (!std::isfinite(value)) return false;
+    try {
+        std::vector<double> theta(model.denominatorDegree + model.numeratorDegree + 1);
+        for (unsigned j = 1; j <= model.denominatorDegree; ++j) theta[j - 1] = model.denominator[j];
+        for (unsigned j = 0; j <= model.numeratorDegree; ++j)
+            theta[model.denominatorDegree + j] = model.numerator[j];
+        double coefficientBound = 1.0;
+        for (double value : theta) coefficientBound = std::max(coefficientBound, std::abs(value));
+        Config config;
+        config.expressionLimits = model.expression.limits();
+        config.maximumAbsoluteCoefficient = coefficientBound;
+        const auto parameterized = parameterizedExpression(model.numeratorDegree, model.denominatorDegree,
+                                                            theta.size(), config);
+        const auto expected = materialize(parameterized, theta, coefficientBound);
+        const auto expectedDenominator = materializeDenominator(model.denominatorDegree, theta,
+                                                                  model.denominatorExpression.limits(),
+                                                                  coefficientBound);
+        return sameNodes(model.expression, expected) && sameNodes(model.denominatorExpression, expectedDenominator);
+    } catch (const std::exception&) { return false; }
+}
+inline std::optional<double> Model::predict(double x, double minimumDenominator) const {
+    if (!representationConsistent(*this) || !std::isfinite(x) ||
+        !std::isfinite(minimumDenominator) || minimumDenominator < 0) return {};
+    const auto q = denominatorExpression.evaluate(std::array{x});
+    if (!q.valid() || std::abs(q.value()) < minimumDenominator) return {};
+    const auto value = expression.evaluate(std::array{x});
+    if (!value.valid()) return {};
+    return value.value();
+}
 struct FitResult {
     Status status = Status::InvalidInput;
     std::string detail;
@@ -194,6 +247,8 @@ inline void validateConfig(const Config& c) {
         throw std::invalid_argument("invalid S13 rational discovery configuration");
     if(c.maximumAbsoluteCoefficient>c.expressionLimits.maxAbsConstant)
         throw std::invalid_argument("coefficient limit exceeds expression constant limit");
+    if(c.expressionLimits.maxAbsConstant < 1.0)
+        throw std::invalid_argument("expression constant limit excludes fixed denominator normalization Q(0)=1");
     (void)Expression::constant(0,1,c.expressionLimits);
     for(auto required:{ExpressionKind::Add,ExpressionKind::Multiply,ExpressionKind::Divide})
         if(std::find(c.operators.begin(),c.operators.end(),required)==c.operators.end())
@@ -207,6 +262,23 @@ inline void validateConfig(const Config& c) {
     for(auto op:c.operators)if(op!=ExpressionKind::Add&&op!=ExpressionKind::Multiply&&
        op!=ExpressionKind::Divide&&op!=ExpressionKind::Powi)
         throw std::invalid_argument("unsupported operator in rational model grammar");
+}
+inline std::size_t maximumLmLinearAlgebraPerIteration(std::size_t rows, std::size_t parameters) {
+    // Conservative upper bound for Jacobian normal-matrix construction,
+    // rank inspection, and all sixteen damped-solve retries in one LM step.
+    const long double p = static_cast<long double>(parameters);
+    const long double m = static_cast<long double>(rows);
+    const long double bound = 2.0L*m*p*(p+1.0L) + 4.0L*p*p*p + 4.0L*p*p +
+                              16.0L*(2.0L*p+p*p*p) + 1.0L;
+    if (!std::isfinite(bound) || bound > static_cast<long double>(std::numeric_limits<std::size_t>::max()))
+        return std::numeric_limits<std::size_t>::max();
+    return static_cast<std::size_t>(std::ceil(bound));
+}
+inline std::size_t combinedLinearAlgebraWork(const FitResult& result) {
+    if (result.lmWork.linearAlgebraOperations >
+        std::numeric_limits<std::size_t>::max() - result.linearAlgebraOperations)
+        return std::numeric_limits<std::size_t>::max();
+    return result.linearAlgebraOperations + result.lmWork.linearAlgebraOperations;
 }
 inline std::vector<ExpressionNode> polynomialNodes(unsigned degree, std::size_t firstParameter) {
     using K = ExpressionKind;
@@ -258,9 +330,7 @@ inline Expression materialize(const Expression& parameterized, std::span<const d
             nodes.push_back(ExpressionNode::constant(theta[index]));
         } else nodes.push_back(node);
     }
-    auto limits = parameterized.limits();
-    limits.maxAbsConstant = std::min(limits.maxAbsConstant,maximumAbsoluteCoefficient);
-    return Expression(nodes, 1, limits);
+    return Expression(nodes, 1, parameterized.limits());
 }
 inline Expression materializeDenominator(unsigned degree,std::span<const double> theta,
                                          const ExpressionLimits& limits,double coefficientBound) {
@@ -352,8 +422,10 @@ inline FitResult discover(std::span<const Observation> rows, const Config& c = {
             out.peakWorkspaceEstimateBytes = std::max(out.peakWorkspaceEstimateBytes, estimatedWorkspace);
             out.arithmeticOperations += ops;
             const long double qrEstimate=2.0L*rows.size()*p*p-(2.0L/3.0L)*p*p*p+2.0L*p*p;
-            if(qrEstimate>static_cast<long double>(std::numeric_limits<std::size_t>::max()-out.linearAlgebraOperations) ||
-               qrEstimate>static_cast<long double>(c.maximumLinearAlgebraOperations-out.linearAlgebraOperations)) {
+            const auto usedLinearAlgebra = combinedLinearAlgebraWork(out);
+            if(usedLinearAlgebra > c.maximumLinearAlgebraOperations ||
+               qrEstimate>static_cast<long double>(std::numeric_limits<std::size_t>::max()-out.linearAlgebraOperations) ||
+               qrEstimate>static_cast<long double>(c.maximumLinearAlgebraOperations-usedLinearAlgebra)) {
                 out.status=Status::ResourceLimit;out.detail="linear algebra work counter bound";return out;
             }
             out.linearAlgebraOperations+=static_cast<std::size_t>(std::max(0.0L,qrEstimate));
@@ -388,6 +460,17 @@ inline FitResult discover(std::span<const Observation> rows, const Config& c = {
                 for(std::size_t j=0;j<p;++j)bindings[j]=j+1;
                 auto lmConfig=c.lm;
                 lmConfig.maxWorkspaceBytes=std::min(lmConfig.maxWorkspaceBytes,c.maximumWorkspaceBytes);
+                const auto usedBeforeLm = combinedLinearAlgebraWork(out);
+                if (usedBeforeLm > c.maximumLinearAlgebraOperations) {
+                    out.status=Status::ResourceLimit;out.detail="combined linear algebra allowance";return out;
+                }
+                const auto remainingLinearAlgebra=c.maximumLinearAlgebraOperations-usedBeforeLm;
+                const auto perIteration=maximumLmLinearAlgebraPerIteration(rows.size(),p);
+                const auto allowedIterations=perIteration ? remainingLinearAlgebra/perIteration : 0;
+                if (!allowedIterations) {
+                    out.status=Status::ResourceLimit;out.detail="insufficient linear algebra allowance for bounded LM iteration";return out;
+                }
+                lmConfig.maxIterations=std::min(lmConfig.maxIterations,allowedIterations);
                 if(out.lmWork.mathematicalOperations>c.maximumArithmeticOperations-out.arithmeticOperations) {
                     out.status=Status::ResourceLimit;out.detail="LM mathematical-operation allowance";return out;
                 }
@@ -407,6 +490,9 @@ inline FitResult discover(std::span<const Observation> rows, const Config& c = {
                 add(out.lmWork.rejectedSteps,lm.work.rejectedSteps);add(out.lmWork.mathematicalOperations,lm.work.mathematicalOperations);
                 add(out.lmWork.linearAlgebraOperations,lm.work.linearAlgebraOperations);
                 out.lmWork.peakWorkspaceBytes=std::max(out.lmWork.peakWorkspaceBytes,lm.work.peakWorkspaceBytes);out.lmWork.seconds+=lm.work.seconds;
+                if (combinedLinearAlgebraWork(out) > c.maximumLinearAlgebraOperations) {
+                    out.status=Status::ResourceLimit;out.detail="combined linear algebra allowance exceeded";return out;
+                }
                 model.numerator=polynomialCoefficients(theta,m,n);
                 model.denominator=denominatorCoefficients(theta,n);
             }
@@ -465,6 +551,8 @@ inline const char* rationalPredictionStatusName(RationalPredictionStatus status)
 }
 inline RationalPredictionResult predictRationalChecked(const RationalModel& model, double x,
                                                         double minimumAbsoluteDenominator = 1e-10) {
+    if (!genetik_rational_detail::representationConsistent(model))
+        return {RationalPredictionStatus::Invalid, {}, "inconsistent_model_representation"};
     if (!std::isfinite(x) || !std::isfinite(minimumAbsoluteDenominator) ||
         minimumAbsoluteDenominator < 0)
         return {RationalPredictionStatus::Invalid, {}, "invalid_input"};
@@ -501,6 +589,7 @@ inline const char* domainStatusName(DomainStatus status) {
 struct Interval { double lower = 0, upper = 0; };
 struct PoleDiagnostic {
     DomainStatus status = DomainStatus::Uncertain;
+    std::string reason = "unresolved";
     Interval assessedInterval{};
     unsigned numeratorDegree = 0, denominatorDegree = 0;
     double maximumNumeratorCoefficient = 0, maximumDenominatorCoefficient = 0;
@@ -552,6 +641,9 @@ inline PoleDiagnostic assessRationalDomain(const RationalModel& model,
     out.assessedInterval=predictionDomain;
     out.numeratorDegree=model.numeratorDegree;
     out.denominatorDegree=model.denominatorDegree;
+    if(!genetik_rational_detail::representationConsistent(model)) {
+        out.status=DomainStatus::Invalid;out.reason="inconsistent_model_representation";return out;
+    }
     for(double x:model.numerator)out.maximumNumeratorCoefficient=std::max(out.maximumNumeratorCoefficient,std::abs(x));
     for(double x:model.denominator)out.maximumDenominatorCoefficient=std::max(out.maximumDenominatorCoefficient,std::abs(x));
     if(model.numerator.size()!=static_cast<std::size_t>(model.numeratorDegree)+1 ||
@@ -564,7 +656,8 @@ inline PoleDiagnostic assessRationalDomain(const RationalModel& model,
         out.status=DomainStatus::Invalid; return out;
     }
     for(double c:model.numerator)if(!std::isfinite(c)||std::abs(c)>maximumAbsoluteCoefficient){out.status=DomainStatus::Invalid;return out;}
-    for(double c:model.denominator)if(!std::isfinite(c)||std::abs(c)>maximumAbsoluteCoefficient){out.status=DomainStatus::Invalid;return out;}
+    for(std::size_t i=1;i<model.denominator.size();++i)
+        if(!std::isfinite(model.denominator[i])||std::abs(model.denominator[i])>maximumAbsoluteCoefficient){out.status=DomainStatus::Invalid;return out;}
     for(double x:observedInputs) {
         if(!std::isfinite(x)){++out.invalidObservedPredictions;continue;}
         const double q=genetik_rational_detail::polynomialValue(model.denominator,x);

@@ -142,3 +142,5 @@ all-row reporting. Search/fitting use the same weighted normalized objective.
 IntegralRegression.hpp own prescribed bounds, appended local binding and ordinary
 integrands. Estimated convergence is not a rigorous error bound; full-model search
 and fitting share existing admission/preparation/publication and run-owned execution.
+
+[Constructive rational-function regression](CONSTRUCTIVE_RATIONAL_REGRESSION.md) is an independent, optional bounded fitter for normalized one-variable rational models. It does not change symbolic-regression initialization or selection.

@@ -17,6 +17,8 @@ PORTABLE = {
     "genetik_checkpoint_v05_compatibility", "genetik_discrete_checkpoint_v05_compatibility",
     'genetik_prime_exact_contracts','genetik_prime_exact_overlap','genetik_prime_exact_cli',
     'genetik_integral_contracts', 'genetik_integral_overlap', 'genetik_integrals_quickstart', 'genetik_integral_cli',
+    'genetik_rational_regression_quickstart',
+    'genetik_rational_function_contracts',
     'genetik_derivative_regression_contracts','genetik_derivative_regression_overlap','genetik_derivative_regression_quickstart','genetik_derivative_regression_cli',
     'genetik_derivative_contracts', 'genetik_derivative_overlap', 'genetik_derivatives_quickstart',
     'genetik_template_contracts', 'genetik_template_overlap', 'genetik_templates_quickstart', 'genetik_template_campaign_smoke',

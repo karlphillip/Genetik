@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include <RationalFunctionRegression.hpp>
 // Overlapping complete public-header use in a separately compiled translation unit.
 bool symbolic_check() {
     if(formatExpression(parseExpression("log(x0)",1),ExpressionTextFormat::LaTeX,{}, {},ExpressionFormatOptions{6})!="\\ln\\left(x_{0}\\right)")return false;
@@ -53,4 +54,18 @@ bool typed_check() {
     if(!result.best || p->measure(result.best->expression()).loss!=result.best->evaluation())return false;
     return value.valid() && value.value().at(0)==9 && value.value().at(1)==10 &&
         value.arithmeticOperations()==13 && f.schemaString()=="schema{x0:matrix[2,3],x1:vector[3]}";
+}
+
+bool rational_check() {
+    std::vector<RationalObservation> rows;
+    for (double x : std::array{-1.0, -0.5, 0.0, 0.5, 1.0, 1.5})
+        rows.push_back({x, (1.4*x + 0.2)/(x*x + 0.8)});
+    RationalConfig config;
+    config.maximumNumeratorDegree = 2;
+    config.maximumDenominatorDegree = 2;
+    const auto fit = fitRationalFunction(rows, config);
+    if (fit.status != RationalStatus::Success || !fit.selected) return false;
+    const auto& model = fit.models[*fit.selected];
+    const auto domain = assessRationalDomain(model, {}, {-1.0, 1.5}, config.minimumAbsoluteDenominator);
+    return domain.status == DomainStatus::Valid && model.expression.variableCount() == 1;
 }

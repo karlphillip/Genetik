@@ -39,5 +39,5 @@ int main() {
     const auto log=Expression::unary(ExpressionKind::Log,x);
     const auto div=Expression::binary(ExpressionKind::Divide,x,Expression::constant(-0.0,1));
     if(log.evaluate(std::array{-1.}).valid() || div.evaluate(std::array{1.}).valid())return 1;
-    return p.bestSeen() && rng.evaluationAttempts()==32 && mixed_c()==3 && symbolic_check() && typed_check() ? 0:1;
+    return p.bestSeen() && rng.evaluationAttempts()==32 && mixed_c()==3 && symbolic_check() && typed_check() && rational_check() ? 0:1;
 }

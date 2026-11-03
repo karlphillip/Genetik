@@ -37,7 +37,7 @@ static Expression nonrationalReference() {
 }
 int main() {
     try {
-        
+
         const Expression zeroDomain(std::array{ExpressionNode::variable(0),ExpressionNode::variable(0),
             ExpressionNode::binary(ExpressionKind::Divide)},1);
         require(!zeroDomain.evaluate(std::array{0.0}).valid(),"expression division domain failure retained");

@@ -613,4 +613,3 @@ inline PoleDiagnostic assessRationalDomain(const RationalModel& model,
     out.status=uncertain?DomainStatus::Uncertain:DomainStatus::Valid;
     return out;
 }
-

@@ -1,0 +1,454 @@
+#pragma once
+
+// S14 research-only two-input bounded rational reconstruction. This header is
+// deliberately outside the installed Genetik API until independently reviewed.
+#include <RationalFunctionRegression.hpp>
+
+#include <algorithm>
+#include <array>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <limits>
+#include <numeric>
+#include <optional>
+#include <span>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace genetik_s14 {
+
+struct Observation { double x = 0, y = 0, target = 0; };
+struct Term { unsigned x = 0, y = 0; };
+// Graded total-degree order; within a degree, descending x exponent.
+inline std::vector<Term> basis(unsigned degree) {
+    if (degree > 2) throw std::invalid_argument("S14 total degree must be at most two");
+    std::vector<Term> out;
+    for (unsigned total = 0; total <= degree; ++total)
+        for (unsigned x = total + 1; x-- > 0;)
+            out.push_back({x, total - x});
+    return out;
+}
+
+enum class Status { Success, InvalidInput, InvalidConfiguration, RankDeficient,
+                    Underdetermined, IllConditioned, CoefficientBound, ResourceLimit, InvalidModel };
+inline const char* statusName(Status s) {
+    switch (s) {
+    case Status::Success: return "success";
+    case Status::InvalidInput: return "invalid_input";
+    case Status::InvalidConfiguration: return "invalid_configuration";
+    case Status::RankDeficient: return "rank_deficient";
+    case Status::Underdetermined: return "underdetermined";
+    case Status::IllConditioned: return "ill_conditioned";
+    case Status::CoefficientBound: return "coefficient_bound";
+    case Status::ResourceLimit: return "resource_limit";
+    case Status::InvalidModel: return "invalid_model";
+    }
+    return "unknown";
+}
+enum class S14DomainStatus { Valid, Invalid, Uncertain };
+enum class DomainFinding { SeparatedFromZero, DemonstratedZero, Inconclusive };
+enum class PredictionNumericalStatus { NotAssessed, FiniteBounded, OverflowPossible, Uncertain };
+struct Rectangle { double xLower=0, xUpper=0, yLower=0, yUpper=0; };
+struct Config {
+    unsigned maximumNumeratorDegree=2, maximumDenominatorDegree=2;
+    std::size_t maximumRows=10000, maximumParameters=11;
+    std::size_t maximumWorkspaceBytes=32*1024*1024;
+    std::size_t maximumArithmeticOperations=10000000;
+    std::size_t maximumLinearAlgebraOperations=100000000;
+    double maximumAbsoluteCoefficient=1e6;
+    double minimumAbsoluteDenominator=1e-10;
+    double minimumPivotRatio=1e-12;
+    double complexityWeight=1.0;
+    bool refineWithLM=false;
+    LMConfig lm{};
+    ExpressionLimits expressionLimits{255,16,1e6,2048};
+    std::vector<ExpressionKind> operators{ExpressionKind::Add,ExpressionKind::Multiply,
+                                         ExpressionKind::Divide,ExpressionKind::Powi};
+};
+struct Model {
+    unsigned numeratorDegree=0, denominatorDegree=0;
+    std::vector<Term> numeratorBasis, denominatorBasis;
+    std::vector<double> numerator, denominator; // denominator[0] fixed to 1
+    Expression expression{std::array{ExpressionNode::constant(0)},2};
+    Expression denominatorExpression{std::array{ExpressionNode::constant(1)},2};
+    double trainingSSE=std::numeric_limits<double>::infinity();
+    double trainingScore=std::numeric_limits<double>::infinity();
+    double pivotRatio=0;
+    std::size_t parameterCount=0;
+    bool refined=false;
+    LMWork lmWork{};
+    LMStop lmStop=LMStop::InvalidStart;
+    std::optional<double> predict(double x, double y,
+                                  double minimumDenominator=1e-10) const;
+};
+struct FitResult {
+    Status status=Status::InvalidInput;
+    std::string detail;
+    std::vector<Model> models;
+    std::optional<std::size_t> selected;
+    std::size_t attemptedFamilies=0, rankFailures=0, underdeterminedFamilies=0;
+    std::size_t illConditionedFamilies=0, coefficientBoundFailures=0, invalidModels=0;
+    std::size_t trainingLossEvaluations=0, arithmeticOperations=0;
+    std::size_t linearAlgebraOperations=0, peakWorkspaceEstimateBytes=0;
+    LMWork lmWork{};
+};
+struct DomainResult {
+    S14DomainStatus status=S14DomainStatus::Uncertain;
+    DomainFinding finding=DomainFinding::Inconclusive;
+    Rectangle region{};
+    std::size_t cellsVisited=0, observedZeros=0;
+    double minimumCertifiedSeparation=0;
+    PredictionNumericalStatus predictionNumericalStatus=PredictionNumericalStatus::NotAssessed;
+    double maximumAbsolutePredictionBound=0;
+    std::size_t intervalOperations=0;
+    std::string reason="inconclusive";
+};
+
+namespace detail {
+inline bool finite(const Observation& r) {
+    return std::isfinite(r.x)&&std::isfinite(r.y)&&std::isfinite(r.target);
+}
+inline std::size_t addChecked(std::size_t a, std::size_t b, const char* message) {
+    if (b > std::numeric_limits<std::size_t>::max()-a) throw std::overflow_error(message);
+    return a+b;
+}
+inline void validate(const Config& c) {
+    if(c.maximumNumeratorDegree>2||c.maximumDenominatorDegree>2||!c.maximumRows||
+       !c.maximumParameters||c.maximumParameters>11||!c.maximumWorkspaceBytes||
+       !c.maximumArithmeticOperations||!c.maximumLinearAlgebraOperations||
+       !std::isfinite(c.maximumAbsoluteCoefficient)||c.maximumAbsoluteCoefficient<=0||
+       !std::isfinite(c.minimumAbsoluteDenominator)||c.minimumAbsoluteDenominator<=0||
+       !std::isfinite(c.minimumPivotRatio)||c.minimumPivotRatio<=0||c.minimumPivotRatio>=1||
+       !std::isfinite(c.complexityWeight)||c.complexityWeight<0)
+        throw std::invalid_argument("invalid S14 configuration");
+    if(c.maximumAbsoluteCoefficient>c.expressionLimits.maxAbsConstant||
+       c.expressionLimits.maxAbsConstant<1.0)
+        throw std::invalid_argument("expression limits exclude a bounded coefficient or fixed Q(0,0)=1");
+    (void)Expression::constant(0.0,2,c.expressionLimits);
+    for(auto op:{ExpressionKind::Add,ExpressionKind::Multiply,ExpressionKind::Divide,ExpressionKind::Powi})
+        if(std::find(c.operators.begin(),c.operators.end(),op)==c.operators.end())
+            throw std::invalid_argument("rational expression grammar omits required operator");
+    for(std::size_t i=0;i<c.operators.size();++i) {
+        const auto op=c.operators[i];
+        if(op!=ExpressionKind::Add&&op!=ExpressionKind::Multiply&&op!=ExpressionKind::Divide&&op!=ExpressionKind::Powi)
+            throw std::invalid_argument("unsupported operator in S14 rational grammar");
+        if(std::find(c.operators.begin(),c.operators.begin()+static_cast<std::ptrdiff_t>(i),op)!=
+           c.operators.begin()+static_cast<std::ptrdiff_t>(i))
+            throw std::invalid_argument("duplicate S14 rational grammar operator");
+    }
+}
+inline double monomial(double x,double y,Term t,std::size_t& operations) {
+    volatile double xp=1.0, yp=1.0;
+    for(unsigned i=0;i<t.x;++i){xp=xp*x;operations=addChecked(operations,1,"S14 operation counter overflow");}
+    for(unsigned i=0;i<t.y;++i){yp=yp*y;operations=addChecked(operations,1,"S14 operation counter overflow");}
+    volatile double value=xp*yp;
+    operations=addChecked(operations,1,"S14 operation counter overflow");
+    if(!std::isfinite(value)) throw std::overflow_error("S14 polynomial basis overflow");
+    return value;
+}
+inline std::vector<ExpressionNode> polynomialNodes(std::span<const Term> terms,
+        std::span<const double> coefficients, bool parameters, std::size_t firstParameter) {
+    using K=ExpressionKind;
+    if(terms.empty()||terms.size()!=coefficients.size()) throw std::invalid_argument("S14 polynomial shape");
+    std::vector<ExpressionNode> out;
+    auto appendTerm=[&](std::size_t i) {
+        if(parameters) out.push_back(ExpressionNode::variable(firstParameter+i));
+        else out.push_back(ExpressionNode::constant(coefficients[i]));
+        const auto t=terms[i];
+        if(t.x){out.push_back(ExpressionNode::variable(0));if(t.x>1)out.push_back(ExpressionNode::power(t.x));out.push_back(ExpressionNode::binary(K::Multiply));}
+        if(t.y){out.push_back(ExpressionNode::variable(1));if(t.y>1)out.push_back(ExpressionNode::power(t.y));out.push_back(ExpressionNode::binary(K::Multiply));}
+    };
+    appendTerm(0);
+    for(std::size_t i=1;i<terms.size();++i){appendTerm(i);out.push_back(ExpressionNode::binary(K::Add));}
+    return out;
+}
+inline Expression buildExpression(std::span<const Term> pTerms,std::span<const double> p,
+        std::span<const Term> qTerms,std::span<const double> q,bool parameterized,
+        std::size_t denominatorParameterCount,const ExpressionLimits& limits) {
+    using K=ExpressionKind;
+    auto nodes=polynomialNodes(pTerms,p,parameterized,2+denominatorParameterCount);
+    std::vector<ExpressionNode> qNodes;
+    if(qTerms.size()!=q.size()+1||qTerms.empty()||qTerms[0].x||qTerms[0].y)
+        throw std::invalid_argument("S14 normalized denominator shape");
+    qNodes.push_back(ExpressionNode::constant(1.0));
+    for(std::size_t i=1;i<qTerms.size();++i){
+        if(parameterized)qNodes.push_back(ExpressionNode::variable(2+i-1));
+        else qNodes.push_back(ExpressionNode::constant(q[i-1]));
+        const auto t=qTerms[i];
+        if(t.x){qNodes.push_back(ExpressionNode::variable(0));if(t.x>1)qNodes.push_back(ExpressionNode::power(t.x));qNodes.push_back(ExpressionNode::binary(K::Multiply));}
+        if(t.y){qNodes.push_back(ExpressionNode::variable(1));if(t.y>1)qNodes.push_back(ExpressionNode::power(t.y));qNodes.push_back(ExpressionNode::binary(K::Multiply));}
+        qNodes.push_back(ExpressionNode::binary(K::Add));
+    }
+    nodes.insert(nodes.end(),qNodes.begin(),qNodes.end());nodes.push_back(ExpressionNode::binary(K::Divide));
+    const auto variableCount=parameterized?2+denominatorParameterCount+p.size():2;
+    return Expression(nodes,variableCount,limits);
+}
+inline Expression denominatorExpression(std::span<const Term> terms,std::span<const double> q,
+                                         const ExpressionLimits& limits) {
+    using K=ExpressionKind;
+    if(terms.size()!=q.size()+1)throw std::invalid_argument("S14 denominator shape");
+    std::vector<ExpressionNode> nodes{ExpressionNode::constant(1)};
+    for(std::size_t i=1;i<terms.size();++i){
+        nodes.push_back(ExpressionNode::constant(q[i-1]));auto t=terms[i];
+        if(t.x){nodes.push_back(ExpressionNode::variable(0));if(t.x>1)nodes.push_back(ExpressionNode::power(t.x));nodes.push_back(ExpressionNode::binary(K::Multiply));}
+        if(t.y){nodes.push_back(ExpressionNode::variable(1));if(t.y>1)nodes.push_back(ExpressionNode::power(t.y));nodes.push_back(ExpressionNode::binary(K::Multiply));}
+        nodes.push_back(ExpressionNode::binary(K::Add));
+    }
+    return Expression(nodes,2,limits);
+}
+inline bool consistent(const Model& model) {
+    try {
+        if(model.denominator.empty()||model.denominatorBasis.size()!=model.denominator.size()||
+           model.denominator.front()!=1.0||!std::all_of(model.denominator.begin(),model.denominator.end(),[](double v){return std::isfinite(v);}))return false;
+        const auto expectedQ=denominatorExpression(model.denominatorBasis,
+            std::span<const double>(model.denominator).subspan(1),model.denominatorExpression.limits());
+        if(!genetik_rational_detail::sameNodes(expectedQ,model.denominatorExpression))return false;
+        if(model.numerator.empty())return true;
+        if(model.numerator.size()!=model.numeratorBasis.size()||
+           !std::all_of(model.numerator.begin(),model.numerator.end(),[](double v){return std::isfinite(v);}))return false;
+        const auto expected=buildExpression(model.numeratorBasis,model.numerator,model.denominatorBasis,
+            std::span<const double>(model.denominator).subspan(1),false,model.denominator.size()-1,model.expression.limits());
+        return genetik_rational_detail::sameNodes(expected,model.expression);
+    } catch(const std::exception&) { return false; }
+}
+inline std::optional<double> predictKnownConsistent(const Model& model,double x,double y,double minimumDenominator) {
+    if(!std::isfinite(x)||!std::isfinite(y)||!std::isfinite(minimumDenominator)||minimumDenominator<0)return {};
+    const auto q=model.denominatorExpression.evaluate(std::array{x,y});if(!q.valid())return {};
+    long double scale=0;
+    try{for(std::size_t i=0;i<model.denominator.size();++i){std::size_t ignored=0;scale+=std::abs(static_cast<long double>(model.denominator[i])*monomial(x,y,model.denominatorBasis[i],ignored));}}
+    catch(const std::exception&){return {};}
+    const double threshold=std::max(minimumDenominator,static_cast<double>(128*std::numeric_limits<double>::epsilon()*
+                                      scale*std::max<std::size_t>(1,model.denominatorExpression.nodeCount())));
+    if(std::abs(q.value())<=threshold)return {};
+    const auto p=model.expression.evaluate(std::array{x,y});if(!p.valid())return {};return p.value();
+}
+inline std::size_t lmPerIteration(std::size_t rows,std::size_t p) {
+    const long double r=rows,n=p;
+    const long double v=2*r*n*(n+1)+4*n*n*n+4*n*n+16*(2*n+n*n*n)+1;
+    if(!std::isfinite(v)||v>std::numeric_limits<std::size_t>::max())return std::numeric_limits<std::size_t>::max();
+    return static_cast<std::size_t>(std::ceil(v));
+}
+inline void addLm(LMWork& a,const LMWork& b) {
+#define S14_ADD(field) a.field=addChecked(a.field,b.field,"S14 LM counter overflow")
+    S14_ADD(objectiveEvaluations);S14_ADD(jacobianEvaluations);S14_ADD(forwardEvaluations);S14_ADD(derivativeEvaluations);
+    S14_ADD(rowsProcessed);S14_ADD(parameterUpdates);S14_ADD(linearSolves);S14_ADD(acceptedSteps);S14_ADD(rejectedSteps);
+    S14_ADD(mathematicalOperations);S14_ADD(linearAlgebraOperations);
+#undef S14_ADD
+    a.peakWorkspaceBytes=std::max(a.peakWorkspaceBytes,b.peakWorkspaceBytes);a.seconds+=b.seconds;
+}
+
+struct Interval { long double lo=0,hi=0; };
+inline long double down(long double x){return std::nextafter(x,-std::numeric_limits<long double>::infinity());}
+inline long double up(long double x){return std::nextafter(x,std::numeric_limits<long double>::infinity());}
+inline Interval add(Interval a,Interval b){return {down(a.lo+b.lo),up(a.hi+b.hi)};}
+inline Interval mul(Interval a,Interval b){
+    const std::array<long double,4> v{a.lo*b.lo,a.lo*b.hi,a.hi*b.lo,a.hi*b.hi};
+    const auto [mn,mx]=std::minmax_element(v.begin(),v.end());return {down(*mn),up(*mx)};
+}
+inline Interval square(Interval a){const long double hi=std::max(a.lo*a.lo,a.hi*a.hi);const long double lo=a.lo<=0&&a.hi>=0?0:std::min(a.lo*a.lo,a.hi*a.hi);return {lo==0?0:down(lo),up(hi)};}
+inline Interval monomialRange(Rectangle r,Term t){
+    Interval x{r.xLower,r.xUpper},y{r.yLower,r.yUpper},v{1,1};
+    if(t.x==1)v=mul(v,x);else if(t.x==2)v=mul(v,square(x));
+    if(t.y==1)v=mul(v,y);else if(t.y==2)v=mul(v,square(y));
+    return v;
+}
+inline Interval polynomialRange(std::span<const double> coeffs,std::span<const Term> terms,Rectangle r){
+    Interval sum{0,0};
+    for(std::size_t i=0;i<coeffs.size();++i){Interval c{coeffs[i],coeffs[i]};sum=add(sum,mul(c,monomialRange(r,terms[i])));}
+    return sum;
+}
+inline long double polynomialMagnitudeBound(std::span<const double> coeffs,std::span<const Term> terms,Rectangle r){
+    long double bound=0;
+    for(std::size_t i=0;i<coeffs.size();++i){const auto mon=monomialRange(r,terms[i]);
+        bound=up(bound+std::abs(static_cast<long double>(coeffs[i]))*std::max(std::abs(mon.lo),std::abs(mon.hi)));}
+    return bound;
+}
+inline long double evaluatorRoundingAllowance(std::span<const double> coeffs,std::span<const Term> terms,
+                                              Rectangle r,std::size_t expressionNodes){
+    const auto scale=polynomialMagnitudeBound(coeffs,terms,r);
+    const long double factor=128.0L*std::numeric_limits<double>::epsilon()*
+                             static_cast<long double>(std::max<std::size_t>(1,expressionNodes));
+    const auto allowance=up(factor*std::max(1.0L,scale));
+    return std::isfinite(allowance)?allowance:std::numeric_limits<long double>::infinity();
+}
+inline Interval widen(Interval a,long double e){return {down(a.lo-e),up(a.hi+e)};}
+inline Interval divide(Interval a,Interval b){
+    const std::array<long double,4> v{a.lo/b.lo,a.lo/b.hi,a.hi/b.lo,a.hi/b.hi};
+    const auto [mn,mx]=std::minmax_element(v.begin(),v.end());return {down(*mn),up(*mx)};
+}
+inline double directDenominator(const Model& model,double x,double y){
+    auto v=model.denominatorExpression.evaluate(std::array{x,y});if(!v.valid())return std::numeric_limits<double>::quiet_NaN();return v.value();
+}
+} // namespace detail
+
+inline std::optional<double> Model::predict(double x,double y,double minimumDenominator) const {
+    if(!detail::consistent(*this))return {};
+    return detail::predictKnownConsistent(*this,x,y,minimumDenominator);
+}
+
+inline FitResult fit(std::span<const Observation> rows,const Config& c={}) {
+    FitResult out;
+    try{detail::validate(c);}catch(const std::exception& e){out.status=Status::InvalidConfiguration;out.detail=e.what();return out;}
+    if(rows.empty()||rows.size()>c.maximumRows){out.status=rows.empty()?Status::InvalidInput:Status::ResourceLimit;out.detail="training row count outside configured bound";return out;}
+    for(const auto& r:rows)if(!detail::finite(r)){out.status=Status::InvalidInput;out.detail="nonfinite observation";return out;}
+    const auto epsilon=std::numeric_limits<double>::epsilon();double maxTarget=0;for(const auto& r:rows)maxTarget=std::max(maxTarget,std::abs(r.target));
+    for(unsigned nd=0;nd<=c.maximumDenominatorDegree;++nd)for(unsigned np=0;np<=c.maximumNumeratorDegree;++np){
+        const auto pt= basis(np), qt=basis(nd);const std::size_t qfree=qt.size()-1,pcount=qfree+pt.size();
+        if(pcount>c.maximumParameters)continue;
+        if(rows.size()<pcount){++out.underdeterminedFamilies;continue;}
+        ++out.attemptedFamilies;
+        const long double bytes=static_cast<long double>(rows.size())*pcount*(sizeof(double)+sizeof(long double))+
+            static_cast<long double>(rows.size())*(sizeof(std::vector<double>)+2*sizeof(long double))+pcount*8*sizeof(long double);
+        if(bytes>c.maximumWorkspaceBytes){out.status=Status::ResourceLimit;out.detail="bounded QR workspace limit";return out;}
+        std::vector<std::vector<double>> design;std::vector<double> rhs;design.reserve(rows.size());rhs.reserve(rows.size());
+        std::vector<double> columnScale(pcount,0);std::size_t buildOps=0;
+        try{
+            for(const auto& r:rows){std::vector<double> row;row.reserve(pcount);
+                for(std::size_t j=1;j<qt.size();++j)row.push_back(-r.target*detail::monomial(r.x,r.y,qt[j],buildOps));
+                for(auto t:pt)row.push_back(detail::monomial(r.x,r.y,t,buildOps));
+                for(std::size_t j=0;j<pcount;++j){if(!std::isfinite(row[j]))throw std::overflow_error("S14 linearized design overflow");columnScale[j]=std::max(columnScale[j],std::abs(row[j]));}
+                rhs.push_back(r.target);design.push_back(std::move(row));
+                buildOps=detail::addChecked(buildOps,pcount,"S14 operation counter overflow");
+            }
+        }catch(const std::overflow_error& e){++out.invalidModels;out.detail=e.what();continue;}
+        if(buildOps>c.maximumArithmeticOperations-out.arithmeticOperations){out.status=Status::ResourceLimit;out.detail="basis construction operation limit";return out;}
+        out.arithmeticOperations+=buildOps;
+        for(std::size_t j=0;j<pcount;++j){if(columnScale[j]==0){columnScale[j]=1;continue;}for(auto& row:design)row[j]/=columnScale[j];}
+        const long double qrEstimate=2.0L*rows.size()*pcount*pcount-(2.0L/3.0L)*pcount*pcount*pcount+2.0L*pcount*pcount;
+        if(out.linearAlgebraOperations>c.maximumLinearAlgebraOperations||!std::isfinite(qrEstimate)||qrEstimate>static_cast<long double>(c.maximumLinearAlgebraOperations-out.linearAlgebraOperations)){
+            out.status=Status::ResourceLimit;out.detail="QR linear algebra allowance";return out;}
+        out.linearAlgebraOperations+=static_cast<std::size_t>(qrEstimate);
+        genetik_rational_detail::LeastSquaresResult solved;
+        try{solved=genetik_rational_detail::householderLeastSquaresDetailed(design,rhs,c.maximumRows,11,c.maximumWorkspaceBytes);}
+        catch(const std::invalid_argument& e){++out.rankFailures;out.detail=e.what();continue;}
+        catch(const std::length_error& e){out.status=Status::ResourceLimit;out.detail=e.what();return out;}
+        out.peakWorkspaceEstimateBytes=std::max(out.peakWorkspaceEstimateBytes,static_cast<std::size_t>(bytes));
+        if(solved.pivotRatio<c.minimumPivotRatio){++out.illConditionedFamilies;out.detail="column-scaled QR pivot ratio below configured minimum for degree pair "+std::to_string(np)+"/"+std::to_string(nd);continue;}
+        std::vector<double> theta=solved.coefficients;for(std::size_t j=0;j<pcount;++j)theta[j]/=columnScale[j];
+        bool bounded=true;for(double v:theta)if(!std::isfinite(v)||std::abs(v)>c.maximumAbsoluteCoefficient){bounded=false;break;}
+        if(!bounded){++out.coefficientBoundFailures;continue;}
+        Model model;model.numeratorDegree=np;model.denominatorDegree=nd;model.numeratorBasis=pt;model.denominatorBasis=qt;
+        model.parameterCount=pcount;model.pivotRatio=solved.pivotRatio;
+        auto unpack=[&]{model.denominator.assign(1,1.0);for(std::size_t i=0;i<qfree;++i)model.denominator.push_back(theta[i]);model.numerator.assign(theta.begin()+static_cast<std::ptrdiff_t>(qfree),theta.end());};
+        unpack();
+        if(c.refineWithLM){
+            try{
+                const auto parameterized=detail::buildExpression(pt,model.numerator,qt,std::span<const double>(model.denominator).subspan(1),true,qfree,c.expressionLimits);
+                std::vector<LMExpressionObservation> lmRows;lmRows.reserve(rows.size());for(const auto& r:rows){std::vector<double> input(parameterized.variableCount(),0);input[0]=r.x;input[1]=r.y;lmRows.push_back({std::move(input),r.target});}
+                std::vector<std::size_t> bindings(pcount);for(std::size_t i=0;i<pcount;++i)bindings[i]=i+2;
+                auto lmConfig=c.lm;lmConfig.maxWorkspaceBytes=std::min(lmConfig.maxWorkspaceBytes,c.maximumWorkspaceBytes);
+                const auto remainingLa=c.maximumLinearAlgebraOperations-out.linearAlgebraOperations;
+                const auto per=detail::lmPerIteration(rows.size(),pcount);const auto allowed=per?remainingLa/per:0;
+                if(!allowed){out.status=Status::ResourceLimit;out.detail="no LM iteration fits combined linear algebra budget";return out;}
+                lmConfig.maxIterations=std::min(lmConfig.maxIterations,allowed);
+                const auto remainingOps=c.maximumArithmeticOperations-out.arithmeticOperations;
+                if(out.lmWork.mathematicalOperations>remainingOps){out.status=Status::ResourceLimit;out.detail="LM arithmetic allowance";return out;}
+                lmConfig.maxMathematicalOperations=std::min(lmConfig.maxMathematicalOperations,remainingOps-out.lmWork.mathematicalOperations);
+                auto objective=expressionLeastSquares(parameterized,std::move(lmRows),bindings,c.maximumArithmeticOperations);
+                std::vector<double> lower(pcount,-c.maximumAbsoluteCoefficient),upper(pcount,c.maximumAbsoluteCoefficient);
+                const auto lm=levenbergMarquardt(theta,lower,upper,objective,lmConfig);
+                theta=lm.parameters;model.refined=true;model.lmWork=lm.work;model.lmStop=lm.stop;detail::addLm(out.lmWork,lm.work);
+                out.arithmeticOperations=detail::addChecked(out.arithmeticOperations,lm.work.mathematicalOperations,"S14 LM operations overflow");
+                out.linearAlgebraOperations=detail::addChecked(out.linearAlgebraOperations,lm.work.linearAlgebraOperations,"S14 LM linear algebra overflow");
+                if(out.arithmeticOperations>c.maximumArithmeticOperations||out.linearAlgebraOperations>c.maximumLinearAlgebraOperations){out.status=Status::ResourceLimit;out.detail="combined QR and LM allowance exceeded";return out;}
+                unpack();
+            }catch(const std::length_error& e){out.status=Status::ResourceLimit;out.detail=e.what();return out;}
+             catch(const std::exception& e){++out.invalidModels;out.detail=e.what();continue;}
+        }
+        try{model.expression=detail::buildExpression(pt,model.numerator,qt,std::span<const double>(model.denominator).subspan(1),false,qfree,c.expressionLimits);
+            model.denominatorExpression=detail::denominatorExpression(qt,std::span<const double>(model.denominator).subspan(1),c.expressionLimits);}
+        catch(const std::length_error& e){out.status=Status::ResourceLimit;out.detail=e.what();return out;}
+        catch(const std::exception& e){++out.invalidModels;out.detail=e.what();continue;}
+        const auto constructionOps=detail::addChecked(model.expression.nodeCount(),model.denominatorExpression.nodeCount(),"S14 construction operation overflow");
+        if(constructionOps>c.maximumArithmeticOperations-out.arithmeticOperations){out.status=Status::ResourceLimit;out.detail="expression materialization operation allowance";return out;}
+        out.arithmeticOperations+=constructionOps;
+        double sse=0;bool valid=true;
+        std::size_t scaleOps=0;for(const auto t:model.denominatorBasis)scaleOps=detail::addChecked(scaleOps,t.x+t.y+2,"S14 operation counter overflow");
+        const std::size_t rowOps=model.expression.arithmeticCost()+model.denominatorExpression.arithmeticCost()+3+scaleOps;
+        if(rows.size()&&rowOps>(c.maximumArithmeticOperations-out.arithmeticOperations)/rows.size()){out.status=Status::ResourceLimit;out.detail="prediction loss allowance";return out;}
+        for(const auto& r:rows){auto pred=detail::predictKnownConsistent(model,r.x,r.y,c.minimumAbsoluteDenominator);if(!pred){valid=false;break;}volatile double residual=*pred-r.target;volatile double sq=residual*residual;sse+=sq;if(!std::isfinite(sse)){valid=false;break;}}
+        out.arithmeticOperations=detail::addChecked(out.arithmeticOperations,rowOps*rows.size(),"S14 prediction operations overflow");
+        ++out.trainingLossEvaluations;if(!valid){++out.invalidModels;continue;}
+        model.trainingSSE=sse;const double floor=epsilon*(maxTarget+1.0);const double mean=std::max(sse/rows.size(),floor*floor);
+        model.trainingScore=rows.size()*std::log(mean)+c.complexityWeight*pcount*std::log(static_cast<double>(rows.size()));
+        const auto rankingOps=detail::addChecked(pcount,2,"S14 ranking operation overflow");
+        if(rankingOps>c.maximumArithmeticOperations-out.arithmeticOperations){out.status=Status::ResourceLimit;out.detail="model ranking operation allowance";return out;}
+        out.arithmeticOperations+=rankingOps;
+        out.models.push_back(std::move(model));
+    }
+    if(out.models.empty()){
+        out.status=out.illConditionedFamilies?Status::IllConditioned:
+                   out.rankFailures?Status::RankDeficient:
+                   out.coefficientBoundFailures?Status::CoefficientBound:
+                   out.underdeterminedFamilies?Status::Underdetermined:Status::InvalidModel;
+        out.detail=out.detail.empty()?"no valid bounded model":out.detail;return out;
+    }
+    out.selected=0;for(std::size_t i=1;i<out.models.size();++i)if(out.models[i].trainingScore<out.models[*out.selected].trainingScore||
+        (out.models[i].trainingScore==out.models[*out.selected].trainingScore&&out.models[i].expression.nodeCount()<out.models[*out.selected].expression.nodeCount()))out.selected=i;
+    out.status=Status::Success;out.detail="bounded two-variable normalized rational family fitted";return out;
+}
+
+inline DomainResult assessDomain(const Model& model,Rectangle region,std::size_t maximumCells=1024,
+                                 unsigned maximumDepth=10,double minimumSeparation=1e-10) {
+    DomainResult out;out.region=region;
+    const bool numeratorAvailable=model.numerator.size()==model.numeratorBasis.size()&&!model.numerator.empty();
+    if(model.denominator.empty()||model.denominatorBasis.size()!=model.denominator.size()||model.denominatorBasis.front().x!=0||model.denominatorBasis.front().y!=0||model.denominator.front()!=1.0){out.status=S14DomainStatus::Invalid;out.reason="invalid_denominator_representation";return out;}
+    try{
+        const auto expected=detail::denominatorExpression(model.denominatorBasis,
+            std::span<const double>(model.denominator).subspan(1),model.denominatorExpression.limits());
+        if(!genetik_rational_detail::sameNodes(expected,model.denominatorExpression)){out.status=S14DomainStatus::Invalid;out.reason="inconsistent_denominator_representation";return out;}
+        if(numeratorAvailable&&!detail::consistent(model)){out.status=S14DomainStatus::Invalid;out.reason="inconsistent_model_representation";return out;}
+    }catch(const std::exception&){out.status=S14DomainStatus::Invalid;out.reason="invalid_denominator_representation";return out;}
+    if(!maximumCells||maximumDepth>20||!std::isfinite(minimumSeparation)||minimumSeparation<0||
+       !std::isfinite(region.xLower)||!std::isfinite(region.xUpper)||!std::isfinite(region.yLower)||!std::isfinite(region.yUpper)||
+       region.xLower>region.xUpper||region.yLower>region.yUpper){out.status=S14DomainStatus::Invalid;out.reason="invalid_domain_configuration";return out;}
+    struct Cell{Rectangle r;unsigned depth;};std::vector<Cell> pending{{region,0}};bool unresolved=false;double minSep=std::numeric_limits<double>::infinity();
+    long double maxPrediction=0;bool predictionBoundAvailable=numeratorAvailable;bool predictionOverflow=false;
+    while(!pending.empty()){
+        auto cell=pending.back();pending.pop_back();++out.cellsVisited;
+        for(const auto& p:std::array<std::array<double,2>,5>{{{{cell.r.xLower,cell.r.yLower}},{{cell.r.xLower,cell.r.yUpper}},{{cell.r.xUpper,cell.r.yLower}},{{cell.r.xUpper,cell.r.yUpper}},{{std::midpoint(cell.r.xLower,cell.r.xUpper),std::midpoint(cell.r.yLower,cell.r.yUpper)}}}}){
+            const double q=detail::directDenominator(model,p[0],p[1]);if(!std::isfinite(q)){out.status=S14DomainStatus::Invalid;out.reason="invalid_denominator_evaluation";return out;}
+            if(q==0.0){++out.observedZeros;out.status=S14DomainStatus::Invalid;out.finding=DomainFinding::DemonstratedZero;out.reason="denominator_zero_demonstrated";return out;}
+        }
+        auto range=detail::polynomialRange(model.denominator,model.denominatorBasis,cell.r);
+        const auto denominatorRoundoff=detail::evaluatorRoundingAllowance(model.denominator,model.denominatorBasis,cell.r,model.denominatorExpression.nodeCount());
+        range=detail::widen(range,denominatorRoundoff);
+        out.intervalOperations=detail::addChecked(out.intervalOperations,model.denominator.size()*16,"S14 domain counter overflow");
+        const bool separated=range.lo>minimumSeparation||range.hi< -minimumSeparation;
+        if(separated){
+            const auto separation=range.lo>minimumSeparation?range.lo:-range.hi;
+            minSep=std::min(minSep,static_cast<double>(separation));
+            if(predictionBoundAvailable){
+                auto nr=detail::polynomialRange(model.numerator,model.numeratorBasis,cell.r);
+                const auto numeratorRoundoff=detail::evaluatorRoundingAllowance(model.numerator,model.numeratorBasis,cell.r,model.expression.nodeCount());
+                nr=detail::widen(nr,numeratorRoundoff);
+                out.intervalOperations=detail::addChecked(out.intervalOperations,model.numerator.size()*16,"S14 domain counter overflow");
+                const auto quotient=detail::divide(nr,range);
+                const long double bound=std::max(std::abs(quotient.lo),std::abs(quotient.hi));
+                if(!std::isfinite(bound))predictionOverflow=true;
+                else maxPrediction=std::max(maxPrediction,bound);
+                if(bound>std::numeric_limits<double>::max())predictionOverflow=true;
+            }
+            continue;
+        }
+        if(cell.depth>=maximumDepth||out.cellsVisited+pending.size()+4>maximumCells){unresolved=true;continue;}
+        const double xm=std::midpoint(cell.r.xLower,cell.r.xUpper),ym=std::midpoint(cell.r.yLower,cell.r.yUpper);
+        pending.push_back({{cell.r.xLower,xm,cell.r.yLower,ym},cell.depth+1});
+        pending.push_back({{xm,cell.r.xUpper,cell.r.yLower,ym},cell.depth+1});
+        pending.push_back({{cell.r.xLower,xm,ym,cell.r.yUpper},cell.depth+1});
+        pending.push_back({{xm,cell.r.xUpper,ym,cell.r.yUpper},cell.depth+1});
+    }
+    out.minimumCertifiedSeparation=std::isfinite(minSep)?minSep:0;
+    if(!unresolved){
+        out.status=S14DomainStatus::Valid;out.finding=DomainFinding::SeparatedFromZero;out.reason="denominator_interval_separated_from_zero";
+        out.maximumAbsolutePredictionBound=predictionOverflow?std::numeric_limits<double>::infinity():static_cast<double>(maxPrediction);
+        out.predictionNumericalStatus=!predictionBoundAvailable?PredictionNumericalStatus::Uncertain:
+            predictionOverflow?PredictionNumericalStatus::OverflowPossible:PredictionNumericalStatus::FiniteBounded;
+    } else {out.status=S14DomainStatus::Uncertain;out.finding=DomainFinding::Inconclusive;out.reason="bounded_interval_subdivision_inconclusive";out.predictionNumericalStatus=PredictionNumericalStatus::Uncertain;}
+    return out;
+}
+
+} // namespace genetik_s14

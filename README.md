@@ -214,6 +214,9 @@ Executable names and explicit output options are unchanged. Put compiled output 
 build/; keep transient runs/logs/tmp under out/ and durable datasets, experimental
 evidence and benchmark results under ../Genetik-data/.
 accepted evidence remains in docs/. [Layout and historical path mapping](docs/ORGANIZATION.md).
+Before launching a declared scientific campaign, the optional
+[benchmark preflight](docs/SCIENTIFIC_BENCHMARK_PREFLIGHT.md) can validate its
+reference expressions, grammar, observations and resource manifest.
 Population evaluation/refinement has an opt-in library-owned CPU backend. Use
 `RandomContext(42, ExecutionConfig{4})` or `--threads 4` in evolution applications;
 serial/default 1 remains supported. Candidates/callbacks require explicit parallel

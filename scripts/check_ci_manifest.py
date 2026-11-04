@@ -24,6 +24,7 @@ PORTABLE = {
     'genetik_template_contracts', 'genetik_template_overlap', 'genetik_templates_quickstart', 'genetik_template_campaign_smoke',
     'genetik_parsing_contracts', 'genetik_parsing_overlap', 'genetik_parsing_quickstart', 'genetik_expression_file',
     'genetik_scientific_contracts',
+    'genetik_scientific_benchmark_preflight_contracts',
     'genetik_advanced_regression_contracts', 'genetik_mixed_expression_contracts',
     'genetik_mixed_expression_overlap', 'genetik_mixed_multitu_contracts',
     'genetik_checkpoint_v06_compatibility', 'genetik_discrete_checkpoint_v06_compatibility',

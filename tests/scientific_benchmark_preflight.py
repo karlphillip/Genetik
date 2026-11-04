@@ -33,21 +33,51 @@ with tempfile.TemporaryDirectory(prefix="genetik-benchmark-preflight-") as temp:
     manifest = root / "manifest.json"
     output = root / "preflight.json"
     marker = root / "runner-started"
+    observations = root / "observations.csv"
+    observations.write_text("x0,y\n0,1\n1,2\n")
     fake_runner = root / "runner.py"
-    fake_runner.write_text("from pathlib import Path\nPath(" + repr(str(marker)) + ").touch()\n")
+    fake_runner.write_text(
+        "import hashlib, sys\nfrom pathlib import Path\n"
+        "if len(sys.argv) == 3 and sys.argv[1] == '--genetik-protocol-identity':\n"
+        " print(hashlib.sha256(Path(sys.argv[2]).read_bytes()).hexdigest()); raise SystemExit(0)\n"
+        "Path(" + repr(str(marker)) + ").touch()\n")
     subprocess.run([str(binary), "--self-test", str(root / "domain-fixture.csv")], check=True)
 
     manifest.write_text(json.dumps({"schema": "fixture", "tasks": [
         {"id": "valid", "reference": "(x0*x0)+1", "grammar": grammar,
-         "fitting": fitting, "resources": resources}
+         "fitting": fitting, "resources": resources,
+         "domain_observations": [observations.name]}
     ]}))
     good = subprocess.run([sys.executable, str(runner), "--validator", str(binary),
                            "--manifest", str(manifest), "--preflight", str(preflight),
                            "--preflight-output", str(output), "--runner", str(fake_runner)])
     assert good.returncode == 0 and marker.exists()
-    assert json.loads(output.read_text())["tasks"][0]["status"] == "representable"
+    assert json.loads(output.read_text())["tasks"][0]["status"] == "domain_validated"
+    assert json.loads(output.read_text())["status"] == "domain_validated"
 
+    # The runner receives a preflight gate only after nonempty task and domain
+    # validation; optional identity mode verifies a cooperating runner's view.
     marker.unlink()
+    identified = subprocess.run([sys.executable, str(runner), "--validator", str(binary),
+                                 "--manifest", str(manifest), "--preflight", str(preflight),
+                                 "--preflight-output", str(output),
+                                 "--require-runner-protocol-identity", "--runner", str(fake_runner)])
+    assert identified.returncode == 0 and marker.exists()
+    marker.unlink()
+    mismatching_runner = root / "mismatching_runner.py"
+    mismatching_runner.write_text(
+        "import sys\nfrom pathlib import Path\n"
+        "if len(sys.argv) == 3 and sys.argv[1] == '--genetik-protocol-identity':\n"
+        " print('0' * 64); raise SystemExit(0)\n"
+        "Path(" + repr(str(marker)) + ").touch()\n")
+    mismatch = subprocess.run([sys.executable, str(runner), "--validator", str(binary),
+                               "--manifest", str(manifest), "--preflight", str(preflight),
+                               "--preflight-output", str(output),
+                               "--require-runner-protocol-identity", "--runner",
+                               str(mismatching_runner)], stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL)
+    assert mismatch.returncode != 0 and not marker.exists()
+
     invalid_grammar = dict(grammar, max_nodes=10, max_depth=5,
                            max_arithmetic_operations=9,
                            operators=["+", "*", "sin"])
@@ -100,4 +130,55 @@ with tempfile.TemporaryDirectory(prefix="genetik-benchmark-preflight-") as temp:
     rejected_config = json.loads(output.read_text())
     assert rejected_config["status"] == "rejected"
     assert all(task["status"] == "rejected" for task in rejected_config["tasks"])
+
+    # Empty task arrays and missing/empty/duplicate IDs fail before execution.
+    for tasks in ([],
+                  [{"reference": "x0", "grammar": grammar, "fitting": fitting,
+                    "resources": resources, "domain_observations": [observations.name]}],
+                  [{"id": "  ", "reference": "x0", "grammar": grammar, "fitting": fitting,
+                    "resources": resources, "domain_observations": [observations.name]}],
+                  [{"id": "same", "reference": "x0", "grammar": grammar, "fitting": fitting,
+                    "resources": resources, "domain_observations": [observations.name]},
+                   {"id": "same", "reference": "x0", "grammar": grammar, "fitting": fitting,
+                    "resources": resources, "domain_observations": [observations.name]}]):
+        manifest.write_text(json.dumps({"schema": "fixture", "tasks": tasks}))
+        failed = subprocess.run([sys.executable, str(runner), "--validator", str(binary),
+                                 "--manifest", str(manifest), "--preflight", str(preflight),
+                                 "--preflight-output", str(output), "--runner", str(fake_runner)],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        assert failed.returncode != 0 and not marker.exists()
+
+    # The vocabulary itself is checked, including operators unused by the reference.
+    for operators in (["+", "not_an_operator"], ["+", "+"]):
+        manifest.write_text(json.dumps({"schema": "fixture", "tasks": [
+            {"id": "bad-vocabulary", "reference": "x0+1",
+             "grammar": dict(grammar, operators=operators), "fitting": fitting,
+             "resources": resources, "domain_observations": [observations.name]}
+        ]}))
+        failed = subprocess.run([sys.executable, str(runner), "--validator", str(binary),
+                                 "--manifest", str(manifest), "--preflight", str(preflight),
+                                 "--preflight-output", str(output), "--runner", str(fake_runner)],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        assert failed.returncode != 0 and not marker.exists()
+    duplicate_cli = subprocess.run([str(binary), "--reference", "x0", "--variables", "1",
+                                    "--operators", "+,+", "--max-nodes", "2",
+                                    "--max-depth", "1", "--max-operations", "1",
+                                    "--max-abs-constant", "8", "--fit-lower", "-8",
+                                    "--fit-upper", "8"])
+    assert duplicate_cli.returncode != 0
+
+    # Empty observations deliberately yield syntax-only qualification and may
+    # never be promoted by the campaign wrapper to domain-validated readiness.
+    manifest.write_text(json.dumps({"schema": "fixture", "tasks": [
+        {"id": "syntax-only", "reference": "x0+1", "grammar": grammar,
+         "fitting": fitting, "resources": resources}
+    ]}))
+    syntax = subprocess.run([sys.executable, str(preflight), "--validator", str(binary),
+                             "--manifest", str(manifest), "--output", str(output)])
+    assert syntax.returncode == 0 and json.loads(output.read_text())["status"] == "syntax_only"
+    blocked = subprocess.run([sys.executable, str(runner), "--validator", str(binary),
+                              "--manifest", str(manifest), "--preflight", str(preflight),
+                              "--preflight-output", str(output), "--runner", str(fake_runner)],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    assert blocked.returncode != 0 and not marker.exists()
 print("scientific benchmark preflight isolation/gate tests passed")

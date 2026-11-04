@@ -39,7 +39,7 @@ Spec arguments(int argc,char** argv) {
         const char* v=argv[++i];
         if(k=="--reference")s.reference=v;
         else if(k=="--variables")s.variables=countArg(v);
-        else if(k=="--operators") {std::stringstream in(v);std::string op;while(std::getline(in,op,',')){if(op.empty())throw std::invalid_argument("empty operator");s.operators.insert(op);}}
+        else if(k=="--operators") {std::stringstream in(v);std::string op;while(std::getline(in,op,',')){if(op.empty())throw std::invalid_argument("empty operator");if(!s.operators.insert(op).second)throw std::invalid_argument("duplicate grammar operator: "+op);}}
         else if(k=="--integer-exponents"||k=="--negative-exponents") {
             std::stringstream in(v);std::string item;auto& out=k=="--integer-exponents"?s.integerExponents:s.negativeExponents;out.clear();
             while(std::getline(in,item,',')){const auto x=countArg(item.c_str());if(x>8)throw std::invalid_argument("integer power exponent must be within 0..8");out.insert(static_cast<unsigned>(x));}
@@ -74,6 +74,11 @@ Audit validate(const Spec& s) {
        !std::isfinite(s.fitLower)||!std::isfinite(s.fitUpper)||s.fitLower>s.fitUpper)
         throw std::invalid_argument("invalid constant or parameter bounds");
     if(s.reference.empty()||s.operators.empty())throw std::invalid_argument("reference and operator vocabulary are required");
+    for(const auto& name:s.operators) {
+        const auto kind=name=="npowi"?std::optional<ExpressionKind>{ExpressionKind::NegativePowi}:scalarOperatorFromName(name);
+        if(!kind || expressionArity(*kind)==0)
+            throw std::invalid_argument("unsupported grammar operator: "+name);
+    }
     ExpressionLimits limits{s.maxNodes,s.maxDepth,s.maxAbsConstant,s.maxOperations};
     auto e=parseExpression(s.reference,s.variables,{},limits);
     Audit a{e,0,{},0};
@@ -157,7 +162,8 @@ int selfTest(const std::string& domainFixture) {
     if(!rejects([&]{run("pow(x0,0.5)",1,"pow",3,2,1,-8,8,domainFixture);}))return 18;
     if(!rejects([&]{run("pow(x0,x0)",1,"pow",3,2,1);}))return 19; // fitted exponent must match declared parameterization
     if(run("pow(x0,1.7)",1,"pow",3,2,1).constants!=1)return 20; // independent real-exponent slot
-    std::cout<<"scientific benchmark preflight self-tests passed: 20\n";return 0;
+    if(!rejects([&]{run("x0",1,"+,not_an_operator",1,1,0);}))return 21; // unused grammar operator
+    std::cout<<"scientific benchmark preflight self-tests passed: 21\n";return 0;
 }
 }
 int main(int argc,char**argv) try {

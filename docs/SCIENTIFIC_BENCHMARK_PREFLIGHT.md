@@ -19,10 +19,20 @@ It emits the exact parsed expression structure and a SHA256 identity of the
 declared grammar fields.
 
 The result answers whether the supplied reference representation fits the
-declared grammar and declared observations. If it does not fit, preflight rejects
+declared grammar and declared observations. An empty task list, missing/empty
+task identifier, duplicate identifier, unsupported operator declaration, or
+duplicate operator declaration is rejected. Operator names are checked by the
+C++ validator against Genetik's own scalar operator metadata, including entries
+that do not occur in the reference expression. If a representation does not fit, preflight rejects
 it precisely. It does not prove that every equivalent expression also violates
 the grammar, and it does not prove symbolic equivalence between different
 representations.
+
+When a task has no `domain_observations` (or an empty list), the tool reports
+`syntax_only`; it does not claim mathematical-domain validation. This is useful
+for syntax/configuration qualification, but the campaign wrapper refuses to
+start unless every task has at least one declared observation and the overall
+result is `domain_validated`.
 
 The S11.1 benchmark review caught an invalid frozen task whose supplied
 reference required 12 nodes while its grammar allowed 10. Its historical runs
@@ -62,9 +72,19 @@ python3 scripts/run_validated_campaign.py \
 ```
 
 Any invalid task or campaign/fitting configuration returns a nonzero status and
-prevents the runner from starting. Keep the manifest, datasets, and protocol
-checksums with the experiment. The preflight's grammar identity is not a
-substitute for hashing the manifest, data, source, compiler, or runtime.
+prevents the runner from starting. The wrapper passes no campaign configuration
+to an arbitrary runner and cannot prove that the runner uses the same grammar,
+resources, or datasets as the validated manifest. It verifies that the manifest
+file remained byte-identical between preflight and execution. Workflows that
+require a protocol-consistency handshake must use
+`--require-runner-protocol-identity`; the cooperating runner must accept
+`--genetik-protocol-identity <manifest-path>` and print the SHA256 of the exact
+effective protocol manifest it will use. A missing or mismatched response blocks
+campaign execution. Without this mode, the guarantee is only that the supplied
+manifest passed preflight, not that an arbitrary runner follows it. Keep the
+manifest, datasets, and protocol checksums with the experiment. The preflight's
+grammar identity is not a substitute for hashing data, source, compiler, or
+runtime.
 
 ## Compatibility
 

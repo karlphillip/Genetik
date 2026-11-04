@@ -18,8 +18,41 @@ def main():
     manifest_path = pathlib.Path(args.manifest).resolve()
     manifest = json.loads(manifest_path.read_text())
     base = manifest_path.parent
-    results, failed = [], False
-    for task in manifest["tasks"]:
+    declared_tasks = manifest.get("tasks")
+    results = []
+    failed = not isinstance(declared_tasks, list) or not declared_tasks
+    if not isinstance(declared_tasks, list):
+        declared_tasks = []
+        results.append({"task": None, "status": "rejected", "checks": [{
+            "valid": False, "error": "manifest tasks must be a nonempty array"}]})
+    elif not declared_tasks:
+        results.append({"task": None, "status": "rejected", "checks": [{
+            "valid": False, "error": "manifest must declare at least one task"}]})
+    identifiers = set()
+    invalid_identifiers = set()
+    for index, task in enumerate(declared_tasks):
+        if not isinstance(task, dict):
+            failed = True
+            results.append({"task": None, "status": "rejected", "checks": [{
+                "valid": False, "error": f"task at index {index} must be an object"}]})
+            invalid_identifiers.add(index)
+            continue
+        task_id = task.get("id")
+        if not isinstance(task_id, str) or not task_id.strip():
+            failed = True
+            invalid_identifiers.add(index)
+        elif task_id in identifiers:
+            failed = True
+            invalid_identifiers.add(index)
+        else:
+            identifiers.add(task_id)
+    domain_checked = True
+    for index, task in enumerate(declared_tasks):
+        if index in invalid_identifiers or not isinstance(task, dict):
+            if isinstance(task, dict):
+                results.append({"task": task.get("id"), "status": "rejected", "checks": [{
+                    "valid": False, "error": "task identifier must be present, nonempty, and unique"}]})
+            continue
         cfg = task["grammar"]
         fit = task.get("fitting")
         config_errors = []
@@ -70,6 +103,8 @@ def main():
         if not isinstance(cfg.get("operators"), list) or not cfg["operators"] or any(
                 not isinstance(op, str) or not op for op in cfg.get("operators", [])):
             config_errors.append("invalid grammar operator vocabulary")
+        elif len(set(cfg["operators"])) != len(cfg["operators"]):
+            config_errors.append("duplicate grammar operator declaration")
         try:
             max_constant = float(cfg["max_abs_constant"])
             terminals = cfg["constant_terminals"]
@@ -130,7 +165,13 @@ def main():
                   "--integer-exponents", ",".join(map(str, cfg["integer_exponents"])),
                   "--negative-exponents", ",".join(map(str, cfg["negative_exponents"])),
                   "--power-exponents-are-constants", str(cfg["power_exponents_are_constants"]).lower()]
-        splits = task.get("domain_observations", []) or [None]
+        declared_splits = task.get("domain_observations", [])
+        if not isinstance(declared_splits, list):
+            config_errors.append("domain_observations must be an array when provided")
+            declared_splits = []
+        if not declared_splits:
+            domain_checked = False
+        splits = declared_splits or [None]
         checks = []
         if config_errors:
             failed = True
@@ -150,11 +191,14 @@ def main():
                         "resources": resources,
                         "fitting": task.get("fitting", {}),
                         "parameterization": task.get("parameterization", "each reference literal is an independent bounded constant slot"),
-                        "status": "representable" if all(c["valid"] for c in checks) else "rejected",
+                        "status": ("domain_validated" if declared_splits and all(c["valid"] for c in checks)
+                                   else "syntax_validated" if all(c["valid"] for c in checks)
+                                   else "rejected"),
                         "checks": checks})
     output = {"schema": "genetik-benchmark-preflight-v1", "manifest": str(manifest_path),
               "manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
-              "status": "rejected" if failed else "valid", "tasks": results}
+              "status": "rejected" if failed else "domain_validated" if domain_checked else "syntax_only",
+              "tasks": results}
     rendered = json.dumps(output, indent=2, sort_keys=True) + "\n"
     pathlib.Path(args.output).write_text(rendered) if args.output else sys.stdout.write(rendered)
     return 2 if failed else 0

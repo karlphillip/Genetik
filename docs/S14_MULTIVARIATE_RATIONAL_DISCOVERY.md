@@ -57,7 +57,7 @@ rounding allowance. Near-pole sensitivity remains a known limitation.
 
 ## Research implementation
 
-The implementation is in `research/s14/MultivariateRationalRegression.hpp`; it is not
+The implementation is in `benchmarks/s14/MultivariateRationalRegression.hpp`; it is not
 installed or exported. Its campaign runner compares QR, QR+LM, GA coordinate fitting,
 and GA LM fitting. The GA conditions use Genetik's ordinary search with the same
 training observations and declared grammar. The constructive conditions have a

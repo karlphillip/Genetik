@@ -169,7 +169,7 @@ target_link_libraries(genetik_s14_multivariate_rational_tests PRIVATE Genetik::G
 add_test(NAME genetik_s14_multivariate_rational_contracts COMMAND genetik_s14_multivariate_rational_tests)
 set_tests_properties(genetik_s14_multivariate_rational_contracts PROPERTIES TIMEOUT 60)
 
-add_executable(genetik_s14_campaign ../research/s14/campaign.cpp)
+add_executable(genetik_s14_campaign ../benchmarks/s14/campaign.cpp)
 target_link_libraries(genetik_s14_campaign PRIVATE Genetik::Genetik)
 if(GENETIK_BUILD_EXAMPLES)
     add_test(NAME genetik_rational_regression_quickstart COMMAND genetik_rational_regression_quickstart)

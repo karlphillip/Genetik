@@ -1,4 +1,4 @@
-#include "../research/s14/MultivariateRationalRegression.hpp"
+#include "../benchmarks/s14/MultivariateRationalRegression.hpp"
 
 #include <cmath>
 #include <iostream>

@@ -497,6 +497,8 @@ endif()
 if(GENETIK_BUILD_EXAMPLES)
     add_test(NAME genetik_d6_budget_cli COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/d6_budget_cli.py $<TARGET_FILE:genetik_d6_scientific_benchmarks> ${CMAKE_CURRENT_BINARY_DIR}/d6-budget-cli)
     set_tests_properties(genetik_d6_budget_cli PROPERTIES TIMEOUT 180)
+    add_test(NAME genetik_scientific_benchmark_preflight_contracts COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scientific_benchmark_preflight.py $<TARGET_FILE:genetik_scientific_benchmark_preflight> ${PROJECT_SOURCE_DIR})
+    set_tests_properties(genetik_scientific_benchmark_preflight_contracts PROPERTIES TIMEOUT 30)
 endif()
 
 # Optional output-only training accuracy/complexity archive contracts.

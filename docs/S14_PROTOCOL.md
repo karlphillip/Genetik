@@ -62,8 +62,9 @@ restricted rational-family inductive bias and is reported separately from GA res
 
 Runs execute sequentially pinned to CPU 0, with 120 seconds per run, a 6 GiB process
 RSS cap and 6 GiB address-space cap. The supervisor samples process-tree RSS every
-20 ms and terminates a run that exceeds the cap; GNU `time` records isolated process
-maximum RSS and CPU user/system time. The binary, manifest and data identities are
+20 ms and terminates a run that exceeds the cap; Linux `wait4` records isolated child
+maximum RSS and CPU user/system time. The executable is a single-process C++ campaign
+program; process-tree sampling remains the enforced cap. The binary, manifest and data identities are
 recorded in every output. Setup/data loading and command startup are within each
 supervised wall allowance; total campaign wall time is also recorded.
 

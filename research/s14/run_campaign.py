@@ -124,43 +124,65 @@ def set_limits(vas_bytes, cpus):
     os.sched_setaffinity(0, set(cpus))
 
 
-def execute(command, wall_limit, rss_limit, vas_limit, cpus, stdout_path, stderr_path, timing_path):
+def execute(command, wall_limit, rss_limit, vas_limit, cpus, stdout_path, stderr_path):
     start = time.monotonic()
     peak_sampled = 0
     timed_out = False
     rss_exceeded = False
     with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
-        proc = subprocess.Popen(command, stdout=stdout, stderr=stderr, start_new_session=True,
-                                preexec_fn=lambda: set_limits(vas_limit, cpus))
-        while proc.poll() is None:
-            peak_sampled = max(peak_sampled, resident_bytes(proc.pid))
+        pid = os.fork()
+        if pid == 0:
+            try:
+                os.setsid()
+                set_limits(vas_limit, cpus)
+                os.dup2(stdout.fileno(), 1)
+                os.dup2(stderr.fileno(), 2)
+                os.execv(command[0], command)
+            except BaseException as error:
+                os.write(2, f"runner child setup/exec failed: {error}\n".encode())
+                os._exit(127)
+        wait_status = None
+        usage = None
+        while wait_status is None:
+            peak_sampled = max(peak_sampled, resident_bytes(pid))
             if peak_sampled > rss_limit:
                 rss_exceeded = True
-                os.killpg(proc.pid, signal.SIGKILL)
-                break
+                try:
+                    os.killpg(pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
             if time.monotonic() - start >= wall_limit:
                 timed_out = True
-                os.killpg(proc.pid, signal.SIGTERM)
                 try:
-                    proc.wait(timeout=2)
-                except subprocess.TimeoutExpired:
-                    os.killpg(proc.pid, signal.SIGKILL)
-                break
-            time.sleep(.02)
-        return_code = proc.wait()
+                    os.killpg(pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                deadline = time.monotonic() + 2
+                while time.monotonic() < deadline:
+                    waited_pid, status, child_usage = os.wait4(pid, os.WNOHANG)
+                    if waited_pid:
+                        wait_status, usage = status, child_usage
+                        break
+                    time.sleep(.02)
+                if wait_status is None:
+                    try:
+                        os.killpg(pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+            if wait_status is None:
+                waited_pid, status, child_usage = os.wait4(pid, os.WNOHANG)
+                if waited_pid:
+                    wait_status, usage = status, child_usage
+                else:
+                    time.sleep(.02)
+    return_code = os.waitstatus_to_exitcode(wait_status)
     elapsed = time.monotonic() - start
-    time_maxrss = cpu_user = cpu_system = None
-    try:
-        values = timing_path.read_text().split()
-        if len(values) == 3:
-            time_maxrss = int(values[0]) * 1024
-            cpu_user, cpu_system = float(values[1]), float(values[2])
-    except (OSError, ValueError):
-        pass
+    maxrss = int(usage.ru_maxrss) * 1024 if usage is not None else None
     return {"return_code": return_code, "wall_seconds": elapsed,
-            "cpu_user_seconds": cpu_user, "cpu_system_seconds": cpu_system,
-            "peak_rss_bytes": time_maxrss if time_maxrss is not None else peak_sampled,
-            "peak_rss_source": "isolated_gnu_time_maxrss" if time_maxrss is not None else "20ms_process_tree_sample",
+            "cpu_user_seconds": usage.ru_utime if usage is not None else None,
+            "cpu_system_seconds": usage.ru_stime if usage is not None else None,
+            "peak_rss_bytes": maxrss if maxrss is not None else peak_sampled,
+            "peak_rss_source": "isolated_wait4_child_maxrss" if maxrss is not None else "20ms_process_tree_sample",
             "peak_process_tree_sample_bytes": peak_sampled,
             "timed_out": timed_out, "rss_limit_exceeded": rss_exceeded}
 
@@ -211,10 +233,9 @@ def main():
                 identity = f"{task['id']}__{method}__seed{seed}"
                 run_dir = out_root / identity
                 run_dir.mkdir()
-                timing = run_dir / "gnu-time.txt"
-                command = ["/usr/bin/time", "-f", "%M %U %S", "-o", str(timing), str(binary),
+                command = [str(binary),
                            method, task["family"], task["track"], str(seed), *datasets]
-                resources_run = execute(command, *limits, run_dir / "stdout.json", run_dir / "stderr.log", timing)
+                resources_run = execute(command, *limits, run_dir / "stdout.json", run_dir / "stderr.log")
                 record = {"protocol_sha256": manifest_hash, "source_sha": args.source_sha,
                           "binary_sha256": binary_hash, "task_id": task["id"],
                           "family": task["family"], "track": task["track"], "noise_seed": task["noise_seed"],

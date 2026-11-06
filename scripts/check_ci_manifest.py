@@ -35,6 +35,7 @@ PORTABLE = {
     'genetik_expression_contracts', 'genetik_fitness_publication',
     'genetik_contracts', 'genetik_regression_cli', 'genetik_expression_example',
     'genetik_demo_bounded', 'genetik_demo_zero_budget', 'genetik_demo_invalid_argument',
+    'genetik_constructive_recurrence_contracts', 'genetik_constructive_recurrence_example',
     'genetik_downstream', 'genetik_expression_fp_policy', 'genetik_prime_contracts',
     'genetik_prime_cli', 'genetik_workspace_contracts', 'genetik_installed_package',
     'genetik_scalar_quickstart', 'genetik_symbolic_quickstart', 'genetik_oop_contracts',

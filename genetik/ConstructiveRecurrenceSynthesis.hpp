@@ -95,6 +95,8 @@ struct SynthesisStats {
     std::uint64_t resourceLimitedRollouts = 0;
     std::size_t estimatedStoredBytes = 0;
     std::size_t selectedModelBytes = 0;
+    std::size_t estimatedPeakBytes = 0;
+    std::uint64_t selectedModelReplacements = 0;
     std::size_t maximumNodesReached = 0;
 };
 
@@ -281,17 +283,23 @@ inline SynthesisResult synthesizeRecurrenceTransition(
         }
         // Keep the best valid prefix-matching partial model for useful
         // diagnostics; exact recovery always supersedes it and stops search.
-        if (exactPoints > order && exactPoints > result.matchedTrainingPoints) {
+        if (exactPoints > order && exactPoints > result.matchedTrainingPoints &&
+            exactPoints < training.size()) {
             const auto text = candidate.toString();
             const auto selected = detail::selectedEstimate(candidate, text);
-            const auto base = result.stats.estimatedStoredBytes;
-            const auto usedWithoutOld = base + std::min(result.stats.selectedModelBytes,
-                config.maximumEstimatedStorageBytes - std::min(base, config.maximumEstimatedStorageBytes));
-            if (usedWithoutOld > config.maximumEstimatedStorageBytes ||
-                selected > config.maximumEstimatedStorageBytes - usedWithoutOld) {
+            const auto retained = result.stats.estimatedStoredBytes;
+            const auto oldSelected = result.stats.selectedModelBytes;
+            if (retained > config.maximumEstimatedStorageBytes ||
+                oldSelected > config.maximumEstimatedStorageBytes - retained ||
+                selected > config.maximumEstimatedStorageBytes - retained - oldSelected) {
                 result.stop = SynthesisStop::StorageLimit;
                 return true;
             }
+            // Replacement transiently keeps both selected copies alive (the
+            // assignment's by-value temporary owns the former model).
+            result.stats.estimatedPeakBytes = std::max(result.stats.estimatedPeakBytes,
+                retained + oldSelected + selected);
+            if (result.transition) ++result.stats.selectedModelReplacements;
             result.transition = candidate;
             result.canonicalTransition = text;
             result.trainingRecovery = TrainingRecoveryStatus::Partial;
@@ -300,11 +308,25 @@ inline SynthesisResult synthesizeRecurrenceTransition(
             result.stats.selectedModelBytes = selected;
         }
         if (exactPoints == training.size()) {
+            const auto text = candidate.toString();
+            const auto selected = detail::selectedEstimate(candidate, text);
+            const auto retained = result.stats.estimatedStoredBytes;
+            const auto oldSelected = result.stats.selectedModelBytes;
+            if (retained > config.maximumEstimatedStorageBytes ||
+                oldSelected > config.maximumEstimatedStorageBytes - retained ||
+                selected > config.maximumEstimatedStorageBytes - retained - oldSelected) {
+                result.stop = SynthesisStop::StorageLimit;
+                return true;
+            }
+            result.stats.estimatedPeakBytes = std::max(result.stats.estimatedPeakBytes,
+                retained + oldSelected + selected);
+            if (result.transition) ++result.stats.selectedModelReplacements;
             result.transition = candidate;
-            result.canonicalTransition = candidate.toString();
+            result.canonicalTransition = text;
             result.trainingRecovery = TrainingRecoveryStatus::Exact;
             result.matchedTrainingPoints = exactPoints;
             result.expressionNodes = candidate.nodeCount();
+            result.stats.selectedModelBytes = selected;
             result.stop = SynthesisStop::ExactTrainingMatch;
             return true;
         }
@@ -323,14 +345,18 @@ inline SynthesisResult synthesizeRecurrenceTransition(
             return true;
         }
         const auto retained = detail::retainedEstimate(candidate, text);
-        if (retained > config.maximumEstimatedStorageBytes -
-                           std::min(result.stats.estimatedStoredBytes, config.maximumEstimatedStorageBytes)) {
+        const auto selected = result.stats.selectedModelBytes;
+        if (result.stats.estimatedStoredBytes > config.maximumEstimatedStorageBytes ||
+            selected > config.maximumEstimatedStorageBytes - result.stats.estimatedStoredBytes ||
+            retained > config.maximumEstimatedStorageBytes - result.stats.estimatedStoredBytes - selected) {
             identities.erase(text);
             result.stop = SynthesisStop::StorageLimit;
             return true;
         }
         ++result.stats.uniqueStructures;
         result.stats.estimatedStoredBytes += retained;
+        result.stats.estimatedPeakBytes = std::max(result.stats.estimatedPeakBytes,
+            result.stats.estimatedStoredBytes + selected);
         result.stats.maximumNodesReached = std::max(result.stats.maximumNodesReached, candidate.nodeCount());
         const auto size = candidate.nodeCount();
         if (score(candidate)) return true;
@@ -438,6 +464,25 @@ inline RecurrenceAssessment assessRecurrenceTransition(
     const RecurrenceAssessmentConfig &config = {}) {
     RecurrenceAssessment result;
     result.observationCount = heldOut.size();
+    if ((order != 1 && order != 2) || initial.size() != order || heldOut.empty() ||
+        !config.maximumObservations || config.maximumObservations > 10000000 ||
+        heldOut.size() > config.maximumObservations ||
+        !config.maximumTransitionSteps || config.maximumTransitionSteps > 1000000000ULL ||
+        !config.maximumNodeVisits || config.maximumNodeVisits > 1000000000000ULL ||
+        !config.maximumArithmeticOperations || config.maximumArithmeticOperations > 1000000000000ULL ||
+        !config.maximumSteps || config.maximumSteps > 1000000000 ||
+        !config.evaluationLimits.maxWorkspaceBytes ||
+        config.evaluationLimits.maxIterationDepth > 128 ||
+        config.evaluationLimits.maxIterationsPerOperation > 1000000000 ||
+        config.evaluationLimits.maxAggregateIterations > 1000000000)
+        throw std::invalid_argument("invalid recurrence assessment data or limits");
+    std::int64_t previousIndex = -1;
+    for (const auto &point : heldOut) {
+        if (point.index < 0 || point.index <= previousIndex ||
+            static_cast<std::uint64_t>(point.index) > config.maximumSteps + order - 1)
+            throw std::invalid_argument("held-out indices must increase within recurrence step limit");
+        previousIndex = point.index;
+    }
     if (!selected.transition) {
         result.status = selected.stop == SynthesisStop::NodeLimit
             ? AssessmentStatus::NoCandidate : AssessmentStatus::ResourceExhausted;
@@ -446,20 +491,26 @@ inline RecurrenceAssessment assessRecurrenceTransition(
             : "synthesis stopped before selecting a complete candidate";
         return result;
     }
-    if ((order != 1 && order != 2) || initial.size() != order || heldOut.empty() ||
-        !config.maximumObservations || config.maximumObservations > 10000000 ||
-        heldOut.size() > config.maximumObservations ||
-        !config.maximumTransitionSteps || config.maximumTransitionSteps > 1000000000ULL ||
-        !config.maximumNodeVisits || config.maximumNodeVisits > 1000000000000ULL ||
-        !config.maximumArithmeticOperations || config.maximumArithmeticOperations > 1000000000000ULL ||
-        !config.maximumSteps || config.maximumSteps > 1000000000)
-        throw std::invalid_argument("invalid recurrence assessment data or limits");
-    for (const auto &point : heldOut) {
-        if (point.index < 0 || static_cast<std::uint64_t>(point.index) > config.maximumSteps + order - 1)
-            throw std::invalid_argument("held-out index exceeds recurrence step limit");
+    if (selected.transition->dimensions() != order + 1 ||
+        selected.transition->type() != DiscreteType::Int64 ||
+        !selected.transition->outerBindings().empty()) {
+        result.status = AssessmentStatus::InvalidCandidate;
+        result.diagnostic = "selected transition does not match recurrence schema";
+        return result;
     }
-    IntegerRecurrence model(0, initial, *selected.transition,
-        {config.maximumSteps, config.evaluationLimits.maxWorkspaceBytes});
+    std::optional<IntegerRecurrence> model;
+    try {
+        model.emplace(0, initial, *selected.transition,
+            IntegerRecurrenceLimits{config.maximumSteps, config.evaluationLimits.maxWorkspaceBytes});
+    } catch (const std::length_error &error) {
+        result.status = AssessmentStatus::ResourceExhausted;
+        result.diagnostic = error.what();
+        return result;
+    } catch (const std::invalid_argument &error) {
+        result.status = AssessmentStatus::InvalidCandidate;
+        result.diagnostic = error.what();
+        return result;
+    }
     for (const auto &point : heldOut) {
         if (config.cancelled && config.cancelled->load(std::memory_order_relaxed)) {
             result.status = AssessmentStatus::ResourceExhausted;
@@ -477,7 +528,7 @@ inline RecurrenceAssessment assessRecurrenceTransition(
                 std::min(result.arithmeticOperations, config.maximumArithmeticOperations)));
         evaluation.maxAggregateIterations = static_cast<std::size_t>(
             std::min<std::uint64_t>(evaluation.maxAggregateIterations, remainingSteps));
-        const auto value = model.evaluate(point.index, {}, evaluation, config.cancelled);
+        const auto value = model->evaluate(point.index, {}, evaluation, config.cancelled);
         if (!detail::checkedCounterAdd(result.transitionSteps, value.iterations) ||
             !detail::checkedCounterAdd(result.nodeVisits, value.nodeVisits) ||
             !detail::checkedCounterAdd(result.arithmeticOperations, value.operations)) {

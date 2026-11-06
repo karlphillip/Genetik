@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include <ConstructiveRecurrenceSynthesis.hpp>
 #include <RationalFunctionRegression.hpp>
 // Overlapping complete public-header use in a separately compiled translation unit.
 bool symbolic_check() {
@@ -31,6 +32,19 @@ bool symbolic_check() {
     RandomContext run(42,{2});const auto result=symbolicRegression(problem,cfg,run);
     return result.best && result.trainingWork.lossAttempts<=64 &&
         problem->measure(result.best->expression()).loss==result.best->evaluation();
+}
+
+bool constructive_recurrence_check() {
+    using namespace genetik::constructive;
+    const std::vector<SequencePoint> rows{{0,0},{1,3},{2,6},{3,9}};
+    RecurrenceSynthesisConfig limits;
+    limits.maximumNodes=3;
+    const auto result=synthesizeRecurrenceTransition(1,{0},rows,limits);
+    if(!result.transition || result.trainingRecovery!=TrainingRecoveryStatus::Exact)return false;
+    IntegerRecurrence model(0,{0},*result.transition);
+    const auto heldout=assessRecurrenceTransition(result,1,{0},{{5,15}});
+    return model.evaluate(5).valid() && model.evaluate(5).value->integer()==15 &&
+        heldout.status==AssessmentStatus::ExactHeldOut;
 }
 
 bool typed_check() {

@@ -28,6 +28,8 @@ target_link_libraries(genetik_tests PRIVATE genetik_lib)
 add_test(NAME genetik_contracts COMMAND genetik_tests)
 set_tests_properties(genetik_contracts PROPERTIES TIMEOUT 30)
 if(GENETIK_BUILD_EXAMPLES)
+    add_test(NAME genetik_constructive_recurrence_example COMMAND genetik_constructive_recurrence_demo)
+    set_tests_properties(genetik_constructive_recurrence_example PROPERTIES TIMEOUT 30)
     add_test(NAME genetik_regression_cli COMMAND ${CMAKE_COMMAND}
         -DGENERATOR=$<TARGET_FILE:genetik_multivariate_demo>
         -DSEARCH=$<TARGET_FILE:genetik_regression_search>
@@ -68,11 +70,15 @@ if(GENETIK_BUILD_EXACT_RATIONAL_TESTS)
     set_tests_properties(genetik_s2_exact_constraint_contracts PROPERTIES TIMEOUT 120)
 endif()
 # Each public header must compile as the first and only include.
-foreach(header EquationArchive ParameterDerivatives LevenbergMarquardt ScientificLevenbergMarquardt MixedExpression MixedRegression MixedIntegerCheckpoint DiscreteExpression DiscreteExpressionParsing DiscreteExpressionFormatting DiscreteRegression DiscreteVariation DiscreteSymbolicRegression DiscreteExpressionCheckpoint DiscreteRunCheckpoint IntegerRecurrence SymbolicAlgebra PhysicalDimensions DimensionalRegression MathematicalConstraints ScalarMathematicsRun Version RunCheckpoint ScalarExpressionCheckpoint ExpressionFormatting IntegralExpression IntegralRegression DerivativeRegression ExpressionDerivative ScalarExpressionTemplate ScalarTemplateRegression ExpressionParsing TypedExpressionParsing TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting RationalFunctionRegression)
+foreach(header EquationArchive ParameterDerivatives LevenbergMarquardt ScientificLevenbergMarquardt MixedExpression MixedRegression MixedIntegerCheckpoint DiscreteExpression DiscreteExpressionParsing DiscreteExpressionFormatting DiscreteRegression DiscreteVariation DiscreteSymbolicRegression DiscreteExpressionCheckpoint DiscreteRunCheckpoint IntegerRecurrence ConstructiveRecurrenceSynthesis SymbolicAlgebra PhysicalDimensions DimensionalRegression MathematicalConstraints ScalarMathematicsRun Version RunCheckpoint ScalarExpressionCheckpoint ExpressionFormatting IntegralExpression IntegralRegression DerivativeRegression ExpressionDerivative ScalarExpressionTemplate ScalarTemplateRegression ExpressionParsing TypedExpressionParsing TypedConstantFitting TypedVariation TypedSymbolicRegression TypedRegression TypedValue TypedExpression Execution Creature_i Creature Population_i Population GeneticAlgorithm_i GeneticAlgorithm RandomContext Fitness Expression EvaluatedCandidate ScalarVariation Regression ExpressionVariation SymbolicRegression ConstantFitting RationalFunctionRegression)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp "#include <${header}.hpp>\n")
     add_library(header_${header} OBJECT ${CMAKE_CURRENT_BINARY_DIR}/header_${header}.cpp)
     target_link_libraries(header_${header} PRIVATE genetik_lib)
 endforeach()
+add_executable(genetik_constructive_recurrence_tests constructive_recurrence_synthesis.cpp)
+target_link_libraries(genetik_constructive_recurrence_tests PRIVATE Genetik::Genetik)
+add_test(NAME genetik_constructive_recurrence_contracts COMMAND genetik_constructive_recurrence_tests)
+set_tests_properties(genetik_constructive_recurrence_contracts PROPERTIES TIMEOUT 60)
 add_test(NAME genetik_downstream COMMAND ${CMAKE_COMMAND}
     -DGENETIK_SOURCE=${PROJECT_SOURCE_DIR}
     -DDOWNSTREAM_BINARY=${CMAKE_CURRENT_BINARY_DIR}/downstream

@@ -1,5 +1,7 @@
 # Genetik
 
+See [constructive integer recurrence synthesis](docs/CONSTRUCTIVE_RECURRENCE_SYNTHESIS.md) for the optional bounded deterministic recurrence discovery API and a standalone C++ example.
+
 Genetik is a general-purpose, header-only C++20 genetic algorithm library with
 public OOP extension points. Applications own their candidates and customize
 initialization, fitness, optional preparation/refinement, selection, crossover and

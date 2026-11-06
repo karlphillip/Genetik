@@ -1,5 +1,12 @@
 #pragma once
 
+#if defined(__FAST_MATH__) || (defined(__FINITE_MATH_ONLY__) && __FINITE_MATH_ONLY__ > 0)
+#error "S14 domain certification requires strict IEEE floating-point compilation"
+#endif
+#if !defined(__GNUC__) && !defined(__clang__)
+#error "S14 domain certification is qualified only for GNU/Clang strict floating-point builds"
+#endif
+
 // S14 research-only two-input bounded rational reconstruction. This header is
 // deliberately outside the installed Genetik API until independently reviewed.
 #include <RationalFunctionRegression.hpp>
@@ -8,6 +15,7 @@
 #include <array>
 #include <array>
 #include <cmath>
+#include <cfenv>
 #include <cstddef>
 #include <limits>
 #include <numeric>
@@ -21,7 +29,7 @@
 namespace genetik_s14 {
 
 struct Observation { double x = 0, y = 0, target = 0; };
-struct Term { unsigned x = 0, y = 0; };
+struct Term { unsigned x = 0, y = 0; friend bool operator==(Term,Term)=default; };
 // Graded total-degree order; within a degree, descending x exponent.
 inline std::vector<Term> basis(unsigned degree) {
     if (degree > 2) throw std::invalid_argument("S14 total degree must be at most two");
@@ -201,14 +209,18 @@ inline Expression denominatorExpression(std::span<const Term> terms,std::span<co
 }
 inline bool consistent(const Model& model) {
     try {
-        if(model.denominator.empty()||model.denominatorBasis.size()!=model.denominator.size()||
-           model.denominator.front()!=1.0||!std::all_of(model.denominator.begin(),model.denominator.end(),[](double v){return std::isfinite(v);}))return false;
+        if(model.numeratorDegree>2||model.denominatorDegree>2||
+           model.numeratorBasis!=basis(model.numeratorDegree)||
+           model.denominatorBasis!=basis(model.denominatorDegree)||
+           model.denominator.size()!=model.denominatorBasis.size()||
+           model.denominator.empty()||model.denominator.front()!=1.0||
+           model.numerator.size()!=model.numeratorBasis.size()||
+           model.parameterCount!=model.numerator.size()+model.denominator.size()-1||
+           !std::all_of(model.denominator.begin(),model.denominator.end(),[](double v){return std::isfinite(v);})||
+           !std::all_of(model.numerator.begin(),model.numerator.end(),[](double v){return std::isfinite(v);}))return false;
         const auto expectedQ=denominatorExpression(model.denominatorBasis,
             std::span<const double>(model.denominator).subspan(1),model.denominatorExpression.limits());
         if(!genetik_rational_detail::sameNodes(expectedQ,model.denominatorExpression))return false;
-        if(model.numerator.empty())return true;
-        if(model.numerator.size()!=model.numeratorBasis.size()||
-           !std::all_of(model.numerator.begin(),model.numerator.end(),[](double v){return std::isfinite(v);}))return false;
         const auto expected=buildExpression(model.numeratorBasis,model.numerator,model.denominatorBasis,
             std::span<const double>(model.denominator).subspan(1),false,model.denominator.size()-1,model.expression.limits());
         return genetik_rational_detail::sameNodes(expected,model.expression);
@@ -240,43 +252,83 @@ inline void addLm(LMWork& a,const LMWork& b) {
     a.peakWorkspaceBytes=std::max(a.peakWorkspaceBytes,b.peakWorkspaceBytes);a.seconds+=b.seconds;
 }
 
-struct Interval { long double lo=0,hi=0; };
-inline long double down(long double x){return std::nextafter(x,-std::numeric_limits<long double>::infinity());}
-inline long double up(long double x){return std::nextafter(x,std::numeric_limits<long double>::infinity());}
-inline Interval add(Interval a,Interval b){return {down(a.lo+b.lo),up(a.hi+b.hi)};}
-inline Interval mul(Interval a,Interval b){
-    const std::array<long double,4> v{a.lo*b.lo,a.lo*b.hi,a.hi*b.lo,a.hi*b.hi};
-    const auto [mn,mx]=std::minmax_element(v.begin(),v.end());return {down(*mn),up(*mx)};
+// Binary64 interval operations assume the documented strict IEEE-754
+// round-to-nearest environment. Each primitive result is widened by one
+// representable value. Any overflow, NaN, or unsupported rounding mode fails
+// closed; no such result may be used to certify separation.
+struct Interval { double lo=0,hi=0; bool valid=true; };
+inline double down(double x){return std::nextafter(x,-std::numeric_limits<double>::infinity());}
+inline double up(double x){return std::nextafter(x,std::numeric_limits<double>::infinity());}
+inline Interval add(Interval a,Interval b){
+    if(!a.valid||!b.valid)return {0,0,false};
+    volatile double l=a.lo+b.lo,h=a.hi+b.hi;
+    if(!std::isfinite(l)||!std::isfinite(h))return {0,0,false};
+    return {down(l),up(h),true};
 }
-inline Interval square(Interval a){const long double hi=std::max(a.lo*a.lo,a.hi*a.hi);const long double lo=a.lo<=0&&a.hi>=0?0:std::min(a.lo*a.lo,a.hi*a.hi);return {lo==0?0:down(lo),up(hi)};}
+inline Interval mul(Interval a,Interval b){
+    if(!a.valid||!b.valid)return {0,0,false};
+    const std::array<double,4> v{a.lo*b.lo,a.lo*b.hi,a.hi*b.lo,a.hi*b.hi};
+    if(!std::all_of(v.begin(),v.end(),[](double x){return std::isfinite(x);}))return {0,0,false};
+    const auto [mn,mx]=std::minmax_element(v.begin(),v.end());return {down(*mn),up(*mx),true};
+}
+inline Interval square(Interval a){
+    if(!a.valid)return {0,0,false};
+    volatile double l=a.lo*a.lo,h=a.hi*a.hi;
+    if(!std::isfinite(l)||!std::isfinite(h))return {0,0,false};
+    const double hi=std::max(l,h),lo=a.lo<=0&&a.hi>=0?0.0:std::min(l,h);
+    return {lo==0?0:down(lo),up(hi),true};
+}
 inline Interval monomialRange(Rectangle r,Term t){
+    if(t.x>2||t.y>2||t.x+t.y>2)return {0,0,false};
     Interval x{r.xLower,r.xUpper},y{r.yLower,r.yUpper},v{1,1};
     if(t.x==1)v=mul(v,x);else if(t.x==2)v=mul(v,square(x));
     if(t.y==1)v=mul(v,y);else if(t.y==2)v=mul(v,square(y));
     return v;
 }
 inline Interval polynomialRange(std::span<const double> coeffs,std::span<const Term> terms,Rectangle r){
-    Interval sum{0,0};
-    for(std::size_t i=0;i<coeffs.size();++i){Interval c{coeffs[i],coeffs[i]};sum=add(sum,mul(c,monomialRange(r,terms[i])));}
+    if(coeffs.empty()||coeffs.size()!=terms.size())return {0,0,false};
+    const Interval x{r.xLower,r.xUpper},y{r.yLower,r.yUpper};
+    auto termRange=[&](std::size_t i){
+        const auto t=terms[i];
+        if(t.x>2||t.y>2||t.x+t.y>2)return Interval{0,0,false};
+        Interval value{coeffs[i],coeffs[i]};
+        if(t.x){const auto power=t.x==1?x:square(x);value=mul(value,power);}
+        if(t.y){const auto power=t.y==1?y:square(y);value=mul(value,power);}
+        return value;
+    };
+    // This is the operation order used by polynomialNodes(): first term,
+    // followed by increasing-basis-order additions.
+    Interval sum=termRange(0);
+    for(std::size_t i=1;i<coeffs.size();++i)sum=add(sum,termRange(i));
     return sum;
 }
-inline long double polynomialMagnitudeBound(std::span<const double> coeffs,std::span<const Term> terms,Rectangle r){
-    long double bound=0;
-    for(std::size_t i=0;i<coeffs.size();++i){const auto mon=monomialRange(r,terms[i]);
-        bound=up(bound+std::abs(static_cast<long double>(coeffs[i]))*std::max(std::abs(mon.lo),std::abs(mon.hi)));}
-    return bound;
+inline std::size_t polynomialRangeOperations(std::span<const Term> terms){
+    std::size_t operations=0;
+    for(std::size_t i=0;i<terms.size();++i){
+        const auto t=terms[i];
+        if(t.x)operations=addChecked(operations,1,"S14 interval operation count overflow");
+        if(t.x==2)operations=addChecked(operations,1,"S14 interval operation count overflow");
+        if(t.y)operations=addChecked(operations,1,"S14 interval operation count overflow");
+        if(t.y==2)operations=addChecked(operations,1,"S14 interval operation count overflow");
+        if(i)operations=addChecked(operations,1,"S14 interval operation count overflow");
+    }
+    return operations;
 }
-inline long double evaluatorRoundingAllowance(std::span<const double> coeffs,std::span<const Term> terms,
-                                              Rectangle r,std::size_t expressionNodes){
-    const auto scale=polynomialMagnitudeBound(coeffs,terms,r);
-    const long double factor=128.0L*std::numeric_limits<double>::epsilon()*
-                             static_cast<long double>(std::max<std::size_t>(1,expressionNodes));
-    const auto allowance=up(factor*std::max(1.0L,scale));
-    return std::isfinite(allowance)?allowance:std::numeric_limits<long double>::infinity();
+inline bool supportedIntervalEnvironment(){
+    if(std::fegetround()!=FE_TONEAREST||!std::numeric_limits<double>::is_iec559||
+       std::numeric_limits<double>::radix!=2||
+       std::numeric_limits<double>::round_style!=std::round_to_nearest||
+       std::numeric_limits<double>::has_denorm==std::denorm_absent)return false;
+    volatile double smallest=std::numeric_limits<double>::denorm_min();
+    volatile double one=1.0;
+    volatile double product=smallest*one;
+    return product==std::numeric_limits<double>::denorm_min()&&
+           std::nextafter(0.0,1.0)==std::numeric_limits<double>::denorm_min();
 }
-inline Interval widen(Interval a,long double e){return {down(a.lo-e),up(a.hi+e)};}
 inline Interval divide(Interval a,Interval b){
-    const std::array<long double,4> v{a.lo/b.lo,a.lo/b.hi,a.hi/b.lo,a.hi/b.hi};
+    if(!a.valid||!b.valid||(b.lo<=0&&b.hi>=0))return {0,0,false};
+    const std::array<double,4> v{a.lo/b.lo,a.lo/b.hi,a.hi/b.lo,a.hi/b.hi};
+    if(!std::all_of(v.begin(),v.end(),[](double x){return std::isfinite(x);}))return {0,0,false};
     const auto [mn,mx]=std::minmax_element(v.begin(),v.end());return {down(*mn),up(*mx)};
 }
 inline double directDenominator(const Model& model,double x,double y){
@@ -394,47 +446,49 @@ inline FitResult fit(std::span<const Observation> rows,const Config& c={}) {
 inline DomainResult assessDomain(const Model& model,Rectangle region,std::size_t maximumCells=1024,
                                  unsigned maximumDepth=10,double minimumSeparation=1e-10) {
     DomainResult out;out.region=region;
-    const bool numeratorAvailable=model.numerator.size()==model.numeratorBasis.size()&&!model.numerator.empty();
-    if(model.denominator.empty()||model.denominatorBasis.size()!=model.denominator.size()||model.denominatorBasis.front().x!=0||model.denominatorBasis.front().y!=0||model.denominator.front()!=1.0){out.status=S14DomainStatus::Invalid;out.reason="invalid_denominator_representation";return out;}
-    try{
-        const auto expected=detail::denominatorExpression(model.denominatorBasis,
-            std::span<const double>(model.denominator).subspan(1),model.denominatorExpression.limits());
-        if(!genetik_rational_detail::sameNodes(expected,model.denominatorExpression)){out.status=S14DomainStatus::Invalid;out.reason="inconsistent_denominator_representation";return out;}
-        if(numeratorAvailable&&!detail::consistent(model)){out.status=S14DomainStatus::Invalid;out.reason="inconsistent_model_representation";return out;}
-    }catch(const std::exception&){out.status=S14DomainStatus::Invalid;out.reason="invalid_denominator_representation";return out;}
+    if(!detail::consistent(model)){out.status=S14DomainStatus::Invalid;out.reason="invalid_or_unsupported_model";return out;}
     if(!maximumCells||maximumDepth>20||!std::isfinite(minimumSeparation)||minimumSeparation<0||
        !std::isfinite(region.xLower)||!std::isfinite(region.xUpper)||!std::isfinite(region.yLower)||!std::isfinite(region.yUpper)||
        region.xLower>region.xUpper||region.yLower>region.yUpper){out.status=S14DomainStatus::Invalid;out.reason="invalid_domain_configuration";return out;}
+    if(!detail::supportedIntervalEnvironment()){out.status=S14DomainStatus::Uncertain;out.reason="unsupported_floating_point_environment";return out;}
     struct Cell{Rectangle r;unsigned depth;};std::vector<Cell> pending{{region,0}};bool unresolved=false;double minSep=std::numeric_limits<double>::infinity();
-    long double maxPrediction=0;bool predictionBoundAvailable=numeratorAvailable;bool predictionOverflow=false;
+    double maxPrediction=0;bool predictionBoundAvailable=true;bool predictionOverflow=false;
     while(!pending.empty()){
         auto cell=pending.back();pending.pop_back();++out.cellsVisited;
-        for(const auto& p:std::array<std::array<double,2>,5>{{{{cell.r.xLower,cell.r.yLower}},{{cell.r.xLower,cell.r.yUpper}},{{cell.r.xUpper,cell.r.yLower}},{{cell.r.xUpper,cell.r.yUpper}},{{std::midpoint(cell.r.xLower,cell.r.xUpper),std::midpoint(cell.r.yLower,cell.r.yUpper)}}}}){
-            const double q=detail::directDenominator(model,p[0],p[1]);if(!std::isfinite(q)){out.status=S14DomainStatus::Invalid;out.reason="invalid_denominator_evaluation";return out;}
-            if(q==0.0){++out.observedZeros;out.status=S14DomainStatus::Invalid;out.finding=DomainFinding::DemonstratedZero;out.reason="denominator_zero_demonstrated";return out;}
+        bool positive=false,negative=false;
+        for(const auto& p:std::array<std::array<double,2>,4>{{{{cell.r.xLower,cell.r.yLower}},{{cell.r.xLower,cell.r.yUpper}},{{cell.r.xUpper,cell.r.yLower}},{{cell.r.xUpper,cell.r.yUpper}}}}){
+            const auto point=detail::polynomialRange(model.denominator,model.denominatorBasis,{p[0],p[0],p[1],p[1]});
+            out.intervalOperations=detail::addChecked(out.intervalOperations,
+                detail::polynomialRangeOperations(model.denominatorBasis),"S14 domain counter overflow");
+            if(!point.valid){unresolved=true;continue;}
+            positive=positive||point.lo>0;negative=negative||point.hi<0;
         }
+        if(positive&&negative){out.status=S14DomainStatus::Invalid;out.finding=DomainFinding::DemonstratedZero;out.reason="opposite_certified_denominator_signs";return out;}
         auto range=detail::polynomialRange(model.denominator,model.denominatorBasis,cell.r);
-        const auto denominatorRoundoff=detail::evaluatorRoundingAllowance(model.denominator,model.denominatorBasis,cell.r,model.denominatorExpression.nodeCount());
-        range=detail::widen(range,denominatorRoundoff);
-        out.intervalOperations=detail::addChecked(out.intervalOperations,model.denominator.size()*16,"S14 domain counter overflow");
-        const bool separated=range.lo>minimumSeparation||range.hi< -minimumSeparation;
+        out.intervalOperations=detail::addChecked(out.intervalOperations,
+            detail::polynomialRangeOperations(model.denominatorBasis),"S14 domain counter overflow");
+        const bool separated=range.valid&&(range.lo>minimumSeparation||range.hi< -minimumSeparation);
         if(separated){
             const auto separation=range.lo>minimumSeparation?range.lo:-range.hi;
             minSep=std::min(minSep,static_cast<double>(separation));
             if(predictionBoundAvailable){
                 auto nr=detail::polynomialRange(model.numerator,model.numeratorBasis,cell.r);
-                const auto numeratorRoundoff=detail::evaluatorRoundingAllowance(model.numerator,model.numeratorBasis,cell.r,model.expression.nodeCount());
-                nr=detail::widen(nr,numeratorRoundoff);
-                out.intervalOperations=detail::addChecked(out.intervalOperations,model.numerator.size()*16,"S14 domain counter overflow");
+                out.intervalOperations=detail::addChecked(out.intervalOperations,
+                    detail::polynomialRangeOperations(model.numeratorBasis),"S14 domain counter overflow");
                 const auto quotient=detail::divide(nr,range);
-                const long double bound=std::max(std::abs(quotient.lo),std::abs(quotient.hi));
-                if(!std::isfinite(bound))predictionOverflow=true;
-                else maxPrediction=std::max(maxPrediction,bound);
+                out.intervalOperations=detail::addChecked(out.intervalOperations,1,"S14 domain counter overflow");
+                if(!quotient.valid)predictionOverflow=true;
+                const double bound=quotient.valid?std::max(std::abs(quotient.lo),std::abs(quotient.hi)):std::numeric_limits<double>::infinity();
+                if(!std::isfinite(bound))predictionOverflow=true;else maxPrediction=std::max(maxPrediction,bound);
                 if(bound>std::numeric_limits<double>::max())predictionOverflow=true;
             }
             continue;
         }
-        if(cell.depth>=maximumDepth||out.cellsVisited+pending.size()+4>maximumCells){unresolved=true;continue;}
+        unresolved=unresolved||!range.valid;
+        const bool enoughCellBudget=out.cellsVisited<=maximumCells&&
+            pending.size()<=maximumCells-out.cellsVisited&&
+            maximumCells-out.cellsVisited-pending.size()>=4;
+        if(cell.depth>=maximumDepth||!enoughCellBudget){unresolved=true;continue;}
         const double xm=std::midpoint(cell.r.xLower,cell.r.xUpper),ym=std::midpoint(cell.r.yLower,cell.r.yUpper);
         pending.push_back({{cell.r.xLower,xm,cell.r.yLower,ym},cell.depth+1});
         pending.push_back({{xm,cell.r.xUpper,cell.r.yLower,ym},cell.depth+1});
@@ -447,7 +501,7 @@ inline DomainResult assessDomain(const Model& model,Rectangle region,std::size_t
         out.maximumAbsolutePredictionBound=predictionOverflow?std::numeric_limits<double>::infinity():static_cast<double>(maxPrediction);
         out.predictionNumericalStatus=!predictionBoundAvailable?PredictionNumericalStatus::Uncertain:
             predictionOverflow?PredictionNumericalStatus::OverflowPossible:PredictionNumericalStatus::FiniteBounded;
-    } else {out.status=S14DomainStatus::Uncertain;out.finding=DomainFinding::Inconclusive;out.reason="bounded_interval_subdivision_inconclusive";out.predictionNumericalStatus=PredictionNumericalStatus::Uncertain;}
+    } else {out.status=S14DomainStatus::Uncertain;out.finding=DomainFinding::Inconclusive;out.reason="bounded_interval_subdivision_or_numerical_enclosure_inconclusive";out.predictionNumericalStatus=PredictionNumericalStatus::Uncertain;}
     return out;
 }
 

@@ -168,6 +168,10 @@ add_executable(genetik_s14_multivariate_rational_tests s14_multivariate_rational
 target_link_libraries(genetik_s14_multivariate_rational_tests PRIVATE Genetik::Genetik)
 add_test(NAME genetik_s14_multivariate_rational_contracts COMMAND genetik_s14_multivariate_rational_tests)
 set_tests_properties(genetik_s14_multivariate_rational_contracts PROPERTIES TIMEOUT 60)
+add_executable(genetik_s14_domain_safety_tests s14_domain_safety.cpp)
+target_link_libraries(genetik_s14_domain_safety_tests PRIVATE Genetik::Genetik)
+add_test(NAME genetik_s14_domain_safety_contracts COMMAND genetik_s14_domain_safety_tests)
+set_tests_properties(genetik_s14_domain_safety_contracts PROPERTIES TIMEOUT 15)
 
 add_executable(genetik_s14_campaign ../benchmarks/s14/campaign.cpp)
 target_link_libraries(genetik_s14_campaign PRIVATE Genetik::Genetik)

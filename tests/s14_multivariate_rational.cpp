@@ -136,10 +136,10 @@ int main(){
     // Q=1-x-y has a zero curve. A sampled exact zero is reported as Invalid;
     // a separated compact rectangle is certified, while bounded non-point
     // enclosure that cannot be resolved remains Uncertain.
-    Model lineModel;lineModel.denominatorBasis=basis(1);lineModel.denominator={1,-1,-1};
+    Model lineModel;lineModel.numeratorDegree=0;lineModel.denominatorDegree=1;lineModel.denominatorBasis=basis(1);lineModel.denominator={1,-1,-1};
     lineModel.denominatorExpression=detail::denominatorExpression(lineModel.denominatorBasis,
         std::span<const double>(lineModel.denominator).subspan(1),ExpressionLimits{});
-    lineModel.numeratorBasis=basis(0);lineModel.numerator={1};
+    lineModel.numeratorBasis=basis(0);lineModel.numerator={1};lineModel.parameterCount=3;
     lineModel.expression=detail::buildExpression(lineModel.numeratorBasis,lineModel.numerator,
         lineModel.denominatorBasis,std::span<const double>(lineModel.denominator).subspan(1),false,2,ExpressionLimits{});
     require(!lineModel.predict(.5,.5)&&!lineModel.predict(.5,.5-1e-12),
@@ -147,13 +147,15 @@ int main(){
     auto crosses=assessDomain(lineModel,{-1,1,-1,1});
     require(crosses.status==S14DomainStatus::Invalid&&crosses.finding==DomainFinding::DemonstratedZero,
             "zero curve is reported when a zero is numerically demonstrated");
-    Model safe;safe.denominatorBasis=basis(1);safe.denominator={1,.2,-.1};
+    Model safe;safe.numeratorDegree=0;safe.denominatorDegree=1;safe.denominatorBasis=basis(1);safe.denominator={1,.2,-.1};
+    safe.numeratorBasis=basis(0);safe.numerator={1};safe.parameterCount=3;
     safe.denominatorExpression=detail::denominatorExpression(safe.denominatorBasis,std::span<const double>(safe.denominator).subspan(1),ExpressionLimits{});
+    safe.expression=detail::buildExpression(safe.numeratorBasis,safe.numerator,safe.denominatorBasis,std::span<const double>(safe.denominator).subspan(1),false,2,ExpressionLimits{});
     auto cert=assessDomain(safe,{-0.1,0.1,-0.1,0.1});
     require(cert.status==S14DomainStatus::Valid&&cert.finding==DomainFinding::SeparatedFromZero&&cert.minimumCertifiedSeparation>0,
             "interval enclosure certifies denominator separation on safe rectangle");
-    auto uncertain=assessDomain(safe,{-10,8,-9,10},1,0);
-    require(uncertain.status==S14DomainStatus::Uncertain,"bounded subdivision does not overclaim large-region validity");
+    auto uncertain=assessDomain(safe,{-1,1,-1,1},1,0,.8);
+    require(uncertain.status==S14DomainStatus::Uncertain,"unresolved configured separation margin remains uncertain");
 
     // Existing one-variable public API regression is exercised without change.
     std::vector<RationalObservation> old;for(double x:{-2.,-1.,-.2,.3,1.,2.})old.push_back({x,(2.3*x+.7)/(x*x+1.5)});

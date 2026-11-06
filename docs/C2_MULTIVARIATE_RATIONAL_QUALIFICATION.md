@@ -13,7 +13,9 @@ PR #17 is merged. Protected `origin/main` is
 `73432014a381078fff23e09226210fd5ae144303`; merge commit `73432014…` contains
 the S16 feature commit `f4c0d7bf6602fbc9bf1a328c3aeb4b11ac9b1479` as an
 ancestor. GitHub reports all six unique required checks successful on the exact
-PR head. The task-owned feature worktree was clean and its local and remote
+PR head and all six post-merge checks successful on main SHA
+`73432014a381078fff23e09226210fd5ae144303` (workflow run
+`42260947814`). The task-owned feature worktree was clean and its local and remote
 feature refs were removed only after exact-SHA verification and a remote SHA
 lease. S16 and all other research refs were preserved. The S14 worktree was
 read-only during this review; temporary builds and the counterexample executable

@@ -35,7 +35,8 @@ static void lossesAndOwnership() {
     throws<std::invalid_argument>([] { RegressionProblem::create({{{1}, 2}, {{}, 0}}); });
     throws<std::invalid_argument>([] { RegressionProblem::create({{{std::numeric_limits<double>::infinity()}, 1}}); });
     throws<std::invalid_argument>([] { RegressionProblem::create({{{1}, std::numeric_limits<double>::quiet_NaN()}}); });
-    throws<std::invalid_argument>([] { RegressionProblem::create({{{1}, 2}}, {31,6,2}, static_cast<RegressionLoss>(1)); });
+    throws<std::invalid_argument>(
+        [] { RegressionProblem::create({{{1}, 2}}, {31, 6, 2}, static_cast<RegressionLoss>(99)); });
     throws<std::invalid_argument>([&] { small->measure(Expression::variable(0, 2)); });
     const auto x = Expression::variable(0);
     const double huge = std::numeric_limits<double>::max();

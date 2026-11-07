@@ -42,6 +42,9 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     genetik/ExpressionSecondDerivative.hpp \
     genetik/PhysicalDimensions.hpp \
     genetik/Regression.hpp \
+    genetik/InformationCriteria.hpp \
+    genetik/ConstantFitting.hpp \
+    genetik/SymbolicRegression.hpp \
     genetik/SymbolicAlgebra.hpp \
     genetik/TypedExpression.hpp \
     genetik/TypedExpressionParsing.hpp \
@@ -50,6 +53,8 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     genetik/detail/ExpressionParser.hpp \
     apps/regression_search.cpp \
     examples/quickstarts/smooth_operators.cpp \
+    examples/quickstarts/objectives.cpp \
+    tests/mathematical_objectives.cpp \
     tests/smooth_operators.cpp \
     examples/quickstarts/first_search.cpp \
     tests/expressions.cpp |
@@ -76,4 +81,5 @@ fi
 "$tidy_tool" "${tidy_args[@]}" \
     tests/expressions.cpp \
     tests/advanced_regression.cpp \
-    tests/smooth_operators.cpp
+    tests/smooth_operators.cpp \
+    tests/mathematical_objectives.cpp

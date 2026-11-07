@@ -73,6 +73,10 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   loss-call budget and four-generation ceiling bound the search. It prints the
   stopping outcome and faithful expression. Exact discovery is not required for
   either program to finish successfully.
+- [Selectable regression objectives and AIC/BIC](docs/MATHEMATICAL_OBJECTIVES.md)
+  with an [installed C++ quickstart](examples/quickstarts/objectives.cpp): MSE
+  remains the default, while MAE, Huber, weighted MSE and post-search Gaussian
+  model selection are opt-in.
 - [Python symbolic-regression example](examples/python/quickstart.py): install the
   optional `genetik` package, fit through the native C++ engine and inspect the
   selected canonical and SymPy expressions.

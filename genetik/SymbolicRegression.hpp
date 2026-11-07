@@ -32,6 +32,7 @@ inline const char* searchStopName(SearchStop stop) {
 struct SymbolicRegressionResult {
     std::optional<ExpressionCandidate> best;
     std::optional<double> initialBestMSE;
+    std::optional<double> initialBestObjective;
     std::optional<std::uint64_t> bestGeneration;
     std::uint64_t attemptedGenerations = 0, publishedGenerations = 0, candidateEvaluations = 0;
     VariationStatistics variation;
@@ -44,9 +45,15 @@ struct SymbolicRegressionResult {
     std::vector<Fitness> preparedInitialFitness;
     std::uint64_t unpublishedLossAttempts=0,unpublishedRowAttempts=0,unpublishedCandidateRequests=0;
     std::optional<double> rawInitialBestMSE;
+    std::optional<double> rawInitialBestObjective;
     std::vector<std::string> rawInitialExpressions; // exact pre-refinement audit, in slot order
     struct Improvement { std::uint64_t lossAttempts, generation; double mse; };
     std::vector<Improvement> improvements; // committed best only, at publication boundaries
+    struct ObjectiveImprovement {
+        std::uint64_t lossAttempts, generation;
+        double value;
+    };
+    std::vector<ObjectiveImprovement> objectiveImprovements;
     SearchStop stoppingReason = SearchStop::GenerationLimit;
 };
 
@@ -94,7 +101,10 @@ inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const Regressi
         result.stoppingReason = budgetFailure(failure)?SearchStop::EvaluationBudget:SearchStop::Cancelled;
         result.candidateEvaluations = random.evaluationAttempts(); result.trainingWork = objective->work();
         result.initialWork=result.trainingWork;
-        result.variation = variation.statistics(); result.rawInitialBestMSE = preparation->rawInitialBest;
+        result.variation = variation.statistics();
+        result.rawInitialBestObjective = preparation->rawInitialBest;
+        if (problem->objective().loss == RegressionLoss::MeanSquaredError)
+            result.rawInitialBestMSE = preparation->rawInitialBest;
         result.preparationWork=preparation->statistics();
         result.unpublishedLossAttempts=result.trainingWork.lossAttempts;
         result.unpublishedRowAttempts=result.trainingWork.rowAttempts;
@@ -114,12 +124,20 @@ inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const Regressi
     auto committedLosses=population.generation() ? objective->work().lossAttempts:0;
     auto committedRows=population.generation() ? objective->work().rowAttempts:0;
     auto committedRequests=population.generation() ? random.evaluationAttempts():0;
-    result.rawInitialBestMSE = preparation->rawInitialBest;
+    result.rawInitialBestObjective = preparation->rawInitialBest;
+    if (problem->objective().loss == RegressionLoss::MeanSquaredError)
+        result.rawInitialBestMSE = preparation->rawInitialBest;
     GeneticAlgorithm<P, ExpressionCandidate, Variation> ga(config.crossoverRate, config.mutationRate,
                                                                     random, std::move(variation), config.elites);
     if (population.bestSeen()) {
-        result.initialBestMSE = population.bestSeen()->fitness();
-        result.improvements.push_back({objective->work().lossAttempts, 0, *result.initialBestMSE});
+        result.initialBestObjective = population.bestSeen()->fitness();
+        result.objectiveImprovements.push_back(
+            {objective->work().lossAttempts, 0, *result.initialBestObjective});
+        if (problem->objective().loss == RegressionLoss::MeanSquaredError) {
+            result.initialBestMSE = population.bestSeen()->fitness();
+            result.improvements.push_back(
+                {objective->work().lossAttempts, 0, *result.initialBestMSE});
+        }
     }
     auto previous = population.bestSeen();
     for (;;) {
@@ -146,8 +164,14 @@ inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const Regressi
         committedLosses=objective->work().lossAttempts;committedRows=objective->work().rowAttempts;
         committedRequests=random.evaluationAttempts();
         const auto current = population.bestSeen();
-        if (current && (!previous || current->text() != previous->text() || current->fitness() != previous->fitness()))
-            result.improvements.push_back({objective->work().lossAttempts, *population.generation(), current->fitness()});
+        if (current && (!previous || current->text() != previous->text() ||
+                        current->fitness() != previous->fitness())) {
+            result.objectiveImprovements.push_back(
+                {objective->work().lossAttempts, *population.generation(), current->fitness()});
+            if (problem->objective().loss == RegressionLoss::MeanSquaredError)
+                result.improvements.push_back(
+                    {objective->work().lossAttempts, *population.generation(), current->fitness()});
+        }
         previous = current;
     }
     result.best = population.bestSeen(); result.bestGeneration = population.bestGeneration();

@@ -14,7 +14,8 @@ static std::vector<Observation> grid(auto f,double scale=1.0){
     std::vector<Observation> rows;
     for(double x:{-0.8,-0.45,-0.1,0.2,0.55,0.9})for(double y:{-0.75,-0.3,0.15,0.5,0.85}){
         const double sx=x*scale,sy=y*scale;rows.push_back({sx,sy,f(sx,sy)});
-    }return rows;
+    }
+    return rows;
 }
 static const Model& selected(const FitResult& r){if(r.status!=Status::Success||!r.selected)throw std::runtime_error(std::string("fit status ")+statusName(r.status)+": "+r.detail);return r.models[*r.selected];}
 

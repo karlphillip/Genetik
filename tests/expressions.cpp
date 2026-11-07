@@ -153,7 +153,8 @@ static void ownershipAndExport() {
     check(e.toString() == before, "failed composition preserves assignment destination");
     Expression moved(std::move(copy));
     check(scalar(moved) == -2, "move transfers a valid tree");
-    throws<std::logic_error>([&] { copy.evaluate({}); });
+    // Intentionally exercise the documented moved-from rejection path.
+    throws<std::logic_error>([&] { copy.evaluate({}); }); // NOLINT(bugprone-use-after-move)
     throws<std::logic_error>([&] { copy.toString(); });
     copy = changed;
     check(scalar(copy) == -6, "moved-from value can be reassigned");

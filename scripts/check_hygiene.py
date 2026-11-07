@@ -6,7 +6,10 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-ROOT_FILES = {'AGENTS.md', 'CHANGELOG.md', 'CMakeLists.txt', 'LICENSE', 'README.md', '.gitignore', 'pyproject.toml'}
+ROOT_FILES = {
+    '.clang-format', '.clang-tidy', '.gitignore', 'AGENTS.md', 'CHANGELOG.md',
+    'CMakeLists.txt', 'CONTRIBUTING.md', 'LICENSE', 'README.md', 'pyproject.toml',
+}
 ROOT_DIRS = {'.agents', '.git', '.github', 'apps', 'benchmarks', 'cmake', 'docs', 'examples',
              'genetik', 'scripts', 'tests', 'out', 'build', 'python', 'integrations'}
 WORKSPACE = {'Genetik', 'Genetik-data', '.tools', 'delivery-tools', 'archive', 'docs', 'examples', 'session.md'}

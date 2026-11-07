@@ -1,0 +1,12 @@
+Checks: >-
+  -*,
+  bugprone-sizeof-expression,
+  bugprone-suspicious-missing-comma,
+  bugprone-use-after-move,
+  performance-move-const-arg,
+  performance-unnecessary-value-param,
+  readability-container-size-empty,
+  readability-simplify-boolean-expr
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*/genetik/(Expression|Regression)\.hpp$|.*/genetik/detail/ScalarOperators\.hpp$'
+FormatStyle: file

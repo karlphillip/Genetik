@@ -1,7 +1,5 @@
 # Genetik
 
-See [constructive integer recurrence synthesis](docs/CONSTRUCTIVE_RECURRENCE_SYNTHESIS.md) for the optional bounded deterministic recurrence discovery API and a standalone C++ example.
-
 Genetik is a general-purpose, header-only C++20 genetic algorithm library with
 public OOP extension points. Applications own their candidates and customize
 initialization, fitness, optional preparation/refinement, selection, crossover and
@@ -48,8 +46,24 @@ the `v0.7.0` tag; its hosted qualification and release assets are recorded in
 CMake **3.16 or newer** is required. Link **`Genetik::Genetik`** for includes, C++20
 and the required strict floating-point options. Newer C++ standards are allowed.
 
+## Quick navigation
+
+- [Build and run your first search](docs/FIRST_SEARCH.md) with a complete,
+  bounded C++ example.
+- [Install Genetik and use it from another CMake project](docs/PACKAGING.md).
+- [Understand the public interfaces](docs/API.md) and [extension architecture](docs/ARCHITECTURE.md).
+- [Choose an existing capability](#api-and-examples), from symbolic regression to
+  optional numerical and mathematical components.
+- [Contribute and run tests](CONTRIBUTING.md); see [test labels and suites](docs/TESTING.md).
+- [Constructive integer recurrence synthesis](docs/CONSTRUCTIVE_RECURRENCE_SYNTHESIS.md)
+  and [bounded multivariate rational fitting](docs/CONSTRUCTIVE_MULTIVARIATE_RATIONAL_REGRESSION.md)
+  are optional deterministic capabilities with documented limits.
+
 ## Start here
 
+- [First bounded symbolic search](docs/FIRST_SEARCH.md): a fixed seed, small
+  training set, and explicit call budgets. It reports the best available result;
+  it does not require a particular equation to be discovered.
 - [Complete scalar-genome program](examples/quickstarts/scalar.cpp): a custom real-valued
   candidate minimizes squared error, shares an explicit `RandomContext(42)` with
   its population/algorithm, and stops after ten generations.
@@ -150,6 +164,10 @@ cmake -E chdir build/release ctest --output-on-failure
 build/release/genetik_demo 42 1000
 python3 scripts/check_hygiene.py --workspace # optional local parent-workspace audit
 ```
+
+Use `ctest -L numerical`, `ctest -L compatibility`, or another documented label
+from the build directory to run a focused category. Performance harnesses remain
+explicit targets under `benchmarks/` and do not run as ordinary CTest tests.
 
 Top-level tests/examples default ON; development integration checks additionally
 require Python 3.9+. For sanitizers, use a separate Debug build with

@@ -1,6 +1,7 @@
 # Public API guide
 
-Start with the compiled [scalar quickstart](../examples/quickstarts/scalar.cpp),
+Start with the [first-search walkthrough](FIRST_SEARCH.md), compiled
+[scalar quickstart](../examples/quickstarts/scalar.cpp),
 application-owned [permutation consumer](../tests/oop_consumer/main.cpp), or
 [symbolic quickstart](../examples/quickstarts/symbolic.cpp). Link Genetik::Genetik through
 [installed or source inclusion](PACKAGING.md); all headers are self-contained.

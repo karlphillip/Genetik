@@ -402,7 +402,7 @@ frozen resource protocol remain proposed next work. See
 [qualification](M3_MIXED_NUMERICAL_QUALIFICATION.md).
 
 
-## C2.3 constructive multivariate rational regression (optional candidate)
+## C2.3 constructive multivariate rational regression (optional capability)
 
 An additive public C++20 header exposes the qualified two-input, total-degree-two
 normalized rational fitter in `genetik::multivariate_rational`. It reuses existing
@@ -414,3 +414,11 @@ only. C2.2 evidence supports clean recovery and bounded noisy predictions away
 from poles; noisy structure selection and near-pole extrapolation remain limited.
 See `CONSTRUCTIVE_MULTIVARIATE_RATIONAL_REGRESSION.md`; this is an optional
 capability and does not claim general rational discovery.
+
+## Engineering Foundation (repository workflow)
+
+Delivered repository-wide C++ formatting/lint guidance, test-category labels,
+contributor documentation, and a bounded first-search consumer example. These
+are maintenance improvements; they add no mathematical feature or runtime
+dependency. See [testing](TESTING.md), [coding standards](CODING_STANDARDS.md),
+and [contributing](../CONTRIBUTING.md).

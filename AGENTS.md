@@ -87,6 +87,12 @@
   ASan. Require forced-overlap tests, not just sanitizer compilation. Do not run
   timing measurements concurrently with development builds or qualification suites.
 
+- For source, test, example and documentation work, apply the cohesive
+  `.agents/skills/genetik-development/SKILL.md` and its focused references.
+  The existing `genetik-branch-lifecycle` skill remains authoritative for
+  branch isolation, qualification evidence, PRs and cleanup; do not duplicate
+  or bypass its workflow.
+
 - Run `python3 scripts/check_hygiene.py --workspace` after local workflows. The
   parent permits Genetik/, Genetik-data/, .tools/, delivery-tools/ and archive/; inspect and
   manifest unexpected material before archiving. Never move configured CMake caches.

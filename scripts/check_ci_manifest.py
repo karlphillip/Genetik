@@ -38,6 +38,7 @@ PORTABLE = {
     'genetik_strict_arithmetic', 'genetik_multivariate_contracts',
     'genetik_fitting_contracts', 'genetik_symbolic_contracts',
     'genetik_objective_regression_contracts', 'genetik_objectives_quickstart',
+    'genetik_symbolic_selection_contracts', 'genetik_selection_strategies_quickstart',
     'genetik_expression_contracts', 'genetik_fitness_publication',
     'genetik_contracts', 'genetik_regression_cli', 'genetik_expression_example',
     'genetik_demo_bounded', 'genetik_demo_zero_budget', 'genetik_demo_invalid_argument',

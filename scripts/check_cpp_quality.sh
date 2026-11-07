@@ -54,6 +54,11 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     apps/regression_search.cpp \
     examples/quickstarts/smooth_operators.cpp \
     examples/quickstarts/objectives.cpp \
+    examples/quickstarts/selection_strategies.cpp \
+    benchmarks/symbolic_selection_comparison.cpp \
+    genetik/SymbolicSelection.hpp \
+    genetik/Population.hpp \
+    tests/symbolic_selection.cpp \
     tests/mathematical_objectives.cpp \
     tests/smooth_operators.cpp \
     examples/quickstarts/first_search.cpp \
@@ -82,4 +87,6 @@ fi
     tests/expressions.cpp \
     tests/advanced_regression.cpp \
     tests/smooth_operators.cpp \
-    tests/mathematical_objectives.cpp
+    tests/mathematical_objectives.cpp \
+    tests/symbolic_selection.cpp \
+    benchmarks/symbolic_selection_comparison.cpp

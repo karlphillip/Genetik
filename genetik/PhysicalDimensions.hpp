@@ -148,6 +148,15 @@ inline PhysicalDimension scalarResultDimension(ExpressionKind kind,
     case K::Atan2:
         (void)same();
         return {};
+    case K::Asinh:
+    case K::Acosh:
+    case K::Atanh:
+    case K::Sigmoid:
+    case K::Softplus:
+    case K::Sinc:
+        if (!a.dimensionless())
+            throw std::invalid_argument("smooth scalar arguments must be dimensionless");
+        return {};
     case K::Pow:
         if (!operands[1].dimensionless())
             throw std::invalid_argument("power exponent must be dimensionless");

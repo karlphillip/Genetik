@@ -587,6 +587,32 @@ inline SymbolicTransformResult SymbolicExpression::differentiate(std::size_t tar
                 case K::Atan:
                     d = div(da, b.op(K::Add, one, mul(a, a)));
                     break;
+                case K::Asinh:
+                    d = div(da, b.op(K::Sqrt, b.op(K::Add, one, mul(a, a))));
+                    break;
+                case K::Acosh: {
+                    b.assume(A::Positive, b.op(K::Subtract, a, one));
+                    const auto radicand = mul(b.op(K::Subtract, a, one), b.op(K::Add, a, one));
+                    d = div(da, b.op(K::Sqrt, radicand));
+                    break;
+                }
+                case K::Atanh:
+                    b.assume(A::InsideUnitInterval, a);
+                    d = div(da, b.op(K::Subtract, one, mul(a, a)));
+                    break;
+                case K::Sigmoid:
+                    d = mul(mul(root, b.op(K::Subtract, one, root)), da);
+                    break;
+                case K::Softplus:
+                    d = mul(b.op(K::Sigmoid, a), da);
+                    break;
+                case K::Sinc: {
+                    b.assume(A::NonZero, a);
+                    const auto numerator =
+                        b.op(K::Subtract, mul(a, b.op(K::Cos, a)), b.op(K::Sin, a));
+                    d = mul(div(numerator, mul(a, a)), da);
+                    break;
+                }
                 case K::Atan2:
                     b.assume(A::AwayFromAtan2Cut, a, c);
                     d = div(b.op(K::Subtract, mul(c, da), mul(a, dc)), b.op(K::Add, mul(a, a), mul(c, c)));

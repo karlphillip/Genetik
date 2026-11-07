@@ -69,6 +69,19 @@ def test_repeat_seed_is_deterministic_and_params_are_sklearn_compatible():
     assert a.get_params()["max_generations"] == 3
 
 
+def test_smooth_operators_are_explicit_python_grammar_choices():
+    x, y = fixture()
+    operators = ("asinh", "acosh", "atanh", "sigmoid", "softplus", "sinc")
+    model = small_model(operators=operators).fit(x, y)
+    assert model.expression_
+    assert np.all(np.isfinite(model.predict(x)))
+
+    softplus = small_model(operators=("softplus",)).fit(x, y)
+    exported = sympy.sympify(softplus.sympy_expression(), locals={"x0": sympy.Symbol("x0")})
+    independent = sympy.lambdify(sympy.Symbol("x0"), exported, modules="math")
+    np.testing.assert_allclose([independent(value) for value in x[:, 0]], softplus.predict(x))
+
+
 def test_successful_refit_replaces_model_and_restarts_from_configured_seed():
     x, y = fixture()
     model = small_model().fit(x, y)

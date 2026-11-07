@@ -6,13 +6,44 @@
 #include <cstdint>
 
 // Operators are explicit; vector products never use an ambiguous Multiply token.
-enum class TypedExpressionKind { Variable, Constant, Add, Subtract, Multiply, Divide, Log, Dot, MatVec, MatMul, Transpose, Sin, Cos, Exp, Sqrt, Powi };
+enum class TypedExpressionKind {
+    Variable,
+    Constant,
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Log,
+    Dot,
+    MatVec,
+    MatMul,
+    Transpose,
+    Sin,
+    Cos,
+    Exp,
+    Sqrt,
+    Powi,
+    Asinh,
+    Acosh,
+    Atanh,
+    Sigmoid,
+    Softplus,
+    Sinc
+};
 inline std::size_t typedExpressionArity(TypedExpressionKind kind) {
     switch (kind) {
     case TypedExpressionKind::Variable: case TypedExpressionKind::Constant: return 0;
     case TypedExpressionKind::Log: case TypedExpressionKind::Transpose:
     case TypedExpressionKind::Sin: case TypedExpressionKind::Cos: case TypedExpressionKind::Exp:
-    case TypedExpressionKind::Sqrt: case TypedExpressionKind::Powi: return 1;
+    case TypedExpressionKind::Sqrt:
+    case TypedExpressionKind::Powi:
+    case TypedExpressionKind::Asinh:
+    case TypedExpressionKind::Acosh:
+    case TypedExpressionKind::Atanh:
+    case TypedExpressionKind::Sigmoid:
+    case TypedExpressionKind::Softplus:
+    case TypedExpressionKind::Sinc:
+        return 1;
     case TypedExpressionKind::Add: case TypedExpressionKind::Subtract:
     case TypedExpressionKind::Multiply: case TypedExpressionKind::Divide:
     case TypedExpressionKind::Dot: case TypedExpressionKind::MatVec: case TypedExpressionKind::MatMul: return 2;
@@ -30,7 +61,12 @@ inline std::optional<TypedShape> operationShape(TypedExpressionKind kind,TypedSh
         if (a.kind() == V::Scalar) return b;
         if (b.kind() == V::Scalar) return a;
     }
-    if ((kind == K::Divide || kind == K::Log || kind == K::Sin || kind == K::Cos || kind == K::Exp || kind == K::Sqrt || kind == K::Powi) && a.kind() == V::Scalar && b.kind() == V::Scalar) return TypedShape::scalar();
+    if ((kind == K::Divide || kind == K::Log || kind == K::Sin || kind == K::Cos ||
+         kind == K::Exp || kind == K::Sqrt || kind == K::Powi || kind == K::Asinh ||
+         kind == K::Acosh || kind == K::Atanh || kind == K::Sigmoid || kind == K::Softplus ||
+         kind == K::Sinc) &&
+        a.kind() == V::Scalar && b.kind() == V::Scalar)
+        return TypedShape::scalar();
     if (kind == K::Dot && a.kind() == V::Vector && a == b) return TypedShape::scalar();
     if (kind == K::MatVec && a.kind() == V::Matrix && b.kind() == V::Vector && a.columns() == b.length()) return TypedShape::vector(a.rows());
     if (kind == K::MatMul && a.kind() == V::Matrix && b.kind() == V::Matrix && a.columns() == b.rows()) return TypedShape::matrix(a.rows(), b.columns());
@@ -286,6 +322,13 @@ private:
                     if (!value) return invalid(element);
                     output[element] = *value; continue;
                 }
+                if (isSmooth(node.kind())) {
+                    value = genetik_detail::scalarUnary(smoothKind(node.kind()), a[0], 0, charge);
+                    if (!value)
+                        return invalid(element);
+                    output[element] = *value;
+                    continue;
+                }
                 if (node.kind() == K::Transpose) {
                     const auto row = element / outShape.columns(), col = element % outShape.columns();
                     output[element] = a[col * left.shape().columns() + row];
@@ -341,8 +384,25 @@ public:
             if (node.kind() == K::Constant) { out += node.constantValue().toString(); frames.pop_back(); }
             else if (node.kind() == K::Variable) { out += 'x' + genetik_typed_detail::integerText(node.variableIndex()); frames.pop_back(); }
             else if (typedExpressionArity(node.kind()) == 1) {
-                if (!frame.phase) { out += node.kind() == K::Log ? "log(" : node.kind() == K::Transpose ? "transpose(" : genetik_detail::scientificName(scientificKind(node.kind())) + "("; frame.phase = 1; frames.push_back({frame.node - 1, 0}); }
-                else { if (node.kind() == K::Powi) out += ',' + genetik_typed_detail::integerText(node.exponent()); out += ')'; frames.pop_back(); }
+                if (!frame.phase) {
+                    if (node.kind() == K::Log)
+                        out += "log(";
+                    else if (node.kind() == K::Transpose)
+                        out += "transpose(";
+                    else if (isSmooth(node.kind()))
+                        out +=
+                            std::string(scalarOperatorDescription(smoothKind(node.kind())).name) +
+                            "(";
+                    else
+                        out += genetik_detail::scientificName(scientificKind(node.kind())) + "(";
+                    frame.phase = 1;
+                    frames.push_back({frame.node - 1, 0});
+                } else {
+                    if (node.kind() == K::Powi)
+                        out += ',' + genetik_typed_detail::integerText(node.exponent());
+                    out += ')';
+                    frames.pop_back();
+                }
             } else {
                 const bool infix = node.kind() == K::Add || node.kind() == K::Subtract || node.kind() == K::Multiply || node.kind() == K::Divide;
                 if (!frame.phase) {
@@ -375,6 +435,28 @@ private:
         throw std::invalid_argument("unsupported typed operand kinds or incompatible shapes");
     }
     static bool isScientific(K kind) {return kind==K::Sin || kind==K::Cos || kind==K::Exp || kind==K::Sqrt || kind==K::Powi;}
+    static bool isSmooth(K kind) {
+        return kind == K::Asinh || kind == K::Acosh || kind == K::Atanh || kind == K::Sigmoid ||
+               kind == K::Softplus || kind == K::Sinc;
+    }
+    static ExpressionKind smoothKind(K kind) {
+        switch (kind) {
+        case K::Asinh:
+            return ExpressionKind::Asinh;
+        case K::Acosh:
+            return ExpressionKind::Acosh;
+        case K::Atanh:
+            return ExpressionKind::Atanh;
+        case K::Sigmoid:
+            return ExpressionKind::Sigmoid;
+        case K::Softplus:
+            return ExpressionKind::Softplus;
+        case K::Sinc:
+            return ExpressionKind::Sinc;
+        default:
+            throw std::logic_error("not a smooth typed operator");
+        }
+    }
     static genetik_detail::ScientificKind scientificKind(K kind) {
         using S=genetik_detail::ScientificKind;
         switch(kind) {

@@ -234,7 +234,8 @@ class GenetikRegressor(RegressorMixin, BaseEstimator):
             raise ValueError("continuous_probability must be in [0, 1]")
         if self.training_threshold < 0 or self.fit_threshold < 0:
             raise ValueError("fitness thresholds must be nonnegative")
-        allowed = {"add", "sub", "mul", "div", "log", "sin", "cos", "exp", "sqrt", "powi", "pow"}
+        allowed = {"add", "sub", "mul", "div", "log", "sin", "cos", "exp", "sqrt", "powi", "pow",
+                   "asinh", "acosh", "atanh", "sigmoid", "softplus", "sinc"}
         if not isinstance(self.operators, (tuple, list)):
             raise ValueError("operators must be a tuple or list of operator names")
         try:

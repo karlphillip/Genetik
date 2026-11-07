@@ -12,8 +12,14 @@ static std::uint64_t integer(const std::string& text,std::uint64_t maximum,const
     return value;
 }
 static void usage() {
-    std::cout<<"Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target --seed N --loss-budget N [--loss-threshold MSE] [--threads N] [--fit-every N] [--no-fit] [--operators add,sub,mul,div,log,sin,cos,exp,sqrt,powi] [--exponents 0,1,2,3,4,5,6,7,8] [--population N] [--nodes N] [--depth N] [--discrete-only] [--evaluate FILE ...]\n"
-             <<"Input order defines x0,x1,...; budget is actual training-loss attempts, 0..10000000.\n";
+    std::cout
+        << "Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target "
+           "--seed N --loss-budget N [--loss-threshold MSE] [--threads N] [--fit-every N] "
+           "[--no-fit] [--operators "
+           "add,sub,mul,div,log,sin,cos,exp,sqrt,powi,asinh,acosh,atanh,sigmoid,softplus,sinc] "
+           "[--exponents 0,1,2,3,4,5,6,7,8] [--population N] [--nodes N] [--depth N] "
+           "[--discrete-only] [--evaluate FILE ...]\n"
+        << "Input order defines x0,x1,...; budget is actual training-loss attempts, 0..10000000.\n";
 }
 int main(int argc,char** argv) {
     std::cout<<std::setprecision(17);

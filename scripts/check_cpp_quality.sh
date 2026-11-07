@@ -37,8 +37,20 @@ tidy_version="$("$tidy_tool" --version)"
 
 cd "$repo_root"
 format_diff="$(git diff --no-color --unified=0 origin/main -- \
+    genetik/Expression.hpp \
+    genetik/ExpressionDerivative.hpp \
+    genetik/ExpressionSecondDerivative.hpp \
+    genetik/PhysicalDimensions.hpp \
     genetik/Regression.hpp \
+    genetik/SymbolicAlgebra.hpp \
+    genetik/TypedExpression.hpp \
+    genetik/TypedExpressionParsing.hpp \
+    genetik/TypedVariation.hpp \
     genetik/detail/ScalarOperators.hpp \
+    genetik/detail/ExpressionParser.hpp \
+    apps/regression_search.cpp \
+    examples/quickstarts/smooth_operators.cpp \
+    tests/smooth_operators.cpp \
     examples/quickstarts/first_search.cpp \
     tests/expressions.cpp |
     "$format_diff_tool" -p1 -binary "$format_tool")"
@@ -63,4 +75,5 @@ fi
 
 "$tidy_tool" "${tidy_args[@]}" \
     tests/expressions.cpp \
-    tests/advanced_regression.cpp
+    tests/advanced_regression.cpp \
+    tests/smooth_operators.cpp

@@ -43,8 +43,8 @@ cmake -S . -B build/quality -DCMAKE_BUILD_TYPE=Release \
 scripts/check_cpp_quality.sh build/quality
 ```
 
-The formatter scope is limited to the implementation headers deliberately
-modified and the introduced quickstart. Static analysis compiles the expression
-and regression contract test translation units and filters diagnostics to the
-configured Genetik expression/regression headers. Historical source files are
-not mass-formatted.
+The formatter scope is limited to implementation headers deliberately modified,
+the introduced quickstart, and the smooth-operator contract test. Static analysis
+compiles the expression, regression, and smooth-operator test translation units
+and filters diagnostics to the configured public implementation headers.
+Historical source files are not mass-formatted.

@@ -231,6 +231,19 @@ public:
                                      kind == ExpressionKind::Multiply ? "*" : kind == ExpressionKind::Divide ? "/" : "**";
                     stack.push_back("(" + args[0] + " " + op + " " + args[1] + ")");
                 } else {
+                    if (kind == ExpressionKind::Sigmoid) {
+                        stack.push_back("(1 / (1 + exp(-" + args[0] + ")))" );
+                        continue;
+                    }
+                    if (kind == ExpressionKind::Softplus) {
+                        stack.push_back("log(1 + exp(" + args[0] + "))");
+                        continue;
+                    }
+                    if (kind == ExpressionKind::Sinc) {
+                        stack.push_back("Piecewise((1, Eq(" + args[0] + ", 0)), (sin(" + args[0] + ") / " +
+                                         args[0] + ", True))");
+                        continue;
+                    }
                     const auto name = sympyFunction(kind);
                     std::string call = name + "(";
                     for (std::size_t i = 0; i < args.size(); ++i) {
@@ -269,6 +282,9 @@ private:
         case ExpressionKind::Cos: return "cos";
         case ExpressionKind::Exp: return "exp";
         case ExpressionKind::Sqrt: return "sqrt";
+        case ExpressionKind::Asinh: return "asinh";
+        case ExpressionKind::Acosh: return "acosh";
+        case ExpressionKind::Atanh: return "atanh";
         default: throw std::invalid_argument("selected operator has no qualified SymPy export mapping");
         }
     }

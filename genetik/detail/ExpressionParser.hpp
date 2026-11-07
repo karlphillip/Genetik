@@ -149,7 +149,13 @@ private:
         const auto scalar=scalarOperatorFromName(t.text);
         const bool extra=!Builder::typed&&scalar&&*scalar>=ExpressionKind::NegativePowi;
         const bool binary=t.text=="dot"||t.text=="matvec"||t.text=="matmul"||(extra&&expressionArity(*scalar)>=2);
-        const bool unary=extra||t.text=="log"||t.text=="sin"||t.text=="cos"||t.text=="exp"||t.text=="sqrt"||t.text=="powi";
+        const bool smooth =
+            scalar && (*scalar == ExpressionKind::Asinh || *scalar == ExpressionKind::Acosh ||
+                       *scalar == ExpressionKind::Atanh || *scalar == ExpressionKind::Sigmoid ||
+                       *scalar == ExpressionKind::Softplus || *scalar == ExpressionKind::Sinc);
+        const bool unary = extra || smooth || t.text == "log" || t.text == "sin" ||
+                           t.text == "cos" || t.text == "exp" || t.text == "sqrt" ||
+                           t.text == "powi";
         if(!unary && !(Builder::typed && (binary||t.text=="transpose")))fail(Category::UnknownSymbol,t.offset,"unknown function or variable");
         Nest n(*this);expect("(");expression();unsigned exponent=0;
         if(binary){expect(",",Category::Arity);expression();if(extra&&expressionArity(*scalar)==3){expect(",",Category::Arity);expression();}}

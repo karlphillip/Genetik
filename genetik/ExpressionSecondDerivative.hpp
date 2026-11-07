@@ -161,6 +161,68 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
         double s = 0, h = 0;
         b.charge();
         switch (k) {
+        case K::Asinh: {
+            const double denominator = b.finite(std::hypot(1.0, c.v));
+            s = b.div(1.0, denominator);
+            h = -b.mul(c.v, b.mul(s, b.mul(s, s)));
+            break;
+        }
+        case K::Acosh: {
+            if (c.v == 1.0)
+                throw genetik_science::Stop{ScientificStatus::Unavailable,
+                                            "active acosh boundary singularity"};
+            const double left = b.finite(std::sqrt(c.v - 1.0));
+            b.charge();
+            const double right = b.finite(std::sqrt(c.v + 1.0));
+            s = b.div(b.div(1.0, left), right);
+            h = -b.mul(c.v, b.mul(s, b.mul(s, s)));
+            break;
+        }
+        case K::Atanh: {
+            const double denominator = b.sub(1.0, b.mul(c.v, c.v));
+            s = b.div(1.0, denominator);
+            h = b.div(b.mul(2.0, c.v), b.mul(denominator, denominator));
+            break;
+        }
+        case K::Sigmoid: {
+            s = b.mul(*v, b.sub(1.0, *v));
+            h = b.mul(s, b.sub(1.0, b.mul(2.0, *v)));
+            break;
+        }
+        case K::Softplus: {
+            const double sigmoid =
+                c.v >= 0.0 ? b.div(1.0, b.add(1.0, b.finite(std::exp(-c.v)))) : [&] {
+                    const double head = b.finite(std::exp(c.v));
+                    return b.div(head, b.add(1.0, head));
+                }();
+            s = sigmoid;
+            h = b.mul(s, b.sub(1.0, s));
+            break;
+        }
+        case K::Sinc: {
+            if (c.v == 0.0) {
+                h = -1.0 / 3.0;
+                break;
+            }
+            if (std::abs(c.v) < 1e-2) {
+                const double x2 = b.mul(c.v, c.v);
+                const double x4 = b.mul(x2, x2);
+                const double x6 = b.mul(x4, x2);
+                h = b.add(-1.0 / 3.0, b.div(x2, 10.0));
+                h = b.sub(h, b.div(x4, 168.0));
+                h = b.add(h, b.div(x6, 6480.0));
+                break;
+            }
+            const double sine = b.finite(std::sin(c.v));
+            b.charge();
+            const double cosine = b.finite(std::cos(c.v));
+            const double x2 = b.mul(c.v, c.v);
+            const double first = -b.div(sine, c.v);
+            const double second = -b.div(b.mul(2.0, cosine), x2);
+            const double third = b.div(b.mul(2.0, sine), b.mul(x2, c.v));
+            h = b.add(b.add(first, second), third);
+            break;
+        }
         case K::Sin:
           s = b.finite(std::cos(c.v));
           h = -*v;

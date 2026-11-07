@@ -229,6 +229,10 @@ inline void validateConstantFitConfigForLimit(const ConstantFitConfig& c, double
 }
 inline void validateConstantFitConfig(const ConstantFitConfig& c,const RegressionProblem& problem) {
     validateConstantFitConfigForLimit(c,problem.limits().maxAbsConstant);
+    if (c.method == ConstantFitMethod::LevenbergMarquardt &&
+        problem.objective().loss != RegressionLoss::MeanSquaredError)
+        throw std::invalid_argument(
+            "Levenberg-Marquardt constant fitting supports only unweighted MSE");
 }
 enum class ConstantFitStop { NoConstants, LossThreshold, InvalidStart, MinimumStep, SweepLimit, ProposalLimit, EvaluationLimit };
 inline const char* constantFitStopName(ConstantFitStop s) {

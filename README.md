@@ -77,6 +77,9 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   with an [installed C++ quickstart](examples/quickstarts/objectives.cpp): MSE
   remains the default, while MAE, Huber, weighted MSE and post-search Gaussian
   model selection are opt-in.
+- [Complexity-aware and Pareto symbolic selection](docs/SYMBOLIC_SELECTION.md)
+  with an [installed quickstart](examples/quickstarts/selection_strategies.cpp):
+  optional in-search selection over prediction loss and expression node count.
 - [Python symbolic-regression example](examples/python/quickstart.py): install the
   optional `genetik` package, fit through the native C++ engine and inspect the
   selected canonical and SymPy expressions.

@@ -1,6 +1,7 @@
 #include "common.hpp"
 #include <ConstructiveRecurrenceSynthesis.hpp>
 #include <RationalFunctionRegression.hpp>
+#include <MultivariateRationalFunctionRegression.hpp>
 // Overlapping complete public-header use in a separately compiled translation unit.
 bool symbolic_check() {
     if(formatExpression(parseExpression("log(x0)",1),ExpressionTextFormat::LaTeX,{}, {},ExpressionFormatOptions{6})!="\\ln\\left(x_{0}\\right)")return false;
@@ -82,4 +83,19 @@ bool rational_check() {
     const auto& model = fit.models[*fit.selected];
     const auto domain = assessRationalDomain(model, {}, {-1.0, 1.5}, config.minimumAbsoluteDenominator);
     return domain.status == DomainStatus::Valid && model.expression.variableCount() == 1;
+}
+
+bool multivariate_rational_check() {
+    namespace mr = genetik::multivariate_rational;
+    std::vector<mr::Observation> rows;
+    for (double x : {-1.0, 0.0, 1.0})
+        for (double y : {-1.0, 0.0, 1.0}) rows.push_back({x, y, 0.5 + x - y});
+    mr::Config config; config.maximumNumeratorDegree=1; config.maximumDenominatorDegree=0;
+    const auto fit=mr::fit(rows,config);
+    if(fit.status!=mr::Status::Success||!fit.selected)return false;
+    const auto& model=fit.models[*fit.selected];
+    const auto prediction=model.predict(0.25,-0.5);
+    if(!prediction||std::abs(*prediction-1.25)>1e-10)return false;
+    const auto domain=mr::assessDomain(model,{-0.1,0.1,-0.1,0.1});
+    return mr::modelIsConsistent(model)&&domain.status==mr::DomainAssessmentStatus::Valid;
 }

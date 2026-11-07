@@ -45,7 +45,13 @@ enum class ExpressionKind {
     BesselJ0,
     NormalPdf,
     NormalCdf,
-    PoissonPmf
+    PoissonPmf,
+    Asinh,
+    Acosh,
+    Atanh,
+    Sigmoid,
+    Softplus,
+    Sinc
 };
 struct ScalarOperatorDescription {
     ExpressionKind kind;
@@ -91,7 +97,13 @@ inline constexpr std::array scalarOperators{
     ScalarOperatorDescription{ExpressionKind::BesselJ0, "bessel_j0", 1},
     ScalarOperatorDescription{ExpressionKind::NormalPdf, "normal_pdf", 3},
     ScalarOperatorDescription{ExpressionKind::NormalCdf, "normal_cdf", 3},
-    ScalarOperatorDescription{ExpressionKind::PoissonPmf, "poisson_pmf", 2}};
+    ScalarOperatorDescription{ExpressionKind::PoissonPmf, "poisson_pmf", 2},
+    ScalarOperatorDescription{ExpressionKind::Asinh, "asinh", 1},
+    ScalarOperatorDescription{ExpressionKind::Acosh, "acosh", 1},
+    ScalarOperatorDescription{ExpressionKind::Atanh, "atanh", 1},
+    ScalarOperatorDescription{ExpressionKind::Sigmoid, "sigmoid", 1},
+    ScalarOperatorDescription{ExpressionKind::Softplus, "softplus", 1},
+    ScalarOperatorDescription{ExpressionKind::Sinc, "sinc", 1}};
 inline const ScalarOperatorDescription &scalarOperatorDescription(ExpressionKind kind) {
     const auto i = static_cast<std::size_t>(kind);
     if (i >= scalarOperators.size() || scalarOperators[i].kind != kind)

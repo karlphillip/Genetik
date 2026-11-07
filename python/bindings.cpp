@@ -66,6 +66,12 @@ ExpressionKind operatorKind(const std::string& name) {
     if (name == "sqrt") return ExpressionKind::Sqrt;
     if (name == "powi") return ExpressionKind::Powi;
     if (name == "pow") return ExpressionKind::Pow;
+    if (name == "asinh") return ExpressionKind::Asinh;
+    if (name == "acosh") return ExpressionKind::Acosh;
+    if (name == "atanh") return ExpressionKind::Atanh;
+    if (name == "sigmoid") return ExpressionKind::Sigmoid;
+    if (name == "softplus") return ExpressionKind::Softplus;
+    if (name == "sinc") return ExpressionKind::Sinc;
     throw py::value_error("unsupported Genetik operator: " + name);
 }
 

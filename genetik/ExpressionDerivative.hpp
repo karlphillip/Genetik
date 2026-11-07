@@ -98,6 +98,13 @@ class DerivativeEvaluation final {
         if(result_.failure_)return 0;
         return checked(scalarUnary(kind,a,0,[&]{charge(result_.work_.derivativeMathCalls);}));
     }
+    double hypot(double a, double b) {
+        if (result_.failure_)
+            return 0;
+        charge(result_.work_.derivativeMathCalls);
+        const double value = std::hypot(a, b);
+        return checked(std::isfinite(value) ? std::optional<double>(value) : std::nullopt);
+    }
     double derivativeBinary(ExpressionKind kind, Slot a, Slot b, double q) {
         using K = ExpressionKind;
         if(kind==K::PoissonPmf){fail(DerivativeFailure::UnsupportedRule);return 0;}
@@ -138,6 +145,52 @@ class DerivativeEvaluation final {
     double derivativeUnary(ExpressionKind kind, Slot a, double primal,unsigned exponent=0) {
         using K = ExpressionKind;
         switch (kind) {
+        case K::Asinh:
+            return binary(K::Divide, a.derivative, hypot(1.0, a.value));
+        case K::Acosh: {
+            if (a.value == 1.0) {
+                fail(DerivativeFailure::SingularRule);
+                return 0;
+            }
+            const double leftArgument = binary(K::Subtract, a.value, 1.0);
+            const double rightArgument = binary(K::Add, a.value, 1.0);
+            const double left = math(ScientificKind::Sqrt, leftArgument);
+            const double right = math(ScientificKind::Sqrt, rightArgument);
+            return binary(K::Divide, a.derivative, binary(K::Multiply, left, right));
+        }
+        case K::Atanh:
+            return binary(K::Divide, a.derivative,
+                          binary(K::Subtract, 1.0, binary(K::Multiply, a.value, a.value)));
+        case K::Sigmoid: {
+            const double magnitude = native(K::Abs, a.value);
+            const double tail = native(K::Exp, negate(magnitude));
+            const double denominator = binary(K::Add, 1.0, tail);
+            const double slope =
+                binary(K::Divide, tail, binary(K::Multiply, denominator, denominator));
+            return binary(K::Multiply, slope, a.derivative);
+        }
+        case K::Softplus:
+            return binary(K::Multiply, native(K::Sigmoid, a.value), a.derivative);
+        case K::Sinc: {
+            if (a.value == 0.0)
+                return 0.0;
+            if (std::abs(a.value) < 1e-2) {
+                const double x2 = binary(K::Multiply, a.value, a.value);
+                const double x3 = binary(K::Multiply, x2, a.value);
+                const double x5 = binary(K::Multiply, x3, x2);
+                const double x7 = binary(K::Multiply, x5, x2);
+                const double linear = negate(binary(K::Divide, a.value, 3.0));
+                double slope = binary(K::Add, linear, binary(K::Divide, x3, 30.0));
+                slope = binary(K::Subtract, slope, binary(K::Divide, x5, 840.0));
+                slope = binary(K::Add, slope, binary(K::Divide, x7, 45360.0));
+                return binary(K::Multiply, slope, a.derivative);
+            }
+            const double cosine = math(ScientificKind::Cos, a.value);
+            const double sine = math(ScientificKind::Sin, a.value);
+            const double first = binary(K::Divide, cosine, a.value);
+            const double second = binary(K::Divide, binary(K::Divide, sine, a.value), a.value);
+            return binary(K::Multiply, binary(K::Subtract, first, second), a.derivative);
+        }
         case K::Erf:case K::Erfc:{const double square=binary(K::Multiply,a.value,a.value);const double density=native(K::Exp,negate(square));const double slope=binary(K::Multiply,2/std::sqrt(std::acos(-1.)),density);return binary(K::Multiply,kind==K::Erfc?negate(slope):slope,a.derivative);}
         case K::Gamma:case K::LogGamma:case K::BesselJ0:fail(DerivativeFailure::UnsupportedRule);return 0;
         case K::NegativePowi:return binary(K::Multiply,binary(K::Divide,binary(K::Multiply,-static_cast<double>(exponent),primal),a.value),a.derivative);

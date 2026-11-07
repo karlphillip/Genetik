@@ -90,6 +90,47 @@ std::optional<double> scalarTernary(ExpressionKind kind,double x,double low,doub
 template<class Charge, class PowerStep = IgnorePowerStep>
 std::optional<double> scalarUnary(ExpressionKind kind, double argument, unsigned exponent,
                                   Charge charge, PowerStep step = {}) {
+    if (kind == ExpressionKind::Asinh || kind == ExpressionKind::Acosh ||
+        kind == ExpressionKind::Atanh || kind == ExpressionKind::Sigmoid ||
+        kind == ExpressionKind::Softplus || kind == ExpressionKind::Sinc) {
+        if (kind == ExpressionKind::Acosh && argument < 1.0)
+            return {};
+        if (kind == ExpressionKind::Atanh && !(std::abs(argument) < 1.0))
+            return {};
+        charge();
+        volatile double result = 0.0;
+        switch (kind) {
+        case ExpressionKind::Asinh:
+            result = std::asinh(argument);
+            break;
+        case ExpressionKind::Acosh:
+            result = std::acosh(argument);
+            break;
+        case ExpressionKind::Atanh:
+            result = std::atanh(argument);
+            break;
+        case ExpressionKind::Sigmoid:
+            if (argument >= 0.0) {
+                const double tail = std::exp(-argument);
+                result = 1.0 / (1.0 + tail);
+            } else {
+                const double head = std::exp(argument);
+                result = head / (1.0 + head);
+            }
+            break;
+        case ExpressionKind::Softplus: {
+            const double tail = std::exp(-std::abs(argument));
+            result = std::max(argument, 0.0) + std::log1p(tail);
+            break;
+        }
+        case ExpressionKind::Sinc:
+            result = argument == 0.0 ? 1.0 : std::sin(argument) / argument;
+            break;
+        default:
+            throw std::logic_error("unreachable smooth scalar operation");
+        }
+        return std::isfinite(result) ? std::optional<double>(result) : std::nullopt;
+    }
     if (kind == ExpressionKind::Log) {
         if (!(argument > 0.0)) return {};
         charge(); volatile double result = std::log(argument);
@@ -101,14 +142,22 @@ std::optional<double> scalarUnary(ExpressionKind kind, double argument, unsigned
         auto inverse=scalarBinary(ExpressionKind::Divide,1,argument,charge);if(!inverse)return {};
         return scientificScalar(ScientificKind::Powi,*inverse,exponent,charge);
     }
-    if(kind>=ExpressionKind::Erf){
+    if (kind == ExpressionKind::Erf || kind == ExpressionKind::Erfc ||
+        kind == ExpressionKind::Gamma || kind == ExpressionKind::LogGamma ||
+        kind == ExpressionKind::BesselJ0) {
         if((kind==ExpressionKind::Gamma||kind==ExpressionKind::LogGamma)&&!(argument>0))return {};
         if(kind==ExpressionKind::BesselJ0&&(argument<0||argument>1000000))return {};
         charge();double value;
         switch(kind){case ExpressionKind::Erf:value=std::erf(argument);break;case ExpressionKind::Erfc:value=std::erfc(argument);break;case ExpressionKind::Gamma:value=std::tgamma(argument);break;case ExpressionKind::LogGamma:value=threadSafeLogGamma(argument);break;case ExpressionKind::BesselJ0:value=std::cyl_bessel_j(0.,argument);break;default:throw std::logic_error("unsupported special unary");}
         return std::isfinite(value)?std::optional<double>(value):std::nullopt;
     }
-    if(kind>=ExpressionKind::Cbrt){
+    if (kind == ExpressionKind::Cbrt || kind == ExpressionKind::Log1p ||
+        kind == ExpressionKind::Log2 || kind == ExpressionKind::Log10 ||
+        kind == ExpressionKind::Expm1 || kind == ExpressionKind::Tan ||
+        kind == ExpressionKind::Asin || kind == ExpressionKind::Acos ||
+        kind == ExpressionKind::Atan || kind == ExpressionKind::Sinh ||
+        kind == ExpressionKind::Cosh || kind == ExpressionKind::Tanh ||
+        kind == ExpressionKind::Abs) {
         if((kind==ExpressionKind::Log1p&&!(argument>-1))||((kind==ExpressionKind::Log2||kind==ExpressionKind::Log10)&&!(argument>0))||((kind==ExpressionKind::Asin||kind==ExpressionKind::Acos)&&(argument< -1||argument>1)))return {};
         charge();volatile double value=0;
         switch(kind){case ExpressionKind::Cbrt:value=std::cbrt(argument);break;case ExpressionKind::Log1p:value=std::log1p(argument);break;case ExpressionKind::Log2:value=std::log2(argument);break;case ExpressionKind::Log10:value=std::log10(argument);break;case ExpressionKind::Expm1:value=std::expm1(argument);break;case ExpressionKind::Tan:value=std::tan(argument);break;case ExpressionKind::Asin:value=std::asin(argument);break;case ExpressionKind::Acos:value=std::acos(argument);break;case ExpressionKind::Atan:value=std::atan(argument);break;case ExpressionKind::Sinh:value=std::sinh(argument);break;case ExpressionKind::Cosh:value=std::cosh(argument);break;case ExpressionKind::Tanh:value=std::tanh(argument);break;case ExpressionKind::Abs:value=std::abs(argument);break;default:throw std::logic_error("not an advanced unary operation");}

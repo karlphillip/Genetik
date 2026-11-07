@@ -87,6 +87,8 @@ and the required strict floating-point options. Newer C++ standards are allowed.
 - [Bounded scalar partials](examples/quickstarts/derivatives.cpp): ordinary value
   plus one selected input derivative, parsed scientific expressions, materialized
   templates and explicit unavailable-derivative diagnostics.
+- [Optional smooth scalar operators](docs/SMOOTH_OPERATORS.md): `asinh`, `acosh`,
+  `atanh`, `sigmoid`, `softplus`, and `sinc`, with domain and derivative contracts.
 - [Supplied value/partial regression](examples/quickstarts/derivative_regression.cpp):
   explicit weighted observation channels drive shared search and coordinate fitting;
   a value anchor accompanies derivative observations without supplying extra value labels.

@@ -15,6 +15,18 @@ inline TypedExpressionKind typedOperator(std::string_view name) {
     if(name=="exp")return K::Exp;
     if(name=="sqrt")return K::Sqrt;
     if(name=="powi")return K::Powi;
+    if (name == "asinh")
+        return K::Asinh;
+    if (name == "acosh")
+        return K::Acosh;
+    if (name == "atanh")
+        return K::Atanh;
+    if (name == "sigmoid")
+        return K::Sigmoid;
+    if (name == "softplus")
+        return K::Softplus;
+    if (name == "sinc")
+        return K::Sinc;
     if(name=="dot")return K::Dot;
     if(name=="matvec")return K::MatVec;
     if(name=="matmul")return K::MatMul;

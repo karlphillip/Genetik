@@ -33,6 +33,7 @@ PORTABLE = {
     'genetik_mixed_expression_overlap', 'genetik_mixed_multitu_contracts',
     'genetik_checkpoint_v06_compatibility', 'genetik_discrete_checkpoint_v06_compatibility',
     'genetik_equation_archive_contracts',
+    'genetik_smooth_operator_contracts', 'genetik_smooth_operators_quickstart',
     'genetik_repository_hygiene', 'genetik_typed_regression_contracts', 'genetik_typed_preparation_overlap', 'genetik_typed_search_quickstart', 'genetik_typed_regression_cli', 'genetik_typed_contracts', 'genetik_typed_overlap', 'genetik_typed_example',
     'genetik_strict_arithmetic', 'genetik_multivariate_contracts',
     'genetik_fitting_contracts', 'genetik_symbolic_contracts',

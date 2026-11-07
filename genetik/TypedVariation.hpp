@@ -58,7 +58,8 @@ public:
         if(grammar_.initialMaxDepth>64 || grammar_.mutationMaxDepth>64 || grammar_.proposalLimit>4096)
             throw std::invalid_argument("typed grammar planner limits exceeded");
         genetik_detail::validateExponents(grammar_.exponents);
-        if(grammar_.operators.size()>14)throw std::invalid_argument("typed grammar has too many operator kinds");
+        if (grammar_.operators.size() > 20)
+            throw std::invalid_argument("typed grammar has too many operator kinds");
         for(std::size_t i=0;i<grammar_.operators.size();++i) {
             if(!typedExpressionArity(grammar_.operators[i]))throw std::invalid_argument("typed grammar operator is terminal");
             if(std::find(grammar_.operators.begin(),grammar_.operators.begin()+i,grammar_.operators[i])!=grammar_.operators.begin()+i)

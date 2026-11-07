@@ -20,8 +20,17 @@ inline const char* operatorName(ExpressionKind kind) {
     case ExpressionKind::Multiply: return "mul";
     case ExpressionKind::Divide: return "div";
     case ExpressionKind::Log: return "log";
-    case ExpressionKind::Sin:return "sin";case ExpressionKind::Cos:return "cos";
-    case ExpressionKind::Exp:return "exp";case ExpressionKind::Sqrt:return "sqrt";case ExpressionKind::Powi:return "powi";
+    case ExpressionKind::Sin: return "sin";
+    case ExpressionKind::Cos: return "cos";
+    case ExpressionKind::Exp: return "exp";
+    case ExpressionKind::Sqrt: return "sqrt";
+    case ExpressionKind::Powi: return "powi";
+    case ExpressionKind::Asinh: return "asinh";
+    case ExpressionKind::Acosh: return "acosh";
+    case ExpressionKind::Atanh: return "atanh";
+    case ExpressionKind::Sigmoid: return "sigmoid";
+    case ExpressionKind::Softplus: return "softplus";
+    case ExpressionKind::Sinc: return "sinc";
     default: throw std::invalid_argument("expected an operator kind");
     }
 }
@@ -32,7 +41,12 @@ inline std::vector<ExpressionKind> selectOperators(const std::vector<std::string
     for (const auto& name : names) {
         if (name.empty() || !seen.insert(name).second) throw std::invalid_argument("--operators requires nonempty unique names");
         bool found = false;
-        for (auto kind : {ExpressionKind::Add, ExpressionKind::Subtract, ExpressionKind::Multiply, ExpressionKind::Divide, ExpressionKind::Log, ExpressionKind::Sin, ExpressionKind::Cos, ExpressionKind::Exp, ExpressionKind::Sqrt, ExpressionKind::Powi})
+        for (auto kind : {ExpressionKind::Add, ExpressionKind::Subtract, ExpressionKind::Multiply,
+                          ExpressionKind::Divide, ExpressionKind::Log, ExpressionKind::Sin,
+                          ExpressionKind::Cos, ExpressionKind::Exp, ExpressionKind::Sqrt,
+                          ExpressionKind::Powi, ExpressionKind::Asinh, ExpressionKind::Acosh,
+                          ExpressionKind::Atanh, ExpressionKind::Sigmoid, ExpressionKind::Softplus,
+                          ExpressionKind::Sinc})
             if (name == operatorName(kind)) { kinds.push_back(kind); found = true; break; }
         if (!found) throw std::invalid_argument("--operators: unsupported operator '" + name + "'");
     }

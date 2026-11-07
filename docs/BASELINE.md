@@ -1116,7 +1116,7 @@ The synthetic smoke did not recover its target, and the prime campaign was not
 run. This local research extension is not part of a published release.
 
 
-## C2.3 constructive multivariate rational regression (optional candidate)
+## C2.3 constructive multivariate rational regression (merged optional capability)
 
 An additive public C++20 header exposes the qualified two-input, total-degree-two
 normalized rational fitter in `genetik::multivariate_rational`. It reuses existing
@@ -1128,3 +1128,12 @@ only. C2.2 evidence supports clean recovery and bounded noisy predictions away
 from poles; noisy structure selection and near-pole extrapolation remain limited.
 See `CONSTRUCTIVE_MULTIVARIATE_RATIONAL_REGRESSION.md`; this is an optional
 capability and does not claim general rational discovery.
+
+## Engineering Foundation
+
+The Engineering Foundation milestone adds repository C++ formatting and focused
+lint conventions, focused CTest labels, contributor guidance, and an installed-
+consumer first-search example. It makes no runtime, numerical, GA, RNG,
+checkpoint, or default-search changes. The existing performance executables
+remain opt-in measurement targets outside ordinary CTest runs. The full test
+inventory is preserved, with one additional bounded quickstart smoke test.

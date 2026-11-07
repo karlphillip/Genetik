@@ -6,11 +6,15 @@
 #include <memory>
 #include <cstdint>
 
-struct RegressionRow { std::vector<double> inputs; double target; };
+struct RegressionRow {
+    std::vector<double> inputs;
+    double target;
+};
 enum class RegressionLoss { MeanSquaredError };
 struct RegressionSupplementalWork {
-    std::uint64_t mathematicalOperations=0,fieldEvaluations=0;
-    bool operator==(const RegressionSupplementalWork& supplemental)const=default;
+    std::uint64_t mathematicalOperations = 0;
+    std::uint64_t fieldEvaluations = 0;
+    bool operator==(const RegressionSupplementalWork& supplemental) const = default;
 };
 struct RegressionMetrics {
     Fitness loss;
@@ -28,11 +32,14 @@ public:
         (void)Expression::constant(0, dimensions_, limits_); // validate limits, independently of any genome
     }
     static std::shared_ptr<const RegressionProblem> create(const std::vector<RegressionRow>& rows,
-             ExpressionLimits limits = {31, 6, 2}, RegressionLoss loss = RegressionLoss::MeanSquaredError) {
+                                                           ExpressionLimits limits = {31, 6, 2},
+                                                           RegressionLoss loss = RegressionLoss::MeanSquaredError) {
         return std::make_shared<const RegressionProblem>(rows, limits, loss);
     }
     virtual ~RegressionProblem() = default;
-    virtual bool parallelEvaluationSafe() const noexcept {return typeid(*this)==typeid(RegressionProblem);}
+    virtual bool parallelEvaluationSafe() const noexcept {
+        return typeid(*this) == typeid(RegressionProblem);
+    }
     std::size_t dimensions() const noexcept { return dimensions_; }
     virtual std::size_t sampleCount() const noexcept { return rows_.size(); }
     // Native scalar rows are exposed read-only for optional fixed-topology
@@ -45,18 +52,19 @@ public:
     }
     // Optional per-invocation accounting. The immutable objective never owns
     // mutable counters; supplied counters belong to the worker objective.
-    virtual RegressionMetrics measureWithWork(const Expression& expression,std::uint64_t* rows,
-                                              RegressionSupplementalWork& supplemental)const {
-        if(typeid(*this)==typeid(RegressionProblem))return measureValue(expression,rows,&supplemental);
-        return measure(expression,rows);
+    virtual RegressionMetrics measureWithWork(const Expression& expression, std::uint64_t* rows,
+                                              RegressionSupplementalWork& supplemental) const {
+        if (typeid(*this) == typeid(RegressionProblem)) return measureValue(expression, rows, &supplemental);
+        return measure(expression, rows);
     }
     virtual RegressionMetrics measure(const Expression& expression, std::uint64_t* rowAttempts = nullptr) const {
         return measureValue(expression,rowAttempts,nullptr);
     }
 private:
-    RegressionMetrics measureValue(const Expression& expression,std::uint64_t* rowAttempts,RegressionSupplementalWork* supplemental)const {
+    RegressionMetrics measureValue(const Expression& expression, std::uint64_t* rowAttempts,
+                                   RegressionSupplementalWork* supplemental) const {
         if (expression.variableCount() != dimensions_) throw std::invalid_argument("expression/problem dimensions differ");
-        if(rows_.empty())throw std::logic_error("schema-only problem requires a measurement override");
+        if (rows_.empty()) throw std::logic_error("schema-only problem requires a measurement override");
         double sum = 0, maximum = 0;
         std::size_t attempted = 0;
         // Empty construction cannot allocate. First growth stays after the first
@@ -70,7 +78,14 @@ private:
                 ++*rowAttempts;
             }
             const auto prediction = workspace.evaluate(expression, row.inputs);
-            if(supplemental){auto cost=prediction.arithmeticOperations();if(cost>UINT64_MAX-supplemental->mathematicalOperations||supplemental->fieldEvaluations==UINT64_MAX)throw std::overflow_error("regression supplemental work");supplemental->mathematicalOperations+=cost;++supplemental->fieldEvaluations;}
+            if (supplemental) {
+                auto cost = prediction.arithmeticOperations();
+                if (cost > UINT64_MAX - supplemental->mathematicalOperations ||
+                    supplemental->fieldEvaluations == UINT64_MAX)
+                    throw std::overflow_error("regression supplemental work");
+                supplemental->mathematicalOperations += cost;
+                ++supplemental->fieldEvaluations;
+            }
             if (!prediction.valid()) return {Fitness::invalid(), {}, attempted};
             volatile double residual = prediction.value() - row.target;
             if (!std::isfinite(residual)) return {Fitness::invalid(), {}, attempted};

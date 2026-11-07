@@ -3,6 +3,9 @@
 #include "ConstantFitting.hpp"
 #include "GeneticAlgorithm.hpp"
 #include "Population.hpp"
+#include "SymbolicSelection.hpp"
+
+#include <type_traits>
 
 struct SymbolicRegressionConfig {
     std::size_t population = 128;
@@ -16,8 +19,22 @@ struct SymbolicRegressionConfig {
     double trainingLossThreshold = 0;
     std::uint64_t fitEveryGenerations=1; // positive; generation zero always eligible
     std::shared_ptr<RefinementDiagnostics> diagnostics; // optional, fresh bounded observer
+    enum class SelectionStrategy { PredictionLoss, ComplexityPenalty, Pareto };
+    SelectionStrategy selectionStrategy = SelectionStrategy::PredictionLoss;
+    double complexityPenalty = 0.0;
+    std::uint64_t maximumParetoComparisons = 10'000'000;
+    std::size_t maximumParetoEstimatedMemoryBytes = 64 * 1024 * 1024;
+    std::size_t maximumParetoFrontier = 64;
 };
-enum class SearchStop { ExactTrainingFit, GenerationLimit, EvaluationBudget, NoViableCandidates, TrainingLossThreshold, Cancelled };
+enum class SearchStop {
+    ExactTrainingFit,
+    GenerationLimit,
+    EvaluationBudget,
+    NoViableCandidates,
+    TrainingLossThreshold,
+    Cancelled,
+    SelectionResourceLimit
+};
 inline const char* searchStopName(SearchStop stop) {
     switch (stop) {
     case SearchStop::Cancelled: return "cancelled";
@@ -26,9 +43,16 @@ inline const char* searchStopName(SearchStop stop) {
     case SearchStop::GenerationLimit: return "generation_limit";
     case SearchStop::EvaluationBudget: return "evaluation_budget";
     case SearchStop::NoViableCandidates: return "no_viable_candidates";
+    case SearchStop::SelectionResourceLimit:
+        return "selection_resource_limit";
     }
     throw std::logic_error("unknown search stop");
 }
+struct SymbolicParetoPoint {
+    ExpressionCandidate candidate;
+    double predictionLoss;
+    std::size_t structuralComplexity;
+};
 struct SymbolicRegressionResult {
     std::optional<ExpressionCandidate> best;
     std::optional<double> initialBestMSE;
@@ -55,13 +79,19 @@ struct SymbolicRegressionResult {
     };
     std::vector<ObjectiveImprovement> objectiveImprovements;
     SearchStop stoppingReason = SearchStop::GenerationLimit;
+    std::optional<long double> bestSelectionScore;
+    ParetoSelectionWork paretoWork;
+    std::vector<SymbolicParetoPoint> paretoFrontier;
 };
 
 namespace genetik_detail {
-template<class Variation>
-inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const RegressionProblem> problem,
-        const SymbolicRegressionConfig& config,RandomContext& random,std::shared_ptr<TrainingObjective> objective,
-        std::shared_ptr<ConstantRefinement> preparation,Variation variation) {
+template <class Variation, class Ordering>
+inline SymbolicRegressionResult
+runSymbolicSearch(std::shared_ptr<const RegressionProblem> problem,
+                  const SymbolicRegressionConfig& config, RandomContext& random,
+                  std::shared_ptr<TrainingObjective> objective,
+                  std::shared_ptr<ConstantRefinement> preparation, Variation variation,
+                  Ordering ordering, ParetoSelectionWork* paretoWork) {
     (void)problem;
     SymbolicRegressionResult result;
     if (config.maxEvaluations < config.population || config.maxTrainingLossAttempts < config.population) {
@@ -76,7 +106,7 @@ inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const Regressi
         result.rawInitialExpressions.push_back(initial.back().text());
     }
     }
-    using P = Population<ExpressionCandidate, RegressionOrdering>;
+    using P = Population<ExpressionCandidate, Ordering>;
     // Recognize only the explicit allowance stop, through the engine's nested context.
     const auto budgetFailure = [](std::exception_ptr error) {
         while (error) {
@@ -90,15 +120,36 @@ inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const Regressi
         }
         return false;
     };
+    const auto selectionLimitFailure = [](std::exception_ptr error) {
+        while (error) {
+            try {
+                std::rethrow_exception(error);
+            } catch (const ParetoSelectionLimitExceeded&) {
+                return true;
+            } catch (const std::exception& e) {
+                const auto* nested = dynamic_cast<const std::nested_exception*>(&e);
+                error = nested ? nested->nested_ptr() : std::exception_ptr{};
+            } catch (...) {
+                return false;
+            }
+        }
+        return false;
+    };
     std::unique_ptr<P> storage;
     try {
         genetik_detail::ScopedTiming timer(config.diagnostics ? &config.diagnostics->generationSeconds:nullptr);
-        storage = std::make_unique<P>(initial, random, ObjectiveDirection::Minimize,static_cast<bool>(config.diagnostics));
+        storage = std::make_unique<P>(initial, random, ObjectiveDirection::Minimize,
+                                      static_cast<bool>(config.diagnostics), ordering);
     }
     catch (...) {
         const auto failure=std::current_exception();
-        if (!budgetFailure(failure) && !isEvaluationCancelled(failure)) throw;
-        result.stoppingReason = budgetFailure(failure)?SearchStop::EvaluationBudget:SearchStop::Cancelled;
+        if (!budgetFailure(failure) && !selectionLimitFailure(failure) &&
+            !isEvaluationCancelled(failure))
+            throw;
+        result.stoppingReason = budgetFailure(failure) ? SearchStop::EvaluationBudget
+                                : selectionLimitFailure(failure)
+                                    ? SearchStop::SelectionResourceLimit
+                                    : SearchStop::Cancelled;
         result.candidateEvaluations = random.evaluationAttempts(); result.trainingWork = objective->work();
         result.initialWork=result.trainingWork;
         result.variation = variation.statistics();
@@ -109,6 +160,8 @@ inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const Regressi
         result.unpublishedLossAttempts=result.trainingWork.lossAttempts;
         result.unpublishedRowAttempts=result.trainingWork.rowAttempts;
         result.unpublishedCandidateRequests=result.candidateEvaluations;
+        if (paretoWork)
+            result.paretoWork = *paretoWork;
         return result; // no initial generation committed
     }
     auto& population = *storage;
@@ -158,8 +211,14 @@ inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const Regressi
             }
         } catch (...) {
             const auto failure=std::current_exception();
-            if (!budgetFailure(failure) && !isEvaluationCancelled(failure)) throw;
-            result.stoppingReason = budgetFailure(failure)?SearchStop::EvaluationBudget:SearchStop::Cancelled; break;
+            if (!budgetFailure(failure) && !selectionLimitFailure(failure) &&
+                !isEvaluationCancelled(failure))
+                throw;
+            result.stoppingReason = budgetFailure(failure) ? SearchStop::EvaluationBudget
+                                    : selectionLimitFailure(failure)
+                                        ? SearchStop::SelectionResourceLimit
+                                        : SearchStop::Cancelled;
+            break;
         }
         committedLosses=objective->work().lossAttempts;committedRows=objective->work().rowAttempts;
         committedRequests=random.evaluationAttempts();
@@ -185,7 +244,40 @@ inline SymbolicRegressionResult runSymbolicSearch(std::shared_ptr<const Regressi
     result.unpublishedCandidateRequests=random.evaluationAttempts()-committedRequests;
     if(config.diagnostics)config.diagnostics->publicationSeconds=population.publicationSeconds();
     result.candidateEvaluations = random.evaluationAttempts(); result.variation = ga.variation().statistics();
+    if (paretoWork)
+        result.paretoWork = *paretoWork;
+    if (result.best) {
+        if constexpr (std::is_same_v<Ordering, ComplexityPenaltyOrdering>)
+            result.bestSelectionScore = ordering.selectionScore(*result.best);
+    }
+    if constexpr (std::is_same_v<Ordering, ParetoRegressionOrdering>) {
+        if (population.generation()) {
+            try {
+                auto frontier =
+                    ordering.frontier(population.selectionView(), config.maximumParetoFrontier);
+                result.paretoFrontier.reserve(frontier.size());
+                for (const auto& candidate : frontier)
+                    result.paretoFrontier.push_back(
+                        {candidate, candidate.fitness(), candidate.expression().nodeCount()});
+            } catch (const ParetoSelectionLimitExceeded&) {
+                result.stoppingReason = SearchStop::SelectionResourceLimit;
+            }
+        }
+        if (paretoWork)
+            result.paretoWork = *paretoWork;
+    }
     return result;
+}
+
+template <class Variation>
+inline SymbolicRegressionResult
+runSymbolicSearch(std::shared_ptr<const RegressionProblem> problem,
+                  const SymbolicRegressionConfig& config, RandomContext& random,
+                  std::shared_ptr<TrainingObjective> objective,
+                  std::shared_ptr<ConstantRefinement> preparation, Variation variation) {
+    return runSymbolicSearch(std::move(problem), config, random, std::move(objective),
+                             std::move(preparation), std::move(variation), RegressionOrdering{},
+                             nullptr);
 }
 }
 
@@ -194,11 +286,16 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
                               const SymbolicRegressionConfig& config, RandomContext& random,
                               std::shared_ptr<TrainingObjective> objective = {}) {
     if (random.evaluationAttempts() != 0) throw std::invalid_argument("symbolic search requires a fresh run context");
-    if (config.fitEveryGenerations==0 || config.population == 0 || config.population > std::numeric_limits<unsigned int>::max() ||
+    if (config.fitEveryGenerations == 0 || config.population == 0 ||
+        config.population > std::numeric_limits<unsigned int>::max() ||
         config.elites >= config.population || !std::isfinite(config.crossoverRate) ||
-        !std::isfinite(config.mutationRate) || config.crossoverRate < 0 || config.crossoverRate > 1 ||
-        config.mutationRate < 0 || config.mutationRate > 1 ||
-        !std::isfinite(config.trainingLossThreshold) || config.trainingLossThreshold < 0)
+        !std::isfinite(config.mutationRate) || config.crossoverRate < 0 ||
+        config.crossoverRate > 1 || config.mutationRate < 0 || config.mutationRate > 1 ||
+        !std::isfinite(config.trainingLossThreshold) || config.trainingLossThreshold < 0 ||
+        !std::isfinite(config.complexityPenalty) || config.complexityPenalty < 0 ||
+        (config.selectionStrategy == SymbolicRegressionConfig::SelectionStrategy::Pareto &&
+         (!config.maximumParetoComparisons || !config.maximumParetoEstimatedMemoryBytes ||
+          !config.maximumParetoFrontier)))
         throw std::invalid_argument("invalid symbolic search configuration");
     if (!objective) objective = std::make_shared<TrainingObjective>(problem, config.maxTrainingLossAttempts,config.diagnostics);
     if (objective->problem() != problem || objective->maximum() != config.maxTrainingLossAttempts || objective->diagnostics()!=config.diagnostics ||
@@ -209,5 +306,22 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
     if(random.execution().requested()>1)(void)objective->forkParallel(random.execution()); // validate factory before initialization
     auto preparation = std::make_shared<ConstantRefinement>(objective, config.fitting,config.fitEveryGenerations);
     ExpressionVariation variation(problem, config.grammar, preparation);
-    return genetik_detail::runSymbolicSearch(problem,config,random,objective,preparation,std::move(variation));
+    switch (config.selectionStrategy) {
+    case SymbolicRegressionConfig::SelectionStrategy::PredictionLoss:
+        return genetik_detail::runSymbolicSearch(problem, config, random, objective, preparation,
+                                                 std::move(variation), RegressionOrdering{},
+                                                 nullptr);
+    case SymbolicRegressionConfig::SelectionStrategy::ComplexityPenalty:
+        return genetik_detail::runSymbolicSearch(
+            problem, config, random, objective, preparation, std::move(variation),
+            ComplexityPenaltyOrdering(config.complexityPenalty), nullptr);
+    case SymbolicRegressionConfig::SelectionStrategy::Pareto: {
+        ParetoSelectionWork work;
+        ParetoRegressionOrdering ordering(config.maximumParetoComparisons,
+                                          config.maximumParetoEstimatedMemoryBytes, work);
+        return genetik_detail::runSymbolicSearch(problem, config, random, objective, preparation,
+                                                 std::move(variation), std::move(ordering), &work);
+    }
+    }
+    throw std::invalid_argument("unknown symbolic selection strategy");
 }

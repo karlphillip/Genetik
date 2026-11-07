@@ -4,6 +4,7 @@
 #include "RandomContext.hpp"
 #include <algorithm>
 #include <exception>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <type_traits>
@@ -29,6 +30,13 @@ public:
     Population(const std::vector<T>& initial, RandomContext& random,
                ObjectiveDirection direction = ObjectiveDirection::Maximize, bool profilePublication = false)
         : random_(random), direction_(direction), profilePublication_(profilePublication) { validateDirection(); publishGeneration(initial); }
+    Population(const std::vector<T>& initial, RandomContext& random, ObjectiveDirection direction,
+               bool profilePublication, Ordering ordering)
+        : ordering_(std::move(ordering)), random_(random), direction_(direction),
+          profilePublication_(profilePublication) {
+        validateDirection();
+        publishGeneration(initial);
+    }
     Population(const Population&) = delete;
     Population& operator=(const Population&) = delete;
     Population(Population&&) = delete;
@@ -181,8 +189,38 @@ public:
             }
             genetik_detail::ScopedTiming publicationTimer(profilePublication_ ? &publicationSeconds_:nullptr);
             requireEvaluated(next);
-            if (std::none_of(next.begin(), next.end(), valid))
-                return outcome_ = GenerationOutcome::NoViableCandidates;
+            if (std::none_of(next.begin(), next.end(), valid)) {
+                if constexpr (requires(Ordering& ordering, std::vector<T>& candidates,
+                                       const std::vector<T>& parents, std::size_t capacity) {
+                                  ordering.environmentalSelect(candidates, parents, capacity);
+                              }) {
+                    if (!committed_)
+                        return outcome_ = GenerationOutcome::NoViableCandidates;
+                } else {
+                    return outcome_ = GenerationOutcome::NoViableCandidates;
+                }
+            }
+            if constexpr (requires(Ordering& ordering, std::vector<T>& candidates,
+                                   const std::vector<T>& parents, std::size_t capacity) {
+                              ordering.environmentalSelect(candidates, parents, capacity);
+                          }) {
+                if (committed_) {
+                    if constexpr (requires(Ordering& ordering, const std::vector<T>& parents,
+                                           const std::vector<T>& offspring, std::size_t capacity) {
+                                      ordering.checkEnvironmentalMemory(parents, offspring,
+                                                                        capacity);
+                                  }) {
+                        ordering_.checkEnvironmentalMemory(committed_->members, next,
+                                                           committed_->members.size());
+                    }
+                    auto combined = committed_->members;
+                    combined.insert(combined.end(), std::make_move_iterator(next.begin()),
+                                    std::make_move_iterator(next.end()));
+                    ordering_.environmentalSelect(combined, committed_->members,
+                                                  committed_->members.size());
+                    next = std::move(combined);
+                }
+            }
             rank(next);
             // Prepare the archive too: copying a custom candidate may throw.
             const bool improved = !committed_ || better(next.back(), committed_->best);
@@ -214,7 +252,14 @@ private:
         if constexpr (requires { ordering_.validateDirection(direction_); }) ordering_.validateDirection(direction_);
     }
     bool better(const T& a, const T& b) const { return ordering_.better(a, b, direction_); }
-    void rank(std::vector<T>& members) const {
+    void rank(std::vector<T>& members) {
+        if constexpr (requires(Ordering& ordering, std::vector<T>& candidates,
+                               ObjectiveDirection direction) {
+                          ordering.rank(candidates, direction);
+                      }) {
+            ordering_.rank(members, direction_);
+            return;
+        }
         // Invalid first, valid from worst to best. Never compare an invalid numerical score.
         std::stable_sort(members.begin(), members.end(), [&](const T& a, const T& b) {
             if (valid(a) != valid(b)) return !valid(a);

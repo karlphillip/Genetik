@@ -31,9 +31,9 @@ public:
         if (loss != RegressionLoss::MeanSquaredError) throw std::invalid_argument("unsupported regression loss");
         (void)Expression::constant(0, dimensions_, limits_); // validate limits, independently of any genome
     }
-    static std::shared_ptr<const RegressionProblem> create(const std::vector<RegressionRow>& rows,
-                                                           ExpressionLimits limits = {31, 6, 2},
-                                                           RegressionLoss loss = RegressionLoss::MeanSquaredError) {
+    static std::shared_ptr<const RegressionProblem>
+    create(const std::vector<RegressionRow>& rows, ExpressionLimits limits = {31, 6, 2},
+           RegressionLoss loss = RegressionLoss::MeanSquaredError) {
         return std::make_shared<const RegressionProblem>(rows, limits, loss);
     }
     virtual ~RegressionProblem() = default;
@@ -54,7 +54,8 @@ public:
     // mutable counters; supplied counters belong to the worker objective.
     virtual RegressionMetrics measureWithWork(const Expression& expression, std::uint64_t* rows,
                                               RegressionSupplementalWork& supplemental) const {
-        if (typeid(*this) == typeid(RegressionProblem)) return measureValue(expression, rows, &supplemental);
+        if (typeid(*this) == typeid(RegressionProblem))
+            return measureValue(expression, rows, &supplemental);
         return measure(expression, rows);
     }
     virtual RegressionMetrics measure(const Expression& expression, std::uint64_t* rowAttempts = nullptr) const {
@@ -64,7 +65,8 @@ private:
     RegressionMetrics measureValue(const Expression& expression, std::uint64_t* rowAttempts,
                                    RegressionSupplementalWork* supplemental) const {
         if (expression.variableCount() != dimensions_) throw std::invalid_argument("expression/problem dimensions differ");
-        if (rows_.empty()) throw std::logic_error("schema-only problem requires a measurement override");
+        if (rows_.empty())
+            throw std::logic_error("schema-only problem requires a measurement override");
         double sum = 0, maximum = 0;
         std::size_t attempted = 0;
         // Empty construction cannot allocate. First growth stays after the first
@@ -100,6 +102,7 @@ private:
         if (!std::isfinite(mse)) return {Fitness::invalid(), {}, attempted};
         return {Fitness::valid(mse), maximum, attempted};
     }
+
 protected:
     // Mathematical objective adapter: no fictitious value labels. Derived problems
     // override measure and explicitly qualify concurrent immutable measurement.

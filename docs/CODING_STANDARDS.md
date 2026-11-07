@@ -27,6 +27,24 @@ files out of formatting-only changes.
 ## Diagnostics
 
 `.clang-tidy` selects a small set of high-signal checks for expression and
-regression implementation headers. Run those checks when `clang-tidy` is
-available; do not broaden the configured checks without reviewing existing
-header diagnostics and build impact.
+regression implementation headers. LLVM 18 is the checked toolchain for this
+scope. The `clang-format18-clang-tidy18` CI job installs the pinned Ubuntu 24.04
+packages, checks their versions, builds a compile database, and runs the same
+script used locally. Missing tools, an absent compile database, formatter
+violations, or configured diagnostics fail the command; the checks never skip
+silently.
+
+From the repository root, run:
+
+```sh
+cmake -S . -B build/quality -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_TESTING=ON -DGENETIK_BUILD_TESTS=ON \
+  -DGENETIK_BUILD_EXAMPLES=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+scripts/check_cpp_quality.sh build/quality
+```
+
+The formatter scope is limited to the implementation headers deliberately
+modified and the introduced quickstart. Static analysis compiles the expression
+and regression contract test translation units and filters diagnostics to the
+configured Genetik expression/regression headers. Historical source files are
+not mass-formatted.

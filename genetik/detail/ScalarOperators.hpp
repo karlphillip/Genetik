@@ -37,7 +37,15 @@ enum class ExpressionKind {
     Abs,
     Min,
     Max,
-    Clamp, Erf, Erfc, Gamma, LogGamma, BesselJ0, NormalPdf, NormalCdf, PoissonPmf
+    Clamp,
+    Erf,
+    Erfc,
+    Gamma,
+    LogGamma,
+    BesselJ0,
+    NormalPdf,
+    NormalCdf,
+    PoissonPmf
 };
 struct ScalarOperatorDescription {
     ExpressionKind kind;
@@ -76,14 +84,14 @@ inline constexpr std::array scalarOperators{
     ScalarOperatorDescription{ExpressionKind::Min, "min", 2},
     ScalarOperatorDescription{ExpressionKind::Max, "max", 2},
     ScalarOperatorDescription{ExpressionKind::Clamp, "clamp", 3},
-    ScalarOperatorDescription{ExpressionKind::Erf,"erf",1},
-    ScalarOperatorDescription{ExpressionKind::Erfc,"erfc",1},
-    ScalarOperatorDescription{ExpressionKind::Gamma,"gamma",1},
-    ScalarOperatorDescription{ExpressionKind::LogGamma,"log_gamma",1},
-    ScalarOperatorDescription{ExpressionKind::BesselJ0,"bessel_j0",1},
-    ScalarOperatorDescription{ExpressionKind::NormalPdf,"normal_pdf",3},
-    ScalarOperatorDescription{ExpressionKind::NormalCdf,"normal_cdf",3},
-    ScalarOperatorDescription{ExpressionKind::PoissonPmf,"poisson_pmf",2}};
+    ScalarOperatorDescription{ExpressionKind::Erf, "erf", 1},
+    ScalarOperatorDescription{ExpressionKind::Erfc, "erfc", 1},
+    ScalarOperatorDescription{ExpressionKind::Gamma, "gamma", 1},
+    ScalarOperatorDescription{ExpressionKind::LogGamma, "log_gamma", 1},
+    ScalarOperatorDescription{ExpressionKind::BesselJ0, "bessel_j0", 1},
+    ScalarOperatorDescription{ExpressionKind::NormalPdf, "normal_pdf", 3},
+    ScalarOperatorDescription{ExpressionKind::NormalCdf, "normal_cdf", 3},
+    ScalarOperatorDescription{ExpressionKind::PoissonPmf, "poisson_pmf", 2}};
 inline const ScalarOperatorDescription &scalarOperatorDescription(ExpressionKind kind) {
     const auto i = static_cast<std::size_t>(kind);
     if (i >= scalarOperators.size() || scalarOperators[i].kind != kind)

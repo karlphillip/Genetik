@@ -1114,3 +1114,17 @@ are covered by the evidence in `M3_MIXED_NUMERICAL_QUALIFICATION.md`.
 Real constants evolve but are not coordinate-fitted across integer rounding.
 The synthetic smoke did not recover its target, and the prime campaign was not
 run. This local research extension is not part of a published release.
+
+
+## C2.3 constructive multivariate rational regression (optional candidate)
+
+An additive public C++20 header exposes the qualified two-input, total-degree-two
+normalized rational fitter in `genetik::multivariate_rational`. It reuses existing
+Householder QR and optional LM, defaults to QR, and keeps fit/domain work bounded.
+The generic GA, scalar rational API, recurrence synthesis, RNG, checkpoints and
+search defaults are unchanged. Domain certificates are fail-closed under the
+qualified strict IEEE-754 runtime conditions and concern the fitted denominator
+only. C2.2 evidence supports clean recovery and bounded noisy predictions away
+from poles; noisy structure selection and near-pole extrapolation remain limited.
+See `CONSTRUCTIVE_MULTIVARIATE_RATIONAL_REGRESSION.md`; this is an optional
+capability and does not claim general rational discovery.

@@ -53,6 +53,7 @@ and the required strict floating-point options. Newer C++ standards are allowed.
 - [Complete scalar-genome program](examples/quickstarts/scalar.cpp): a custom real-valued
   candidate minimizes squared error, shares an explicit `RandomContext(42)` with
   its population/algorithm, and stops after ten generations.
+- [Bounded two-variable rational fitting](docs/CONSTRUCTIVE_MULTIVARIATE_RATIONAL_REGRESSION.md): optional degree-two QR reconstruction, explicit domain certification, and known near-pole limitations.
 - [Complete symbolic-regression program](examples/quickstarts/symbolic.cpp): caller-provided
   rows bind `x0` to the first input column. Optional constant fitting, a 256 actual
   loss-call budget and four-generation ceiling bound the search. It prints the

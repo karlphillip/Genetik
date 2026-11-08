@@ -151,6 +151,40 @@ void structuralContracts() {
         MultiComponentTemplateParameters(domain).parameters(parameterModel);
     check(parameterIndices == std::vector<std::size_t>{0, 5},
           "constant fitting selects parameters from both sites in full-model coordinates");
+
+    const auto reversedScaffold = parseExpression("x0+x1", 2, {}, modelLimits);
+    const MultiScalarExpressionTemplate reversedTemplate(
+        reversedScaffold, 1, 0,
+        {ExpressionLimits{15, 5, 8.0, 20}, ExpressionLimits{15, 5, 8.0, 20}}, modelLimits);
+    const auto reversedRows = std::vector<RegressionRow>{
+        {{0.0, 0.0}, 0.0}, {{1.0, 0.0}, 2.0}, {{0.0, 1.0}, 3.0}, {{1.0, 1.0}, 5.0}};
+    const auto reversedDomain = MultiComponentTemplateProblem::create(
+        reversedTemplate, RegressionProblem::create(reversedRows, modelLimits),
+        std::array<std::vector<std::size_t>, 2>{{{1}, {0}}},
+        std::array<std::vector<ExpressionKind>, 2>{
+            {{ExpressionKind::Multiply}, {ExpressionKind::Multiply}}});
+    const auto reversedModel = reversedDomain->materialize(
+        {parseExpression("x1*1", 2, {}, modelLimits), parseExpression("x0*1", 2, {}, modelLimits)});
+    const auto reversedParameterIndices =
+        MultiComponentTemplateParameters(reversedDomain).parameters(reversedModel);
+    check(reversedParameterIndices == std::vector<std::size_t>{1, 4},
+          "constant indices follow model postfix order when site IDs are reversed");
+    auto fittingProblem = reversedDomain->problem();
+    TrainingObjective fittingObjective(fittingProblem);
+    ConstantFitConfig fittingConfig;
+    fittingConfig.lower = 0.0;
+    fittingConfig.upper = 5.0;
+    fittingConfig.initialStep = 1.0;
+    fittingConfig.minimumStep = 1.0e-6;
+    fittingConfig.maxSweeps = 8;
+    fittingConfig.lossThreshold = 0.0;
+    const auto fitted = fitSelectedConstants(reversedModel, fittingObjective,
+                                             reversedParameterIndices, fittingConfig);
+    const auto fittedComponents = reversedDomain->components(fitted.expression);
+    check(fitted.loss.score() == 0.0 && fitted.improved &&
+              fittedComponents[0].nodes()[1].constantValue() == 3.0 &&
+              fittedComponents[1].nodes()[1].constantValue() == 2.0,
+          "ordered selection fits constants in both reversed-position components");
     rejects(
         [&] {
             const ExpressionLimits tightLimits{31, 3, 8.0, 40};

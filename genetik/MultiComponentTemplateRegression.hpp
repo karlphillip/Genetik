@@ -412,6 +412,7 @@ public:
                 if (nodes[index].kind() == ExpressionKind::Constant)
                     result.push_back(selected[site].first + index);
         }
+        std::sort(result.begin(), result.end());
         return result;
     }
 

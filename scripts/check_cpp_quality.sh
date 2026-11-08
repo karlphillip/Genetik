@@ -55,13 +55,17 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     examples/quickstarts/smooth_operators.cpp \
     examples/quickstarts/objectives.cpp \
     examples/quickstarts/selection_strategies.cpp \
+    examples/quickstarts/automatic_separable.cpp \
     benchmarks/symbolic_selection_comparison.cpp \
     benchmarks/multi_component_template_comparison.cpp \
     genetik/SymbolicSelection.hpp \
     genetik/MultiComponentTemplateRegression.hpp \
+    genetik/AutomaticSeparableRegression.hpp \
+    benchmarks/automatic_separable_noise_followup.cpp \
     genetik/Population.hpp \
     tests/symbolic_selection.cpp \
     tests/multi_component_templates.cpp \
+    tests/automatic_separable_regression.cpp \
     tests/mathematical_objectives.cpp \
     tests/smooth_operators.cpp \
     examples/quickstarts/first_search.cpp \
@@ -93,4 +97,7 @@ fi
     tests/mathematical_objectives.cpp \
     tests/symbolic_selection.cpp \
     tests/multi_component_templates.cpp \
+    tests/automatic_separable_regression.cpp \
+    benchmarks/automatic_separable_comparison.cpp \
+    benchmarks/automatic_separable_noise_followup.cpp \
     benchmarks/symbolic_selection_comparison.cpp

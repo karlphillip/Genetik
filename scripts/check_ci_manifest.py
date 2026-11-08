@@ -40,6 +40,7 @@ PORTABLE = {
     'genetik_objective_regression_contracts', 'genetik_objectives_quickstart',
     'genetik_symbolic_selection_contracts', 'genetik_selection_strategies_quickstart',
     'genetik_multi_component_template_contracts', 'genetik_multi_component_templates_quickstart',
+    'genetik_automatic_separable_contracts', 'genetik_automatic_separable_quickstart',
     'genetik_expression_contracts', 'genetik_fitness_publication',
     'genetik_contracts', 'genetik_regression_cli', 'genetik_expression_example',
     'genetik_demo_bounded', 'genetik_demo_zero_budget', 'genetik_demo_invalid_argument',

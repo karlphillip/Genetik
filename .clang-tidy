@@ -8,5 +8,5 @@ Checks: >-
   readability-container-size-empty,
   readability-simplify-boolean-expr
 WarningsAsErrors: ''
-HeaderFilterRegex: '.*/genetik/(Expression|ExpressionDerivative|ExpressionSecondDerivative|PhysicalDimensions|Regression|SymbolicAlgebra|TypedExpression|TypedExpressionParsing|TypedVariation)\.hpp$|.*/genetik/detail/(ScalarOperators|ExpressionParser)\.hpp$'
+HeaderFilterRegex: '.*/genetik/(AutomaticSeparableRegression|Expression|ExpressionDerivative|ExpressionSecondDerivative|PhysicalDimensions|Regression|SymbolicAlgebra|TypedExpression|TypedExpressionParsing|TypedVariation)\.hpp$|.*/genetik/detail/(ScalarOperators|ExpressionParser)\.hpp$'
 FormatStyle: file

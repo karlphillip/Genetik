@@ -61,6 +61,7 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     genetik/SymbolicSelection.hpp \
     genetik/MultiComponentTemplateRegression.hpp \
     genetik/AutomaticSeparableRegression.hpp \
+    benchmarks/automatic_separable_noise_followup.cpp \
     genetik/Population.hpp \
     tests/symbolic_selection.cpp \
     tests/multi_component_templates.cpp \
@@ -98,4 +99,5 @@ fi
     tests/multi_component_templates.cpp \
     tests/automatic_separable_regression.cpp \
     benchmarks/automatic_separable_comparison.cpp \
+    benchmarks/automatic_separable_noise_followup.cpp \
     benchmarks/symbolic_selection_comparison.cpp

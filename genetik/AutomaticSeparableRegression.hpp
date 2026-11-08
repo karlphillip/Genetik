@@ -28,6 +28,9 @@ struct SeparabilityLimits {
     double absoluteTolerance = 1e-10;
     double relativeTolerance = 1e-8;
     double minimumPivotMagnitude = 1e-12;
+    // Empty preserves the historical strict detector. When set, this is an
+    // independently justified absolute bound on each target measurement error.
+    std::optional<double> measurementNoiseBound;
 };
 
 struct SeparabilityWork {
@@ -49,6 +52,9 @@ struct SeparabilityDetection {
     double maximumMultiplicativeResidual = 0.0;
     SeparabilityWork work;
     std::string diagnostic;
+    std::optional<double> assumedMeasurementNoiseBound;
+    double normalizedAdditiveAcceptanceBound = 0.0;
+    double normalizedMultiplicativeAcceptanceBound = 0.0;
 };
 
 namespace genetik_separability_detail {
@@ -75,6 +81,11 @@ inline SeparabilityDetection detectSeparableGrid(const std::vector<RegressionRow
         limits.minimumPivotMagnitude < 0.0 || limits.maxObservations == 0 ||
         limits.maxMathematicalOperations == 0 || limits.maxEstimatedMemoryBytes == 0)
         return uncertain(SeparabilityStop::InvalidInput, "invalid detection limits");
+    if (limits.measurementNoiseBound &&
+        (!std::isfinite(*limits.measurementNoiseBound) || *limits.measurementNoiseBound <= 0.0))
+        return uncertain(SeparabilityStop::InvalidInput,
+                         "measurement noise bound must be finite and positive");
+    result.assumedMeasurementNoiseBound = limits.measurementNoiseBound;
     if (rows.empty() || rows.size() > limits.maxObservations)
         return uncertain(rows.empty() ? SeparabilityStop::InvalidInput
                                       : SeparabilityStop::ResourceLimit,
@@ -160,13 +171,22 @@ inline SeparabilityDetection detectSeparableGrid(const std::vector<RegressionRow
                     std::max(result.maximumAdditiveResidual, std::abs(cross));
             }
         }
-        const double normalizedTolerance =
+        const double numericalTolerance =
             limits.absoluteTolerance / scale + limits.relativeTolerance;
-        if (!std::isfinite(normalizedTolerance) || normalizedTolerance > 0.1)
+        const double roundoffAllowance =
+            limits.measurementNoiseBound ? 64.0 * std::numeric_limits<double>::epsilon() : 0.0;
+        const double normalizedNoise =
+            limits.measurementNoiseBound ? *limits.measurementNoiseBound / scale : 0.0;
+        const double additiveTolerance =
+            numericalTolerance + roundoffAllowance + 4.0 * normalizedNoise;
+        result.normalizedAdditiveAcceptanceBound = additiveTolerance;
+        const double additiveUncertaintyLimit =
+            limits.measurementNoiseBound ? 10.0 * additiveTolerance : 10.0 * numericalTolerance;
+        if (!std::isfinite(additiveTolerance) || additiveTolerance > 0.1)
             result.additive = SeparabilityEvidence::Uncertain;
-        else if (result.maximumAdditiveResidual <= normalizedTolerance)
+        else if (result.maximumAdditiveResidual <= additiveTolerance)
             result.additive = SeparabilityEvidence::Supported;
-        else if (result.maximumAdditiveResidual <= 10.0 * normalizedTolerance)
+        else if (result.maximumAdditiveResidual <= additiveUncertaintyLimit)
             result.additive = SeparabilityEvidence::Uncertain;
         else
             result.additive = SeparabilityEvidence::Rejected;
@@ -203,13 +223,25 @@ inline SeparabilityDetection detectSeparableGrid(const std::vector<RegressionRow
                         std::max(result.maximumMultiplicativeResidual, residual);
                 }
             }
+            const double multiplicativeNumericalTolerance = numericalTolerance + roundoffAllowance;
+            // If every observed entry differs from an unknown rank-one entry by
+            // at most epsilon, each normalized 2x2 minor differs by no more
+            // than 4*epsilon*(M_observed+epsilon)+2*epsilon^2. The normalized
+            // observed maximum is one, so M_observed <= 1.
+            const double multiplicativeNoiseTolerance =
+                4.0 * normalizedNoise * (1.0 + normalizedNoise) +
+                2.0 * normalizedNoise * normalizedNoise;
             const double multiplicativeTolerance =
-                limits.relativeTolerance + limits.absoluteTolerance / scale;
+                multiplicativeNumericalTolerance + multiplicativeNoiseTolerance;
+            result.normalizedMultiplicativeAcceptanceBound = multiplicativeTolerance;
+            const double multiplicativeUncertaintyLimit =
+                limits.measurementNoiseBound ? 10.0 * multiplicativeTolerance
+                                             : 10.0 * multiplicativeNumericalTolerance;
             if (!std::isfinite(multiplicativeTolerance) || multiplicativeTolerance > 0.1)
                 result.multiplicative = SeparabilityEvidence::Uncertain;
             else if (result.maximumMultiplicativeResidual <= multiplicativeTolerance)
                 result.multiplicative = SeparabilityEvidence::Supported;
-            else if (result.maximumMultiplicativeResidual <= 10.0 * multiplicativeTolerance)
+            else if (result.maximumMultiplicativeResidual <= multiplicativeUncertaintyLimit)
                 result.multiplicative = SeparabilityEvidence::Uncertain;
             else
                 result.multiplicative = SeparabilityEvidence::Rejected;

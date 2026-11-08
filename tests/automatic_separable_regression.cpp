@@ -115,6 +115,67 @@ void uncertaintyAndInputContracts() {
           "estimated memory limit is enforced before grid allocation");
 }
 
+void boundedNoiseDetection() {
+    auto limits = SeparabilityLimits{};
+    limits.measurementNoiseBound = 1e-4;
+    const auto noisyAdditive = detectSeparableGrid(
+        grid([](double x, double y) { return std::sin(x) + y * y; }, true), limits);
+    check(noisyAdditive.selectedForm == SeparableForm::Additive &&
+              noisyAdditive.additive == SeparabilityEvidence::Supported &&
+              noisyAdditive.multiplicative == SeparabilityEvidence::Rejected &&
+              noisyAdditive.assumedMeasurementNoiseBound == 1e-4 &&
+              noisyAdditive.normalizedAdditiveAcceptanceBound >
+                  noisyAdditive.maximumAdditiveResidual,
+          "declared bounded noise supports additive cross-difference consistency");
+
+    const auto noisyProduct = detectSeparableGrid(
+        grid([](double x, double y) { return (1.0 + x) * (1.0 + y * y); }, true), limits);
+    check(noisyProduct.selectedForm == SeparableForm::Multiplicative &&
+              noisyProduct.multiplicative == SeparabilityEvidence::Supported &&
+              noisyProduct.additive == SeparabilityEvidence::Rejected &&
+              noisyProduct.normalizedMultiplicativeAcceptanceBound >
+                  noisyProduct.maximumMultiplicativeResidual,
+          "declared bounded noise supports multiplicative rank-one consistency");
+
+    auto strict = limits;
+    strict.measurementNoiseBound.reset();
+    check(!detectSeparableGrid(grid([](double x, double y) { return std::sin(x) + y * y; }, true),
+                               strict)
+               .selectedForm,
+          "strict default remains unchanged for noisy observations");
+
+    const auto weaklyNonseparable = detectSeparableGrid(
+        grid([](double x, double y) { return x + y + 1e-4 * x * y; }, true), limits);
+    check(weaklyNonseparable.selectedForm == SeparableForm::Additive &&
+              weaklyNonseparable.additive == SeparabilityEvidence::Supported,
+          "bounded noise reports compatibility, not proof, when a weak interaction is below its "
+          "envelope");
+
+    const auto ambiguous =
+        detectSeparableGrid(grid([](double, double) { return 2.0; }, true), limits);
+    check(!ambiguous.selectedForm && ambiguous.stoppingReason == SeparabilityStop::Ambiguous,
+          "noise-consistent additive and product forms remain ambiguous");
+
+    auto invalidBound = limits;
+    invalidBound.measurementNoiseBound = 0.0;
+    check(detectSeparableGrid(grid([](double x, double y) { return x + y; }), invalidBound)
+                  .stoppingReason == SeparabilityStop::InvalidInput,
+          "noise-aware mode requires a positive explicit error bound");
+    invalidBound.measurementNoiseBound = std::numeric_limits<double>::infinity();
+    check(detectSeparableGrid(grid([](double x, double y) { return x + y; }), invalidBound)
+                  .stoppingReason == SeparabilityStop::InvalidInput,
+          "nonfinite measurement error bounds are rejected");
+
+    auto uninformativeBound = limits;
+    uninformativeBound.measurementNoiseBound = 10.0;
+    const auto uninformative =
+        detectSeparableGrid(grid([](double x, double y) { return x + y; }), uninformativeBound);
+    check(!uninformative.selectedForm &&
+              uninformative.additive == SeparabilityEvidence::Uncertain &&
+              uninformative.multiplicative == SeparabilityEvidence::Uncertain,
+          "uninformative error bounds cannot create a decomposition selection");
+}
+
 void deterministicAndAutomaticConstruction() {
     const auto rows = grid([](double x, double y) { return std::sin(x) + y * y; });
     const auto first = detectSeparableGrid(rows);
@@ -171,6 +232,7 @@ int main() {
     try {
         hypotheses();
         uncertaintyAndInputContracts();
+        boundedNoiseDetection();
         deterministicAndAutomaticConstruction();
         std::cout << "automatic separability contracts passed\n";
     } catch (const std::exception& error) {

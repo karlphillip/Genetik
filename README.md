@@ -84,6 +84,7 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   with an [installed quickstart](examples/quickstarts/multi_component_templates.cpp):
   jointly search two independently restricted subexpressions in a fixed scaffold.
 - [Automatic additive and multiplicative separability](docs/AUTOMATIC_SEPARABLE_REGRESSION.md)
+- [Bounded-noise separability comparison and search limitations](docs/AUTOMATIC_SEPARABLE_NOISE_FOLLOWUP.md)
   with an [installed quickstart](examples/quickstarts/automatic_separable.cpp):
   detect supported finite-grid hypotheses and jointly search their two unknown components.
 - [Python symbolic-regression example](examples/python/quickstart.py): install the

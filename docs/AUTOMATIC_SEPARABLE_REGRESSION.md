@@ -45,12 +45,30 @@ Each hypothesis reports `Supported`, `Rejected`, or `Uncertain`. Tolerances
 are absolute plus relative after scale normalization. A tolerance band ten
 times wider than the support threshold is reported uncertain; stronger
 residuals reject that hypothesis. If both hypotheses fit, the result is
-ambiguous and no template is constructed. The current detector has no noise
-model: noisy values may be supported, rejected, or uncertain according to the
-explicit tolerances. A rejection is only rejection of the tested finite-grid
-hypothesis at those tolerances. If the absolute-plus-relative normalized
-tolerance exceeds 10% of the observed scale, that hypothesis remains
-uncertain instead of treating a very loose tolerance as evidence.
+ambiguous and no template is constructed. Strict detection remains the
+default. Callers may explicitly set
+`SeparabilityLimits::measurementNoiseBound` to enable bounded-noise consistency.
+This is an absolute per-observation target-error bound supplied by the caller;
+it is not inferred from the data. For additive cross-differences, four
+independent observation errors contribute at most `4*epsilon`. For a rank-one
+minor `a*d-b*c`, the implementation uses normalized values and the conservative
+bound `4*e*(1+e)+2*e*e`, where `e=epsilon/maxAbsObservedTarget`: each unknown
+true entry has magnitude at most `1+e`, and the two product-error terms
+contribute `2*e*e`. A small binary64 arithmetic allowance is added in
+noise-aware mode. Residuals within the bound support compatibility with the
+hypothesis under the declared error model; they do not prove separability. A
+weak interaction smaller than the noise envelope can therefore be
+indistinguishable from measurement error. Both supported hypotheses remain
+ambiguous, and near-bound evidence remains uncertain according to the 10x
+transition band. The result reports the assumed bound and normalized
+acceptance bounds.
+
+The noise-aware policy assumes strict IEEE binary64 behavior described in
+`docs/SUPPORT.md`; it is a residual consistency test, not a rigorous outward
+interval certificate. Rejection remains rejection of the tested finite-grid
+hypothesis at the configured thresholds. If a normalized tolerance exceeds
+10% of observed scale, that hypothesis remains uncertain rather than treating
+a very loose tolerance as evidence.
 
 ## Construction and assessment
 

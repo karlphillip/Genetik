@@ -63,3 +63,8 @@ These bounded results support the usefulness of deterministic hypothesis
 screening on clean data and document its false-negative risk under noise. They
 do not prove global separability, model correctness, or broad search
 superiority. Further scientific tuning was outside this milestone.
+
+The separately frozen [bounded-noise follow-up](AUTOMATIC_SEPARABLE_NOISE_FOLLOWUP.md)
+evaluates an opt-in measurement-error bound and keeps detection metrics
+separate from component-search recovery. Its data, protocol, results, and
+checksums are retained in the workspace evidence directory.

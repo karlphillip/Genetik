@@ -1142,6 +1142,20 @@ noisy prediction errors across strategies, while Pareto used additional
 selection comparisons. This is a capability extension, not evidence of broad
 evolutionary superiority. See `SYMBOLIC_SELECTION.md`.
 
+## Joint two-component expression templates
+
+An additive installed C++20 interface supports two disjoint, independently
+restricted substitution occurrences in one frozen scalar-expression scaffold.
+Variation edits either site while the ordinary regression objective evaluates
+the complete materialized model. Per-site grammar/limits and complete-model
+depth, node, arithmetic-work, and estimated workspace bounds are validated.
+The existing scalar template, generic GA, defaults, RNG, and checkpoints are
+unchanged. A fixed-seed exact `sin(x0)+x1*x1` exercise is compared with ordinary
+symbolic regression under the same data and candidate/loss budgets; the
+template recovered exact structure for both recorded seeds, while ordinary
+search produced one exact and one approximate result. This bounded demonstration
+does not establish general search superiority. See `MULTI_COMPONENT_TEMPLATES.md`.
+
 ## Engineering Foundation
 
 The Engineering Foundation milestone adds repository C++ formatting and focused

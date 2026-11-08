@@ -80,6 +80,9 @@ and the required strict floating-point options. Newer C++ standards are allowed.
 - [Complexity-aware and Pareto symbolic selection](docs/SYMBOLIC_SELECTION.md)
   with an [installed quickstart](examples/quickstarts/selection_strategies.cpp):
   optional in-search selection over prediction loss and expression node count.
+- [Joint multi-component expression templates](docs/MULTI_COMPONENT_TEMPLATES.md)
+  with an [installed quickstart](examples/quickstarts/multi_component_templates.cpp):
+  jointly search two independently restricted subexpressions in a fixed scaffold.
 - [Python symbolic-regression example](examples/python/quickstart.py): install the
   optional `genetik` package, fit through the native C++ engine and inspect the
   selected canonical and SymPy expressions.

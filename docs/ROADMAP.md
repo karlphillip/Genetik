@@ -422,3 +422,12 @@ contributor documentation, and a bounded first-search consumer example. These
 are maintenance improvements; they add no mathematical feature or runtime
 dependency. See [testing](TESTING.md), [coding standards](CODING_STANDARDS.md),
 and [contributing](../CONTRIBUTING.md).
+
+## Joint multi-component templates (optional capability)
+
+The additive two-site scalar-template interface freezes the known outer
+expression scaffold and jointly evaluates independently generated component
+expressions through the existing regression search path. It performs no
+automatic decomposition and leaves the single-site template and generic GA
+unchanged. The bounded fixed-seed comparison is reported in
+`MULTI_COMPONENT_TEMPLATES.md`; it is not evidence of broad superiority.

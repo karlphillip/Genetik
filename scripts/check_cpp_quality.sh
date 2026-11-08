@@ -56,9 +56,12 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     examples/quickstarts/objectives.cpp \
     examples/quickstarts/selection_strategies.cpp \
     benchmarks/symbolic_selection_comparison.cpp \
+    benchmarks/multi_component_template_comparison.cpp \
     genetik/SymbolicSelection.hpp \
+    genetik/MultiComponentTemplateRegression.hpp \
     genetik/Population.hpp \
     tests/symbolic_selection.cpp \
+    tests/multi_component_templates.cpp \
     tests/mathematical_objectives.cpp \
     tests/smooth_operators.cpp \
     examples/quickstarts/first_search.cpp \
@@ -89,4 +92,5 @@ fi
     tests/smooth_operators.cpp \
     tests/mathematical_objectives.cpp \
     tests/symbolic_selection.cpp \
+    tests/multi_component_templates.cpp \
     benchmarks/symbolic_selection_comparison.cpp

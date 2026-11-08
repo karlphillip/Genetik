@@ -124,6 +124,12 @@ if(GENETIK_BUILD_EXAMPLES)
     add_executable(genetik_multi_component_template_comparison
         benchmarks/multi_component_template_comparison.cpp)
     target_link_libraries(genetik_multi_component_template_comparison PRIVATE Genetik::Genetik)
+    add_executable(genetik_automatic_separable_quickstart
+        examples/quickstarts/automatic_separable.cpp)
+    target_link_libraries(genetik_automatic_separable_quickstart PRIVATE Genetik::Genetik)
+    add_executable(genetik_automatic_separable_comparison
+        benchmarks/automatic_separable_comparison.cpp)
+    target_link_libraries(genetik_automatic_separable_comparison PRIVATE Genetik::Genetik)
     add_executable(genetik_templates_quickstart examples/quickstarts/templates.cpp)
     target_link_libraries(genetik_templates_quickstart PRIVATE Genetik::Genetik)
     add_executable(genetik_parsing_quickstart examples/quickstarts/parsing.cpp)

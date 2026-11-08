@@ -83,6 +83,9 @@ and the required strict floating-point options. Newer C++ standards are allowed.
 - [Joint multi-component expression templates](docs/MULTI_COMPONENT_TEMPLATES.md)
   with an [installed quickstart](examples/quickstarts/multi_component_templates.cpp):
   jointly search two independently restricted subexpressions in a fixed scaffold.
+- [Automatic additive and multiplicative separability](docs/AUTOMATIC_SEPARABLE_REGRESSION.md)
+  with an [installed quickstart](examples/quickstarts/automatic_separable.cpp):
+  detect supported finite-grid hypotheses and jointly search their two unknown components.
 - [Python symbolic-regression example](examples/python/quickstart.py): install the
   optional `genetik` package, fit through the native C++ engine and inspect the
   selected canonical and SymPy expressions.

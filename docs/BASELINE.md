@@ -1129,6 +1129,19 @@ from poles; noisy structure selection and near-pole extrapolation remain limited
 See `CONSTRUCTIVE_MULTIVARIATE_RATIONAL_REGRESSION.md`; this is an optional
 capability and does not claim general rational discovery.
 
+## Optional symbolic selection strategies
+
+Symbolic regression now has opt-in complexity-penalty and Pareto modes. Both
+preserve unpenalized prediction fitness and reuse the existing candidate,
+variation, evaluation, and publication path. Pareto mode adds deterministic
+nondominated ranking/crowding and parent-plus-offspring environmental survival
+through a narrow population ordering hook. Default selection, RNG draws,
+checkpoint identities, and expression defaults remain unchanged. The fixed
+comparison harness recovered both exact controls and showed matching finite
+noisy prediction errors across strategies, while Pareto used additional
+selection comparisons. This is a capability extension, not evidence of broad
+evolutionary superiority. See `SYMBOLIC_SELECTION.md`.
+
 ## Engineering Foundation
 
 The Engineering Foundation milestone adds repository C++ formatting and focused

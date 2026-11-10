@@ -28,6 +28,7 @@ this skill does not repeat that workflow.
 - [Tests and qualification](references/testing.md)
 - [Documentation and examples](references/documentation.md)
 - [Safe refactoring](references/refactoring.md)
+- [Research execution gate](references/research-execution.md)
 
 ## Completion
 
@@ -36,3 +37,5 @@ this skill does not repeat that workflow.
 - Compile every changed public header alone and verify consumer examples through
   the installed CMake package when the public surface or example changes.
 - Report test inventory deltas and any incomplete qualification precisely.
+- For scientific studies and solver-guided research, use the optional
+  `genetik-research-execution` workflow before running experiments.

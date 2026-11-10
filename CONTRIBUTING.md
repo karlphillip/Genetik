@@ -28,6 +28,11 @@ See [test categories](docs/TESTING.md) for focused labels, Debug and sanitizer
 builds, consumer checks and performance harnesses. Keep generated output in
 `build/` or `out/`; do not place build products in source directories.
 
+For scientific studies or solver-guided research, use the optional governed
+runner and freeze inputs and budgets before execution; see
+[research execution governance](docs/RESEARCH_EXECUTION_GOVERNANCE.md). Its
+Python tests run with the standard library and do not require cvc5.
+
 For the focused LLVM 18 formatting and static-analysis gate, follow the
 reproducible commands in [coding standards](docs/CODING_STANDARDS.md). The gate
 requires `clang-format-18`, `clang-format-diff-18`, and `clang-tidy-18`; it

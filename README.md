@@ -55,6 +55,8 @@ and the required strict floating-point options. Newer C++ standards are allowed.
 - [Choose an existing capability](#api-and-examples), from symbolic regression to
   optional numerical and mathematical components.
 - [Contribute and run tests](CONTRIBUTING.md); see [test labels and suites](docs/TESTING.md).
+- [Governed solver and scientific research runs](docs/RESEARCH_EXECUTION_GOVERNANCE.md)
+  use an optional standard-library Python execution gate, separate from the installed library.
 - [Constructive integer recurrence synthesis](docs/CONSTRUCTIVE_RECURRENCE_SYNTHESIS.md)
   and [bounded multivariate rational fitting](docs/CONSTRUCTIVE_MULTIVARIATE_RATIONAL_REGRESSION.md)
   are optional deterministic capabilities with documented limits.

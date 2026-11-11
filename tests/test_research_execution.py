@@ -202,6 +202,66 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
     def set_query(self, content):
         self.query.write_text(content + "\n")
 
+    def test_process_group_sample_includes_reaped_descendant_cpu(self):
+        module_spec = importlib.util.spec_from_file_location("research_execution_group_sample_test", HARNESS)
+        module = importlib.util.module_from_spec(module_spec)
+        module_spec.loader.exec_module(module)
+        proc = self.root / "proc"
+        for pid, group, rss, utime, stime, cutime, cstime in (
+            (101, 77, 100, 10, 5, 4, 1),
+            (102, 77, 200, 20, 5, 0, 0),
+            (103, 88, 900, 100, 0, 0, 0),
+        ):
+            directory = proc / str(pid)
+            directory.mkdir(parents=True)
+            fields = ["S", "1", str(group)] + ["0"] * 8 + [str(utime), str(stime), str(cutime), str(cstime)]
+            (directory / "stat").write_text(f"{pid} (fake process) " + " ".join(fields))
+            (directory / "status").write_text(f"Name:\tfake\nVmRSS:\t{rss} kB\n")
+        self.assertEqual(module._read_process_group_sample(proc, 77, 10), (300 * 1024, 4.5))
+        self.assertIsNone(module._read_process_group_sample(proc, 99, 10))
+
+    @unittest.skipUnless(sys.platform.startswith("linux") and hasattr(os, "wait4") and hasattr(os, "fork"), "Linux wait4 contract")
+    def test_wait4_child_cpu_includes_a_descendant_reaped_by_the_leader(self):
+        module_spec = importlib.util.spec_from_file_location("research_execution_wait4_test", HARNESS)
+        module = importlib.util.module_from_spec(module_spec)
+        module_spec.loader.exec_module(module)
+        leader = os.fork()
+        if leader == 0:
+            child = os.fork()
+            if child == 0:
+                deadline = time.monotonic() + 0.15
+                while time.monotonic() < deadline:
+                    pass
+                os._exit(0)
+            os.waitpid(child, 0)
+            os._exit(0)
+        returncode, usage = module._wait4_until(leader, 2)
+        self.assertEqual(returncode, 0)
+        self.assertGreater(usage.ru_utime + usage.ru_stime, 0.05)
+
+    def test_unavailable_process_group_metrics_fail_closed(self):
+        module_spec = importlib.util.spec_from_file_location("research_execution_unavailable_metrics_test", HARNESS)
+        module = importlib.util.module_from_spec(module_spec)
+        module_spec.loader.exec_module(module)
+        outcome = module.classify_execution(0, b"sat\n", b"", False, process_group_rss_available=False)
+        self.assertEqual(outcome["status"], "resource_accounting_unavailable")
+        self.assertIn("process_group_rss_unavailable", outcome["classification_overrides"])
+        timed_out = module.classify_execution(
+            -signal.SIGKILL, b"", b"", True, process_group_rss_available=False,
+        )
+        self.assertEqual(timed_out["status"], "timed_out")
+        self.assertIn("process_group_rss_unavailable", timed_out["classification_overrides"])
+        malformed = module.classify_execution(
+            2, b"", b"Parse Error: invalid", False, process_group_rss_available=False,
+        )
+        self.assertEqual(malformed["status"], "malformed_input")
+        self.assertEqual(module.terminal_status_for("timed_out", True), "timed_out")
+        self.assertEqual(module.terminal_status_for("malformed_input", True), "resource_accounting_unavailable")
+        self.assertEqual(
+            module.charged_resource_time("malformed_input", 0.1, 0.2, 1.0, 1.0, accounting_unavailable=True),
+            (1.0, 1.0),
+        )
+
     def run_attestable_stage(self, *, checker_passes=True):
         if not checker_passes:
             self.checker.write_text(
@@ -326,6 +386,34 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
         state = json.loads((program_dir / "program-budget.json").read_text())
         self.assertEqual(state["invocations_reserved"], 12)
         self.assertEqual(state["pending"], None)
+
+    def test_concurrent_runs_keep_child_and_group_metrics_per_call(self):
+        first = self.make_protocol(calls=2)
+        protocol = json.loads((first / "protocol.json").read_text())
+        program_dir = Path(protocol["program_budget"]["ledger_dir"])
+        second = self.make_protocol(
+            calls=2, program_dir=program_dir, program_id=protocol["program_budget"]["program_id"],
+        )
+        outputs = []
+
+        def invoke(protocol_dir):
+            outputs.append(self.command("run", "--protocol-dir", protocol_dir, "--query", self.query))
+
+        threads = [threading.Thread(target=invoke, args=(item,)) for item in (first, second)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        self.assertEqual(len(outputs), 2)
+        for output in outputs:
+            self.assertIn(output.returncode, (0, 2), output.stderr)
+            record = json.loads(output.stdout)
+            self.assertIsInstance(record["waited_child_cpu_seconds"], float)
+            self.assertIsInstance(record["waited_child_peak_rss_bytes"], int)
+            self.assertIn(record["process_group_rss_available"], (True, False))
+        state = json.loads((program_dir / "program-budget.json").read_text())
+        self.assertEqual(state["invocations_reserved"], 13)
+        self.assertIsNone(state["pending"])
 
     def test_execution_group_cap_is_shared_across_protocol_versions(self):
         first = self.make_protocol(calls=2, group_id="syntax-retry", group_calls=1)
@@ -821,6 +909,21 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
         self.assertNotEqual(refused.returncode, 0)
         self.assertIn("halted", refused.stderr)
 
+    def test_fast_solver_records_distinct_child_and_process_group_metrics(self):
+        self.set_query("unsat")
+        frozen = self.make_protocol(calls=1, wall=1, cpu=1)
+        run = self.command("run", "--protocol-dir", frozen, "--query", self.query)
+        self.assertIn(run.returncode, (0, 2), run.stderr)
+        result = json.loads(run.stdout)
+        self.assertIsInstance(result["cpu_seconds"], float)
+        self.assertIsInstance(result["waited_child_cpu_seconds"], float)
+        self.assertIsInstance(result["waited_child_peak_rss_bytes"], int)
+        self.assertGreater(result["waited_child_peak_rss_bytes"], 0)
+        self.assertEqual(result["status"] == "resource_accounting_unavailable", not result["process_group_rss_available"])
+        if result["status"] == "resource_accounting_unavailable":
+            self.assertEqual(result["terminal_status"], "resource_accounting_unavailable")
+            self.assertEqual(result["charged_cpu_seconds"], 1)
+
     def test_tampered_protocol_fails_closed(self):
         frozen = self.make_protocol()
         (frozen / "protocol.json").chmod(0o644)
@@ -908,6 +1011,17 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
         self.assertEqual(run.returncode, 2, run.stderr)
         self.assertEqual(json.loads(run.stdout)["status"], "resource_exhausted")
 
+    def test_long_running_process_group_cpu_is_measured_separately(self):
+        self.set_query("cpu")
+        frozen = self.make_protocol(calls=1, wall=2, cpu=1)
+        run = self.command("run", "--protocol-dir", frozen, "--query", self.query)
+        self.assertEqual(run.returncode, 2, run.stderr)
+        result = json.loads(run.stdout)
+        self.assertEqual(result["status"], "resource_exhausted")
+        self.assertTrue(result["process_group_rss_available"])
+        self.assertTrue(result["process_group_cpu_is_lower_bound"])
+        self.assertGreater(result["process_group_cpu_seconds"], 0)
+
     def test_wall_timeout_kills_process_group(self):
         self.set_query("child")
         frozen = self.make_protocol(calls=1, wall=0.2, cpu=1)
@@ -915,7 +1029,10 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
             "run", "--protocol-dir", frozen, "--query", self.query,
         )
         self.assertEqual(run.returncode, 2, run.stderr)
-        self.assertEqual(json.loads(run.stdout)["status"], "timed_out")
+        result = json.loads(run.stdout)
+        self.assertEqual(result["status"], "timed_out")
+        self.assertTrue(result["process_group_rss_available"])
+        self.assertIsInstance(result["waited_child_peak_rss_bytes"], int)
         child_pid = int((self.root / "child.pid").read_text())
         try:
             stat = Path(f"/proc/{child_pid}/stat").read_text()
@@ -931,6 +1048,7 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
         result = json.loads(run.stdout)
         self.assertEqual(result["status"], "invalid_output")
         self.assertTrue(result["orphaned_process_group"])
+        self.assertTrue(result["process_group_rss_available"])
         child_pid = int((self.root / "child.pid").read_text())
         try:
             state = Path(f"/proc/{child_pid}/stat").read_text()

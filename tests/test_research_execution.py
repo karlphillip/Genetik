@@ -14,6 +14,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / "scripts" / "research_execution.py"
+sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "tests"))
+from test_scientific_pipeline_preflight import PIPELINE
 
 
 class ResearchExecutionHarnessTests(unittest.TestCase):
@@ -69,6 +72,13 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
         self.artifact.write_text('{"fixture":"fixed"}\n')
         self.assessment_artifact = self.root / "assessment.json"
         self.assessment_artifact.write_text('{"assessment":"separate"}\n')
+        self.artifact2 = self.root / "frozen-input-2.json"
+        self.artifact2.write_text('{"fixture":"second-control"}\n')
+        self.assessment_artifact2 = self.root / "assessment-2.json"
+        self.assessment_artifact2.write_text('{"assessment":"second-control"}\n')
+        self.pipeline_script = self.root / "synthetic_pipeline.py"
+        self.pipeline_script.write_text(PIPELINE)
+        self.pipeline_script.chmod(0o755)
         self.history = self.root / "prior-ledger.json"
         self.history.write_text(json.dumps({"query_invocations_counted": 11, "declared_query_ceiling": 10, "ceiling_overrun": 1}))
         self.program_root = self.root / "lifetime-ledgers"
@@ -93,7 +103,7 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
             env=merged,
         )
 
-    def make_protocol(self, *, calls=4, query_bytes=4096, output_bytes=4096, wall=1, cpu=1, program_dir=None, program_id=None, new_cpu=1000, new_wall=1000, query_uses=None, query_args=None, group_id=None, group_calls=None, group_path=None, group_stages=None, max_syntax_retries=1, stage_id=None, retry_attempt=None, retry_of_run_id=None, query_content=None, attestation_required=False, checker_limits=None):
+    def make_protocol(self, *, calls=4, query_bytes=4096, output_bytes=4096, wall=1, cpu=1, program_dir=None, program_id=None, new_cpu=1000, new_wall=1000, query_uses=None, query_args=None, group_id=None, group_calls=None, group_path=None, group_stages=None, max_syntax_retries=1, stage_id=None, retry_attempt=None, retry_of_run_id=None, query_content=None, attestation_required=False, checker_limits=None, expect_freeze_error=None):
         import hashlib
 
         self.protocol_count += 1
@@ -128,16 +138,33 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
                 "historical_evidence": {"path": str(self.history), "sha256": hashlib.sha256(self.history.read_bytes()).hexdigest()},
             },
             "subprocess_policy": "forbidden",
-            "controls": [{
-                "id": "fixture",
-                "training_sha256": hashlib.sha256(self.artifact.read_bytes()).hexdigest(),
-                "assessment_sha256": hashlib.sha256(self.assessment_artifact.read_bytes()).hexdigest(),
-            }],
+            "controls": [
+                {"id": "fixture", "training_artifact": "training-fixture",
+                 "training_sha256": hashlib.sha256(self.artifact.read_bytes()).hexdigest(),
+                 "assessment_artifact": "assessment-fixture",
+                 "assessment_sha256": hashlib.sha256(self.assessment_artifact.read_bytes()).hexdigest()},
+                {"id": "fixture-2", "training_artifact": "training-fixture-2",
+                 "training_sha256": hashlib.sha256(self.artifact2.read_bytes()).hexdigest(),
+                 "assessment_artifact": "assessment-fixture-2",
+                 "assessment_sha256": hashlib.sha256(self.assessment_artifact2.read_bytes()).hexdigest()},
+            ],
+            "run_matrix": [
+                {"run_id": "q0-fixture", "control_id": "fixture", "method": "test", "seed": 0,
+                 "training_artifact": "training-fixture", "assessment_artifact": "assessment-fixture"},
+                {"run_id": "q0-fixture-2", "control_id": "fixture-2", "method": "test", "seed": 0,
+                 "training_artifact": "training-fixture-2", "assessment_artifact": "assessment-fixture-2"},
+            ],
             "frozen_artifacts": [
-                {"path": str(self.artifact), "sha256": hashlib.sha256(self.artifact.read_bytes()).hexdigest()},
-                {"path": str(self.assessment_artifact), "sha256": hashlib.sha256(self.assessment_artifact.read_bytes()).hexdigest()},
-                {"path": str(query_path), "sha256": hashlib.sha256(query_path.read_bytes()).hexdigest()},
-                {"path": str(self.checker), "sha256": hashlib.sha256(self.checker.read_bytes()).hexdigest()},
+                {"id": "training-fixture", "control_id": "fixture", "role": "training", "path": str(self.artifact), "sha256": hashlib.sha256(self.artifact.read_bytes()).hexdigest()},
+                {"id": "assessment-fixture", "control_id": "fixture", "role": "assessment", "path": str(self.assessment_artifact), "sha256": hashlib.sha256(self.assessment_artifact.read_bytes()).hexdigest()},
+                {"id": "training-fixture-2", "control_id": "fixture-2", "role": "training", "path": str(self.artifact2), "sha256": hashlib.sha256(self.artifact2.read_bytes()).hexdigest()},
+                {"id": "assessment-fixture-2", "control_id": "fixture-2", "role": "assessment", "path": str(self.assessment_artifact2), "sha256": hashlib.sha256(self.assessment_artifact2.read_bytes()).hexdigest()},
+                {"id": "query-fixture", "role": "query", "path": str(query_path), "sha256": hashlib.sha256(query_path.read_bytes()).hexdigest()},
+                {"id": "checker-fixture", "role": "checker", "path": str(self.checker), "sha256": hashlib.sha256(self.checker.read_bytes()).hexdigest()},
+                {"id": "pipeline-runtime", "role": "pipeline-executable", "path": str(Path(sys.executable).resolve()), "sha256": hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest()},
+                {"id": "pipeline-adapter", "role": "pipeline-dependency", "path": str(self.pipeline_script.resolve()), "sha256": hashlib.sha256(self.pipeline_script.read_bytes()).hexdigest()},
+                {"id": "admission-tool", "role": "admission-tool", "path": str(ROOT / "scripts" / "scientific_pipeline_preflight.py"), "sha256": hashlib.sha256((ROOT / "scripts" / "scientific_pipeline_preflight.py").read_bytes()).hexdigest()},
+                {"id": "execution-gate", "role": "execution-gate", "path": str(HARNESS), "sha256": hashlib.sha256(HARNESS.read_bytes()).hexdigest()},
             ],
             "queries": ([{"id": "q0", "path": str(query_path), "sha256": hashlib.sha256(query_path.read_bytes()).hexdigest(), "max_uses": query_uses if query_uses is not None else calls, "args": query_args or []}] if calls else []),
             "solver": {
@@ -193,9 +220,58 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
             protocol["queries"][0]["retry_attempt"] = retry_attempt
             if retry_of_run_id is not None:
                 protocol["queries"][0]["retry_of_run_id"] = retry_of_run_id
+        from scientific_pipeline_preflight import canonical, digest, protocol_binding, run_preflight
+        runtime = Path(sys.executable).resolve()
+        runtime_hash = hashlib.sha256(runtime.read_bytes()).hexdigest()
+        adapter_identity = [{"path": str(self.pipeline_script.resolve()), "sha256": hashlib.sha256(self.pipeline_script.read_bytes()).hexdigest()}]
+        command_identity = {"version": "unit-synthetic-pipeline-v1", "executable": str(runtime), "sha256": runtime_hash,
+                            "identity_files": adapter_identity, "runtime_identity": sys.version}
+        protocol["pipeline_identity"] = {stage: command_identity for stage in ("runner", "verifier", "scorer", "aggregator")}
+        spec_controls = []
+        for control, value in zip(protocol["controls"], (3, -5)):
+            cid = control["id"]
+            spec_controls.append({
+                "id": cid,
+                "protocol_training_artifact": control["training_artifact"],
+                "protocol_training_sha256": control["training_sha256"],
+                "protocol_assessment_artifact": control["assessment_artifact"],
+                "protocol_assessment_sha256": control["assessment_sha256"],
+                "training": {"id": f"synthetic-{cid}-training", "synthetic_rows": [{"input": [0], "expected": value}, {"input": [1], "expected": value}]},
+                "assessment": {"id": f"synthetic-{cid}-assessment", "synthetic_rows": [{"input": [2], "expected": value}]},
+            })
+        commands = {
+            stage: {"argv": [str(runtime), str(self.pipeline_script.resolve()), "--stage", "{stage}",
+                              "--manifest", "{manifest}", "--workdir", "{workdir}"], **command_identity}
+            for stage in ("runner", "verifier", "scorer", "aggregator")
+        }
+        preflight_spec = {
+            "schema": 1, "preflight_id": f"unit-preflight-{self.protocol_count}",
+            "protocol_binding_sha256": protocol_binding(protocol), "controls": spec_controls,
+            "runs": protocol["run_matrix"], "expected_run_count": len(protocol["run_matrix"]),
+            "commands": commands,
+            "limits": {"wall_seconds": 5, "cpu_seconds": 5, "address_space_bytes": 512 * 1024 * 1024, "output_bytes": 1024 * 1024},
+        }
+        spec_path = self.root / f"preflight-spec-{self.protocol_count}.json"
+        spec_path.write_bytes(canonical(preflight_spec) + b"\n")
+        source.write_text(json.dumps(protocol))
+        receipt_path = self.root / f"preflight-receipt-{self.protocol_count}.json"
+        preflight_receipt = run_preflight(source, spec_path, receipt_path)
+        for path, identifier, role in ((spec_path, "admission-spec", "admission_preflight_spec"), (receipt_path, "admission-receipt", "admission_preflight_receipt")):
+            protocol["frozen_artifacts"].append({"id": identifier, "role": role, "path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
+        protocol["admission_preflight"] = {
+            "preflight_id": preflight_spec["preflight_id"], "spec_path": str(spec_path),
+            "spec_sha256": hashlib.sha256(spec_path.read_bytes()).hexdigest(),
+            "receipt_path": str(receipt_path), "receipt_sha256": hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
+            "protocol_binding_sha256": preflight_receipt["protocol_binding_sha256"],
+        }
         source.write_text(json.dumps(protocol))
         destination = self.root / f"frozen-{self.protocol_count}"
         frozen = self.command("freeze", "--protocol", source, "--destination", destination)
+        if expect_freeze_error is not None:
+            self.assertNotEqual(frozen.returncode, 0)
+            self.assertIn(expect_freeze_error, frozen.stderr)
+            self.assertFalse(destination.exists())
+            return frozen
         self.assertEqual(frozen.returncode, 0, frozen.stderr)
         return destination
 
@@ -297,6 +373,34 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
         duplicate = self.command("freeze", "--protocol", source, "--destination", frozen)
         self.assertNotEqual(duplicate.returncode, 0)
         self.assertTrue((frozen / "PROTOCOL.sha256").is_file())
+
+    def test_protocol_requires_end_to_end_preflight_receipt(self):
+        frozen = self.make_protocol()
+        protocol = json.loads((frozen / "protocol.json").read_text())
+        protocol.pop("admission_preflight")
+        os.environ["GENETIK_RESEARCH_LEDGER_ROOT"] = str(self.program_root)
+        try:
+            module_spec = importlib.util.spec_from_file_location("research_execution_preflight_required", HARNESS)
+            module = importlib.util.module_from_spec(module_spec)
+            module_spec.loader.exec_module(module)
+            with self.assertRaises(module.GateError):
+                module.validate_protocol(protocol)
+        finally:
+            os.environ.pop("GENETIK_RESEARCH_LEDGER_ROOT", None)
+
+    def test_protocol_rejects_swapped_control_artifact_ids(self):
+        frozen = self.make_protocol()
+        protocol = json.loads((frozen / "protocol.json").read_text())
+        protocol["controls"][0]["training_artifact"] = "assessment-fixture"
+        os.environ["GENETIK_RESEARCH_LEDGER_ROOT"] = str(self.program_root)
+        try:
+            module_spec = importlib.util.spec_from_file_location("research_execution_artifact_mapping", HARNESS)
+            module = importlib.util.module_from_spec(module_spec)
+            module_spec.loader.exec_module(module)
+            with self.assertRaisesRegex(module.GateError, "mapping is inconsistent"):
+                module.validate_protocol(protocol)
+        finally:
+            os.environ.pop("GENETIK_RESEARCH_LEDGER_ROOT", None)
 
     def test_query_over_limit_is_rejected_without_consuming_call(self):
         frozen = self.make_protocol(query_bytes=2)
@@ -517,15 +621,12 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
         protocol = json.loads((first / "protocol.json").read_text())
         program_dir = Path(protocol["program_budget"]["ledger_dir"])
 
-        changed_cap_protocol = json.loads((first / "protocol.json").read_text())
-        changed_cap_protocol["protocol_id"] = "unit-test-changed-group-cap"
-        changed_cap_protocol["execution_group"]["max_invocations"] = 3
-        changed_cap_source = self.root / "changed-cap.json"
-        changed_cap_source.write_text(json.dumps(changed_cap_protocol))
-        refused_cap = self.command("freeze", "--protocol", changed_cap_source, "--destination", self.root / "changed-cap")
-        self.assertNotEqual(refused_cap.returncode, 0)
-        self.assertIn("execution-group identity/ceiling differs", refused_cap.stderr)
-        self.assertFalse((self.root / "changed-cap").exists())
+        refused_cap = self.make_protocol(
+            calls=4, program_dir=program_dir,
+            program_id=json.loads((first / "protocol.json").read_text())["program_budget"]["program_id"],
+            group_id="syntax-fixed", group_calls=3,
+            expect_freeze_error="execution-group identity/ceiling differs",
+        )
 
         wrong_path = program_dir / "alternate-execution-group"
         changed_path_protocol = json.loads((first / "protocol.json").read_text())

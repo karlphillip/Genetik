@@ -25,6 +25,10 @@ import tempfile
 import time
 import uuid
 
+# The admission tool is sibling research tooling, not a library dependency.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from scientific_pipeline_preflight import PreflightError, verify_admission
+
 
 REQUIRED_LIMITS = {
     "max_solver_invocations",
@@ -217,6 +221,11 @@ class GateError(RuntimeError):
     pass
 
 
+def _require_sha256(value: object, field: str) -> None:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        raise GateError(f"{field} must be a lowercase SHA256")
+
+
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -357,13 +366,36 @@ def validate_protocol(protocol: dict) -> None:
     artifacts = protocol.get("frozen_artifacts")
     if not isinstance(artifacts, list) or not artifacts:
         raise GateError("protocol and dataset evidence artifacts must be hash-pinned")
+    artifact_ids = set()
     for artifact in artifacts:
-        if not isinstance(artifact, dict) or not isinstance(artifact.get("path"), str):
-            raise GateError("each frozen artifact needs path and SHA256")
+        if not isinstance(artifact, dict) or not {"id", "path", "sha256", "role"}.issubset(artifact) or not isinstance(artifact.get("path"), str):
+            raise GateError("each frozen artifact needs unique id, path, SHA256 and role")
+        if not isinstance(artifact["id"], str) or not artifact["id"] or artifact["id"] in artifact_ids:
+            raise GateError("frozen artifact IDs must be unique nonempty strings")
+        artifact_ids.add(artifact["id"])
         artifact_path = Path(artifact["path"]).resolve()
         if not artifact_path.is_file() or artifact.get("sha256") != sha256_file(artifact_path):
             raise GateError("frozen artifact identity does not match declared hash")
     artifact_hashes = {artifact["sha256"] for artifact in artifacts}
+    artifacts_by_id = {artifact["id"]: artifact for artifact in artifacts}
+    artifacts_by_path_sha = {
+        (Path(artifact["path"]).resolve(), artifact["sha256"]): artifact
+        for artifact in artifacts
+    }
+    required_gate_artifacts = (
+        ("admission-tool", Path(__file__).resolve().with_name("scientific_pipeline_preflight.py"), "admission-tool"),
+        ("execution-gate", Path(__file__).resolve(), "execution-gate"),
+    )
+    for artifact_id, path, role in required_gate_artifacts:
+        entry = artifacts_by_id.get(artifact_id)
+        resolved = path.resolve()
+        if (
+            entry is None
+            or Path(entry["path"]).resolve() != resolved
+            or entry.get("role") != role
+            or entry.get("sha256") != sha256_file(resolved)
+        ):
+            raise GateError(f"frozen {role} tool identity is missing or stale")
     if execution_group and "stages" in execution_group:
         for stage in execution_group["stages"]:
             checker_sha256 = stage.get("checker_sha256")
@@ -374,8 +406,76 @@ def validate_protocol(protocol: dict) -> None:
                 if not os.access(checker_path, os.X_OK):
                     raise GateError(f"checker for stage {stage['stage_id']} must be executable")
     for control in controls:
-        if not {control["training_sha256"], control["assessment_sha256"]}.issubset(artifact_hashes):
-            raise GateError(f"control {control['id']} datasets are not both frozen artifacts")
+        for role in ("training", "assessment"):
+            artifact_id = control.get(f"{role}_artifact")
+            artifact = artifacts_by_id.get(artifact_id)
+            if not isinstance(artifact_id, str) or artifact is None:
+                raise GateError(f"control {control['id']} must name a frozen {role} artifact ID")
+            if artifact.get("sha256") != control[f"{role}_sha256"] or artifact.get("role") != role or artifact.get("control_id") != control["id"]:
+                raise GateError(f"control {control['id']} {role} artifact ID/hash/role mapping is inconsistent")
+        if control["training_artifact"] == control["assessment_artifact"]:
+            raise GateError(f"control {control['id']} must separate training and assessment artifacts")
+    run_matrix = protocol.get("run_matrix")
+    if not isinstance(run_matrix, list) or not run_matrix:
+        raise GateError("explicit run_matrix with control/method/seed/artifact identities is required")
+    run_ids = set()
+    run_tuples = set()
+    controls_by_id = {control["id"]: control for control in controls}
+    for run_spec in run_matrix:
+        required_run = {"run_id", "control_id", "method", "seed", "training_artifact", "assessment_artifact"}
+        if not isinstance(run_spec, dict) or not required_run.issubset(run_spec):
+            raise GateError("run_matrix rows require run/control/method/seed/training/assessment identity")
+        control = controls_by_id.get(run_spec["control_id"])
+        if (not isinstance(run_spec["run_id"], str) or not run_spec["run_id"] or run_spec["run_id"] in run_ids
+                or not isinstance(run_spec["method"], str) or not run_spec["method"] or type(run_spec["seed"]) is not int
+                or control is None or run_spec["training_artifact"] != control["training_artifact"]
+                or run_spec["assessment_artifact"] != control["assessment_artifact"]):
+            raise GateError("run_matrix contains duplicate, missing, or misassociated run/artifact identity")
+        run_ids.add(run_spec["run_id"])
+        run_key = (run_spec["control_id"], run_spec["method"], run_spec["seed"])
+        if run_key in run_tuples:
+            raise GateError("run_matrix repeats a control/method/seed tuple")
+        run_tuples.add(run_key)
+    pipeline_identity = protocol.get("pipeline_identity")
+    if not isinstance(pipeline_identity, dict) or set(pipeline_identity) != {"runner", "verifier", "scorer", "aggregator"}:
+        raise GateError("pipeline_identity must pin runner, verifier, scorer and aggregator")
+    for stage, identity in pipeline_identity.items():
+        if not isinstance(identity, dict) or not {"version", "executable", "sha256", "identity_files", "runtime_identity"}.issubset(identity):
+            raise GateError(f"pipeline_identity.{stage} is incomplete")
+        if not isinstance(identity["version"], str) or not identity["version"].strip():
+            raise GateError(f"pipeline_identity.{stage}.version must be explicit")
+        _require_sha256(identity["sha256"], f"pipeline_identity.{stage}.sha256")
+        executable = Path(identity["executable"]).resolve()
+        if not executable.is_file() or not os.access(executable, os.X_OK) or sha256_file(executable) != identity["sha256"]:
+            raise GateError(f"pipeline_identity.{stage} executable identity is missing or mismatched")
+        executable_artifact = artifacts_by_path_sha.get((executable, identity["sha256"]))
+        if executable_artifact is None or executable_artifact.get("role") != "pipeline-executable":
+            raise GateError(f"pipeline_identity.{stage} executable must be an exact frozen pipeline-executable artifact")
+        if not isinstance(identity["runtime_identity"], str) or not identity["runtime_identity"].strip() or not isinstance(identity["identity_files"], list) or not identity["identity_files"]:
+            raise GateError(f"pipeline_identity.{stage} must pin runtime and dependency files")
+        for dependency in identity["identity_files"]:
+            if not isinstance(dependency, dict) or not isinstance(dependency.get("path"), str):
+                raise GateError(f"pipeline_identity.{stage} dependency needs a path and SHA256")
+            dependency_path = Path(dependency["path"]).resolve()
+            frozen_dependency = artifacts_by_path_sha.get((dependency_path, dependency.get("sha256")))
+            if frozen_dependency is None or frozen_dependency.get("role") != "pipeline-dependency":
+                raise GateError(f"pipeline_identity.{stage} dependency must exactly match a frozen pipeline-dependency artifact")
+        if not identity["identity_files"]:
+            raise GateError(f"pipeline_identity.{stage} must pin at least one adapter/dependency file")
+    try:
+        admission = verify_admission(protocol)
+    except (PreflightError, OSError, ValueError, json.JSONDecodeError) as error:
+        raise GateError(f"end-to-end synthetic admission preflight failed: {error}") from error
+    admission_artifacts = {
+        (entry.get("role"), Path(entry["path"]).resolve(), entry["sha256"])
+        for entry in artifacts
+    }
+    for role, path, checksum in (
+        ("admission_preflight_spec", admission["spec_path"], admission["spec_sha256"]),
+        ("admission_preflight_receipt", admission["receipt_path"], admission["receipt_sha256"]),
+    ):
+        if (role, path, checksum) not in admission_artifacts:
+            raise GateError(f"{role} must be included in frozen_artifacts with its exact path and SHA256")
     queries = protocol.get("queries")
     if not isinstance(queries, list) or (not queries and limits["max_solver_invocations"] != 0):
         raise GateError("a runnable protocol must freeze an allowlist of exact solver queries")
@@ -423,15 +523,22 @@ def freeze_protocol(source: Path, destination: Path) -> str:
     raw = source.read_bytes()
     protocol = json.loads(raw)
     validate_protocol(protocol)
-    protocol["program_budget"] = _validate_program_budget(protocol["program_budget"])
+    # Keep the frozen JSON byte-for-byte equivalent to the validated source
+    # model (apart from canonical key ordering). The validators return derived
+    # runtime fields such as resolved paths and historical partial charges;
+    # inserting those fields here would change the protocol binding after its
+    # end-to-end preflight had already attested it.
+    program_budget = _validate_program_budget(protocol["program_budget"])
     if "execution_group" in protocol:
-        protocol["execution_group"] = _validate_execution_group(
-            protocol["execution_group"], protocol["program_budget"]
+        execution_group = _validate_execution_group(
+            protocol["execution_group"], program_budget
         )
-    _initialize_program_ledger(protocol["program_budget"])
+    else:
+        execution_group = None
+    _initialize_program_ledger(program_budget)
     if "execution_group" in protocol:
         _initialize_execution_group(
-            protocol["execution_group"], protocol["program_budget"]["program_id"]
+            execution_group, program_budget["program_id"]
         )
     destination.mkdir(parents=True, exist_ok=False)
     _fsync_directory(destination.parent)
@@ -1733,6 +1840,8 @@ def run_solver(directory: Path, query_id: str, query_path: Path) -> dict:
     program_lock_path = program_dir / "program-budget.lock"
     local_lock_path = directory / "budget.lock"
     group_config = protocol.get("execution_group")
+    if group_config is not None:
+        group_config = _validate_execution_group(group_config, program_config)
     group_dir = Path(group_config["ledger_dir"]) if group_config else None
     group_lock_path = group_dir / "group-budget.lock" if group_dir else None
     lock_paths = [program_lock_path, local_lock_path]

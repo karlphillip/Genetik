@@ -1,8 +1,8 @@
 # Discrete specification validation: frozen coverage amendment
 
 **Protocols:** `DISCRETE_SPECIFICATION_VALIDATION_PROTOCOL.md` v1 and
-`DISCRETE_SPECIFICATION_VALIDATION_PROTOCOL_V2.md` v2  
-**Amendment:** version 3, frozen before additional qualification runs  
+`DISCRETE_SPECIFICATION_VALIDATION_PROTOCOL_V2.md` v2<br>
+**Amendment:** version 3, frozen before additional qualification runs<br>
 **Reason:** an independent review identified two explicitly requested
 contracts not directly exercised by the earlier frozen rows. The earlier
 protocols remain immutable and retained. This amendment adds coverage only; it

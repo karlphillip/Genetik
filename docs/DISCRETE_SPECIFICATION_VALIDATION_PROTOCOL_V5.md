@@ -1,7 +1,7 @@
 # Discrete specification validation: row-count clarification
 
-**Protocols:** validation protocol versions 1–4  
-**Amendment:** version 5, frozen before final qualification  
+**Protocols:** validation protocol versions 1–4<br>
+**Amendment:** version 5, frozen before final qualification<br>
 **Reason:** version 4 adds the `x=-7` modulo observation, so the largest
 validator control now has 12 rows. The v1 generic sentence saying “at most 11
 rows” predates this appended row. This clarification replaces that generic

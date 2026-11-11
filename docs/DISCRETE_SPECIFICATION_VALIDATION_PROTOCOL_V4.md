@@ -1,7 +1,7 @@
 # Discrete specification validation: modulo-domain amendment
 
-**Protocols:** validation protocol versions 1–3  
-**Amendment:** version 4, frozen before additional qualification runs  
+**Protocols:** validation protocol versions 1–3<br>
+**Amendment:** version 4, frozen before additional qualification runs<br>
 **Reason:** the independent modulo fixture includes the familiar `-7 mod 3 = 2`
 reference in the validator's finite scope, not only in an evaluator-only
 oracle check. Earlier protocol versions remain unchanged. This amendment adds

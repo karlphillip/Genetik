@@ -1,8 +1,8 @@
 # Discrete specification validation: frozen control amendment
 
-**Protocol:** `DISCRETE_SPECIFICATION_VALIDATION_PROTOCOL.md` version 1  
+**Protocol:** `DISCRETE_SPECIFICATION_VALIDATION_PROTOCOL.md` version 1<br>
 **Amendment:** version 2, frozen before implementation and any validation
-execution  
+execution<br>
 **Reason:** independent architecture review found that the initial conditional
 control exercised both selected branches but did not prove unselected-branch
 laziness. Version 1 remains unchanged and retained; this amendment adds the

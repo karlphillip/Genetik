@@ -1,6 +1,6 @@
 # Discrete specification validation: frozen controls
 
-**Protocol version:** 1  
+**Protocol version:** 1<br>
 **Purpose:** deterministic correctness qualification for a bounded finite-domain
 validator over `DiscreteExpression`. This is not a discovery campaign and makes
 no use of a solver or stochastic search.

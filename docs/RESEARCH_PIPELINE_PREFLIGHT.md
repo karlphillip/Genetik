@@ -28,9 +28,12 @@ the group is terminated when a stage ends. CPU and address-space limits are
 per process (inherited by children), not an aggregate process-group CPU or RSS
 budget. `RLIMIT_CPU` has one-second granularity on the supported Linux runner,
 so `cpu_seconds` must be an integer of at least one second and is enforced at
-that exact integer limit; wall-time may be fractional. This preflight qualifies pipeline compatibility on small synthetic
-fixtures; actual scientific run resources remain governed by the frozen
-research-execution limits and receipt accounting.
+that exact integer limit; wall-time may be fractional. It does not impose a
+filesystem quota or cap the size of the specification before parsing, so it is
+intended for trusted, bounded synthetic fixtures rather than hostile pipeline
+commands or untrusted specifications. This preflight qualifies pipeline
+compatibility on small synthetic fixtures; actual scientific run resources
+remain governed by the frozen research-execution limits and receipt accounting.
 
 The protocol must pin both the preflight specification and receipt in
 `frozen_artifacts`, and include an `admission_preflight` reference. The receipt

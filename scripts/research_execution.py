@@ -347,8 +347,8 @@ def validate_protocol(protocol: dict) -> None:
     if not isinstance(protocol.get("acceptance_criteria"), list) or not protocol["acceptance_criteria"]:
         raise GateError("frozen advancement criteria are required")
     controls = protocol.get("controls")
-    if not isinstance(controls, list) or not controls:
-        raise GateError("independent control inventory is required")
+    if not isinstance(controls, list) or len(controls) < 2:
+        raise GateError("at least two independent controls are required for admission preflight")
     ids = set()
     for control in controls:
         if not isinstance(control, dict):
@@ -436,6 +436,8 @@ def validate_protocol(protocol: dict) -> None:
         if run_key in run_tuples:
             raise GateError("run_matrix repeats a control/method/seed tuple")
         run_tuples.add(run_key)
+    if {run["control_id"] for run in run_matrix} != set(controls_by_id):
+        raise GateError("run_matrix must exercise every declared control")
     pipeline_identity = protocol.get("pipeline_identity")
     if not isinstance(pipeline_identity, dict) or set(pipeline_identity) != {"runner", "verifier", "scorer", "aggregator"}:
         raise GateError("pipeline_identity must pin runner, verifier, scorer and aggregator")

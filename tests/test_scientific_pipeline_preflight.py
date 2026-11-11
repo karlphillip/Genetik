@@ -70,6 +70,8 @@ elif stage == "scorer":
         if "--wrong-assessment" in sys.argv:
             score["assessment_artifact"] = "another-control-assessment"
         scores.append(score)
+    if "--duplicate-score" in sys.argv:
+        scores.append(dict(scores[0]))
     (workdir / "independent-scores.json").write_bytes(json.dumps(scores, sort_keys=True).encode())
 elif stage == "aggregator":
     scores = json.loads(pathlib.Path(manifest["scores"]).read_text())
@@ -279,6 +281,26 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
         result = self.invoke()
         self.assertNotEqual(result.returncode, 0)
 
+    def test_rejects_one_control_preflight(self):
+        self.protocol["controls"] = self.protocol["controls"][:1]
+        self.protocol["run_matrix"] = self.protocol["run_matrix"][:1]
+        self.spec["controls"] = self.spec["controls"][:1]
+        self.spec["runs"] = self.spec["runs"][:1]
+        self.spec["expected_run_count"] = 1
+        self.write_inputs()
+        result = self.invoke()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("at least two controls", result.stderr)
+
+    def test_rejects_control_without_any_run(self):
+        self.protocol["run_matrix"] = self.protocol["run_matrix"][:1]
+        self.spec["runs"] = self.spec["runs"][:1]
+        self.spec["expected_run_count"] = 1
+        self.write_inputs()
+        result = self.invoke()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exercise every declared control", result.stderr)
+
     def test_rejects_missing_run_from_frozen_matrix(self):
         self.spec["runs"].pop()
         self.spec["expected_run_count"] = len(self.spec["runs"])
@@ -316,6 +338,49 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
         self.write_inputs()
         result = self.invoke()
         self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_duplicate_scorer_run_record(self):
+        self.commands["scorer"]["argv"].append("--duplicate-score")
+        self.write_inputs()
+        result = self.invoke()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("scorer output count/identity", result.stderr)
+
+    def test_admission_verifier_rejects_duplicate_scorer_run_record(self):
+        self.write_inputs()
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads(self.receipt_path.read_text())
+        evidence = Path(receipt["evidence_directory"])
+        scores_path = evidence / "pipeline" / "independent-scores.json"
+        for path in sorted(evidence.rglob("*"), reverse=True):
+            if path.is_file():
+                path.chmod(0o644)
+            elif path.is_dir():
+                path.chmod(0o755)
+        scores = json.loads(scores_path.read_text())
+        scores.append(dict(scores[0]))
+        scores_path.write_text(json.dumps(scores, sort_keys=True))
+        receipt["evidence_hashes"]["pipeline/independent-scores.json"] = sha(scores_path.read_bytes())
+        self.receipt_path.chmod(0o644)
+        self.receipt_path.write_text(json.dumps(receipt, sort_keys=True))
+        for artifact in (self.spec_path, self.receipt_path):
+            self.protocol["frozen_artifacts"].append({
+                "id": artifact.stem,
+                "role": "admission_preflight_spec" if artifact == self.spec_path else "admission_preflight_receipt",
+                "path": str(artifact), "sha256": sha(artifact.read_bytes()),
+            })
+        self.protocol["admission_preflight"] = {
+            "preflight_id": receipt["preflight_id"],
+            "spec_path": str(self.spec_path), "spec_sha256": sha(self.spec_path.read_bytes()),
+            "receipt_path": str(self.receipt_path), "receipt_sha256": sha(self.receipt_path.read_bytes()),
+            "protocol_binding_sha256": receipt["protocol_binding_sha256"],
+        }
+        module = importlib.util.spec_from_file_location("admission_duplicate_score_test", HARNESS)
+        harness = importlib.util.module_from_spec(module)
+        module.loader.exec_module(harness)
+        with self.assertRaisesRegex(harness.PreflightError, "scorer output count/identity"):
+            harness.verify_admission(self.protocol)
 
 
 if __name__ == "__main__":

@@ -402,6 +402,34 @@ class ResearchExecutionHarnessTests(unittest.TestCase):
         finally:
             os.environ.pop("GENETIK_RESEARCH_LEDGER_ROOT", None)
 
+    def test_protocol_requires_two_controls_for_preflight(self):
+        frozen = self.make_protocol()
+        protocol = json.loads((frozen / "protocol.json").read_text())
+        protocol["controls"] = protocol["controls"][:1]
+        os.environ["GENETIK_RESEARCH_LEDGER_ROOT"] = str(self.program_root)
+        try:
+            module_spec = importlib.util.spec_from_file_location("research_execution_minimum_controls", HARNESS)
+            module = importlib.util.module_from_spec(module_spec)
+            module_spec.loader.exec_module(module)
+            with self.assertRaisesRegex(module.GateError, "at least two independent controls"):
+                module.validate_protocol(protocol)
+        finally:
+            os.environ.pop("GENETIK_RESEARCH_LEDGER_ROOT", None)
+
+    def test_protocol_requires_runs_for_every_declared_control(self):
+        frozen = self.make_protocol()
+        protocol = json.loads((frozen / "protocol.json").read_text())
+        protocol["run_matrix"] = protocol["run_matrix"][:1]
+        os.environ["GENETIK_RESEARCH_LEDGER_ROOT"] = str(self.program_root)
+        try:
+            module_spec = importlib.util.spec_from_file_location("research_execution_control_coverage", HARNESS)
+            module = importlib.util.module_from_spec(module_spec)
+            module_spec.loader.exec_module(module)
+            with self.assertRaisesRegex(module.GateError, "exercise every declared control"):
+                module.validate_protocol(protocol)
+        finally:
+            os.environ.pop("GENETIK_RESEARCH_LEDGER_ROOT", None)
+
     def test_query_over_limit_is_rejected_without_consuming_call(self):
         frozen = self.make_protocol(query_bytes=2)
         refused = self.command("run", "--protocol-dir", frozen, "--query", self.query)

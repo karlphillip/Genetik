@@ -67,6 +67,24 @@ def _require_identifier(value: Any, field: str) -> str:
     return value
 
 
+def _index_run_records(records: Any, runs: list[dict[str, Any]], stage: str) -> dict[str, dict[str, Any]]:
+    """Require exactly one well-formed record for each frozen run identity."""
+    if not isinstance(records, list) or len(records) != len(runs):
+        raise PreflightError(f"{stage} output count/identity differs from frozen run matrix")
+    expected_ids = {run["run_id"] for run in runs}
+    indexed: dict[str, dict[str, Any]] = {}
+    for row in records:
+        if not isinstance(row, dict) or not isinstance(row.get("run_id"), str):
+            raise PreflightError(f"{stage} output contains a malformed run identity")
+        run_id = row["run_id"]
+        if run_id in indexed:
+            raise PreflightError(f"{stage} output repeats run identity {run_id}")
+        indexed[run_id] = row
+    if set(indexed) != expected_ids:
+        raise PreflightError(f"{stage} output identity set differs from frozen run matrix")
+    return indexed
+
+
 def validate_spec(spec: dict[str, Any], base: Path, protocol: dict[str, Any]) -> tuple[dict[str, Path], list[dict[str, Any]]]:
     if spec.get("schema") != 1:
         raise PreflightError("unsupported or incomplete preflight specification")
@@ -102,8 +120,8 @@ def validate_spec(spec: dict[str, Any], base: Path, protocol: dict[str, Any]) ->
         raise PreflightError("campaign protocol must pin runner, verifier, scorer and aggregator identities")
     controls = spec.get("controls")
     runs = spec.get("runs")
-    if not isinstance(controls, list) or not controls or not isinstance(runs, list) or not runs:
-        raise PreflightError("controls and runs must be nonempty arrays")
+    if not isinstance(controls, list) or len(controls) < 2 or not isinstance(runs, list) or not runs:
+        raise PreflightError("at least two controls and a nonempty run matrix are required")
     artifact_paths: dict[str, Path] = {}
     control_ids: set[str] = set()
     for control in controls:
@@ -165,6 +183,8 @@ def validate_spec(spec: dict[str, Any], base: Path, protocol: dict[str, Any]) ->
             or run.get("assessment_artifact") != control.get("protocol_assessment_artifact")
         ):
             raise PreflightError(f"run {run_id} protocol artifact mapping does not match control {control_id}")
+    if {run["control_id"] for run in runs} != control_ids:
+        raise PreflightError("run matrix must exercise every declared control")
     expected_count = spec.get("expected_run_count")
     if type(expected_count) is not int or expected_count != len(runs):
         raise PreflightError("expected_run_count does not match complete run matrix")
@@ -407,9 +427,7 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
         if not scores_path.is_file():
             raise PreflightError("scorer did not produce independent-scores.json")
         score_records = json.loads(scores_path.read_text())
-        scores_by_id = {row.get("run_id"): row for row in score_records if isinstance(row, dict)} if isinstance(score_records, list) else {}
-        if len(scores_by_id) != len(runs):
-            raise PreflightError("scorer output count/identity differs from frozen run matrix")
+        scores_by_id = _index_run_records(score_records, runs, "scorer")
         for run in runs:
             control = controls_by_id[run["control_id"]]
             assessment_path = paths[control["assessment"]["id"]]
@@ -511,6 +529,12 @@ def verify_admission(protocol: dict[str, Any]) -> dict[str, Any]:
         raise PreflightError("admission preflight is bound to a different protocol")
     spec = json.loads(spec_path.read_text())
     expected_controls = {entry["id"] for entry in protocol.get("controls", [])}
+    spec_controls = spec.get("controls")
+    if not isinstance(spec_controls, list) or len(spec_controls) < 2:
+        raise PreflightError("admission preflight must include at least two controls")
+    spec_control_ids = [entry.get("id") for entry in spec_controls if isinstance(entry, dict)]
+    if len(spec_control_ids) != len(spec_controls) or set(spec_control_ids) != expected_controls or len(set(spec_control_ids)) != len(spec_control_ids):
+        raise PreflightError("admission preflight control set must match protocol controls exactly")
     receipt_controls = receipt.get("control_artifacts")
     expected_control_artifacts = [
         {
@@ -557,6 +581,13 @@ def verify_admission(protocol: dict[str, Any]) -> dict[str, Any]:
     for relative, path in actual_files.items():
         if Path(relative).is_absolute() or ".." in Path(relative).parts or file_sha(path) != evidence_hashes[relative]:
             raise PreflightError(f"preflight evidence hash mismatch: {relative}")
+    expected_runs = protocol.get("run_matrix", [])
+    if {run.get("control_id") for run in expected_runs if isinstance(run, dict)} != expected_controls:
+        raise PreflightError("admission run matrix must exercise every protocol control")
+    score_path = evidence_root / "pipeline" / "independent-scores.json"
+    if not score_path.is_file():
+        raise PreflightError("preflight scorer output is missing")
+    _index_run_records(json.loads(score_path.read_text()), expected_runs, "scorer")
     report_path = evidence_root / "pipeline" / "scientific-report.json"
     if not report_path.is_file() or file_sha(report_path) != receipt.get("report_sha256"):
         raise PreflightError("preflight final report is missing or has a hash mismatch")

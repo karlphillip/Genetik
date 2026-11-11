@@ -83,10 +83,26 @@ order, reserves the applicable slots, persists them, and only then launches the
 fixed solver command. Reservations remain pending until completion is durable.
 A crash between reservations is terminal and fail-closed. The call folder
 contains the exact query, command and solver identity, bounded stdout/stderr,
-status, exit code, CPU and wall measurements, and a sampled resident-memory
-high-water lower bound when measurable. Sampling can miss brief peaks; it is
-not a precise process peak. Address-space enforcement is separate. Any pending
-call or mismatch between the budget state and event chain stops later calls.
+status, exit code, CPU and wall measurements, and sampled process-group RSS/CPU
+when measurable. `cpu_seconds` and `waited_child_cpu_seconds` come from Linux
+`wait4` for the launched leader and any descendants it reaped; they do not
+represent arbitrary descendants that escaped or were reparented. The separate
+`process_group_cpu_seconds` is a sample of visible group members. On Linux,
+`waited_child_peak_rss_bytes` converts the individual waited child's
+`ru_maxrss` to bytes; it is null on other platforms because `ru_maxrss` units
+vary. This is never an aggregate group peak.
+`process_group_rss_bytes` is the sampled sum of resident memory for visible
+group members and is a lower bound because sampling can miss brief peaks and
+short-lived descendants. When the process-group RSS sample is unavailable, the
+result records `resource_accounting_terminal_status=resource_accounting_unavailable`,
+charges the full per-query allowance, and terminally blocks the protocol.
+Otherwise-successful results also use `resource_accounting_unavailable` as
+their primary status. Existing timeout, malformed, unknown, and termination
+statuses are preserved; the separate terminal field records the accounting
+stop reason, while a timeout remains terminal under its primary timeout
+status.
+Address-space enforcement is separate. Any pending call or
+mismatch between the budget state and event chain stops later calls.
 
 The runner records process outcome and recognized solver outcome separately.
 It distinguishes solver-reported `unknown`, solver-reported timeout, harness
@@ -103,13 +119,13 @@ reserved query. A query rejected before reservation consumes no slot.
 The gate enforces child address-space and CPU limits, a monotonic wall timeout,
 process-group termination, and a combined output limit. A child process that
 leaves descendants is an invalid solver execution and the remaining process
-group is killed. Per-process CPU is
-sampled from Linux `/proc` and backed by `RLIMIT_CPU`; sampled resident memory
-is read from `/proc/<pid>/status`. These measurements describe the direct solver
-process and are unavailable on unsupported hosts; the adapter must fail closed
-when required containment cannot be established. The harness is not a hostile
-same-user sandbox and cannot detect direct solver processes launched outside
-the approved repository workflow.
+group is killed. Linux `wait4` supplies the waited child's CPU and individual
+peak RSS; visible process-group RSS and CPU are sampled from `/proc`. Group
+samples are lower bounds and do not account for descendants that have already
+escaped the group. If the group RSS cannot be sampled, the harness sets the
+separate terminal accounting status to `resource_accounting_unavailable`. The
+harness is not a hostile same-user sandbox and cannot detect direct solver
+processes launched outside the approved repository workflow.
 
 ## Offline qualification
 

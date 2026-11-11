@@ -1497,19 +1497,61 @@ def _set_limits(limits: dict) -> None:
     resource.setrlimit(resource.RLIMIT_FSIZE, (file_size, file_size))
 
 
+def _read_process_group_sample(proc_root: Path, process_group: int, ticks_per_second: int) -> tuple[int, float] | None:
+    """Return summed RSS and CPU for visible group members, or None if none are readable."""
+    total_rss = 0
+    total_cpu_ticks = 0
+    readable = 0
+    for stat_path in proc_root.glob("[0-9]*/stat"):
+        try:
+            stat_text = stat_path.read_text()
+            tail = stat_text[stat_text.rfind(")") + 2 :].split()
+            if int(tail[2]) != process_group:
+                continue
+            status = stat_path.parent.joinpath("status").read_text()
+            rss = next((int(line.split()[1]) * 1024 for line in status.splitlines() if line.startswith("VmRSS:")), None)
+            if rss is None:
+                continue
+            # A live parent's cutime/cstime includes descendants it has already
+            # reaped. Such descendants are no longer visible group members, so
+            # these cumulative ticks do not double-count visible children.
+            total_cpu_ticks += sum(int(tail[index]) for index in (11, 12, 13, 14))
+            total_rss += rss
+            readable += 1
+        except (FileNotFoundError, ProcessLookupError, PermissionError, ValueError, IndexError, StopIteration):
+            continue
+    if readable == 0:
+        return None
+    return total_rss, total_cpu_ticks / ticks_per_second
+
+
+def _wait4_until(pid: int, timeout: float | None):
+    """Reap one child with wait4 so its waited-child CPU/RSS are retained."""
+    end = None if timeout is None else time.monotonic() + timeout
+    while True:
+        try:
+            waited, status, usage = os.wait4(pid, os.WNOHANG)
+        except InterruptedError:
+            continue
+        if waited:
+            return os.waitstatus_to_exitcode(status), usage
+        if end is not None and time.monotonic() >= end:
+            return None
+        time.sleep(0.005)
+
+
 def _sample_resources(pid: int, stop: threading.Event, result: dict, cpu_limit: float) -> None:
-    peak = 0
+    peak = int(result.get("peak_process_group_rss_bytes", 0))
+    peak_cpu = float(result.get("peak_process_group_cpu_seconds", 0.0))
+    samples = int(bool(result.get("process_group_rss_available")))
     ticks_per_second = os.sysconf("SC_CLK_TCK")
     while not stop.is_set():
-        try:
-            status = Path(f"/proc/{pid}/status").read_text().splitlines()
-            for line in status:
-                if line.startswith("VmRSS:"):
-                    peak = max(peak, int(line.split()[1]) * 1024)
-                    break
-            stat = Path(f"/proc/{pid}/stat").read_text()
-            tail = stat[stat.rfind(")") + 2 :].split()
-            cpu = (int(tail[11]) + int(tail[12])) / ticks_per_second
+        sample = _read_process_group_sample(Path("/proc"), pid, ticks_per_second)
+        if sample is not None:
+            rss, cpu = sample
+            samples += 1
+            peak = max(peak, rss)
+            peak_cpu = max(peak_cpu, cpu)
             if cpu >= cpu_limit:
                 result["cpu_limit_reached"] = True
                 try:
@@ -1517,10 +1559,14 @@ def _sample_resources(pid: int, stop: threading.Event, result: dict, cpu_limit: 
                 except ProcessLookupError:
                     pass
                 break
-        except (FileNotFoundError, ProcessLookupError, PermissionError):
-            break
+        else:
+            # The leader may exit between periodic samples. wait4 supplies its
+            # own child accounting, but cannot establish a process-group RSS peak.
+            pass
         stop.wait(0.01)
-    result["peak_rss_bytes"] = peak or None
+    result["peak_process_group_rss_bytes"] = peak if samples else None
+    result["peak_process_group_cpu_seconds"] = peak_cpu if samples else None
+    result["process_group_rss_available"] = samples > 0
 
 
 def has_solver_timeout_diagnostic(stdout: bytes, stderr: bytes) -> bool:
@@ -1583,6 +1629,7 @@ def classify_execution(
     output_exceeded: bool = False,
     cpu_limit_reached: bool = False,
     orphaned_process_group: bool = False,
+    process_group_rss_available: bool = True,
 ) -> dict:
     """Preserve solver/process evidence before applying harness limit overrides."""
     raw = classify(returncode, stdout, stderr, process_timed_out)
@@ -1592,6 +1639,8 @@ def classify_execution(
         overrides.append("output_limit")
     if cpu_limit_reached:
         overrides.append("cpu_limit")
+    if not process_group_rss_available:
+        overrides.append("process_group_rss_unavailable")
     if orphaned_process_group:
         overrides.append("orphaned_process_group")
     status = raw
@@ -1599,6 +1648,8 @@ def classify_execution(
         status = "resource_exhausted"
     elif orphaned_process_group:
         status = "invalid_output"
+    elif not process_group_rss_available and raw in {"successful", "unsatisfiable"}:
+        status = "resource_accounting_unavailable"
     if process_timed_out and solver_timeout:
         timeout_source = "harness_and_solver_reported"
     elif process_timed_out:
@@ -1619,11 +1670,21 @@ def classify_execution(
 
 
 def charged_resource_time(status: str, cpu: float, wall: float,
-                          cpu_limit: float, wall_limit: float) -> tuple[float, float]:
+                          cpu_limit: float, wall_limit: float,
+                          accounting_unavailable: bool = False) -> tuple[float, float]:
     """Charge full declared allowances for timeout/resource terminal outcomes."""
-    if status in {"timed_out", "resource_exhausted"}:
+    if accounting_unavailable or status in {"timed_out", "resource_exhausted", "resource_accounting_unavailable"}:
         return max(cpu, cpu_limit), max(wall, wall_limit)
     return cpu, wall
+
+
+def terminal_status_for(status: str, accounting_unavailable: bool) -> str | None:
+    """Keep primary failures while ensuring unavailable accounting blocks reuse."""
+    if status in {"timed_out", "resource_exhausted"}:
+        return status
+    if accounting_unavailable:
+        return "resource_accounting_unavailable"
+    return None
 
 
 def has_parser_diagnostic(stdout: bytes, stderr: bytes) -> bool:
@@ -1834,11 +1895,12 @@ def run_solver(directory: Path, query_id: str, query_path: Path) -> dict:
         budget["invocations_reserved"] = number
         budget["pending"] = run_id
         _replace_budget(directory, budget)
-        before_cpu = resource.getrusage(resource.RUSAGE_CHILDREN)
         started = time.monotonic()
         timed_out = False
         orphaned_process_group = False
         sampled: dict = {}
+        process_launched = False
+        child_usage = None
         output_exceeded = threading.Event()
         captured: dict[str, bytes] = {}
         try:
@@ -1851,6 +1913,11 @@ def run_solver(directory: Path, query_id: str, query_path: Path) -> dict:
                 preexec_fn=lambda: _set_limits(limits),
                 start_new_session=True,
             )
+            process_launched = True
+            initial_sample = _read_process_group_sample(Path("/proc"), proc.pid, os.sysconf("SC_CLK_TCK"))
+            if initial_sample is not None:
+                sampled["peak_process_group_rss_bytes"], sampled["peak_process_group_cpu_seconds"] = initial_sample
+                sampled["process_group_rss_available"] = True
             stop_sampling = threading.Event()
             sampler = threading.Thread(target=_sample_resources, args=(proc.pid, stop_sampling, sampled, per_cpu), daemon=True)
             sampler.start()
@@ -1894,15 +1961,16 @@ def run_solver(directory: Path, query_id: str, query_path: Path) -> dict:
             input_writer = threading.Thread(target=send_query, daemon=True)
             input_writer.start()
             deadline = started + per_wall
-            try:
-                proc.wait(timeout=max(0.0, deadline - time.monotonic()))
-            except subprocess.TimeoutExpired:
+            waited = _wait4_until(proc.pid, max(0.0, deadline - time.monotonic()))
+            if waited is None:
                 timed_out = True
                 try:
                     os.killpg(proc.pid, signal.SIGKILL)
                 except ProcessLookupError:
                     pass
-                proc.wait()
+                waited = _wait4_until(proc.pid, None)
+            if waited is not None:
+                proc.returncode, child_usage = waited
             for thread in (stdout_reader, stderr_reader, input_writer):
                 thread.join(timeout=max(0.0, deadline - time.monotonic()))
             if any(thread.is_alive() for thread in (stdout_reader, stderr_reader, input_writer)):
@@ -1932,15 +2000,22 @@ def run_solver(directory: Path, query_id: str, query_path: Path) -> dict:
             stdout, stderr = b"", str(error).encode()
             returncode = 127
         wall = time.monotonic() - started
-        after_cpu = resource.getrusage(resource.RUSAGE_CHILDREN)
-        cpu = max(0.0, (after_cpu.ru_utime + after_cpu.ru_stime) - (before_cpu.ru_utime + before_cpu.ru_stime))
+        cpu = float(child_usage.ru_utime + child_usage.ru_stime) if child_usage is not None else 0.0
         classification = classify_execution(
             returncode, stdout, stderr, timed_out,
             output_exceeded=output_exceeded.is_set(),
-            cpu_limit_reached=bool(sampled.get("cpu_limit_reached")),
+            cpu_limit_reached=(
+                bool(sampled.get("cpu_limit_reached"))
+                or (child_usage is not None and cpu >= per_cpu)
+                or returncode == -signal.SIGXCPU
+            ),
             orphaned_process_group=orphaned_process_group,
+            process_group_rss_available=(
+                bool(sampled.get("process_group_rss_available")) if process_launched else True
+            ),
         )
         status = classification["status"]
+        accounting_unavailable = process_launched and not bool(sampled.get("process_group_rss_available"))
         parser_diagnostic = has_parser_diagnostic(stdout, stderr)
         write_exclusive(run_dir / "stdout.bin", stdout)
         write_exclusive(run_dir / "stderr.bin", stderr)
@@ -1952,7 +2027,22 @@ def run_solver(directory: Path, query_id: str, query_path: Path) -> dict:
             "returncode": returncode,
             "wall_seconds": wall,
             "cpu_seconds": cpu,
-            "sampled_resident_memory_high_water_bytes": sampled.get("peak_rss_bytes"),
+            "waited_child_cpu_seconds": cpu,
+            "sampled_resident_memory_high_water_bytes": sampled.get("peak_process_group_rss_bytes"),
+            "process_group_cpu_seconds": sampled.get("peak_process_group_cpu_seconds"),
+            "process_group_rss_bytes": sampled.get("peak_process_group_rss_bytes"),
+            "process_group_rss_is_lower_bound": True,
+            "process_group_cpu_is_lower_bound": True,
+            "process_group_rss_available": (
+                bool(sampled.get("process_group_rss_available")) if process_launched else None
+            ),
+            "resource_accounting_terminal_status": (
+                "resource_accounting_unavailable" if accounting_unavailable else None
+            ),
+            "waited_child_peak_rss_bytes": (
+                int(child_usage.ru_maxrss * 1024)
+                if sys.platform.startswith("linux") and child_usage is not None else None
+            ),
             "completed_at_unix_ns": time.time_ns(),
             "timed_out": classification["timed_out"],
             "process_timed_out": classification["process_timed_out"],
@@ -1969,12 +2059,15 @@ def run_solver(directory: Path, query_id: str, query_path: Path) -> dict:
         }
         # A query that reached any per-process limit consumes that entire
         # declared allowance. This keeps aggregate limits conservative.
-        charged_cpu, charged_wall = charged_resource_time(status, cpu, wall, per_cpu, per_wall)
+        charged_cpu, charged_wall = charged_resource_time(
+            status, cpu, wall, per_cpu, per_wall,
+            accounting_unavailable=accounting_unavailable,
+        )
         result["charged_wall_seconds"] = charged_wall
         result["charged_cpu_seconds"] = charged_cpu
         projected_wall = budget["wall_seconds_charged"] + charged_wall
         projected_cpu = budget["cpu_seconds_charged"] + charged_cpu
-        terminal_status = status if status in {"timed_out", "resource_exhausted"} else None
+        terminal_status = terminal_status_for(status, accounting_unavailable)
         if projected_wall >= float(limits["max_total_wall_seconds"]):
             terminal_status = terminal_status or "aggregate_wall_budget_exhausted"
         if projected_cpu >= float(limits["max_total_cpu_seconds"]):

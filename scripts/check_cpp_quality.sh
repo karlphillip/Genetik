@@ -69,7 +69,10 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     tests/mathematical_objectives.cpp \
     tests/smooth_operators.cpp \
     examples/quickstarts/first_search.cpp \
-    tests/expressions.cpp |
+    tests/expressions.cpp \
+    genetik/DiscreteExpressionSpecification.hpp \
+    examples/quickstarts/discrete_specification.cpp \
+    tests/discrete_specification.cpp |
     "$format_diff_tool" -p1 -binary "$format_tool")"
 if [[ -n "$format_diff" ]]; then
     printf '%s\n' "$format_diff" >&2
@@ -98,6 +101,7 @@ fi
     tests/symbolic_selection.cpp \
     tests/multi_component_templates.cpp \
     tests/automatic_separable_regression.cpp \
+    tests/discrete_specification.cpp \
     benchmarks/automatic_separable_comparison.cpp \
     benchmarks/automatic_separable_noise_followup.cpp \
     benchmarks/symbolic_selection_comparison.cpp

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(GenetikQuickstarts LANGUAGES CXX)
 find_package(Genetik 0.7 CONFIG REQUIRED)
-foreach(name first_search scientific_discovery advanced_mathematics discrete_iteration discrete checkpoint integrals rational_regression multivariate_rational_regression scalar symbolic typed typed_search parsing templates derivatives derivative_regression smooth_operators objectives selection_strategies multi_component_templates automatic_separable)
+foreach(name first_search scientific_discovery advanced_mathematics discrete_iteration discrete discrete_specification checkpoint integrals rational_regression multivariate_rational_regression scalar symbolic typed typed_search parsing templates derivatives derivative_regression smooth_operators objectives selection_strategies multi_component_templates automatic_separable)
     add_executable(${name}_quickstart ${name}.cpp)
     target_link_libraries(${name}_quickstart PRIVATE Genetik::Genetik)
 endforeach()

@@ -172,6 +172,11 @@ find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
 add_test(NAME genetik_research_execution_contracts COMMAND ${Python3_EXECUTABLE}
     ${PROJECT_SOURCE_DIR}/tests/test_research_execution.py)
 set_tests_properties(genetik_research_execution_contracts PROPERTIES
+    TIMEOUT 300
+    ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache")
+add_test(NAME genetik_scientific_pipeline_preflight_contracts COMMAND ${Python3_EXECUTABLE}
+    ${PROJECT_SOURCE_DIR}/tests/test_scientific_pipeline_preflight.py)
+set_tests_properties(genetik_scientific_pipeline_preflight_contracts PROPERTIES
     TIMEOUT 120
     ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache")
 add_test(NAME genetik_installed_package COMMAND ${Python3_EXECUTABLE}

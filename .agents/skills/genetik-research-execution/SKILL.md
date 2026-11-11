@@ -37,8 +37,9 @@ delegated review actually completed before treating it as a gate result.
    SHA256, control/training/assessment data identities, grammar, limits, and
    output rules in the protocol. Do not invoke the solver to discover its
    version; use a previously identified binary or record identity out of band.
-4. Run the harness unit tests with fake executables. Freeze the protocol into a
-   new, unique, write-once directory using:
+4. Run the harness unit tests with fake executables and the mandatory
+   end-to-end synthetic admission preflight described below. Freeze the
+   protocol into a new, unique, write-once directory using:
 
    ```sh
    python3 scripts/research_execution.py freeze \
@@ -53,7 +54,42 @@ delegated review actually completed before treating it as a gate result.
    that were not measured remain `unknown`; only prospective budgets can be
    charged precisely.
 
-5. For retries or ordered syntax/semantic/replay phases spanning immutable
+5. **Mandatory end-to-end synthetic admission gate.** Before freezing a
+   protocol or launching any scientific/solver execution, run
+   `scripts/scientific_pipeline_preflight.py` against a synthetic pipeline
+   specification. Bind the exact protocol control IDs, training/assessment
+   artifact IDs and hashes, and complete run/control/method/seed matrix. Pin
+   runner, receipt verifier, scorer, aggregator, runtime identities, and
+   adapter/dependency file hashes. The preflight materializes distinct
+   synthetic training and assessment files for at least two controls, then
+   executes runner output generation, receipt verification, independent
+   synthetic scoring, and final aggregation. It validates each stage's
+   outputs and identities, not only exit status. Include the passing receipt
+   and specification in `frozen_artifacts` and `admission_preflight`, and pin
+   the preflight and execution-gate source files with roles `admission-tool`
+   and `execution-gate`; protocol freeze and each run recheck their hashes and
+   canonical protocol binding.
+   Missing, stale, mutated, or mismatched admission evidence is a hard
+   refusal. Never open or pass real/sealed assessment artifacts to preflight
+   commands.
+
+   ```sh
+   python3 scripts/scientific_pipeline_preflight.py \
+     --protocol path/to/protocol.json \
+     --spec path/to/synthetic-pipeline-preflight.json \
+     --receipt path/to/new-evidence/preflight-receipt.json
+   ```
+
+   Preserve the unique synthetic inputs, pipeline outputs, receipts, and
+   report directory recorded in the receipt. Do not reuse the receipt after
+   changing the protocol, mappings, run matrix, or pinned command chain.
+   Stage commands use a fixed minimal environment that excludes inherited
+   assessment paths and secrets. They have per-stage wall, CPU, address-space,
+   and output caps, with process-group cleanup. These synthetic preflight caps
+   are per process, not aggregate process-group CPU or RSS limits; actual
+   campaign resources remain governed by the frozen execution harness.
+
+6. For retries or ordered syntax/semantic/replay phases spanning immutable
    protocol versions, define one persistent `execution_group` beneath the
    program ledger. Freeze its ordered stages, expected process status, retry
    eligibility, shared invocation ceiling, and `max_syntax_retries: 1` in every
@@ -78,7 +114,7 @@ delegated review actually completed before treating it as a gate result.
    process-group CPU/RSS, and kills remaining descendants. Pin the checker and
    every imported module, data and bridge artifact in the protocol.
 
-6. Do not issue any solver execution before the architect's semantic and
+7. Do not issue any solver execution before the architect's semantic and
    protocol review and successful offline qualification. The scientific
    protocol must be frozen before implementation tuning or solver execution.
 

@@ -75,6 +75,10 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   loss-call budget and four-generation ceiling bound the search. It prints the
   stopping outcome and faithful expression. Exact discovery is not required for
   either program to finish successfully.
+- [Exact finite specification quickstart](examples/quickstarts/discrete_specification.cpp):
+  validate a closed integer expression against immutable exact observations and
+  report work. See [finite-domain validation limits](docs/DISCRETE_SPECIFICATION_VALIDATION.md);
+  a certificate covers only its declared rows.
 - [Selectable regression objectives and AIC/BIC](docs/MATHEMATICAL_OBJECTIVES.md)
   with an [installed C++ quickstart](examples/quickstarts/objectives.cpp): MSE
   remains the default, while MAE, Huber, weighted MSE and post-search Gaussian
@@ -144,6 +148,7 @@ out/consumers/quickstarts/templates_quickstart --threads 2
 out/consumers/quickstarts/derivatives_quickstart
 out/consumers/quickstarts/derivative_regression_quickstart --threads 2
 out/consumers/quickstarts/integrals_quickstart --threads 2
+out/consumers/quickstarts/discrete_specification_quickstart
 ```
 
 The quickstarts' [CMakeLists.txt](examples/quickstarts/CMakeLists.txt) is a complete external

@@ -349,6 +349,35 @@ class RunnerScorerContract(unittest.TestCase):
                 verify_matrix.expand_verified_index(
                     {"schema":"genetik-fdi-verified-receipt-index-v1","runs":entries},runs,index_path)
 
+    def test_verifier_requires_exact_replay_decision_and_work(self):
+        runs=[]; candidates=[]
+        for policy in ("ascending", "disagreement"):
+            primary_id=f"primary-{policy}"; replay_id=f"replay-{policy}"
+            common={"control_id":"threshold_m0","method":policy,"training_artifact":"training-a",
+                    "training_sha256":"a"*64}
+            runs.extend([{**common,"run_id":primary_id,"seed":0},
+                         {**common,"run_id":replay_id,"seed":1,"replay_of":primary_id}])
+            transcript={"run_id":primary_id,"control":"threshold","policy":policy,"seed_metadata":0,
+                "stop_reason":"one_finite_behavior_class","steps":[{"input":-1,"response":{"value":1}}],
+                "specification_identity":"spec","work":{"charged_work":17,"candidate_row_evaluations":3}}
+            candidates.extend([{"transcript":transcript}, {"transcript":{**transcript,
+                "run_id":replay_id,"seed_metadata":1}}])
+        verify_matrix.verify_deterministic_replays(runs,candidates)
+        mutated=[dict(row) for row in candidates]
+        mutated[1]={"transcript":{**candidates[1]["transcript"],"stop_reason":"query_cap"}}
+        with self.assertRaises(run_matrix.Failure):
+            verify_matrix.verify_deterministic_replays(runs,mutated)
+        unresolved=[dict(row) for row in candidates]
+        unresolved[1]={"transcript":{**candidates[1]["transcript"],"stop_reason":"query_cap"}}
+        with self.assertRaises(run_matrix.Failure):
+            verify_matrix.verify_deterministic_replays(runs,unresolved)
+        mutated=[dict(row) for row in candidates]
+        changed={**candidates[1]["transcript"],"work":{
+            **candidates[1]["transcript"]["work"],"charged_work":18}}
+        mutated[1]={"transcript":changed}
+        with self.assertRaises(run_matrix.Failure):
+            verify_matrix.verify_deterministic_replays(runs,mutated)
+
     def test_scorer_expands_candidate_and_receipt_indexes_with_canonical_paths(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp); records=[]; c_entries=[]; r_entries=[]

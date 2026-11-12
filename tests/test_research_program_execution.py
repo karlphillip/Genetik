@@ -121,19 +121,21 @@ class BoundedProgramExecutionTests(unittest.TestCase):
             "print(json.dumps({'id':request['id'],'value':request['input']*2}),flush=True)\n")
         self._write_program(
             "import json,pathlib,sys\n"
+            "assert sys.dont_write_bytecode\n"
             f"sys.path.insert(0,{str(ROOT / 'scripts')!r})\n"
             "from bounded_interactive_session import run_session\n"
             "import hashlib\n"
             "def pin(path): return {'executable':sys.executable,'sha256':hashlib.sha256(open(sys.executable,'rb').read()).hexdigest(),'runtime_files':[{'path':path,'sha256':hashlib.sha256(open(path,'rb').read()).hexdigest()}]}\n"
             "r=run_session([sys.executable," + repr(str(request)) + "],"
             "[sys.executable," + repr(str(response)) + "],cwd=pathlib.Path.cwd(),"
-            "environment={'PATH':'/usr/bin:/bin','LANG':'C','LC_ALL':'C'},"
+            "environment={'PATH':'/usr/bin:/bin','LANG':'C','LC_ALL':'C','PYTHONDONTWRITEBYTECODE':'1'},"
             "wall_seconds=1.5,max_frame_bytes=1024,max_protocol_bytes=8192,max_requests=4,"
             "max_cpu_seconds=2.0,max_memory_bytes=512*1024*1024,"
             "request_identity=pin(" + repr(str(request)) + "),response_identity=pin(" + repr(str(response)) + "))\n"
             "print(json.dumps(r,sort_keys=True,separators=(',',':')))\n"
             "sys.exit(0 if r['status']=='completed' else 3)\n")
         protocol = self.protocol(max_wall=3.0, max_total_wall=6.0)
+        protocol["command"]["environment"]["PYTHONDONTWRITEBYTECODE"] = "1"
         protocol["command"]["runtime_files"] = [
             {"path": str(self.script), "sha256": sha(self.script)},
             {"path": str(helper), "sha256": sha(helper)},

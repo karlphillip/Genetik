@@ -7,6 +7,8 @@ from pathlib import Path
 PORTABLE = {
     "genetik_research_execution_contracts",
     "genetik_research_program_execution_contracts",
+    "genetik_bounded_interactive_session_contracts",
+    "genetik_specification_revision_contracts",
     "genetik_scientific_pipeline_preflight_contracts",
     "genetik_research_paths",
     "genetik_d6_budget_cli", "genetik_d6_scientific_contracts", "genetik_d6_continuation", "genetik_d6_overlap", "genetik_scientific_discovery_quickstart",

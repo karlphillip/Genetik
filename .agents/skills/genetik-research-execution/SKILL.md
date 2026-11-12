@@ -216,3 +216,25 @@ measurement is explicit and cannot become a successful completion.
 Engineering-only tests may use synthetic programs and data. They must not
 invoke solvers or scientific campaign executables unless the coordinator has
 frozen and admitted the exact research protocol.
+
+Adaptive programs may use `scripts/bounded_interactive_session.py` from the
+single bounded-program process that owns the interaction. The process must be
+the invocation's process-group leader; do not create a nested unaccounted
+supervisor. Pin the helper, request producer, response peer, executable, and
+all runtime files in the frozen command dependencies. Use JSON Lines with a
+unique typed `id` on each request and an identical id on its response; only one
+request may be outstanding. Bound frame bytes, combined request/response and
+stderr bytes, request count, and wall time. The helper records each request
+and response byte hash in an ordered SHA256 chain and retains capped lossless
+per-stream byte evidence. Malformed, correlation-mismatched,
+incomplete, timed-out, or resource-exhausted sessions are not successful.
+Keep the response peer separate from candidate generation and assessment
+inputs. The outer `run-program` supervisor owns and cleans the producer/peer
+process group and accounts their group CPU/RSS.
+
+Append-only specification chains may be checked offline with
+`scripts/specification_revision.py`. Each revision must bind its query and
+counterexample to the exact prior identity; the verifier recomputes every
+successor identity and rejects unresolved candidate validation. A complete
+finite-domain result remains scoped to those observations and must never be
+reported as universal equivalence.

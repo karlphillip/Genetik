@@ -182,6 +182,14 @@ add_test(NAME genetik_research_program_execution_contracts COMMAND ${CMAKE_COMMA
     ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_research_program_execution.py)
 set_tests_properties(genetik_research_program_execution_contracts PROPERTIES
     TIMEOUT 60)
+add_test(NAME genetik_bounded_interactive_session_contracts COMMAND ${CMAKE_COMMAND} -E env
+    "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache"
+    ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_bounded_interactive_session.py)
+set_tests_properties(genetik_bounded_interactive_session_contracts PROPERTIES TIMEOUT 90)
+add_test(NAME genetik_specification_revision_contracts COMMAND ${CMAKE_COMMAND} -E env
+    "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache"
+    ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_specification_revision.py)
+set_tests_properties(genetik_specification_revision_contracts PROPERTIES TIMEOUT 30)
 add_test(NAME genetik_scientific_pipeline_preflight_contracts COMMAND ${Python3_EXECUTABLE}
     ${PROJECT_SOURCE_DIR}/tests/test_scientific_pipeline_preflight.py)
 set_tests_properties(genetik_scientific_pipeline_preflight_contracts PROPERTIES

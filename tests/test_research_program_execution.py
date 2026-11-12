@@ -106,6 +106,54 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         self.assertTrue(json.loads(verified.stdout)["status"] == "valid")
         self.assertFalse((self.solver_ledger / "sample-program").exists())
 
+    def test_pinned_bounded_program_can_run_correlated_interactive_session(self):
+        helper = ROOT / "scripts" / "bounded_interactive_session.py"
+        request = self.root / "requester.py"
+        response = self.root / "responder.py"
+        request.write_text(
+            "import sys\n"
+            "print('{\\\"type\\\":\\\"query\\\",\\\"id\\\":\\\"q1\\\",\\\"input\\\":7}',flush=True)\n"
+            "answer=sys.stdin.buffer.readline()\n"
+            "print('{\\\"type\\\":\\\"final\\\",\\\"payload\\\":'+answer.strip().decode()+'}')\n")
+        response.write_text(
+            "import sys,json\n"
+            "request=json.loads(sys.stdin.buffer.readline())\n"
+            "print(json.dumps({'id':request['id'],'value':request['input']*2}),flush=True)\n")
+        self._write_program(
+            "import json,pathlib,sys\n"
+            f"sys.path.insert(0,{str(ROOT / 'scripts')!r})\n"
+            "from bounded_interactive_session import run_session\n"
+            "import hashlib\n"
+            "def pin(path): return {'executable':sys.executable,'sha256':hashlib.sha256(open(sys.executable,'rb').read()).hexdigest(),'runtime_files':[{'path':path,'sha256':hashlib.sha256(open(path,'rb').read()).hexdigest()}]}\n"
+            "r=run_session([sys.executable," + repr(str(request)) + "],"
+            "[sys.executable," + repr(str(response)) + "],cwd=pathlib.Path.cwd(),"
+            "environment={'PATH':'/usr/bin:/bin','LANG':'C','LC_ALL':'C'},"
+            "wall_seconds=1.5,max_frame_bytes=1024,max_protocol_bytes=8192,max_requests=4,"
+            "max_cpu_seconds=2.0,max_memory_bytes=512*1024*1024,"
+            "request_identity=pin(" + repr(str(request)) + "),response_identity=pin(" + repr(str(response)) + "))\n"
+            "print(json.dumps(r,sort_keys=True,separators=(',',':')))\n"
+            "sys.exit(0 if r['status']=='completed' else 3)\n")
+        protocol = self.protocol(max_wall=3.0, max_total_wall=6.0)
+        protocol["command"]["runtime_files"] = [
+            {"path": str(self.script), "sha256": sha(self.script)},
+            {"path": str(helper), "sha256": sha(helper)},
+            {"path": str(request), "sha256": sha(request)},
+            {"path": str(response), "sha256": sha(response)},
+        ]
+        frozen = self.freeze(protocol, self.root / "interactive-frozen")
+        result = self.command("run-program", "--protocol-dir", frozen, "--run-id", "preflight-unit")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads((frozen / "runs/preflight-unit/receipt.json").read_text())
+        self.assertEqual(receipt["status"], "completed")
+        captured = json.loads((frozen / "runs/preflight-unit/stdout.bin").read_text())
+        self.assertEqual(captured["status"], "completed")
+        self.assertEqual(captured["request_count"], 1)
+        event = captured["events"][0]
+        self.assertEqual(event["previous_sha256"], "0" * 64)
+        self.assertEqual(len(event["sha256"]), 64)
+        verified = self.command("verify-program", "--protocol-dir", frozen)
+        self.assertEqual(verified.returncode, 0, verified.stderr)
+
     @unittest.skipUnless(os.environ.get("GENETIK_RESEARCH_CPP_FIXTURE"),
                          "native process fixture is supplied by CTest")
     def test_pinned_native_cpp_process_uses_the_same_bounded_contract(self):

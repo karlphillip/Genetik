@@ -119,7 +119,9 @@ class BoundedProgramExecutionTests(unittest.TestCase):
             "runtime_files": [],
         }
         protocol["program_budget"]["max_lifetime_invocations"] = 1
-        if os.environ.get("GENETIK_RESEARCH_CPP_FIXTURE_SANITIZED") == "1":
+        if os.environ.get("GENETIK_RESEARCH_CPP_FIXTURE_SANITIZED", "").strip().lower() in {
+            "1", "on", "true", "yes",
+        }:
             # ASan reserves a very large virtual shadow mapping. Keep the
             # isolated test fixture's explicit cap above that reservation;
             # independent tests still exercise ordinary address-space limits.

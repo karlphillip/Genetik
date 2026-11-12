@@ -45,6 +45,53 @@ def verify_session_events(receipt, producer_wire, peer_wire):
     return (terminal.get("request_bytes")==len(final) and
             terminal.get("request_sha256")==hashlib.sha256(final).hexdigest())
 
+def verify_deterministic_replays(runs, candidates):
+    """Independently verify the two frozen threshold replay transcripts."""
+    if len(runs) != len(candidates):
+        raise Failure("replay candidate count differs from frozen run set")
+    by_id = {}
+    for run, candidate in zip(runs, candidates):
+        run_id = run.get("run_id") if isinstance(run, dict) else None
+        if not isinstance(run_id, str) or not run_id or run_id in by_id:
+            raise Failure("replay run identity is missing or duplicated")
+        by_id[run_id] = (run, candidate)
+    replays = [(run, candidate) for run, candidate in zip(runs, candidates)
+               if run.get("replay_of") is not None]
+    if len(replays) != 2:
+        raise Failure("frozen protocol requires exactly two deterministic replays")
+    seen = set()
+    for run, candidate in replays:
+        predecessor = by_id.get(run.get("replay_of"))
+        if predecessor is None:
+            raise Failure("replay predecessor is missing")
+        primary_run, primary_candidate = predecessor
+        policy = run.get("method")
+        if (primary_run.get("replay_of") is not None or run.get("control_id") != "threshold_m0" or
+            primary_run.get("control_id") != "threshold_m0" or policy not in {"ascending", "disagreement"} or
+            primary_run.get("method") != policy or run.get("seed") != 1 or primary_run.get("seed") != 0 or
+            policy in seen):
+            raise Failure("replay pair identity differs from frozen protocol")
+        seen.add(policy)
+        if any(run.get(field) != primary_run.get(field)
+               for field in ("control_id", "method", "training_artifact", "training_sha256")):
+            raise Failure("replay input identity differs from primary run")
+        replay_transcript = candidate.get("transcript") if isinstance(candidate, dict) else None
+        primary_transcript = primary_candidate.get("transcript") if isinstance(primary_candidate, dict) else None
+        if not isinstance(replay_transcript, dict) or not isinstance(primary_transcript, dict):
+            raise Failure("replay transcript is missing")
+        if (replay_transcript.get("stop_reason") != "one_finite_behavior_class" or
+            primary_transcript.get("stop_reason") != "one_finite_behavior_class"):
+            raise Failure("unresolved deterministic replay cannot qualify")
+        replay_normalized = dict(replay_transcript)
+        primary_normalized = dict(primary_transcript)
+        for transcript in (replay_normalized, primary_normalized):
+            transcript.pop("run_id", None)
+            transcript.pop("seed_metadata", None)
+        if canonical(replay_normalized) != canonical(primary_normalized):
+            raise Failure("replay transcript, decision, identity, or work differs")
+    if seen != {"ascending", "disagreement"}:
+        raise Failure("replay policy coverage is incomplete")
+
 def _has_assessment_key(value):
     if isinstance(value,dict):
         return any("assessment" in str(key).lower() or _has_assessment_key(item) for key,item in value.items())
@@ -242,6 +289,8 @@ def main():
                 "schema","protocol_id","run_id","control_id","method","seed",
                 "training_artifact","training_sha256","completion_status","report_validation_status")},
             "verified":True})
+    if manifest["mode"] == "campaign" and len(runs) == 38:
+        verify_deterministic_replays(runs, candidates)
     output=Path(args.output).resolve()
     evidence_root=Path(str(output)+".evidence")
     if output.exists() or evidence_root.exists(): raise Failure("verified receipt output is create-exclusive")

@@ -548,6 +548,9 @@ def score_record(record, transcript, verified, assessment_rows):
         if train_ok: training_exact.append(cid)
     assessment_exact = [cid for cid, score in assessment_scores.items() if score["exact"]]
     return {"run_id": rid, "control": control, "policy": transcript["policy"],
+            "assessment_artifact": record.get("assessment_artifact", record.get("assessment_path")),
+            "assessment_sha256": record.get("assessment_sha256"),
+            "assessment_observation_count": len(assessment_rows),
             "runner_stop_reason": transcript["stop_reason"],
             "training_exact_candidate_ids": training_exact,
             "assessment_exact_candidate_ids": assessment_exact,
@@ -572,6 +575,184 @@ def complete_stop_outcomes(records,scores):
                 if record["control"] in positive_controls or record["control"]=="ambiguity"
                 else score["runner_stop_reason"]=="empty_compatible_set")
                for record,score in zip(records,scores))
+
+def replay_transcript_gate(records, transcripts):
+    """Authenticate frozen replay identities/transcripts before assessment access."""
+    if len(records) != len(transcripts):
+        return {"passed": False, "replay_count": 0, "failures": ["row_count_mismatch"]}
+    by_id = {}
+    for index, record in enumerate(records):
+        run_id = record.get("run_id")
+        if not isinstance(run_id, str) or not run_id or run_id in by_id:
+            return {"passed": False, "replay_count": 0, "failures": ["invalid_or_duplicate_run_id"]}
+        by_id[run_id] = index
+    replays = [(index, record) for index, record in enumerate(records)
+               if record.get("replay_of") is not None]
+    failures = []
+    expected_policies = {"ascending", "disagreement"}
+    seen_policies = set()
+    if len(replays) != 2:
+        failures.append("expected_exactly_two_replays")
+
+    def normalize_transcript(value):
+        if not isinstance(value, dict):
+            return None
+        result = dict(value)
+        result.pop("run_id", None)
+        result.pop("seed_metadata", None)
+        return result
+
+    for replay_index, replay in replays:
+        replay_id = replay.get("run_id")
+        predecessor_index = by_id.get(replay.get("replay_of"))
+        if predecessor_index is None:
+            failures.append(f"{replay_id}:missing_predecessor")
+            continue
+        primary = records[predecessor_index]
+        policy = replay.get("method", replay.get("policy"))
+        primary_policy = primary.get("method", primary.get("policy"))
+        replay_seed = replay.get("seed", replay.get("seed_metadata"))
+        primary_seed = primary.get("seed", primary.get("seed_metadata"))
+        aliases_conflict = any(
+            ("method" in item and "policy" in item and item["method"] != item["policy"]) or
+            ("seed" in item and "seed_metadata" in item and item["seed"] != item["seed_metadata"])
+            for item in (primary, replay))
+        if (primary.get("replay_of") is not None or replay.get("control") != "threshold" or
+            replay.get("reference_member") != 0 or primary.get("control") != "threshold" or
+            primary.get("reference_member") != 0 or replay.get("reference_candidate_id") != "c0" or
+            primary.get("reference_candidate_id") != "c0" or policy not in expected_policies or
+            primary_policy != policy or primary_seed != 0 or replay_seed != 1 or aliases_conflict):
+            failures.append(f"{replay_id}:replay_identity_mismatch")
+            continue
+        if policy in seen_policies:
+            failures.append(f"{replay_id}:duplicate_policy_replay")
+            continue
+        seen_policies.add(policy)
+        identity_fields = ("control", "reference_member", "reference_candidate_id",
+                           "training_artifact", "training_sha256", "assessment_sha256")
+        primary_assessment_id = primary.get("assessment_artifact", primary.get("assessment_path"))
+        replay_assessment_id = replay.get("assessment_artifact", replay.get("assessment_path"))
+        if (not isinstance(primary.get("training_artifact"), str) or not primary["training_artifact"] or
+            not isinstance(primary.get("training_sha256"), str) or
+            not re.fullmatch(r"[0-9a-f]{64}", primary["training_sha256"]) or
+            not isinstance(primary_assessment_id, str) or not primary_assessment_id or
+            not isinstance(primary.get("assessment_sha256"), str) or
+            not re.fullmatch(r"[0-9a-f]{64}", primary["assessment_sha256"]) or
+            primary.get("assessment_sha256") != replay.get("assessment_sha256") or
+            replay_assessment_id != primary_assessment_id or
+            ("assessment_path" in replay or "assessment_path" in primary) and
+                replay.get("assessment_path") != primary.get("assessment_path") or
+            any(replay.get(key) != primary.get(key) for key in identity_fields)):
+            failures.append(f"{replay_id}:frozen_input_identity_mismatch")
+            continue
+        # Some frozen manifests carry the checked observation count explicitly;
+        # when present it is part of the replay's assessment identity.
+        if (("assessment_observation_count" in replay or "assessment_observation_count" in primary) and
+            replay.get("assessment_observation_count") != primary.get("assessment_observation_count")):
+            failures.append(f"{replay_id}:assessment_count_mismatch")
+            continue
+        replay_transcript = normalize_transcript(transcripts[replay_index])
+        primary_transcript = normalize_transcript(transcripts[predecessor_index])
+        if replay_transcript is None or primary_transcript is None:
+            failures.append(f"{replay_id}:missing_transcript")
+            continue
+        if (replay_transcript.get("stop_reason") != "one_finite_behavior_class" or
+            primary_transcript.get("stop_reason") != "one_finite_behavior_class"):
+            failures.append(f"{replay_id}:unresolved_outcome")
+            continue
+        if json.dumps(replay_transcript, sort_keys=True, separators=(",", ":")) != \
+                json.dumps(primary_transcript, sort_keys=True, separators=(",", ":")):
+            failures.append(f"{replay_id}:transcript_mismatch")
+    if seen_policies != expected_policies:
+        failures.append("replay_policy_coverage_mismatch")
+    return {"passed": not failures, "replay_count": len(replays), "failures": failures}
+
+def load_assessment_data_after_replay_gate(loaded, loader):
+    """Call a label loader only after frozen transcript replay qualification."""
+    records = [item[0] for item in loaded]
+    transcripts = [item[1] for item in loaded]
+    result = replay_transcript_gate(records, transcripts)
+    if not result["passed"]:
+        raise Invalid("deterministic replay failed before assessment access: " + ";".join(result["failures"]))
+    return loader(loaded)
+
+def deterministic_replay_assessment(records, transcripts, scores):
+    """Check replayed scores/work after the pre-assessment transcript gate.
+
+    Replay identity is deliberately narrow: only the run ID and seed metadata
+    differ. The complete selector transcript (including decisions, identities,
+    and deterministic work counters) must otherwise match byte-for-byte after
+    canonical JSON serialization. Timing and process-resource measurements
+    are not part of that transcript.
+    """
+    if not (len(records) == len(transcripts) == len(scores)):
+        return {"passed": False, "replay_count": 0, "failures": ["row_count_mismatch"]}
+    transcript_result = replay_transcript_gate(records, transcripts)
+    if not transcript_result["passed"]:
+        return transcript_result
+    by_id = {}
+    for index, record in enumerate(records):
+        run_id = record.get("run_id")
+        if not isinstance(run_id, str) or not run_id or run_id in by_id:
+            return {"passed": False, "replay_count": 0, "failures": ["invalid_or_duplicate_run_id"]}
+        by_id[run_id] = index
+
+    replays = [(index, record) for index, record in enumerate(records)
+               if record.get("replay_of") is not None]
+    failures = []
+
+    def deterministic_score(value):
+        if not isinstance(value, dict):
+            return None
+        required = ("control", "policy", "assessment_artifact", "assessment_sha256",
+                    "assessment_observation_count", "runner_stop_reason",
+                    "training_exact_candidate_ids", "assessment_exact_candidate_ids",
+                    "candidate_finite_assessment", "finite_identifiability_only",
+                    "finite_certificate_scope", "outside_catalogue_empty_set",
+                    "reference_catalogue_member_present", "candidate_count", "queried_inputs")
+        if any(key not in value for key in required):
+            return None
+        work = value.get("work")
+        if not isinstance(work, dict):
+            return None
+        deterministic_work = {key: work.get(key) for key in
+                              ("selector_charged_work", "oracle_operations", "combined_charged_work")}
+        if any(type(item) is not int or item < 0 for item in deterministic_work.values()):
+            return None
+        return {key: value[key] for key in required} | {
+            "work": deterministic_work,
+            "status": value.get("status"),
+            "exact": value.get("exact"),
+        }
+
+    for replay_index, replay in replays:
+        replay_id = replay.get("run_id")
+        predecessor_id = replay.get("replay_of")
+        predecessor_index = by_id.get(predecessor_id)
+        if predecessor_index is None:
+            failures.append(f"{replay_id}:missing_predecessor")
+            continue
+        primary = records[predecessor_index]
+        policy = replay.get("policy")
+        # Unresolved or invalid outcomes are never deterministic success.
+        replay_score, primary_score = scores[replay_index], scores[predecessor_index]
+        if any(not isinstance(row, dict) or row.get("status") != "scored" or
+               # This replay is a positive threshold control: a capped or
+               # otherwise unresolved selector outcome cannot qualify merely
+               # because the same unresolved outcome repeated deterministically.
+               row.get("runner_stop_reason") != "one_finite_behavior_class"
+               for row in (replay_score, primary_score)):
+            failures.append(f"{replay_id}:unresolved_outcome")
+            continue
+        replay_projection = deterministic_score(replay_score)
+        primary_projection = deterministic_score(primary_score)
+        if replay_projection is None or primary_projection is None:
+            failures.append(f"{replay_id}:incomplete_deterministic_score")
+            continue
+        if replay_projection != primary_projection:
+            failures.append(f"{replay_id}:decision_or_work_mismatch")
+
+    return {"passed": not failures, "replay_count": len(replays), "failures": failures}
 
 def summarize(records, transcripts, scores):
     primary = [(record, transcript, score) for record, transcript, score in
@@ -617,8 +798,9 @@ def summarize(records, transcripts, scores):
         if score.get("runner_stop_reason")=="one_finite_behavior_class"
         else (score.get("finite_identifiability_only") is False and score.get("finite_certificate_scope") is None)
         for score in scores)
+    replay_assessment = deterministic_replay_assessment(records, transcripts, scores)
     gate = (all(comparisons.values()) and required_members and ambiguity_ok and outside_ok and
-            no_incomplete and zero_false_certificates)
+            no_incomplete and zero_false_certificates and replay_assessment["passed"])
     return {"mean_queries_by_control_policy": means, "criteria": comparisons,
             "all_positive_reference_members_present": required_members,
             "zero_false_finite_certificates": zero_false_certificates,
@@ -630,6 +812,9 @@ def summarize(records, transcripts, scores):
                 for record,_,score in zip(records,transcripts,scores)
                 if record["control"] in positive_controls),
             "no_incomplete_run_counted": no_incomplete,
+            "deterministic_replays_passed": replay_assessment["passed"],
+            "deterministic_replay_count": replay_assessment["replay_count"],
+            "deterministic_replay_failures": replay_assessment["failures"],
             "acceptance_gate_passed": gate,
             "interpretation": "finite catalogue identifiability only; not synthesis recovery or global equivalence"}
 
@@ -976,10 +1161,12 @@ def main():
             raise Invalid(f"invalid transcript policy for {record['run_id']}")
         verified=verify_transcript(scorer_record,transcript)
         loaded.append((scorer_record,transcript,verified,candidate,receipt_row))
-    # Only now may the scorer decode/access the sealed assessment observations.
-    # The sealed manifest and file contents are opened only after every one of
-    # the 38 candidate/receipt/training records has passed independent checks.
-    assessment_data=load_sealed_assessments(args.assessment_bundle,loaded)
+    # Only now may the scorer decode/access assessment observations. Replay
+    # transcripts and their frozen training/assessment identities are checked
+    # before the loader is called; deterministic scored outcomes/work are
+    # compared again in summarize() after independent scoring.
+    assessment_data=load_assessment_data_after_replay_gate(
+        loaded, lambda rows: load_sealed_assessments(args.assessment_bundle,rows))
     scores=[]
     for record,transcript,verified,_,_ in loaded:
         score=score_record(record,transcript,verified,assessment_data[record["run_id"]])

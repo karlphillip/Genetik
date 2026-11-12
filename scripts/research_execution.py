@@ -20,6 +20,7 @@ import re
 import signal
 import subprocess
 import sys
+import selectors
 import threading
 import tempfile
 import time
@@ -28,6 +29,8 @@ import uuid
 # The admission tool is sibling research tooling, not a library dependency.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from scientific_pipeline_preflight import PreflightError, verify_admission
+from bounded_process import run_bounded_process
+from research_pipeline import PipelineDescriptorError, validate_descriptor as validate_pipeline_descriptor, expand_argv as expand_pipeline_argv
 
 
 REQUIRED_LIMITS = {
@@ -50,6 +53,20 @@ PROGRAM_LEDGER_ROOT = Path(
         "~/.local/state/genetik/research-program-ledgers",
     )
 ).expanduser().resolve()
+
+# This ledger is deliberately separate from the historical solver-call ledger.
+PROCESS_LEDGER_ROOT = Path(
+    os.environ.get(
+        "GENETIK_RESEARCH_PROCESS_LEDGER_ROOT",
+        "~/.local/state/genetik/research-process-ledgers",
+    )
+).expanduser().resolve()
+
+# The per-invocation isolated supervisor has a hard wall deadline of target
+# allowance plus three seconds. Reserve the same worst-case CPU/wall envelope
+# during protocol admission so orchestration overhead cannot overrun a budget.
+BOUNDED_SUPERVISOR_CPU_ALLOWANCE_SECONDS = 3.0
+BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS = 3.0
 
 
 def _validate_program_budget(value: object) -> dict:
@@ -261,6 +278,923 @@ def canonical_json(value: object) -> bytes:
 
 def compact_json(value: object) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+
+
+PROGRAM_SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}\Z")
+PROGRAM_LIMIT_FIELDS = {
+    "max_invocations", "max_total_cpu_seconds", "max_total_wall_seconds",
+    "max_cpu_seconds", "max_wall_seconds", "max_address_space_bytes",
+    "max_stdin_bytes", "max_output_bytes", "max_file_bytes",
+}
+
+
+def _safe_program_id(value: object, field: str) -> str:
+    if not isinstance(value, str) or PROGRAM_SAFE_ID.fullmatch(value) is None:
+        raise GateError(f"{field} must be a safe identifier")
+    return value
+
+
+def _validate_bounded_program(protocol: object) -> dict:
+    """Validate the separate pinned-process protocol (not the solver schema)."""
+    if not isinstance(protocol, dict) or protocol.get("schema") != 1 or protocol.get("kind") != "bounded_program":
+        raise GateError("unsupported bounded-program protocol")
+    source_commit = protocol.get("source_commit")
+    if not isinstance(source_commit, str) or re.fullmatch(r"[0-9a-f]{40}", source_commit) is None:
+        raise GateError("source_commit must be a full lowercase Git SHA1")
+    _safe_program_id(protocol.get("protocol_id"), "protocol_id")
+    budget = protocol.get("program_budget")
+    if not isinstance(budget, dict):
+        raise GateError("bounded program requires a persistent program_budget")
+    program_id = _safe_program_id(budget.get("program_id"), "program_budget.program_id")
+    expected_ledger = (PROCESS_LEDGER_ROOT / program_id).resolve()
+    if not isinstance(budget.get("ledger_dir"), str) or Path(budget["ledger_dir"]).resolve() != expected_ledger:
+        raise GateError("bounded-program ledger must use its canonical process-ledger path")
+    for key in ("max_lifetime_invocations",):
+        if isinstance(budget.get(key), bool) or not isinstance(budget.get(key), int) or budget[key] < 0:
+            raise GateError(f"program_budget.{key} must be a nonnegative integer")
+    for key in ("max_lifetime_cpu_seconds", "max_lifetime_wall_seconds"):
+        value = budget.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+            raise GateError(f"program_budget.{key} must be finite and positive")
+
+    limits = protocol.get("limits")
+    if not isinstance(limits, dict) or not PROGRAM_LIMIT_FIELDS.issubset(limits):
+        raise GateError("bounded-program limits are incomplete")
+    for key in ("max_invocations", "max_address_space_bytes", "max_stdin_bytes", "max_output_bytes", "max_file_bytes"):
+        if isinstance(limits.get(key), bool) or not isinstance(limits.get(key), int) or limits[key] < 0:
+            raise GateError(f"limits.{key} must be a nonnegative integer")
+    if limits["max_address_space_bytes"] < 1024 * 1024 or limits["max_output_bytes"] < 1 or limits["max_file_bytes"] < 1:
+        raise GateError("address-space, output and file limits must be positive and practical")
+    for key in ("max_total_cpu_seconds", "max_total_wall_seconds", "max_cpu_seconds", "max_wall_seconds"):
+        value = limits.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+            raise GateError(f"limits.{key} must be finite and positive")
+    if limits["max_invocations"] > budget["max_lifetime_invocations"]:
+        raise GateError("protocol invocation cap exceeds program lifetime cap")
+    if limits["max_total_cpu_seconds"] > budget["max_lifetime_cpu_seconds"] or limits["max_total_wall_seconds"] > budget["max_lifetime_wall_seconds"]:
+        raise GateError("protocol time cap exceeds program lifetime cap")
+    if limits["max_cpu_seconds"] > limits["max_total_cpu_seconds"] or limits["max_wall_seconds"] > limits["max_total_wall_seconds"]:
+        raise GateError("aggregate budget must admit one complete invocation")
+
+    descriptor_raw = protocol.get("pipeline_descriptor")
+    command = protocol.get("command")
+    command_by_stage = {}
+    if descriptor_raw is not None:
+        if command is not None:
+            raise GateError("descriptor-mode protocol must not also define a global command")
+        try:
+            pipeline_descriptor = validate_pipeline_descriptor(descriptor_raw, protocol.get("artifacts", []))
+        except PipelineDescriptorError as error:
+            raise GateError(str(error)) from error
+        artifact_map = {a["id"]: a for a in protocol.get("artifacts", [])}
+        for stage_name, stage in pipeline_descriptor["stages"].items():
+            executable_record = artifact_map[stage["executable_artifact"]]
+            command_by_stage[stage_name] = {
+                "executable": str(Path(executable_record["path"]).resolve()),
+                "sha256": executable_record["sha256"], "version": stage["version"],
+                "args": [], "environment": stage["environment"],
+                "runtime_files": [{"path": str(Path(artifact_map[dep]["path"]).resolve()),
+                                   "sha256": artifact_map[dep]["sha256"]}
+                                  for dep in stage["dependencies"]],
+            }
+    else:
+        required_command = {"executable", "sha256", "version", "args", "environment", "runtime_files"}
+        if not isinstance(command, dict) or not required_command.issubset(command):
+            raise GateError("bounded-program command identity is incomplete")
+        executable = Path(command["executable"]).resolve()
+        _require_sha256(command["sha256"], "command.sha256")
+        if not executable.is_file() or not os.access(executable, os.X_OK) or sha256_file(executable) != command["sha256"]:
+            raise GateError("bounded-program executable is missing or hash-mismatched")
+        if not isinstance(command["version"], str) or not command["version"].strip():
+            raise GateError("command.version must be recorded")
+        if not isinstance(command["args"], list) or not all(isinstance(arg, str) for arg in command["args"]):
+            raise GateError("command.args must be a string array")
+        env = command["environment"]
+        if not isinstance(env, dict) or not env or not all(isinstance(k, str) and isinstance(v, str) for k, v in env.items()):
+            raise GateError("command.environment must be an explicit string mapping")
+        if not {"PATH", "LANG", "LC_ALL"}.issubset(env):
+            raise GateError("command.environment must pin PATH, LANG and LC_ALL")
+        runtime_files = command["runtime_files"]
+        if not isinstance(runtime_files, list):
+            raise GateError("command.runtime_files must be an array")
+        seen_runtime = set()
+        for item in runtime_files:
+            if not isinstance(item, dict) or not isinstance(item.get("path"), str):
+                raise GateError("runtime file identity requires path and SHA256")
+            path = Path(item["path"]).resolve()
+            _require_sha256(item.get("sha256"), "runtime_file.sha256")
+            if path in seen_runtime or not path.is_file() or sha256_file(path) != item["sha256"]:
+                raise GateError("runtime file is duplicate, missing or hash-mismatched")
+            seen_runtime.add(path)
+
+    artifacts = protocol.get("artifacts")
+    if not isinstance(artifacts, list):
+        raise GateError("bounded-program artifacts must be an array")
+    artifacts_by_id = {}
+    artifact_paths = set()
+    for item in artifacts:
+        if not isinstance(item, dict) or not {"id", "path", "sha256", "role"}.issubset(item):
+            raise GateError("artifact requires id, path, SHA256 and role")
+        artifact_id = _safe_program_id(item["id"], "artifact id")
+        path = Path(item["path"]).resolve()
+        _require_sha256(item["sha256"], f"artifact {artifact_id} SHA256")
+        must_read = item.get("role") not in {"assessment", "preflight-input"}
+        if artifact_id in artifacts_by_id or path in artifact_paths:
+            raise GateError(f"artifact identity is duplicate: {artifact_id}")
+        if must_read and (not path.is_file() or sha256_file(path) != item["sha256"]):
+            raise GateError(f"artifact identity is missing or hash-mismatched: {artifact_id}")
+        artifacts_by_id[artifact_id] = {**item, "path": str(path)}
+        artifact_paths.add(path)
+    runs = protocol.get("runs")
+    if not isinstance(runs, list) or len(runs) != limits["max_invocations"]:
+        raise GateError("bounded-program run allowlist must exactly match max_invocations")
+    run_ids = set()
+    run_by_id = {}
+    planned_cpu = 0.0
+    planned_wall = 0.0
+    for item in runs:
+        common_keys = {"run_id", "stdin_artifact", "phase_id"}
+        if descriptor_raw is not None:
+            common_keys |= {"stage_id", "slot_bindings"}
+        if not isinstance(item, dict) or not common_keys.issubset(item):
+            raise GateError("each bounded-program run is missing its required stage/input bindings")
+        run_id = _safe_program_id(item["run_id"], "run_id")
+        if run_id in run_ids:
+            raise GateError("bounded-program run IDs must be unique")
+        run_ids.add(run_id)
+        run_by_id[run_id] = item
+        if item["stdin_artifact"] is not None and item["stdin_artifact"] not in artifacts_by_id:
+            raise GateError(f"run {run_id} refers to an unknown stdin artifact")
+        if descriptor_raw is not None:
+            stage_id = item["stage_id"]
+            if stage_id not in pipeline_descriptor["stages"] or item["stdin_artifact"] is not None or item.get("args"):
+                raise GateError(f"descriptor run {run_id} must select a pinned stage and cannot override argv/stdin")
+            stage = pipeline_descriptor["stages"][stage_id]
+            templates = {m.group(1) for arg in stage["argv"] if (m := re.fullmatch(r"\{([a-z][a-z0-9_]*)\}", arg))}
+            outputs = set(stage["output_roles"])
+            bindings = item["slot_bindings"]
+            if not isinstance(bindings, dict) or set(bindings) != templates - outputs:
+                raise GateError(f"descriptor run {run_id} slot bindings must exactly match stage inputs")
+            for slot, binding in bindings.items():
+                if not isinstance(binding, dict) or binding.get("kind") not in {"artifact", "controller_file", "run_output"}:
+                    raise GateError(f"descriptor run {run_id} has an invalid typed binding for {slot}")
+                if binding["kind"] == "artifact":
+                    artifact = artifacts_by_id.get(binding.get("artifact_id"))
+                    if artifact is None or artifact.get("role") in {"pipeline-executable", "pipeline-dependency"}:
+                        raise GateError(f"descriptor run {run_id} binds an unknown/data-ineligible artifact")
+                    if artifact.get("role") == "assessment" and (item["phase_id"] != "scoring" or slot != "assessment_bundle"):
+                        raise GateError("assessment artifacts are admitted only to assessment_bundle in scoring")
+                elif binding["kind"] == "controller_file":
+                    rel = Path(binding.get("path", ""))
+                    if item["phase_id"] != "preflight" or rel.is_absolute() or ".." in rel.parts or not rel.parts:
+                        raise GateError("controller files are relative preflight-only typed inputs")
+                    if slot == "assessment_bundle" and item["phase_id"] != "preflight":
+                        raise GateError("synthetic controller assessment input is preflight-only")
+                else:
+                    source_id, source_slot = binding.get("run_id"), binding.get("slot")
+                    source = run_by_id.get(source_id)
+                    if source is None or source_id == run_id:
+                        raise GateError("run_output binding must refer to an earlier admitted run")
+                    source_stage = pipeline_descriptor["stages"][source["stage_id"]]
+                    if source_slot not in source_stage["output_roles"]:
+                        raise GateError("run_output binding references an undeclared output slot")
+            if set(stage["input_roles"]) != set(bindings):
+                raise GateError(f"descriptor run {run_id} must bind every declared stage input exactly once")
+        elif item.get("stage_id") is not None or item.get("slot_bindings") is not None:
+            raise GateError("stage bindings require a pipeline_descriptor")
+        extra_args = item.get("args", [])
+        if not isinstance(extra_args, list) or not all(isinstance(arg, str) for arg in extra_args):
+            raise GateError(f"run {run_id} args must be a string array")
+        run_cpu = item.get("max_cpu_seconds", limits["max_cpu_seconds"])
+        run_wall = item.get("max_wall_seconds", limits["max_wall_seconds"])
+        for name, number, cap in (("max_cpu_seconds", run_cpu, limits["max_cpu_seconds"]),
+                                  ("max_wall_seconds", run_wall, limits["max_wall_seconds"])):
+            if isinstance(number, bool) or not isinstance(number, (int, float)) or not math.isfinite(number) or number <= 0 or number > cap:
+                raise GateError(f"run {run_id} {name} must be positive and no greater than the protocol per-run cap")
+        planned_cpu += float(run_cpu) + BOUNDED_SUPERVISOR_CPU_ALLOWANCE_SECONDS
+        planned_wall += float(run_wall) + BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS
+    phase_plan = protocol.get("phase_plan")
+    required_phases = ["preflight", "campaign", "verification", "scoring", "aggregation", "recovery"]
+    if not isinstance(phase_plan, list) or [phase.get("phase_id") for phase in phase_plan if isinstance(phase, dict)] != required_phases:
+        raise GateError("phase_plan must name preflight, campaign, verification, scoring, aggregation and recovery in order")
+    flattened = []
+    for phase in phase_plan:
+        ids = phase.get("run_ids")
+        if not isinstance(ids, list) or not all(isinstance(value, str) for value in ids):
+            raise GateError(f"phase {phase['phase_id']} run_ids must be an ordered string array")
+        if len(ids) != len(set(ids)):
+            raise GateError(f"phase {phase['phase_id']} repeats a run ID")
+        for run_id in ids:
+            if run_id not in run_by_id or run_by_id[run_id]["phase_id"] != phase["phase_id"]:
+                raise GateError(f"phase plan/run phase mismatch for {run_id}")
+            flattened.append(run_id)
+    if flattened != [run["run_id"] for run in runs]:
+        raise GateError("phase plan must cover the exact allowlist once in execution order")
+    qualification = protocol.get("preflight_qualification") if descriptor_raw is not None else None
+    if descriptor_raw is not None:
+        if not isinstance(qualification, dict) or set(qualification) != {"stage_run_ids", "expected_score_run_ids", "expected_control_count", "expected_score_bindings", "spec_artifact_id"}:
+            raise GateError("descriptor protocol requires a frozen preflight_qualification contract")
+        stage_ids = qualification["stage_run_ids"]
+        if not isinstance(stage_ids, dict) or set(stage_ids) != {"runner", "verifier", "scorer", "aggregator"}:
+            raise GateError("preflight qualification must bind all four stage run IDs")
+        for stage_name, run_id in stage_ids.items():
+            stage_run = run_by_id.get(run_id)
+            if stage_run is None or stage_run.get("phase_id") != "preflight" or stage_run.get("stage_id") != stage_name:
+                raise GateError(f"preflight qualification run mismatch for {stage_name}")
+        score_ids = qualification["expected_score_run_ids"]
+        if not isinstance(score_ids, list) or not score_ids or len(score_ids) != len(set(score_ids)) or not all(isinstance(v, str) for v in score_ids):
+            raise GateError("preflight qualification needs unique expected scorer run IDs")
+        if type(qualification["expected_control_count"]) is not int or qualification["expected_control_count"] < 2:
+            raise GateError("preflight qualification requires at least two controls")
+        bindings = qualification["expected_score_bindings"]
+        required_binding_keys = {"run_id", "control_id", "method", "seed"}
+        if (not isinstance(bindings, list) or len(bindings) != len(score_ids)
+                or any(not isinstance(binding, dict) or set(binding) != required_binding_keys for binding in bindings)
+                or [binding["run_id"] for binding in bindings] != score_ids
+                or len({binding["control_id"] for binding in bindings}) != qualification["expected_control_count"]):
+            raise GateError("preflight qualification must freeze ordered run/control/method/seed mappings")
+        spec_artifact = artifacts_by_id.get(qualification["spec_artifact_id"])
+        if spec_artifact is None or spec_artifact.get("role") != "preflight-spec":
+            raise GateError("preflight qualification must pin its synthetic specification artifact")
+    if planned_cpu > limits["max_total_cpu_seconds"] or planned_wall > limits["max_total_wall_seconds"]:
+        raise GateError("complete phase plan per-run CPU/wall ceilings exceed protocol aggregate limits")
+    if planned_cpu > budget["max_lifetime_cpu_seconds"] or planned_wall > budget["max_lifetime_wall_seconds"]:
+        raise GateError("complete phase plan exceeds persistent program-wide CPU/wall ceilings")
+    if len(runs) > budget["max_lifetime_invocations"]:
+        raise GateError("complete phase plan exceeds persistent program-wide invocation ceiling")
+    normalized_command = ({**command, "executable": str(executable)} if command is not None else None)
+    return {"protocol": protocol, "program_id": program_id, "ledger_dir": expected_ledger,
+            "command": normalized_command, "artifacts": artifacts_by_id,
+            "commands_by_stage": command_by_stage, "pipeline_descriptor": pipeline_descriptor if descriptor_raw is not None else None,
+            "preflight_qualification": qualification,
+            "runs": runs, "run_by_id": run_by_id, "phase_plan": phase_plan,
+            "planned_cpu_seconds": planned_cpu, "planned_wall_seconds": planned_wall,
+            "limits": limits, "budget": budget}
+
+
+def _process_ledger_identity(config: dict) -> dict:
+    budget = config["budget"]
+    return {"schema": 1, "kind": "bounded_program_ledger", "program_id": config["program_id"],
+            "max_lifetime_invocations": budget["max_lifetime_invocations"],
+            "max_lifetime_cpu_seconds": budget["max_lifetime_cpu_seconds"],
+            "max_lifetime_wall_seconds": budget["max_lifetime_wall_seconds"]}
+
+
+def _process_ledger_event(path: Path, payload: dict, previous_hash: str) -> str:
+    event = {**payload, "previous_hash": previous_hash}
+    event_hash = sha256_bytes(compact_json(event))
+    event["event_sha256"] = event_hash
+    fd = os.open(path, os.O_WRONLY | os.O_APPEND)
+    with os.fdopen(fd, "ab") as stream:
+        stream.write(compact_json(event) + b"\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    return event_hash
+
+
+def _replace_process_budget(directory: Path, state: dict) -> None:
+    temporary = directory / f"process-budget.{uuid.uuid4().hex}.tmp"
+    write_exclusive(temporary, canonical_json(state), 0o600)
+    os.replace(temporary, directory / "process-budget.json")
+    _fsync_directory(directory)
+
+
+def _verify_process_ledger(directory: Path, state: dict) -> list[dict]:
+    events = []
+    previous = "0" * 64
+    for line in (directory / "process-events.jsonl").read_bytes().splitlines():
+        event = json.loads(line)
+        claimed = event.pop("event_sha256", None)
+        if event.get("previous_hash") != previous or claimed != sha256_bytes(compact_json(event)):
+            raise GateError("bounded-process ledger hash-chain mismatch")
+        event["event_sha256"] = claimed
+        previous = claimed
+        events.append(event)
+    if len(events) != state.get("event_count") or previous != state.get("ledger_head"):
+        raise GateError("bounded-process ledger state/head mismatch")
+    identity = _process_ledger_identity({"budget": {key: state.get(key) for key in (
+        "max_lifetime_invocations", "max_lifetime_cpu_seconds", "max_lifetime_wall_seconds")},
+        "program_id": state.get("program_id")})
+    if not events or any(state.get(key) != value for key, value in identity.items()):
+        raise GateError("bounded-process ledger identity mismatch")
+    if events[0].get("event") != "created" or any(events[0].get(k) != v for k, v in identity.items()):
+        raise GateError("bounded-process ledger creation event mismatch")
+    reserved = [e for e in events if e.get("event") == "reserved"]
+    completed = [e for e in events if e.get("event") == "completed"]
+    reserved_ids = [e.get("invocation_id") for e in reserved]
+    completed_ids = [e.get("invocation_id") for e in completed]
+    if len(set(reserved_ids)) != len(reserved_ids) or len(set(completed_ids)) != len(completed_ids):
+        raise GateError("duplicate invocation identity in bounded-process ledger")
+    if not set(completed_ids).issubset(reserved_ids):
+        raise GateError("completion event lacks a bounded-process reservation")
+    unresolved = set(reserved_ids) - set(completed_ids)
+    pending = next(iter(unresolved)) if len(unresolved) == 1 else None
+    if len(unresolved) > 1 or state.get("pending") != pending:
+        raise GateError("unresolved bounded-process reservation; fail closed")
+    cpu = sum(float(e["charged_cpu_seconds"]) for e in completed)
+    wall = sum(float(e["charged_wall_seconds"]) for e in completed)
+    if len(reserved) != state.get("invocations_reserved") or not math.isclose(cpu, state.get("cpu_seconds_charged", -1), rel_tol=1e-12, abs_tol=1e-9) or not math.isclose(wall, state.get("wall_seconds_charged", -1), rel_tol=1e-12, abs_tol=1e-9):
+        raise GateError("bounded-process counters disagree with completion ledger")
+    qualification_events = [e for e in events if e.get("event") == "qualified"]
+    if len(qualification_events) > 1:
+        raise GateError("bounded-process preflight qualification is not one-shot")
+    qualification_status = "qualified" if qualification_events else "preflight_pending"
+    if state.get("qualification_status", "preflight_pending") != qualification_status:
+        raise GateError("bounded-process qualification state disagrees with event ledger")
+    if state["invocations_reserved"] > state["max_lifetime_invocations"] or cpu > state["max_lifetime_cpu_seconds"] or wall > state["max_lifetime_wall_seconds"]:
+        raise GateError("bounded-process lifetime ceiling exceeded")
+    return events
+
+
+def _initialize_process_ledger(config: dict) -> None:
+    directory = config["ledger_dir"]
+    directory.mkdir(parents=True, exist_ok=True)
+    lock_fd = os.open(directory / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(lock_fd, "r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state_path = directory / "process-budget.json"
+        events_path = directory / "process-events.jsonl"
+        identity = _process_ledger_identity(config)
+        if state_path.exists() or events_path.exists():
+            if not state_path.is_file() or not events_path.is_file():
+                raise GateError("bounded-process ledger is incomplete; fail closed")
+            state = json.loads(state_path.read_text())
+            if any(state.get(k) != v for k, v in identity.items()):
+                raise GateError("bounded-process lifetime identity/limits changed")
+            _verify_process_ledger(directory, state)
+            return
+        event = {"event": "created", **identity, "previous_hash": "0" * 64}
+        event_hash = sha256_bytes(compact_json(event))
+        event["event_sha256"] = event_hash
+        write_exclusive(events_path, compact_json(event) + b"\n", 0o600)
+        state = {**identity, "invocations_reserved": 0, "cpu_seconds_charged": 0.0,
+                 "wall_seconds_charged": 0.0, "pending": None, "qualification_status": "preflight_pending", "event_count": 1,
+                 "ledger_head": event_hash}
+        write_exclusive(state_path, canonical_json(state), 0o600)
+
+
+def freeze_program_protocol(source: Path, destination: Path) -> str:
+    raw = source.read_bytes()
+    protocol = json.loads(raw)
+    config = _validate_bounded_program(protocol)
+    _initialize_process_ledger(config)
+    destination.mkdir(parents=True, exist_ok=False)
+    _fsync_directory(destination.parent)
+    encoded = canonical_json(protocol)
+    digest = sha256_bytes(encoded)
+    write_exclusive(destination / "program.json", encoded)
+    write_exclusive(destination / "PROGRAM.sha256", f"{digest}  program.json\n".encode())
+    _fsync_directory(destination)
+    return digest
+
+
+def read_frozen_program(directory: Path) -> tuple[dict, dict, str]:
+    raw = (directory / "program.json").read_bytes()
+    digest = sha256_bytes(raw)
+    marker = (directory / "PROGRAM.sha256").read_text(encoding="ascii").split()
+    if marker != [digest, "program.json"]:
+        raise GateError("bounded-program protocol checksum mismatch")
+    config = _validate_bounded_program(json.loads(raw))
+    return config["protocol"], config, digest
+
+
+def _authorize_program_run(directory: Path, config: dict, protocol_sha: str, run_id: str) -> None:
+    """Authorize a phase before any input artifact is opened or hashed."""
+    run = config["run_by_id"][run_id]
+    ledger_dir = config["ledger_dir"]
+    lock_fd = os.open(ledger_dir / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(lock_fd, "r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state = json.loads((ledger_dir / "process-budget.json").read_text())
+        events = _verify_process_ledger(ledger_dir, state)
+        protocol_events = [e for e in events if e.get("protocol_sha256") == protocol_sha]
+        qualified = any(e.get("event") == "qualified" for e in protocol_events)
+        if config.get("pipeline_descriptor") is not None and run["phase_id"] != "preflight" and not qualified:
+            raise GateError("campaign and later phases require successful preflight qualification")
+        if state.get("pending") is not None:
+            raise GateError("prior bounded-program invocation unresolved; fail closed")
+        reserved = [e for e in protocol_events if e.get("event") == "reserved"]
+        ordered = [rid for phase in config["phase_plan"] for rid in phase["run_ids"]]
+        if len(reserved) >= len(ordered) or ordered[len(reserved)] != run_id:
+            raise GateError("bounded-program invocation is out of frozen phase-plan order")
+        if any(e.get("run_id") == run_id for e in reserved):
+            raise GateError("bounded-program run_id was already consumed")
+        remaining = [config["run_by_id"][rid] for rid in ordered[len(reserved):]]
+        if state["invocations_reserved"] + len(remaining) > state["max_lifetime_invocations"]:
+            raise GateError("complete remaining phase plan does not fit the persistent invocation budget")
+        completed = [e for e in protocol_events if e.get("event") == "completed"]
+        local_cpu = sum(float(e["charged_cpu_seconds"]) for e in completed)
+        local_wall = sum(float(e["charged_wall_seconds"]) for e in completed)
+        limits = config["limits"]
+        remaining_cpu = sum(float(x.get("max_cpu_seconds", limits["max_cpu_seconds"])) + BOUNDED_SUPERVISOR_CPU_ALLOWANCE_SECONDS for x in remaining)
+        remaining_wall = sum(float(x.get("max_wall_seconds", limits["max_wall_seconds"])) + BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS for x in remaining)
+        if (local_cpu + remaining_cpu > limits["max_total_cpu_seconds"]
+                or state["cpu_seconds_charged"] + remaining_cpu > state["max_lifetime_cpu_seconds"]):
+            raise GateError("remaining bounded-program CPU plan does not fit aggregate/lifetime budget")
+        if (local_wall + remaining_wall > limits["max_total_wall_seconds"]
+                or state["wall_seconds_charged"] + remaining_wall > state["max_lifetime_wall_seconds"]):
+            raise GateError("remaining bounded-program wall plan does not fit aggregate/lifetime budget")
+
+
+def _verify_program_runtime(config: dict, phase_id: str) -> None:
+    if config.get("pipeline_descriptor") is not None:
+        for command in config["commands_by_stage"].values():
+            if sha256_file(Path(command["executable"])) != command["sha256"]:
+                raise GateError("pinned pipeline executable changed after freeze")
+            for item in command["runtime_files"]:
+                if sha256_file(Path(item["path"]).resolve()) != item["sha256"]:
+                    raise GateError("pinned pipeline dependency changed after freeze")
+        return
+    command = config["command"]
+    if sha256_file(Path(command["executable"])) != command["sha256"]:
+        raise GateError("bounded-program executable changed after freeze")
+    for item in command["runtime_files"]:
+        if sha256_file(Path(item["path"]).resolve()) != item["sha256"]:
+            raise GateError("bounded-program runtime dependency changed after freeze")
+    for item in config["artifacts"].values():
+        if item.get("role") == "assessment" and phase_id != "scoring":
+            continue
+        if sha256_file(Path(item["path"])) != item["sha256"]:
+            raise GateError("bounded-program input artifact changed after freeze")
+
+
+def _resolve_pipeline_inputs(
+    directory: Path,
+    config: dict,
+    run: dict,
+    run_dir: Path,
+    protocol_sha: str,
+    ledger_events: list[dict],
+) -> tuple[list[str], dict[str, str], dict[str, str], dict[str, str]]:
+    stage = config["pipeline_descriptor"]["stages"][run["stage_id"]]
+    slots: dict[str, str] = {}
+    input_hashes: dict[str, str] = {}
+    input_paths: dict[str, str] = {}
+    for slot, binding in run["slot_bindings"].items():
+        kind = binding["kind"]
+        if kind == "artifact":
+            artifact = config["artifacts"][binding["artifact_id"]]
+            if artifact.get("role") == "assessment" and (run["phase_id"] != "scoring" or slot != "assessment_bundle"):
+                raise GateError("assessment artifacts are available only to the scoring stage")
+            path = Path(artifact["path"])
+            actual = sha256_file(path)
+            if actual != artifact["sha256"]:
+                raise GateError(f"pipeline input artifact {binding['artifact_id']} changed")
+            input_hashes[slot] = actual
+        elif kind == "controller_file":
+            relative = Path(binding["path"])
+            path = (directory / relative).resolve()
+            if directory.resolve() not in path.parents or not path.is_file():
+                raise GateError("controller input is missing or escapes the frozen protocol directory")
+            actual = sha256_file(path)
+            input_hashes[slot] = actual
+        else:
+            source_run = binding["run_id"]
+            matching_events = [
+                event for event in ledger_events
+                if event.get("event") == "completed"
+                and event.get("protocol_sha256") == protocol_sha
+                and event.get("run_id") == source_run
+            ]
+            if len(matching_events) != 1:
+                raise GateError("pipeline predecessor has no unique authenticated completion event")
+            completion = matching_events[0]
+            if completion.get("status") != "completed":
+                raise GateError("pipeline predecessor completion event is not successful")
+            source_receipt_path = directory / "runs" / source_run / "receipt.json"
+            if not source_receipt_path.is_file():
+                raise GateError("pipeline predecessor output is unavailable")
+            if (Path(completion.get("receipt_path", "")).resolve() != source_receipt_path.resolve()
+                    or sha256_file(source_receipt_path) != completion.get("receipt_sha256")):
+                raise GateError("pipeline predecessor receipt does not match its immutable ledger event")
+            source_receipt = json.loads(source_receipt_path.read_text())
+            if (source_receipt.get("protocol_sha256") != protocol_sha
+                    or source_receipt.get("run_id") != source_run
+                    or source_receipt.get("invocation_id") != completion.get("invocation_id")
+                    or source_receipt.get("status") != completion.get("status")):
+                raise GateError("pipeline predecessor receipt identity differs from its ledger event")
+            slot_record = source_receipt.get("output_slots", {}).get(binding["slot"])
+            if source_receipt.get("status") != "completed" or not isinstance(slot_record, dict):
+                raise GateError("pipeline predecessor did not complete with the requested output")
+            path = Path(slot_record["path"])
+            expected_path = (directory / "runs" / source_run / "outputs" / f"{binding['slot']}.json").resolve()
+            if path.resolve() != expected_path:
+                raise GateError("pipeline predecessor output path differs from its frozen run-owned slot")
+            actual = sha256_file(path)
+            if actual != slot_record.get("sha256"):
+                raise GateError("pipeline predecessor output hash mismatch")
+            input_hashes[slot] = actual
+        slots[slot] = str(path.resolve())
+        input_paths[slot] = str(path.resolve())
+    outputs = {}
+    output_dir = run_dir / "outputs"
+    for slot in stage["output_roles"]:
+        outputs[slot] = str((output_dir / f"{slot}.json").resolve())
+    slots.update(outputs)
+    try:
+        argv = expand_pipeline_argv(config["pipeline_descriptor"], run["stage_id"], slots)
+    except PipelineDescriptorError as error:
+        raise GateError(str(error)) from error
+    return argv, input_hashes, outputs, input_paths
+
+
+def _nonnegative_measurement(value: object) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        return 0.0
+    return max(0.0, float(value))
+
+
+def charged_program_resources(outcome: dict, status: str, max_cpu: float, max_wall: float) -> tuple[bool, float, float]:
+    """Reserve supervisor capacity without discarding measured consumption."""
+    consume_full = (
+        status in {"timed_out", "cpu_limit", "memory_limit", "output_limit",
+                   "orphaned_process_group", "resource_accounting_unavailable",
+                   "harness_error", "supervisor_timeout", "supervisor_cpu_limit"}
+        or not outcome.get("process_group_rss_available", False)
+    )
+    target_cpu = _nonnegative_measurement(outcome.get("target_cpu_seconds"))
+    target_wall = _nonnegative_measurement(outcome.get("target_wall_seconds"))
+    observed_cpu = max(
+        _nonnegative_measurement(outcome.get("cpu_seconds")),
+        _nonnegative_measurement(outcome.get("worker_process_tree_cpu_seconds")),
+    )
+    observed_wall = _nonnegative_measurement(outcome.get("wall_seconds"))
+    charged_cpu = max(target_cpu + BOUNDED_SUPERVISOR_CPU_ALLOWANCE_SECONDS, observed_cpu)
+    charged_wall = max(target_wall + BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS, observed_wall)
+    if consume_full:
+        charged_cpu = max(charged_cpu, max_cpu + BOUNDED_SUPERVISOR_CPU_ALLOWANCE_SECONDS)
+        charged_wall = max(charged_wall, max_wall + BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS)
+    return consume_full, charged_cpu, charged_wall
+
+
+def run_program(directory: Path, run_id: str) -> dict:
+    protocol, config, protocol_sha = read_frozen_program(directory)
+    _safe_program_id(run_id, "run_id")
+    runs = {item["run_id"]: item for item in config["runs"]}
+    if run_id not in runs:
+        raise GateError("run_id is not allowlisted by the frozen bounded-program protocol")
+    run = runs[run_id]
+    _authorize_program_run(directory, config, protocol_sha, run_id)
+    pipeline_mode = config.get("pipeline_descriptor") is not None
+    run_dir = directory / "runs" / run_id
+    input_bytes = b""
+    input_hashes, output_paths, input_paths = {}, {}, {}
+    if pipeline_mode:
+        command_config = config["commands_by_stage"][run["stage_id"]]
+        argv = []
+    else:
+        command_config = config["command"]
+        argv = [command_config["executable"], *command_config["args"], *run.get("args", [])]
+    if not pipeline_mode and run["stdin_artifact"] is not None:
+        artifact = config["artifacts"][run["stdin_artifact"]]
+        if artifact.get("role") == "assessment" and run["phase_id"] != "scoring":
+            raise GateError("assessment artifact may be opened only by the scoring phase")
+        input_bytes = Path(artifact["path"]).read_bytes()
+        if sha256_bytes(input_bytes) != artifact["sha256"]:
+            raise GateError("bounded-program stdin changed after freeze")
+    limits = config["limits"]
+    if len(input_bytes) > limits["max_stdin_bytes"]:
+        raise GateError("bounded-program stdin exceeds byte cap; no invocation consumed")
+    _verify_program_runtime(config, run["phase_id"])
+
+    ledger_dir = config["ledger_dir"]
+    ledger_lock_fd = os.open(ledger_dir / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(ledger_lock_fd, "r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state_path = ledger_dir / "process-budget.json"
+        state = json.loads(state_path.read_text())
+        events = _verify_process_ledger(ledger_dir, state)
+        qualified = any(e.get("event") == "qualified" and e.get("protocol_sha256") == protocol_sha for e in events)
+        if pipeline_mode and run["phase_id"] != "preflight" and not qualified:
+            raise GateError("campaign and later phases require successful preflight qualification")
+        if pipeline_mode:
+            # Authenticate predecessor receipts and resolve their output slots
+            # while holding the same lock that protects the invocation
+            # reservation. This closes the check-to-reservation mutation gap.
+            argv, input_hashes, output_paths, input_paths = _resolve_pipeline_inputs(
+                directory, config, run, run_dir, protocol_sha, events)
+        if state.get("pending") is not None:
+            raise GateError("prior bounded-program invocation unresolved; fail closed")
+        prior_for_protocol = [e for e in events if e.get("protocol_sha256") == protocol_sha and e.get("event") == "reserved"]
+        if any(e.get("run_id") == run_id for e in prior_for_protocol):
+            raise GateError("bounded-program run_id was already consumed")
+        ordered_run_ids = [run_id for phase in config["phase_plan"] for run_id in phase["run_ids"]]
+        if len(prior_for_protocol) >= len(ordered_run_ids) or ordered_run_ids[len(prior_for_protocol)] != run_id:
+            raise GateError("bounded-program invocation is out of frozen phase-plan order")
+        if state["invocations_reserved"] >= state["max_lifetime_invocations"]:
+            raise GateError("bounded-program lifetime invocation budget exhausted")
+        protocol_completed = [e for e in events if e.get("protocol_sha256") == protocol_sha and e.get("event") == "completed"]
+        local_cpu = sum(float(e["charged_cpu_seconds"]) for e in protocol_completed)
+        local_wall = sum(float(e["charged_wall_seconds"]) for e in protocol_completed)
+        if len(prior_for_protocol) >= limits["max_invocations"]:
+            raise GateError("bounded-program protocol invocation budget exhausted")
+        remaining_runs = [config["run_by_id"][rid] for rid in ordered_run_ids[len(prior_for_protocol):]]
+        if state["invocations_reserved"] + len(remaining_runs) > state["max_lifetime_invocations"]:
+            raise GateError("complete remaining phase plan does not fit the persistent invocation budget")
+        remaining_cpu = sum(float(item.get("max_cpu_seconds", limits["max_cpu_seconds"])) + BOUNDED_SUPERVISOR_CPU_ALLOWANCE_SECONDS for item in remaining_runs)
+        remaining_wall = sum(float(item.get("max_wall_seconds", limits["max_wall_seconds"])) + BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS for item in remaining_runs)
+        if local_cpu + remaining_cpu > limits["max_total_cpu_seconds"] or state["cpu_seconds_charged"] + remaining_cpu > state["max_lifetime_cpu_seconds"]:
+            raise GateError("remaining bounded-program phase-plan CPU allowance does not fit aggregate/lifetime budget")
+        if local_wall + remaining_wall > limits["max_total_wall_seconds"] or state["wall_seconds_charged"] + remaining_wall > state["max_lifetime_wall_seconds"]:
+            raise GateError("remaining bounded-program phase-plan wall allowance does not fit aggregate/lifetime budget")
+        max_cpu = float(run.get("max_cpu_seconds", limits["max_cpu_seconds"]))
+        max_wall = float(run.get("max_wall_seconds", limits["max_wall_seconds"]))
+
+        invocation_id = f"{state['invocations_reserved'] + 1:06d}-{uuid.uuid4().hex}"
+        (directory / "runs").mkdir(exist_ok=True)
+        run_dir.mkdir(exist_ok=False)
+        if pipeline_mode:
+            (run_dir / "outputs").mkdir()
+        reservation = {"invocation_id": invocation_id, "run_id": run_id,
+                       "phase_id": run["phase_id"],
+                       "stage_id": run.get("stage_id"),
+                       "protocol_sha256": protocol_sha, "command": argv,
+                       "executable_sha256": command_config["sha256"],
+                       "runtime_files": command_config["runtime_files"],
+                       "stdin_artifact": run["stdin_artifact"], "stdin_sha256": sha256_bytes(input_bytes),
+                       "input_slot_hashes": input_hashes,
+                       "input_slot_paths": input_paths,
+                       "output_slot_paths": output_paths,
+                       "reserved_at_unix_ns": time.time_ns(), "limits": limits}
+        write_exclusive(run_dir / "reservation.json", canonical_json(reservation))
+        state["ledger_head"] = _process_ledger_event(
+            ledger_dir / "process-events.jsonl", {"event": "reserved", **reservation}, state["ledger_head"])
+        state["event_count"] += 1
+        state["invocations_reserved"] += 1
+        state["pending"] = invocation_id
+        _replace_process_budget(ledger_dir, state)
+
+        exec_limits = {"max_cpu_seconds": max_cpu,
+                       "max_wall_seconds": max_wall,
+                       "max_address_space_bytes": limits["max_address_space_bytes"],
+                       "max_stdin_bytes": limits["max_stdin_bytes"],
+                       "max_output_bytes": limits["max_output_bytes"],
+                       "max_file_bytes": limits["max_file_bytes"]}
+        try:
+            outcome = run_bounded_process(
+                reservation["command"], input_bytes, command_config["environment"],
+                run_dir, exec_limits)
+        except BaseException as error:
+            outcome = {"status": "harness_error", "returncode": None,
+                       "wall_seconds": max_cpu * 0.0, "cpu_seconds": 0.0,
+                       "stdout": b"", "stderr": f"{type(error).__name__}: {error}".encode(),
+                       "process_group_rss_available": False, "peak_process_group_rss_bytes": None,
+                       "waited_child_peak_rss_bytes": None, "harness_diagnostic": str(error)}
+        stdout = outcome.pop("stdout", b"")
+        stderr = outcome.pop("stderr", b"")
+        write_exclusive(run_dir / "stdout.bin", stdout)
+        write_exclusive(run_dir / "stderr.bin", stderr)
+        status = outcome.get("status", "harness_error")
+        output_records = {}
+        if pipeline_mode and status == "completed":
+            for slot, output_path in output_paths.items():
+                path = Path(output_path)
+                if not path.is_file() or path.stat().st_size > limits["max_file_bytes"]:
+                    status = "output_contract_failure"
+                    outcome["harness_diagnostic"] = f"missing or oversized declared output slot {slot}"
+                    break
+                path.chmod(0o444)
+                output_records[slot] = {"path": str(path), "sha256": sha256_file(path), "bytes": path.stat().st_size}
+        consume_full, charged_cpu, charged_wall = charged_program_resources(outcome, status, max_cpu, max_wall)
+        receipt = {**reservation, **outcome, "status": status,
+                   "output_slots": output_records,
+                   "stdout_sha256": sha256_bytes(stdout), "stderr_sha256": sha256_bytes(stderr),
+                   "stdout_bytes": len(stdout), "stderr_bytes": len(stderr),
+                   "charged_cpu_seconds": charged_cpu, "charged_wall_seconds": charged_wall,
+                   "completed_at_unix_ns": time.time_ns()}
+        write_exclusive(run_dir / "receipt.json", canonical_json(receipt))
+        state["ledger_head"] = _process_ledger_event(
+            ledger_dir / "process-events.jsonl",
+            {"event": "completed", "invocation_id": invocation_id,
+             "protocol_sha256": protocol_sha, "run_id": run_id,
+             "receipt_path": str((run_dir / "receipt.json").resolve()),
+             "receipt_sha256": sha256_file(run_dir / "receipt.json"),
+             "status": status, "cpu_seconds": receipt.get("cpu_seconds", 0.0),
+             "wall_seconds": receipt.get("wall_seconds", 0.0),
+             "charged_cpu_seconds": charged_cpu, "charged_wall_seconds": charged_wall},
+            state["ledger_head"])
+        state["event_count"] += 1
+        state["cpu_seconds_charged"] += charged_cpu
+        state["wall_seconds_charged"] += charged_wall
+        state["pending"] = None
+        _replace_process_budget(ledger_dir, state)
+        return receipt
+
+
+def verify_program(directory: Path) -> dict:
+    protocol, config, protocol_sha = read_frozen_program(directory)
+    state = json.loads((config["ledger_dir"] / "process-budget.json").read_text())
+    events = _verify_process_ledger(config["ledger_dir"], state)
+    relevant = [e for e in events if e.get("protocol_sha256") == protocol_sha and e.get("event") == "completed"]
+    receipt_checks = []
+    for event in relevant:
+        path = Path(event["receipt_path"])
+        if not path.is_file() or sha256_file(path) != event["receipt_sha256"]:
+            raise GateError("bounded-program immutable receipt missing or hash-mismatched")
+        receipt = json.loads(path.read_text())
+        if receipt.get("invocation_id") != event.get("invocation_id") or receipt.get("status") != event.get("status"):
+            raise GateError("bounded-program receipt/ledger mismatch")
+        run_dir = path.parent
+        for stream in ("stdout", "stderr"):
+            stream_path = run_dir / f"{stream}.bin"
+            if not stream_path.is_file() or sha256_file(stream_path) != receipt.get(f"{stream}_sha256"):
+                raise GateError(f"bounded-program captured {stream} evidence is missing or hash-mismatched")
+        for slot, output in receipt.get("output_slots", {}).items():
+            output_path = Path(output.get("path", ""))
+            if not output_path.is_file() or sha256_file(output_path) != output.get("sha256"):
+                raise GateError(f"bounded-program output slot {slot} is missing or hash-mismatched")
+        for slot, input_path in receipt.get("input_slot_paths", {}).items():
+            input_path = Path(input_path)
+            if not input_path.is_file() or sha256_file(input_path) != receipt.get("input_slot_hashes", {}).get(slot):
+                raise GateError(f"bounded-program input slot {slot} is missing or hash-mismatched")
+        receipt_checks.append({"run_id": receipt["run_id"], "status": receipt["status"],
+                               "receipt_sha256": event["receipt_sha256"]})
+    protocol_qualified = any(e.get("event") == "qualified" and e.get("protocol_sha256") == protocol_sha
+                             for e in events)
+    valid = state.get("pending") is None and (
+        config.get("pipeline_descriptor") is None or protocol_qualified)
+    return {"status": "valid" if valid else "incomplete",
+            "protocol_sha256": protocol_sha, "invocations_reserved": state["invocations_reserved"],
+            "cpu_seconds_charged": state["cpu_seconds_charged"],
+            "wall_seconds_charged": state["wall_seconds_charged"], "receipts": receipt_checks}
+
+
+def qualify_program(directory: Path) -> dict:
+    """Derive and append the one-shot qualification from frozen run outputs."""
+    protocol, config, protocol_sha = read_frozen_program(directory)
+    if config.get("pipeline_descriptor") is None:
+        raise GateError("qualification events require descriptor-mode bounded protocol")
+    # Qualification must not trust mutable paths merely because an earlier
+    # receipt once named them. Recheck the full captured evidence first.
+    verify_program(directory)
+    qualification = config["preflight_qualification"]
+    stage_run_ids = qualification["stage_run_ids"]
+    ledger_dir = config["ledger_dir"]
+    lock_fd = os.open(ledger_dir / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(lock_fd, "r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state_path = ledger_dir / "process-budget.json"
+        state = json.loads(state_path.read_text())
+        events = _verify_process_ledger(ledger_dir, state)
+        if state.get("pending") is not None or state.get("qualification_status") != "preflight_pending":
+            raise GateError("preflight qualification is already consumed or has an unresolved invocation")
+        completed = {e["run_id"]: e for e in events if e.get("event") == "completed" and e.get("protocol_sha256") == protocol_sha}
+        stage_receipts = {}
+        for stage_name, run_id in stage_run_ids.items():
+            event = completed.get(run_id)
+            if event is None or event.get("status") != "completed":
+                raise GateError("all frozen preflight stage invocations must complete successfully before qualification")
+            receipt_path = Path(event["receipt_path"])
+            if not receipt_path.is_file() or sha256_file(receipt_path) != event.get("receipt_sha256"):
+                raise GateError("preflight invocation receipt missing or changed")
+            stage_receipts[stage_name] = json.loads(receipt_path.read_text())
+        scorer_slots = stage_receipts["scorer"].get("output_slots", {})
+        aggregator_slots = stage_receipts["aggregator"].get("output_slots", {})
+        scores_record = scorer_slots.get("scores_output")
+        report_record = aggregator_slots.get("report_output")
+        if not isinstance(scores_record, dict) or not isinstance(report_record, dict):
+            raise GateError("preflight scorer/aggregator outputs are not bound in run-owned receipts")
+        scores_path, report_path = Path(scores_record["path"]), Path(report_record["path"])
+        if sha256_file(scores_path) != scores_record["sha256"] or sha256_file(report_path) != report_record["sha256"]:
+            raise GateError("preflight score/report output changed after stage completion")
+        scores = json.loads(scores_path.read_text())
+        report = json.loads(report_path.read_text())
+        expected_bindings = qualification["expected_score_bindings"]
+        expected_ids = [row["run_id"] for row in expected_bindings]
+        if not isinstance(scores, list) or len(scores) != len(expected_ids):
+            raise GateError("preflight score output count differs from the frozen run set")
+        spec_artifact = config["artifacts"][qualification["spec_artifact_id"]]
+        spec = json.loads(Path(spec_artifact["path"]).read_text())
+        if [
+            {key: run.get(key) for key in ("run_id", "control_id", "method", "seed")}
+            for run in spec.get("runs", [])
+        ] != expected_bindings:
+            raise GateError("pinned synthetic specification disagrees with frozen score bindings")
+        controls = {control.get("id"): control for control in spec.get("controls", []) if isinstance(control, dict)}
+        if len(controls) != qualification["expected_control_count"]:
+            raise GateError("pinned synthetic specification has the wrong control set")
+        scorer_manifest_path = Path(stage_receipts["scorer"].get("input_slot_paths", {}).get("run_manifest", ""))
+        runner_manifest_path = Path(stage_receipts["runner"].get("input_slot_paths", {}).get("run_manifest", ""))
+        if not scorer_manifest_path.is_file() or not runner_manifest_path.is_file():
+            raise GateError("preflight runner/scorer input manifests are unavailable")
+        scorer_manifest = json.loads(scorer_manifest_path.read_text())
+        runner_manifest = json.loads(runner_manifest_path.read_text())
+        def contains_assessment_key(value: object) -> bool:
+            if isinstance(value, dict):
+                return any("assessment" in str(key).lower() or contains_assessment_key(item)
+                           for key, item in value.items())
+            if isinstance(value, list):
+                return any(contains_assessment_key(item) for item in value)
+            return False
+        if (contains_assessment_key(runner_manifest)
+                or runner_manifest.get("preflight_id") != spec.get("preflight_id")):
+            raise GateError("runner manifest must be bound to the synthetic spec and hide assessment data")
+        expected_runner_runs = [
+            {key: run[key] for key in ("run_id", "control_id", "method", "seed", "training_artifact")}
+            for run in spec.get("runs", [])
+        ]
+        if runner_manifest.get("runs") != expected_runner_runs or scorer_manifest.get("runs") != spec.get("runs"):
+            raise GateError("runner/scorer manifests do not match the pinned synthetic run matrix")
+        synthetic_controls = {row.get("id"): row for row in scorer_manifest.get("controls", []) if isinstance(row, dict)}
+        if set(synthetic_controls) != set(controls):
+            raise GateError("scorer manifest control IDs differ from the pinned synthetic specification")
+        runner_controls = {row.get("id"): row for row in runner_manifest.get("controls", []) if isinstance(row, dict)}
+        if set(runner_controls) != set(controls):
+            raise GateError("runner manifest control IDs differ from the pinned synthetic specification")
+        for control_id, control in controls.items():
+            runner_training = runner_controls[control_id].get("training", {})
+            scorer_training = synthetic_controls[control_id].get("training", {})
+            if (runner_training.get("id") != control["training"]["id"]
+                    or runner_training.get("sha256") != scorer_training.get("sha256")
+                    or runner_training.get("path") != scorer_training.get("path")):
+                raise GateError("runner received a training artifact that differs from the pinned control mapping")
+        runner_receipt = stage_receipts["runner"]
+        verifier_receipt = stage_receipts["verifier"]
+        runner_output = runner_receipt.get("output_slots", {}).get("candidate_outputs")
+        verifier_output = verifier_receipt.get("output_slots", {}).get("verified_receipts")
+        if not isinstance(runner_output, dict) or not isinstance(verifier_output, dict):
+            raise GateError("preflight runner/verifier outputs are not bound to immutable receipts")
+        candidates = json.loads(Path(runner_output["path"]).read_text())
+        verifications = json.loads(Path(verifier_output["path"]).read_text())
+        if not isinstance(candidates, list) or not isinstance(verifications, list) or len(candidates) != len(expected_bindings) or len(verifications) != len(expected_bindings):
+            raise GateError("preflight candidate and verifier outputs do not cover the frozen run set")
+        candidate_by_id = {row.get("run_id"): row for row in candidates if isinstance(row, dict)}
+        verified_by_id = {row.get("run_id"): row for row in verifications if isinstance(row, dict)}
+        score_by_id = {row.get("run_id"): row for row in scores if isinstance(row, dict)} if isinstance(scores, list) else {}
+        if any(len(mapping) != len(expected_bindings) or set(mapping) != set(expected_ids)
+               for mapping in (candidate_by_id, verified_by_id, score_by_id)):
+            raise GateError("preflight stage outputs contain duplicate, missing or extra run identities")
+        expected_per_control = {}
+        for binding in expected_bindings:
+            control = controls.get(binding["control_id"])
+            if not isinstance(control, dict):
+                raise GateError("frozen run refers to an unknown synthetic control")
+            output = candidate_by_id[binding["run_id"]]
+            verification = verified_by_id[binding["run_id"]]
+            score = score_by_id[binding["run_id"]]
+            training = control.get("training", {})
+            assessment = control.get("assessment", {})
+            materialized = synthetic_controls[binding["control_id"]]
+            for record in (output, verification, score):
+                if any(record.get(key) != binding[key] for key in ("run_id", "control_id", "method", "seed")):
+                    raise GateError("preflight candidate, verifier or score has an incorrect run/control mapping")
+            expected_assessment_bytes = compact_json({
+                "control_id": binding["control_id"], "role": "assessment", "rows": assessment.get("synthetic_rows")}) + b"\n"
+            expected_assessment_sha = sha256_bytes(expected_assessment_bytes)
+            expected_training_bytes = compact_json({
+                "control_id": binding["control_id"], "role": "training", "rows": training.get("synthetic_rows")}) + b"\n"
+            expected_training_sha = sha256_bytes(expected_training_bytes)
+            assessment_path = Path(materialized.get("assessment", {}).get("path", ""))
+            training_path = Path(materialized.get("training", {}).get("path", ""))
+            if (materialized.get("training", {}).get("id") != training.get("id")
+                    or materialized.get("assessment", {}).get("id") != assessment.get("id")
+                    or not training_path.is_file() or training_path.read_bytes() != expected_training_bytes
+                    or not assessment_path.is_file() or assessment_path.read_bytes() != expected_assessment_bytes
+                    or materialized.get("training", {}).get("sha256") != expected_training_sha
+                    or materialized.get("assessment", {}).get("sha256") != expected_assessment_sha):
+                raise GateError("synthetic assessment artifact differs from the pinned specification")
+            expected_values = [row.get("expected") for row in assessment["synthetic_rows"]]
+            if (output.get("training_artifact") != training.get("id") or output.get("training_sha256") != expected_training_sha
+                    or not isinstance(output.get("predictions"), list) or output["predictions"] != expected_values):
+                raise GateError("runner output does not match the frozen training identity and synthetic assessment")
+            if (verification.get("status") != "verified"
+                    or verification.get("candidate_sha256") != sha256_bytes(compact_json(output))):
+                raise GateError("verifier output does not verify the exact candidate record")
+            if (score.get("assessment_artifact") != assessment.get("id")
+                    or score.get("assessment_sha256") != expected_assessment_sha
+                    or score.get("exact") is not True
+                    or score.get("checked_observations") != len(expected_values)):
+                raise GateError("independent score does not match its frozen synthetic assessment")
+            entry = expected_per_control.setdefault(binding["control_id"], {"run_count": 0, "exact_run_count": 0})
+            entry["run_count"] += 1
+            entry["exact_run_count"] += 1
+        if (not isinstance(report, dict) or report.get("status") != "passed"
+                or report.get("assessment_source") != "synthetic"
+                or report.get("preflight_id") != spec.get("preflight_id")
+                or report.get("run_count") != len(expected_ids)
+                or report.get("scored_run_count") != len(expected_ids)
+                or report.get("exact_run_count") != len(expected_ids)
+                or report.get("per_control") != expected_per_control
+                or report.get("run_ids") != expected_ids
+                or report.get("run_bindings") != expected_bindings):
+            raise GateError("preflight aggregator output does not match the independently checked synthetic results")
+        # Recheck every receipt and referenced stage artifact immediately before
+        # appending the one-shot event; do not bless a stale earlier read.
+        verify_program(directory)
+        evidence_sha256 = sha256_bytes(canonical_json({
+            "protocol_sha256": protocol_sha,
+            "stage_receipt_sha256": {name: sha256_file(Path(completed[run_id]["receipt_path"]))
+                                     for name, run_id in stage_run_ids.items()},
+            "scores_sha256": scores_record["sha256"], "report_sha256": report_record["sha256"],
+        }))
+        payload = {"event": "qualified", "protocol_sha256": protocol_sha,
+                   "preflight_evidence_sha256": evidence_sha256, "qualified_at_unix_ns": time.time_ns()}
+        state["ledger_head"] = _process_ledger_event(ledger_dir / "process-events.jsonl", payload, state["ledger_head"])
+        state["qualification_status"] = "qualified"
+        state["event_count"] += 1
+        _replace_process_budget(ledger_dir, state)
+        return {"status": "qualified", "protocol_sha256": protocol_sha,
+                "preflight_evidence_sha256": evidence_sha256}
 
 
 def validate_protocol(protocol: dict) -> None:
@@ -2275,6 +3209,14 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--query-id", required=True)
     attest = commands.add_parser("attest", help="execute a pinned checker for a pending execution-group stage")
     attest.add_argument("--protocol-dir", type=Path, required=True)
+    freeze_program = commands.add_parser("freeze-program", help="freeze a pinned bounded C++/Python process protocol")
+    freeze_program.add_argument("--protocol", type=Path, required=True)
+    freeze_program.add_argument("--destination", type=Path, required=True)
+    run_program_parser = commands.add_parser("run-program", help="execute one allowlisted bounded-program invocation")
+    run_program_parser.add_argument("--protocol-dir", type=Path, required=True)
+    run_program_parser.add_argument("--run-id", required=True)
+    verify_program_parser = commands.add_parser("verify-program", help="verify bounded-program receipts and ledger")
+    verify_program_parser.add_argument("--protocol-dir", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "freeze":
@@ -2284,6 +3226,17 @@ def main(argv: list[str] | None = None) -> int:
             result = run_solver(args.protocol_dir, args.query_id, args.query)
             print(json.dumps(result, sort_keys=True))
             return 0 if result["status"] == "successful" else 2
+        elif args.command == "freeze-program":
+            digest = freeze_program_protocol(args.protocol, args.destination)
+            print(digest)
+        elif args.command == "run-program":
+            result = run_program(args.protocol_dir, args.run_id)
+            print(json.dumps(result, sort_keys=True))
+            return 0 if result["status"] == "completed" else 2
+        elif args.command == "verify-program":
+            result = verify_program(args.protocol_dir)
+            print(json.dumps(result, sort_keys=True))
+            return 0 if result["status"] == "valid" else 2
         else:
             result = attest_group(args.protocol_dir)
             print(json.dumps(result, sort_keys=True))

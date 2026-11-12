@@ -155,3 +155,29 @@ python3 scripts/research_execution.py run \
 
 Queries not in the protocol allowlist, changed bytes, and exhausted per-query
 use counts are refused before process launch.
+
+## Pinned bounded research programs
+
+Non-solver C++ or Python stages use the separate `bounded_program` schema and
+process ledger. Follow the [`genetik-research-execution` skill](../.agents/skills/genetik-research-execution/SKILL.md)
+for the `freeze-program`, `run-program`, and `verify-program` commands and
+their phase-plan requirements. A frozen pipeline descriptor binds stage argv
+and entrypoints to pinned code artifacts; preflight may not substitute an
+adapter command. The process supervisor uses bounded nonblocking input and
+output, process-group cleanup, resource caps, and immutable receipts. These
+facilities do not grant scientific-run approval and do not alter the solver
+protocol or ledger. Assessment-role data is identity-bound during freeze and
+preflight, but opened only by the separately admitted scoring phase. Runner
+and verification stages must not receive it.
+
+Each external process runs under a dedicated Linux supervisor worker. This
+isolates descendant adoption from unrelated caller children. Target and
+supervisor CPU/wall/RSS measurements are recorded separately. Cumulative
+charges reserve the full supervisor CPU/wall envelope for each invocation;
+actual measurements remain separately available. A combined RSS figure is a
+conservative sum of the observed peaks, not a claim that both peaks occurred
+simultaneously. The worker writes its result atomically, so a partial result
+transfer cannot block past the outer deadline. Protocol admission reserves
+three additional CPU-seconds and three wall-seconds per invocation for the
+isolated worker's hard-fallback envelope, and includes this in complete and
+lifetime budget checks.

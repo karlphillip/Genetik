@@ -8,7 +8,7 @@ each attempted solver process consumes one atomically reserved query slot.
 from __future__ import annotations
 
 import argparse
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 import fcntl
 import hashlib
 import json
@@ -67,6 +67,8 @@ PROCESS_LEDGER_ROOT = Path(
 # during protocol admission so orchestration overhead cannot overrun a budget.
 BOUNDED_SUPERVISOR_CPU_ALLOWANCE_SECONDS = 3.0
 BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS = 3.0
+
+_ACTIVE_COORDINATOR_GUARD: dict | None = None
 
 
 def _validate_program_budget(value: object) -> dict:
@@ -238,6 +240,10 @@ class GateError(RuntimeError):
     pass
 
 
+class CoordinatorResourceExceeded(GateError):
+    pass
+
+
 def _require_sha256(value: object, field: str) -> None:
     if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
         raise GateError(f"{field} must be a lowercase SHA256")
@@ -281,6 +287,29 @@ def compact_json(value: object) -> bytes:
 
 
 PROGRAM_SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}\Z")
+CONTINUATION_SLOT_COUNTS = {
+    "primary_preflight": 4,
+    "recovery_preflight": 4,
+    "campaign": 38,
+    "final_scoring": 3,
+}
+CONTINUATION_ALLOWANCE = {"invocations": 49, "cpu_seconds": 333.0, "wall_seconds": 426.0}
+CONTINUATION_COORDINATOR_ALLOWANCE = {"cpu_seconds": 11.0, "exclusive_wall_seconds": 11.0}
+CONTINUATION_PHASE_IDS = ("primary_preflight", "recovery_preflight", "campaign_orchestration", "final_scoring_orchestration")
+CONTINUATION_MEMORY_BYTES = 512 * 1024 * 1024
+CONTINUATION_OUTPUT_BYTES = 1024 * 1024
+HISTORICAL_STAGE_WALL_SECONDS = {
+    "v2": 1.075066692661494,
+    "v3": 1.0878780307248235,
+    "v4": 1.1183677860535681,
+    "v5": 1.0839218073524535,
+}
+HISTORICAL_STAGE_RECEIPT_SHA256 = {
+    "v2": "8d0f868433735f8188135b7bc7f493332622e66caa8d3ca1612921a2f0049263",
+    "v3": "6c2bb1b4106b2baa674c925f034a20f7740d44512ea07d1051bfbc258a2db581",
+    "v4": "ac8e835f2b9fdc1dcbf565737c8b1df83c4be3a8e9c9c70a73b9b5727f776074",
+    "v5": "6d85cee6426bde045ffcd3dd88addb6493cbb6eac74fd77ea66d21f3f26fb540",
+}
 PROGRAM_LIMIT_FIELDS = {
     "max_invocations", "max_total_cpu_seconds", "max_total_wall_seconds",
     "max_cpu_seconds", "max_wall_seconds", "max_address_space_bytes",
@@ -292,6 +321,478 @@ def _safe_program_id(value: object, field: str) -> str:
     if not isinstance(value, str) or PROGRAM_SAFE_ID.fullmatch(value) is None:
         raise GateError(f"{field} must be a safe identifier")
     return value
+
+
+def _validate_controller_file_phase(phase_id: object, slot: str) -> None:
+    if phase_id not in {"preflight", "recovery"}:
+        raise GateError("controller files are limited to primary/recovery preflight inputs")
+    if slot == "assessment_bundle" and phase_id not in {"preflight", "recovery"}:
+        raise GateError("synthetic assessment input is limited to preflight qualification")
+
+
+def validate_run_output_list_binding(binding: object, slot: str, target_run_id: str,
+                                     prior_runs: dict[str, dict]) -> list[dict]:
+    """Validate an ordered list fan-in of previously admitted output slots."""
+    if slot != "candidate_outputs" or not isinstance(binding, list) or not binding:
+        raise GateError("list-valued run_output binding is supported only for nonempty candidate_outputs")
+    result = []
+    seen = set()
+    for reference in binding:
+        if (not isinstance(reference, dict) or set(reference) != {"kind", "run_id", "slot"}
+                or reference.get("kind") != "run_output"):
+            raise GateError("candidate_outputs list entries must be exact run_output references")
+        source_id, source_slot = reference["run_id"], reference["slot"]
+        if (not isinstance(source_id, str) or PROGRAM_SAFE_ID.fullmatch(source_id) is None
+                or not isinstance(source_slot, str) or not source_slot):
+            raise GateError("candidate_outputs list source identity or slot is malformed")
+        key = (source_id, source_slot)
+        if key in seen:
+            raise GateError("candidate_outputs list repeats a source run/slot")
+        seen.add(key)
+        source = prior_runs.get(source_id)
+        if source is None or source_id == target_run_id:
+            raise GateError("candidate_outputs list source must be an earlier admitted run")
+        source_stage = source.get("stage_id")
+        # The producer stage is checked against the frozen descriptor by the caller.
+        if not isinstance(source_stage, str) or not isinstance(source_slot, str):
+            raise GateError("candidate_outputs list source has an invalid stage/slot")
+        result.append(reference)
+    return result
+
+
+def validate_continuation_phase_plan(phase_plan: object, runs: list[dict], slots: dict) -> list[str]:
+    """Validate the amended allowlist order without imposing the legacy cursor."""
+    group_bindings = (("primary_preflight", "primary_preflight", "preflight"),
+                      ("recovery_preflight", "recovery_preflight", "recovery"),
+                      ("campaign", "campaign", "campaign"),
+                      ("final_scoring", "final_scoring", "scoring"))
+    if (not isinstance(phase_plan, list)
+            or [phase.get("phase_id") for phase in phase_plan if isinstance(phase, dict)]
+            != [phase_id for phase_id, _, _ in group_bindings]
+            or len(phase_plan) != len(group_bindings)):
+        raise GateError("amended phase_plan must declare the four continuation slot groups")
+    run_by_id = {run.get("run_id"): run for run in runs}
+    flattened = []
+    for phase, (phase_id, slot_name, run_phase_id) in zip(phase_plan, group_bindings):
+        ids = phase.get("run_ids")
+        if (not isinstance(ids, list) or not all(isinstance(value, str) for value in ids)
+                or len(ids) != len(set(ids)) or ids != slots.get(slot_name)):
+            raise GateError(f"amended phase {phase_id} must match its exact ordered authorization slots")
+        if any(run_id not in run_by_id or run_by_id[run_id].get("phase_id") != run_phase_id for run_id in ids):
+            raise GateError(f"amended phase {phase_id} contains a run with the wrong legacy phase label")
+        flattened.extend(ids)
+    if flattened != [run.get("run_id") for run in runs]:
+        raise GateError("amended phase_plan must cover the exact allowlist once in frozen slot order")
+    return flattened
+
+
+def validate_continuation_history(history: object) -> dict:
+    """Validate exact known/unknown imported history without opening its files."""
+    history_keys = {"source_protocol_artifact_id", "evidence_manifest_artifact_id", "prior_declared_invocation_cap",
+                    "known_governed_preflight", "unmeasured_pre_freeze_executions", "prior_v1_activity"}
+    if not isinstance(history, dict) or set(history) != history_keys:
+        raise GateError("continuation historical_import fields are incomplete or unexpected")
+    if history["prior_declared_invocation_cap"] != 45 or isinstance(history["prior_declared_invocation_cap"], bool):
+        raise GateError("historical 45-invocation authorization must be preserved exactly")
+    known = history["known_governed_preflight"]
+    known_keys = {"count", "status", "cpu_seconds", "stage_wall_seconds", "stage_wall_scope", "receipt_sha256_by_version"}
+    if not isinstance(known, dict) or set(known) != known_keys:
+        raise GateError("known governed history must distinguish measured stage wall from unknown CPU/coordinator work")
+    stage_wall = known["stage_wall_seconds"]
+    if (known["count"] != 16 or isinstance(known["count"], bool) or known["status"] != "successful"
+            or known["cpu_seconds"] is not None
+            or isinstance(stage_wall, bool) or not isinstance(stage_wall, (int, float))
+            or not math.isfinite(stage_wall) or stage_wall != sum(HISTORICAL_STAGE_WALL_SECONDS.values())
+            or known["stage_wall_scope"] != "sum_of_16_bounded_stage_wall_records_only; coordinator_total_unknown"
+            or known["receipt_sha256_by_version"] != HISTORICAL_STAGE_RECEIPT_SHA256):
+        raise GateError("historical preflight evidence must preserve exact stage receipts and explicitly unknown CPU/coordinator totals")
+    unknown = history["unmeasured_pre_freeze_executions"]
+    if (not isinstance(unknown, dict) or set(unknown) != {"count", "cpu_seconds", "wall_seconds"}
+            or unknown["count"] != 2 or isinstance(unknown["count"], bool)
+            or unknown["cpu_seconds"] is not None or unknown["wall_seconds"] is not None):
+        raise GateError("two unmeasured pre-freeze executions must retain unknown resource values")
+    v1 = history["prior_v1_activity"]
+    if (not isinstance(v1, dict) or set(v1) != {"invocations", "cpu_seconds", "wall_seconds"}
+            or any(v1[field] is not None for field in v1)):
+        raise GateError("prior v1 count and resource totals must remain explicitly unknown")
+    return history
+
+
+def validate_bounded_program_continuation(
+    amendment: object,
+    runs: list[dict],
+    artifacts_by_id: dict[str, dict],
+    limits: dict,
+    program_budget: dict,
+    pipeline_descriptor: dict | None,
+) -> dict:
+    """Validate the narrowly scoped, additive finite-identifiability authorization.
+
+    This is an offline contract check: it reads no scientific rows and launches
+    no process. Historical unknowns remain null and are not folded into the
+    prospective counters.
+    """
+    required = {"schema", "amendment_id", "authorization_artifact_id", "coordinator_entrypoint_artifact_id",
+                "preflight_coordinator_artifact_id", "historical_import",
+                "prospective_allowance", "coordinator_allowance", "overall_deadline_seconds",
+                "coordinator_phase_ids", "slots", "interactive_session"}
+    if not isinstance(amendment, dict) or set(amendment) != required or amendment.get("schema") != 1:
+        raise GateError("bounded-program continuation amendment schema is incomplete")
+    _safe_program_id(amendment["amendment_id"], "continuation amendment_id")
+
+    def require_artifact(artifact_id: object, role: str, field: str) -> dict:
+        artifact_id = _safe_program_id(artifact_id, field)
+        artifact = artifacts_by_id.get(artifact_id)
+        if artifact is None or artifact.get("role") != role:
+            raise GateError(f"continuation {field} must reference a pinned {role} artifact")
+        return artifact
+
+    authorization_artifact = require_artifact(amendment["authorization_artifact_id"], "authorization-amendment", "authorization_artifact_id")
+    coordinator_entrypoint_artifact = require_artifact(amendment["coordinator_entrypoint_artifact_id"],
+                                                       "coordinator-entrypoint", "coordinator_entrypoint_artifact_id")
+    preflight_coordinator_artifact = require_artifact(amendment["preflight_coordinator_artifact_id"],
+                                                      "coordinator-entrypoint", "preflight_coordinator_artifact_id")
+    if Path(coordinator_entrypoint_artifact["path"]).resolve() != Path(__file__).resolve().with_name("execute_continuation_phase.py"):
+        raise GateError("continuation coordinator entrypoint must pin execute_continuation_phase.py")
+    if Path(preflight_coordinator_artifact["path"]).resolve() != Path(__file__).resolve().with_name("scientific_pipeline_preflight.py"):
+        raise GateError("preflight coordinator entrypoint must pin scientific_pipeline_preflight.py")
+    history = validate_continuation_history(amendment["historical_import"])
+    source_protocol_artifact = require_artifact(history["source_protocol_artifact_id"], "historical-protocol", "source_protocol_artifact_id")
+    history_manifest_artifact = require_artifact(history["evidence_manifest_artifact_id"], "historical-evidence-manifest", "evidence_manifest_artifact_id")
+
+    allowance = amendment["prospective_allowance"]
+    if not isinstance(allowance, dict) or set(allowance) != set(CONTINUATION_ALLOWANCE):
+        raise GateError("prospective continuation allowance is incomplete")
+    if allowance != CONTINUATION_ALLOWANCE:
+        raise GateError("prospective continuation allowance exceeds or differs from authorization")
+    if amendment["coordinator_allowance"] != CONTINUATION_COORDINATOR_ALLOWANCE:
+        raise GateError("coordinator CPU/exclusive-wall allowance differs from the frozen authorization")
+    if amendment["overall_deadline_seconds"] != CONTINUATION_ALLOWANCE["wall_seconds"]:
+        raise GateError("overall continuation deadline differs from the frozen wall-time authorization")
+    if amendment["coordinator_phase_ids"] != list(CONTINUATION_PHASE_IDS):
+        raise GateError("coordinator phase receipt plan differs from the frozen continuation plan")
+    if (program_budget.get("max_new_invocations") != allowance["invocations"]
+            or program_budget.get("max_new_cpu_seconds") != allowance["cpu_seconds"]
+            or program_budget.get("max_new_wall_seconds") != allowance["wall_seconds"]):
+        raise GateError("program budget does not match additive prospective authorization")
+    if (limits.get("max_invocations") != allowance["invocations"]
+            or limits.get("max_total_cpu_seconds") != allowance["cpu_seconds"]
+            or limits.get("max_total_wall_seconds") != allowance["wall_seconds"]
+            or limits.get("max_address_space_bytes") != CONTINUATION_MEMORY_BYTES
+            or limits.get("max_output_bytes") != CONTINUATION_OUTPUT_BYTES
+            or limits.get("max_file_bytes") != CONTINUATION_OUTPUT_BYTES):
+        raise GateError("continuation limits differ from the authorized invocation/resource caps")
+
+    slots = amendment["slots"]
+    if not isinstance(slots, dict) or set(slots) != set(CONTINUATION_SLOT_COUNTS):
+        raise GateError("continuation slots must define primary, recovery, campaign and final-scoring arrays")
+    flattened: list[str] = []
+    expected_phase = {"primary_preflight": "preflight", "recovery_preflight": "recovery",
+                      "campaign": "campaign", "final_scoring": "scoring"}
+    run_by_id = {run["run_id"]: run for run in runs}
+    if len(run_by_id) != len(runs):
+        raise GateError("continuation run allowlist contains duplicate run IDs")
+    for name, count in CONTINUATION_SLOT_COUNTS.items():
+        values = slots[name]
+        if not isinstance(values, list) or len(values) != count or not all(isinstance(item, str) for item in values):
+            raise GateError(f"continuation {name} must contain exactly {count} ordered run IDs")
+        if len(set(values)) != count:
+            raise GateError(f"continuation {name} repeats a run ID")
+        for run_id in values:
+            run = run_by_id.get(run_id)
+            if run is None or run.get("phase_id") != expected_phase[name]:
+                raise GateError(f"continuation slot {run_id} is missing or has the wrong phase")
+            expected_cpu, expected_wall = ((2, 3) if name == "campaign" else (9, 14))
+            if run.get("max_cpu_seconds") != expected_cpu or run.get("max_wall_seconds") != expected_wall:
+                raise GateError(f"continuation slot {run_id} per-run budget differs from its frozen phase allocation")
+        flattened.extend(values)
+    if len(set(flattened)) != len(flattened) or set(flattened) != set(run_by_id) or len(flattened) != 49:
+        raise GateError("continuation slots must partition the complete 49-run allowlist exactly once")
+
+    session = amendment["interactive_session"]
+    session_keys = {"python_executable", "python_sha256", "helper_path", "helper_sha256", "peer_path", "peer_sha256",
+                    "runner_runtime_files", "peer_runtime_files", "max_frame_bytes", "max_terminal_frame_bytes", "max_protocol_bytes",
+                    "max_requests", "max_cpu_seconds", "max_memory_bytes", "terminal_type"}
+    if not isinstance(session, dict) or set(session) != session_keys:
+        raise GateError("interactive-session manifest is incomplete or contains unsupported fields")
+    for path_field, hash_field in (("python_executable", "python_sha256"), ("helper_path", "helper_sha256"),
+                                   ("peer_path", "peer_sha256")):
+        path = session[path_field]
+        _require_sha256(session[hash_field], f"interactive_session.{hash_field}")
+        if not isinstance(path, str) or not Path(path).is_absolute():
+            raise GateError(f"interactive_session.{path_field} must be an absolute pinned path")
+        if not Path(path).is_file() or sha256_file(Path(path)) != session[hash_field]:
+            raise GateError(f"interactive_session.{path_field} is missing or hash-mismatched")
+    for file_list_name in ("runner_runtime_files", "peer_runtime_files"):
+        files = session[file_list_name]
+        if not isinstance(files, list):
+            raise GateError(f"interactive_session.{file_list_name} must be an array")
+        paths = set()
+        for entry in files:
+            if not isinstance(entry, dict) or set(entry) != {"path", "sha256"} or not isinstance(entry["path"], str):
+                raise GateError(f"interactive_session.{file_list_name} entries require path and SHA256")
+            _require_sha256(entry["sha256"], f"interactive_session.{file_list_name}.sha256")
+            path = Path(entry["path"]).resolve()
+            if path in paths:
+                raise GateError(f"interactive_session.{file_list_name} contains duplicate paths")
+            paths.add(path)
+            if not path.is_file() or sha256_file(path) != entry["sha256"]:
+                raise GateError(f"interactive_session.{file_list_name} contains a missing or hash-mismatched file")
+    exact_session_limits = {"max_frame_bytes": 4096, "max_terminal_frame_bytes": CONTINUATION_OUTPUT_BYTES,
+                            "max_protocol_bytes": CONTINUATION_OUTPUT_BYTES,
+                            "max_requests": 8, "max_cpu_seconds": 2,
+                            "max_memory_bytes": CONTINUATION_MEMORY_BYTES, "terminal_type": "final"}
+    if any(session.get(key) != value for key, value in exact_session_limits.items()):
+        raise GateError("interactive-session limits differ from the frozen continuation contract")
+    if session["max_terminal_frame_bytes"] < session["max_frame_bytes"]:
+        raise GateError("terminal frame limit cannot be below the ordinary frame limit")
+    if pipeline_descriptor is None:
+        raise GateError("continuation interactive session requires a pinned pipeline descriptor")
+    artifacts_by_path = {str(Path(artifact["path"]).resolve()): artifact for artifact in artifacts_by_id.values()}
+    pinned_paths = {str(Path(path).resolve()) for path in (
+        session["python_executable"], session["helper_path"], session["peer_path"])}
+    pinned_paths.update(str(Path(item["path"]).resolve()) for name in ("runner_runtime_files", "peer_runtime_files")
+                        for item in session[name])
+    for raw_path in pinned_paths:
+        artifact = artifacts_by_path.get(raw_path)
+        if artifact is None or artifact.get("role") not in {"pipeline-executable", "pipeline-dependency"}:
+            raise GateError("interactive session files must all be bound as pipeline code/dependency artifacts")
+    runner_dependencies = pipeline_descriptor["stages"]["runner"]["dependencies"]
+    runner_dependency_paths = {str(Path(artifacts_by_id[artifact_id]["path"]).resolve())
+                               for artifact_id in runner_dependencies}
+    if not pinned_paths.issubset(runner_dependency_paths | {
+            str(Path(artifacts_by_id[stage_artifact]["path"]).resolve())
+            for stage_artifact in (pipeline_descriptor["stages"]["runner"]["entrypoint_artifact"],
+                                   pipeline_descriptor["stages"]["runner"]["executable_artifact"])}):
+        raise GateError("runner pipeline identity does not pin every interactive executable and runtime")
+    return {"amendment_id": amendment["amendment_id"], "authorization_sha256": authorization_artifact["sha256"],
+            "slots": slots, "run_by_id": run_by_id,
+            "history": history, "allowance": allowance,
+            "coordinator_allowance": amendment["coordinator_allowance"],
+            "overall_deadline_seconds": amendment["overall_deadline_seconds"],
+            "coordinator_phase_ids": amendment["coordinator_phase_ids"],
+            "coordinator_entrypoint": {"path": coordinator_entrypoint_artifact["path"],
+                                        "sha256": coordinator_entrypoint_artifact["sha256"]},
+            "preflight_coordinator_entrypoint": {"path": preflight_coordinator_artifact["path"],
+                                                   "sha256": preflight_coordinator_artifact["sha256"]},
+            "history_artifact_sha256": {
+                "source_protocol": source_protocol_artifact["sha256"],
+                "evidence_manifest": history_manifest_artifact["sha256"],
+            },
+            "interactive_session": session}
+
+
+def continuation_next_action(plan: dict, events: list[dict]) -> dict:
+    """Pure state transition used by run admission; no files or processes touched."""
+    slots = plan["slots"]
+    reserved = {event.get("run_id") for event in events if event.get("event") == "reserved"}
+    completed = {event.get("run_id"): event for event in events if event.get("event") == "completed"}
+    qualification_events = [event for event in events if event.get("event") == "qualified"]
+    if len(qualification_events) > 1:
+        raise GateError("continuation qualification is one-shot")
+    qualified_path = qualification_events[-1].get("qualification_path", "primary") if qualification_events else None
+    failed = any(event.get("event") == "preflight_rejected" for event in events)
+    recovery_rejected = any(event.get("event") == "recovery_rejected" for event in events)
+    retired = {event.get("run_id") for event in events if event.get("event") == "recovery_retired"}
+    recovery_started = any(run_id in reserved for run_id in slots["recovery_preflight"])
+
+    def next_in_order(ids: list[str]) -> str | None:
+        for run_id in ids:
+            if run_id not in reserved:
+                return run_id
+            result = completed.get(run_id)
+            if result is None:
+                raise GateError("continuation has an unresolved invocation")
+            if result.get("status") != "completed":
+                return None
+        return None
+
+    primary_process_failed = any(
+        run_id in completed and completed[run_id].get("status") != "completed"
+        for run_id in slots["primary_preflight"]
+    )
+    primary_failed = failed
+    if primary_process_failed and not primary_failed:
+        return {"state": "primary_rejection_required", "next_run_id": None, "retire_run_ids": []}
+    if recovery_started or primary_failed:
+        if qualified_path == "primary":
+            raise GateError("qualified continuation cannot also enter recovery")
+        if recovery_rejected:
+            return {"state": "terminal_failure", "next_run_id": None, "retire_run_ids": []}
+        recovery_process_failed = any(run_id in completed and completed[run_id].get("status") != "completed"
+                                      for run_id in slots["recovery_preflight"])
+        if recovery_process_failed and not recovery_rejected:
+            return {"state": "recovery_rejection_required", "next_run_id": None, "retire_run_ids": []}
+        if recovery_process_failed:
+            return {"state": "terminal_failure", "next_run_id": None, "retire_run_ids": []}
+        next_recovery = next_in_order(slots["recovery_preflight"])
+        if next_recovery is not None:
+            return {"state": "recovery", "next_run_id": next_recovery, "retire_run_ids": []}
+        if all(run_id in completed and completed[run_id].get("status") == "completed"
+               for run_id in slots["recovery_preflight"]):
+            if qualified_path != "recovery":
+                return {"state": "recovery_qualification_required", "next_run_id": None, "retire_run_ids": []}
+        else:
+            return {"state": "terminal_failure", "next_run_id": None, "retire_run_ids": []}
+    else:
+        next_primary = next_in_order(slots["primary_preflight"])
+        if next_primary is not None:
+            return {"state": "primary_preflight", "next_run_id": next_primary, "retire_run_ids": []}
+        if qualified_path != "primary":
+            return {"state": "primary_qualification_required", "next_run_id": None, "retire_run_ids": []}
+        missing_retirements = [run_id for run_id in slots["recovery_preflight"] if run_id not in retired]
+        if missing_retirements:
+            return {"state": "retire_recovery", "next_run_id": None, "retire_run_ids": missing_retirements}
+
+    for phase_name in ("campaign", "final_scoring"):
+        next_run = next_in_order(slots[phase_name])
+        if next_run is not None:
+            return {"state": phase_name, "next_run_id": next_run, "retire_run_ids": []}
+        if any(run_id not in completed or completed[run_id].get("status") != "completed"
+               for run_id in slots[phase_name]):
+            return {"state": "terminal_failure", "next_run_id": None, "retire_run_ids": []}
+    return {"state": "complete", "next_run_id": None, "retire_run_ids": []}
+
+
+def validate_continuation_events(plan: dict, events: list[dict]) -> dict:
+    """Check ordered reservations, qualification and no-charge retirements."""
+    prefix: list[dict] = []
+    pending: str | None = None
+    amendment_id = plan.get("amendment_id")
+    program_starts = [event for event in events if event.get("event") == "program_started"]
+    if len(program_starts) > 1:
+        raise GateError("continuation overall deadline may be started only once")
+    program_protocol_sha = program_starts[0].get("protocol_sha256") if program_starts else None
+    program_starts = [event for event in events if event.get("event") == "program_started"]
+    if len(program_starts) > 1:
+        raise GateError("continuation overall deadline may be started only once")
+    program_protocol_sha = program_starts[0].get("protocol_sha256") if program_starts else None
+    active_phase: dict | None = None
+    seen_phases: set[str] = set()
+    closed_phase_status: dict[str, str] = {}
+    for event in events:
+        kind = event.get("event")
+        if kind == "coordinator_phase_started":
+            if active_phase is not None:
+                raise GateError("coordinator phases may not overlap")
+            phase_id = event.get("phase_id")
+            action = continuation_next_action(plan, prefix)
+            expected_phase = _phase_id_for_state(plan, action["state"])
+            if (phase_id != expected_phase or phase_id in seen_phases
+                    or event.get("amendment_id") != amendment_id
+                    or event.get("protocol_sha256") is None
+                    or program_protocol_sha is None
+                    or event.get("protocol_sha256") != program_protocol_sha
+                    or program_protocol_sha is None
+                    or event.get("protocol_sha256") != program_protocol_sha
+                    or not isinstance(event.get("token"), str)
+                    or type(event.get("pid")) is not int
+                    or type(event.get("start_monotonic_ns")) is not int
+                    or not isinstance(event.get("start_cpu_seconds"), (int, float))
+                    or not math.isfinite(float(event["start_cpu_seconds"]))):
+                raise GateError("coordinator phase start is unauthorized, repeated, or malformed")
+            active_phase = event
+            seen_phases.add(phase_id)
+        elif kind == "reserved":
+            action = continuation_next_action(plan, prefix)
+            if action["state"] not in {"primary_preflight", "recovery", "campaign", "final_scoring"}:
+                raise GateError("continuation reservation occurred before required qualification/retirement")
+            if event.get("run_id") != action["next_run_id"]:
+                raise GateError("continuation run reservation is out of immutable slot order")
+            if pending is not None:
+                raise GateError("continuation reserved another process while a prior process was unresolved")
+            expected_phase = _phase_id_for_state(plan, action["state"])
+            if active_phase is None or active_phase.get("phase_id") != expected_phase:
+                raise GateError("continuation process invocation is outside its measured coordinator phase")
+            pending = event["run_id"]
+        elif kind == "completed":
+            if pending is None or event.get("run_id") != pending:
+                raise GateError("continuation completion does not resolve its reservation")
+            pending = None
+        elif kind == "qualification_prepared":
+            action = continuation_next_action(plan, prefix)
+            path = event.get("qualification_path")
+            expected = "primary_qualification_required" if path == "primary" else "recovery_qualification_required"
+            phase_id = "primary_preflight" if path == "primary" else "recovery_preflight"
+            if (active_phase is None or active_phase.get("phase_id") != phase_id
+                    or action["state"] != expected or event.get("amendment_id") != amendment_id
+                    or not isinstance(event.get("evidence_sha256"), str)):
+                raise GateError("prepared qualification is not bound to the active preflight phase")
+            _require_sha256(event["evidence_sha256"], "qualification_prepared.evidence_sha256")
+        elif kind == "coordinator_phase":
+            if (active_phase is None or event.get("token") != active_phase.get("token")
+                    or event.get("phase_id") != active_phase.get("phase_id")
+                    or event.get("amendment_id") != amendment_id
+                    or event.get("status") not in {"completed", "failed"}):
+                raise GateError("coordinator phase receipt does not close its active phase")
+            cpu, wall = event.get("coordinator_cpu_seconds"), event.get("coordinator_exclusive_wall_seconds")
+            measurements_available = (
+                isinstance(cpu, (int, float)) and not isinstance(cpu, bool) and math.isfinite(cpu) and cpu >= 0
+                and isinstance(wall, (int, float)) and not isinstance(wall, bool) and math.isfinite(wall) and wall >= 0
+            )
+            if not measurements_available and not (event.get("status") == "failed" and cpu is None and wall is None):
+                raise GateError("coordinator phase receipt has invalid resource measurements")
+            if not isinstance(event.get("receipt_sha256"), str):
+                raise GateError("coordinator phase receipt lacks immutable evidence identity")
+            _require_sha256(event["receipt_sha256"], "coordinator_phase.receipt_sha256")
+            closed_phase_status[event["phase_id"]] = event["status"]
+            active_phase = None
+        elif kind == "preflight_rejected":
+            action = continuation_next_action(plan, prefix)
+            if (action["state"] not in {"primary_qualification_required", "primary_rejection_required"}
+                    or closed_phase_status.get("primary_preflight") != "failed"):
+                raise GateError("primary preflight rejection was recorded outside its qualification boundary")
+            if event.get("amendment_id") != amendment_id or not event.get("reason"):
+                raise GateError("primary rejection lacks amendment identity or reason")
+        elif kind == "recovery_rejected":
+            action = continuation_next_action(plan, prefix)
+            if (action["state"] not in {"recovery_qualification_required", "recovery_rejection_required"}
+                    or closed_phase_status.get("recovery_preflight") != "failed"):
+                raise GateError("recovery rejection was recorded outside its qualification boundary")
+            if event.get("amendment_id") != amendment_id or not event.get("reason"):
+                raise GateError("recovery rejection lacks amendment identity or reason")
+        elif kind == "qualified":
+            action = continuation_next_action(plan, prefix)
+            path = event.get("qualification_path")
+            expected = "primary_qualification_required" if path == "primary" else "recovery_qualification_required"
+            if (action["state"] != expected or event.get("amendment_id") != amendment_id
+                    or closed_phase_status.get("primary_preflight" if path == "primary" else "recovery_preflight") != "completed"):
+                raise GateError("continuation qualification is inconsistent with its selected branch")
+        elif kind == "recovery_retired":
+            action = continuation_next_action(plan, prefix)
+            if action["state"] != "retire_recovery" or event.get("run_id") not in action["retire_run_ids"]:
+                raise GateError("recovery slot retirement is out of order or unauthorized")
+            if (event.get("amendment_id") != amendment_id or event.get("charged_cpu_seconds") != 0
+                    or event.get("charged_wall_seconds") != 0 or "invocation_id" in event):
+                raise GateError("recovery retirement must be an immutable zero-charge non-invocation event")
+        prefix.append(event)
+    if pending is not None:
+        raise GateError("continuation has an unresolved invocation")
+    return continuation_next_action(plan, prefix)
+
+
+def continuation_remaining_run_ids(plan: dict, events: list[dict]) -> list[str]:
+    """Worst-case remaining calls along the currently eligible branch."""
+    slots = plan["slots"]
+    reserved = {event.get("run_id") for event in events if event.get("event") == "reserved"}
+    retired = {event.get("run_id") for event in events if event.get("event") == "recovery_retired"}
+    action = continuation_next_action(plan, events)
+    if action["state"] in {"primary_preflight", "primary_qualification_required"}:
+        phase_names = ("primary_preflight", "recovery_preflight", "campaign", "final_scoring")
+    elif action["state"] == "primary_rejection_required":
+        phase_names = ("recovery_preflight", "campaign", "final_scoring")
+    elif action["state"] in {"recovery", "recovery_qualification_required"}:
+        phase_names = ("recovery_preflight", "campaign", "final_scoring")
+    elif action["state"] == "recovery_rejection_required":
+        return []
+    elif action["state"] == "retire_recovery":
+        phase_names = ("campaign", "final_scoring")
+    elif action["state"] in {"campaign", "final_scoring"}:
+        phase_names = ("campaign", "final_scoring")
+    else:
+        return []
+    return [run_id for phase in phase_names for run_id in slots[phase]
+            if run_id not in reserved and run_id not in retired]
 
 
 def _validate_bounded_program(protocol: object) -> dict:
@@ -309,10 +810,21 @@ def _validate_bounded_program(protocol: object) -> dict:
     expected_ledger = (PROCESS_LEDGER_ROOT / program_id).resolve()
     if not isinstance(budget.get("ledger_dir"), str) or Path(budget["ledger_dir"]).resolve() != expected_ledger:
         raise GateError("bounded-program ledger must use its canonical process-ledger path")
-    for key in ("max_lifetime_invocations",):
-        if isinstance(budget.get(key), bool) or not isinstance(budget.get(key), int) or budget[key] < 0:
-            raise GateError(f"program_budget.{key} must be a nonnegative integer")
-    for key in ("max_lifetime_cpu_seconds", "max_lifetime_wall_seconds"):
+    amended = protocol.get("continuation_authorization") is not None
+    invocation_cap_key = "max_new_invocations" if amended else "max_lifetime_invocations"
+    cpu_cap_key = "max_new_cpu_seconds" if amended else "max_lifetime_cpu_seconds"
+    wall_cap_key = "max_new_wall_seconds" if amended else "max_lifetime_wall_seconds"
+    if amended:
+        if program_id != "finite-domain-identifiability-v1":
+            raise GateError("prospective continuation must retain the stable finite-identifiability program_id")
+        if any(key in budget for key in ("max_lifetime_invocations", "max_lifetime_cpu_seconds", "max_lifetime_wall_seconds")):
+            raise GateError("continuation budget must separate prospective caps from unknown historical totals")
+        if not isinstance(budget.get(invocation_cap_key), int) or isinstance(budget.get(invocation_cap_key), bool) or budget[invocation_cap_key] < 0:
+            raise GateError(f"program_budget.{invocation_cap_key} must be a nonnegative integer")
+    else:
+        if isinstance(budget.get(invocation_cap_key), bool) or not isinstance(budget.get(invocation_cap_key), int) or budget[invocation_cap_key] < 0:
+            raise GateError(f"program_budget.{invocation_cap_key} must be a nonnegative integer")
+    for key in (cpu_cap_key, wall_cap_key):
         value = budget.get(key)
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
             raise GateError(f"program_budget.{key} must be finite and positive")
@@ -329,10 +841,10 @@ def _validate_bounded_program(protocol: object) -> dict:
         value = limits.get(key)
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
             raise GateError(f"limits.{key} must be finite and positive")
-    if limits["max_invocations"] > budget["max_lifetime_invocations"]:
-        raise GateError("protocol invocation cap exceeds program lifetime cap")
-    if limits["max_total_cpu_seconds"] > budget["max_lifetime_cpu_seconds"] or limits["max_total_wall_seconds"] > budget["max_lifetime_wall_seconds"]:
-        raise GateError("protocol time cap exceeds program lifetime cap")
+    if limits["max_invocations"] > budget[invocation_cap_key]:
+        raise GateError("protocol invocation cap exceeds authorized program cap")
+    if limits["max_total_cpu_seconds"] > budget[cpu_cap_key] or limits["max_total_wall_seconds"] > budget[wall_cap_key]:
+        raise GateError("protocol time cap exceeds authorized program cap")
     if limits["max_cpu_seconds"] > limits["max_total_cpu_seconds"] or limits["max_wall_seconds"] > limits["max_total_wall_seconds"]:
         raise GateError("aggregate budget must admit one complete invocation")
 
@@ -436,6 +948,14 @@ def _validate_bounded_program(protocol: object) -> dict:
             if not isinstance(bindings, dict) or set(bindings) != templates - outputs:
                 raise GateError(f"descriptor run {run_id} slot bindings must exactly match stage inputs")
             for slot, binding in bindings.items():
+                if isinstance(binding, list):
+                    references = validate_run_output_list_binding(binding, slot, run_id, run_by_id)
+                    for reference in references:
+                        source = run_by_id[reference["run_id"]]
+                        source_stage = pipeline_descriptor["stages"][source["stage_id"]]
+                        if reference["slot"] not in source_stage["output_roles"]:
+                            raise GateError("candidate_outputs list references an undeclared producer output slot")
+                    continue
                 if not isinstance(binding, dict) or binding.get("kind") not in {"artifact", "controller_file", "run_output"}:
                     raise GateError(f"descriptor run {run_id} has an invalid typed binding for {slot}")
                 if binding["kind"] == "artifact":
@@ -446,10 +966,9 @@ def _validate_bounded_program(protocol: object) -> dict:
                         raise GateError("assessment artifacts are admitted only to assessment_bundle in scoring")
                 elif binding["kind"] == "controller_file":
                     rel = Path(binding.get("path", ""))
-                    if item["phase_id"] != "preflight" or rel.is_absolute() or ".." in rel.parts or not rel.parts:
-                        raise GateError("controller files are relative preflight-only typed inputs")
-                    if slot == "assessment_bundle" and item["phase_id"] != "preflight":
-                        raise GateError("synthetic controller assessment input is preflight-only")
+                    _validate_controller_file_phase(item["phase_id"], slot)
+                    if rel.is_absolute() or ".." in rel.parts or not rel.parts:
+                        raise GateError("controller files must use safe relative typed input paths")
                 else:
                     source_id, source_slot = binding.get("run_id"), binding.get("slot")
                     source = run_by_id.get(source_id)
@@ -474,23 +993,44 @@ def _validate_bounded_program(protocol: object) -> dict:
         planned_cpu += float(run_cpu) + BOUNDED_SUPERVISOR_CPU_ALLOWANCE_SECONDS
         planned_wall += float(run_wall) + BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS
     phase_plan = protocol.get("phase_plan")
-    required_phases = ["preflight", "campaign", "verification", "scoring", "aggregation", "recovery"]
-    if not isinstance(phase_plan, list) or [phase.get("phase_id") for phase in phase_plan if isinstance(phase, dict)] != required_phases:
-        raise GateError("phase_plan must name preflight, campaign, verification, scoring, aggregation and recovery in order")
     flattened = []
-    for phase in phase_plan:
-        ids = phase.get("run_ids")
-        if not isinstance(ids, list) or not all(isinstance(value, str) for value in ids):
-            raise GateError(f"phase {phase['phase_id']} run_ids must be an ordered string array")
-        if len(ids) != len(set(ids)):
-            raise GateError(f"phase {phase['phase_id']} repeats a run ID")
-        for run_id in ids:
-            if run_id not in run_by_id or run_by_id[run_id]["phase_id"] != phase["phase_id"]:
-                raise GateError(f"phase plan/run phase mismatch for {run_id}")
-            flattened.append(run_id)
-    if flattened != [run["run_id"] for run in runs]:
-        raise GateError("phase plan must cover the exact allowlist once in execution order")
+    if amended:
+        flattened = validate_continuation_phase_plan(
+            phase_plan, runs, protocol["continuation_authorization"]["slots"])
+    else:
+        required_phases = ["preflight", "campaign", "verification", "scoring", "aggregation", "recovery"]
+        if not isinstance(phase_plan, list) or [phase.get("phase_id") for phase in phase_plan if isinstance(phase, dict)] != required_phases:
+            raise GateError("phase_plan must name preflight, campaign, verification, scoring, aggregation and recovery in order")
+        for phase in phase_plan:
+            ids = phase.get("run_ids")
+            if not isinstance(ids, list) or not all(isinstance(value, str) for value in ids):
+                raise GateError(f"phase {phase['phase_id']} run_ids must be an ordered string array")
+            if len(ids) != len(set(ids)):
+                raise GateError(f"phase {phase['phase_id']} repeats a run ID")
+            for run_id in ids:
+                if run_id not in run_by_id or run_by_id[run_id]["phase_id"] != phase["phase_id"]:
+                    raise GateError(f"phase plan/run phase mismatch for {run_id}")
+                flattened.append(run_id)
+    if not amended and flattened != [run["run_id"] for run in runs]:
+        raise GateError("phase plan must cover the exact allowlist once in frozen slot order")
+    continuation_plan = None
+    if amended:
+        if descriptor_raw is None:
+            raise GateError("continuation authorization requires descriptor-mode pipeline stages")
+        continuation_plan = validate_bounded_program_continuation(
+            protocol["continuation_authorization"], runs, artifacts_by_id, limits, budget,
+            pipeline_descriptor)
+        if limits["max_invocations"] != len(runs):
+            raise GateError("continuation invocation ceiling must cover the complete immutable run allowlist")
+        campaign_outputs = continuation_plan["slots"]["campaign"]
+        for run in runs:
+            if run.get("stage_id") != "verifier" or run.get("phase_id") != "scoring":
+                continue
+            binding = run.get("slot_bindings", {}).get("candidate_outputs")
+            if not isinstance(binding, list) or [row.get("run_id") for row in binding if isinstance(row, dict)] != campaign_outputs:
+                raise GateError("final verifier candidate_outputs must bind every campaign output in frozen order")
     qualification = protocol.get("preflight_qualification") if descriptor_raw is not None else None
+    recovery_qualification = protocol.get("recovery_qualification") if amended and descriptor_raw is not None else None
     if descriptor_raw is not None:
         if not isinstance(qualification, dict) or set(qualification) != {"stage_run_ids", "expected_score_run_ids", "expected_control_count", "expected_score_bindings", "spec_artifact_id"}:
             raise GateError("descriptor protocol requires a frozen preflight_qualification contract")
@@ -501,6 +1041,22 @@ def _validate_bounded_program(protocol: object) -> dict:
             stage_run = run_by_id.get(run_id)
             if stage_run is None or stage_run.get("phase_id") != "preflight" or stage_run.get("stage_id") != stage_name:
                 raise GateError(f"preflight qualification run mismatch for {stage_name}")
+        if amended:
+            primary_slots = protocol["continuation_authorization"].get("slots", {}).get("primary_preflight")
+            if primary_slots != [stage_ids[name] for name in ("runner", "verifier", "scorer", "aggregator")]:
+                raise GateError("primary preflight qualification must bind the exact ordered primary slot quartet")
+            if not isinstance(recovery_qualification, dict) or set(recovery_qualification) != set(qualification):
+                raise GateError("continuation recovery qualification contract is incomplete")
+            recovery_stage_ids = recovery_qualification.get("stage_run_ids")
+            if not isinstance(recovery_stage_ids, dict) or set(recovery_stage_ids) != {"runner", "verifier", "scorer", "aggregator"}:
+                raise GateError("recovery qualification must bind all four stage run IDs")
+            for stage_name, run_id in recovery_stage_ids.items():
+                stage_run = run_by_id.get(run_id)
+                if stage_run is None or stage_run.get("phase_id") != "recovery" or stage_run.get("stage_id") != stage_name:
+                    raise GateError(f"recovery qualification run mismatch for {stage_name}")
+            recovery_slots = protocol["continuation_authorization"].get("slots", {}).get("recovery_preflight")
+            if recovery_slots != [recovery_stage_ids[name] for name in ("runner", "verifier", "scorer", "aggregator")]:
+                raise GateError("recovery qualification must bind the exact ordered recovery slot quartet")
         score_ids = qualification["expected_score_run_ids"]
         if not isinstance(score_ids, list) or not score_ids or len(score_ids) != len(set(score_ids)) or not all(isinstance(v, str) for v in score_ids):
             raise GateError("preflight qualification needs unique expected scorer run IDs")
@@ -518,16 +1074,25 @@ def _validate_bounded_program(protocol: object) -> dict:
             raise GateError("preflight qualification must pin its synthetic specification artifact")
     if planned_cpu > limits["max_total_cpu_seconds"] or planned_wall > limits["max_total_wall_seconds"]:
         raise GateError("complete phase plan per-run CPU/wall ceilings exceed protocol aggregate limits")
-    if planned_cpu > budget["max_lifetime_cpu_seconds"] or planned_wall > budget["max_lifetime_wall_seconds"]:
+    if planned_cpu > budget[cpu_cap_key] or planned_wall > budget[wall_cap_key]:
         raise GateError("complete phase plan exceeds persistent program-wide CPU/wall ceilings")
-    if len(runs) > budget["max_lifetime_invocations"]:
+    if len(runs) > budget[invocation_cap_key]:
         raise GateError("complete phase plan exceeds persistent program-wide invocation ceiling")
+    if amended and (
+        not math.isclose(planned_cpu + CONTINUATION_COORDINATOR_ALLOWANCE["cpu_seconds"],
+                         CONTINUATION_ALLOWANCE["cpu_seconds"], rel_tol=0, abs_tol=1e-9)
+        or not math.isclose(planned_wall + CONTINUATION_COORDINATOR_ALLOWANCE["exclusive_wall_seconds"],
+                            CONTINUATION_ALLOWANCE["wall_seconds"], rel_tol=0, abs_tol=1e-9)
+    ):
+        raise GateError("declared per-stage envelopes plus coordinator overhead do not reconcile with authorization")
     normalized_command = ({**command, "executable": str(executable)} if command is not None else None)
     return {"protocol": protocol, "program_id": program_id, "ledger_dir": expected_ledger,
             "command": normalized_command, "artifacts": artifacts_by_id,
             "commands_by_stage": command_by_stage, "pipeline_descriptor": pipeline_descriptor if descriptor_raw is not None else None,
             "preflight_qualification": qualification,
+            "recovery_qualification": recovery_qualification,
             "runs": runs, "run_by_id": run_by_id, "phase_plan": phase_plan,
+            "continuation_plan": continuation_plan,
             "planned_cpu_seconds": planned_cpu, "planned_wall_seconds": planned_wall,
             "limits": limits, "budget": budget}
 
@@ -537,11 +1102,74 @@ def _process_ledger_identity(config: dict) -> dict:
     protocol_sha256 = config.get("frozen_protocol_sha256")
     if protocol_sha256 is None:
         protocol_sha256 = sha256_bytes(canonical_json(config["protocol"]))
-    return {"schema": 1, "kind": "bounded_program_ledger", "program_id": config["program_id"],
-            "frozen_protocol_sha256": protocol_sha256,
+    identity = {"schema": 1, "kind": "bounded_program_ledger", "program_id": config["program_id"],
+                "frozen_protocol_sha256": protocol_sha256}
+    if config.get("continuation_plan") is not None:
+        identity.update({
+            "accounting_scope": "prospective_continuation_only",
+            "max_new_invocations": budget["max_new_invocations"],
+            "max_new_cpu_seconds": budget["max_new_cpu_seconds"],
+            "max_new_wall_seconds": budget["max_new_wall_seconds"],
+            "amendment_id": config["continuation_plan"]["amendment_id"],
+            "max_coordinator_cpu_seconds": config["continuation_plan"]["coordinator_allowance"]["cpu_seconds"],
+            "max_coordinator_exclusive_wall_seconds": config["continuation_plan"]["coordinator_allowance"]["exclusive_wall_seconds"],
+            "overall_deadline_seconds": config["continuation_plan"]["overall_deadline_seconds"],
+        })
+    else:
+        identity.update({
+            "accounting_scope": "program_lifetime",
             "max_lifetime_invocations": budget["max_lifetime_invocations"],
             "max_lifetime_cpu_seconds": budget["max_lifetime_cpu_seconds"],
-            "max_lifetime_wall_seconds": budget["max_lifetime_wall_seconds"]}
+            "max_lifetime_wall_seconds": budget["max_lifetime_wall_seconds"],
+        })
+    return identity
+
+
+def _process_budget_caps(state: dict) -> tuple[int, float, float]:
+    if state.get("accounting_scope") == "prospective_continuation_only":
+        return (int(state["max_new_invocations"]), float(state["max_new_cpu_seconds"]),
+                float(state["max_new_wall_seconds"]))
+    return (int(state["max_lifetime_invocations"]), float(state["max_lifetime_cpu_seconds"]),
+            float(state["max_lifetime_wall_seconds"]))
+
+
+def _self_cpu_seconds() -> float:
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    return float(usage.ru_utime + usage.ru_stime)
+
+
+def _self_peak_rss_bytes() -> int:
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    # Linux reports ru_maxrss in KiB. Continuation is Linux-only because its
+    # process-ledger deadline is bound to /proc boot identity.
+    return int(usage.ru_maxrss * 1024)
+
+
+def _enforce_coordinator_address_space(limit_bytes: int) -> None:
+    if not hasattr(resource, "RLIMIT_AS"):
+        raise GateError("coordinator address-space enforcement is unavailable")
+    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+    if hard != resource.RLIM_INFINITY and hard < limit_bytes:
+        limit_bytes = int(hard)
+    if limit_bytes <= 0:
+        raise GateError("coordinator address-space limit is invalid")
+    try:
+        resource.setrlimit(resource.RLIMIT_AS, (limit_bytes, limit_bytes))
+    except (OSError, ValueError) as error:
+        raise GateError("could not enforce coordinator address-space limit") from error
+    applied_soft, applied_hard = resource.getrlimit(resource.RLIMIT_AS)
+    if applied_soft != limit_bytes or applied_hard != limit_bytes:
+        raise GateError("coordinator address-space limit could not be verified")
+
+
+def _kernel_boot_id() -> str:
+    try:
+        value = Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip()
+    except OSError as error:
+        raise GateError("cannot establish Linux boot identity for the continuation deadline") from error
+    if not value:
+        raise GateError("Linux boot identity is empty")
+    return value
 
 
 def _process_ledger_event(path: Path, payload: dict, previous_hash: str) -> str:
@@ -563,7 +1191,409 @@ def _replace_process_budget(directory: Path, state: dict) -> None:
     _fsync_directory(directory)
 
 
-def _verify_process_ledger(directory: Path, state: dict, expected_protocol_sha256: str) -> list[dict]:
+def _append_program_terminal(directory: Path, state: dict, status: str) -> None:
+    if state.get("terminal_status") is not None:
+        return
+    state["ledger_head"] = _process_ledger_event(
+        directory / "process-events.jsonl",
+        {"event": "program_terminal", "status": status, "at_unix_ns": time.time_ns()},
+        state["ledger_head"])
+    state["event_count"] += 1
+    state["terminal_status"] = status
+    _replace_process_budget(directory, state)
+
+
+def _append_continuation_event(directory: Path, state: dict, payload: dict) -> dict:
+    event_hash = _process_ledger_event(directory / "process-events.jsonl", payload, state["ledger_head"])
+    state["ledger_head"] = event_hash
+    state["event_count"] += 1
+    return {**payload, "previous_hash": "", "event_sha256": event_hash}
+
+
+def _ensure_continuation_started(directory: Path, state: dict, plan: dict, protocol_sha: str,
+                                *, start_monotonic_ns: int | None = None) -> None:
+    if state.get("overall_start_monotonic_ns") is not None:
+        return
+    started = time.monotonic_ns() if start_monotonic_ns is None else start_monotonic_ns
+    boot_id = _kernel_boot_id()
+    deadline = started + int(plan["overall_deadline_seconds"] * 1_000_000_000)
+    payload = {"event": "program_started", "protocol_sha256": protocol_sha,
+               "amendment_id": plan["amendment_id"], "start_monotonic_ns": started,
+               "deadline_monotonic_ns": deadline, "boot_id": boot_id,
+               "deadline_seconds": plan["overall_deadline_seconds"]}
+    _append_continuation_event(directory, state, payload)
+    state.update({"overall_start_monotonic_ns": started,
+                  "overall_deadline_monotonic_ns": deadline, "kernel_boot_id": boot_id})
+
+
+def _phase_id_for_state(plan: dict, state_name: str) -> str:
+    mapping = {"primary_preflight": "primary_preflight", "recovery": "recovery_preflight",
+               "campaign": "campaign_orchestration", "final_scoring": "final_scoring_orchestration"}
+    try:
+        return mapping[state_name]
+    except KeyError as error:
+        raise GateError(f"no coordinator phase may begin while continuation is {state_name}") from error
+
+
+def begin_coordinator_phase(directory: Path, phase_id: str) -> dict:
+    """Open a measured coordinator phase; callers must finish it exactly once."""
+    phase_cpu_start = _self_cpu_seconds()
+    phase_mono_start = time.monotonic_ns()
+    _, config, protocol_sha = read_frozen_program(directory)
+    plan = config.get("continuation_plan")
+    if plan is None or phase_id not in plan["coordinator_phase_ids"]:
+        raise GateError("coordinator phase is not declared by this continuation")
+    _enforce_coordinator_address_space(CONTINUATION_MEMORY_BYTES)
+    if _self_peak_rss_bytes() > CONTINUATION_MEMORY_BYTES:
+        raise GateError("coordinator has already exceeded its 512 MiB memory qualification cap")
+    ledger = config["ledger_dir"]
+    lock_fd = os.open(ledger / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(lock_fd, "r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state_path = ledger / "process-budget.json"
+        state = json.loads(state_path.read_text())
+        events = _verify_process_ledger(ledger, state, protocol_sha, plan)
+        pevents = [event for event in events if event.get("protocol_sha256") == protocol_sha]
+        if state.get("terminal_status") is not None or state.get("active_coordinator_phase") is not None:
+            raise GateError("continuation is terminal or already has an open coordinator phase")
+        action = validate_continuation_events(plan, pevents)
+        expected = _phase_id_for_state(plan, action["state"])
+        if phase_id != expected:
+            raise GateError(f"coordinator phase {phase_id} cannot start while continuation requires {expected}")
+        _ensure_continuation_started(ledger, state, plan, protocol_sha,
+                                     start_monotonic_ns=phase_mono_start)
+        now_ns = phase_mono_start
+        if now_ns >= state["overall_deadline_monotonic_ns"]:
+            _append_program_terminal(ledger, state, "overall_wall_deadline")
+            raise GateError("continuation overall hard wall deadline expired")
+        token = uuid.uuid4().hex
+        start = {"event": "coordinator_phase_started", "protocol_sha256": protocol_sha,
+                 "amendment_id": plan["amendment_id"], "phase_id": phase_id,
+                 "token": token, "pid": os.getpid(), "boot_id": _kernel_boot_id(),
+                 "start_monotonic_ns": now_ns, "start_cpu_seconds": phase_cpu_start,
+                 "start_peak_rss_bytes": _self_peak_rss_bytes()}
+        _append_continuation_event(ledger, state, start)
+        state["active_coordinator_phase"] = {
+            "token": token, "phase_id": phase_id, "pid": os.getpid(),
+            "start_monotonic_ns": now_ns, "start_cpu_seconds": start["start_cpu_seconds"],
+            "boot_id": start["boot_id"],
+        }
+        _replace_process_budget(ledger, state)
+        return {key: start[key] for key in ("token", "phase_id", "pid", "boot_id", "start_monotonic_ns", "start_cpu_seconds")}
+
+
+@contextmanager
+def coordinator_phase_guard(directory: Path, token: str):
+    """Enforce the remaining coordinator CPU and exclusive-wall allowance.
+
+    The real-time timer is paused only while a separately bounded worker is
+    running. Its wall span remains charged to the overall deadline and the
+    worker's own frozen wall budget.
+    """
+    global _ACTIVE_COORDINATOR_GUARD
+    if threading.current_thread() is not threading.main_thread():
+        raise GateError("coordinator resource timers require the main thread")
+    if _ACTIVE_COORDINATOR_GUARD is not None:
+        raise GateError("nested coordinator phase guards are forbidden")
+    _, config, protocol_sha = read_frozen_program(directory)
+    plan = config.get("continuation_plan")
+    if plan is None:
+        raise GateError("coordinator phase guard requires an amended continuation")
+    ledger = config["ledger_dir"]
+    state = json.loads((ledger / "process-budget.json").read_text())
+    active = state.get("active_coordinator_phase")
+    if not isinstance(active, dict) or active.get("token") != token or active.get("pid") != os.getpid():
+        raise GateError("coordinator guard token does not match the active phase")
+    events = [json.loads(line) for line in (ledger / "process-events.jsonl").read_text().splitlines()]
+    phase = active["phase_id"]
+    phase_runs = {"primary_preflight": set(plan["slots"]["primary_preflight"]),
+                  "recovery_preflight": set(plan["slots"]["recovery_preflight"]),
+                  "campaign_orchestration": set(plan["slots"]["campaign"]),
+                  "final_scoring_orchestration": set(plan["slots"]["final_scoring"])}[phase]
+    run_cpu = sum(float(event["coordinator_cpu_seconds"]) for event in events
+                  if event.get("event") == "coordinator_accounted" and event.get("run_id") in phase_runs)
+    run_wall = sum(float(event["coordinator_exclusive_wall_seconds"]) for event in events
+                   if event.get("event") == "coordinator_accounted" and event.get("run_id") in phase_runs)
+    worker_wall = sum(float(event["worker_span_seconds"]) for event in events
+                      if event.get("event") == "completed" and event.get("run_id") in phase_runs
+                      and isinstance(event.get("worker_span_seconds"), (int, float)))
+    elapsed = (time.monotonic_ns() - int(active["start_monotonic_ns"])) / 1e9
+    phase_cpu_so_far = _self_cpu_seconds() - float(active["start_cpu_seconds"]) - run_cpu
+    phase_wall_so_far = elapsed - run_wall - worker_wall
+    cpu_remaining = float(state["max_coordinator_cpu_seconds"]) - float(state["coordinator_cpu_seconds_charged"]) - max(0.0, phase_cpu_so_far)
+    wall_remaining = float(state["max_coordinator_exclusive_wall_seconds"]) - float(state["coordinator_exclusive_wall_seconds_charged"]) - max(0.0, phase_wall_so_far)
+    overall_remaining = ((int(state["overall_deadline_monotonic_ns"]) - time.monotonic_ns()) / 1e9
+                         if state.get("overall_deadline_monotonic_ns") is not None else 0.0)
+    if cpu_remaining <= 0 or wall_remaining <= 0 or overall_remaining <= 0:
+        raise GateError("coordinator resource or overall deadline allowance is exhausted")
+    prior_real_timer = signal.getitimer(signal.ITIMER_REAL)
+    prior_profile_timer = signal.getitimer(signal.ITIMER_PROF)
+    if prior_real_timer != (0.0, 0.0) or prior_profile_timer != (0.0, 0.0):
+        raise GateError("cannot safely install coordinator timers over an existing process timer")
+    old_real_handler = signal.getsignal(signal.SIGALRM)
+    old_profile_handler = signal.getsignal(signal.SIGPROF)
+
+    def exceeded(signum, _frame):
+        label = "exclusive wall" if signum == signal.SIGALRM else "CPU"
+        raise CoordinatorResourceExceeded(f"coordinator {label} allowance exhausted")
+
+    signal.signal(signal.SIGALRM, exceeded)
+    signal.signal(signal.SIGPROF, exceeded)
+    wall_timer = min(wall_remaining, overall_remaining)
+    signal.setitimer(signal.ITIMER_REAL, wall_timer)
+    signal.setitimer(signal.ITIMER_PROF, cpu_remaining)
+    guard = {"token": token, "wall_remaining": wall_timer, "wall_timer_active": True,
+             "overall_deadline_monotonic_ns": state["overall_deadline_monotonic_ns"]}
+    _ACTIVE_COORDINATOR_GUARD = guard
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0.0)
+        signal.setitimer(signal.ITIMER_PROF, 0.0)
+        signal.signal(signal.SIGALRM, old_real_handler)
+        signal.signal(signal.SIGPROF, old_profile_handler)
+        _ACTIVE_COORDINATOR_GUARD = None
+
+
+@contextmanager
+def _pause_coordinator_exclusive_wall_timer():
+    guard = _ACTIVE_COORDINATOR_GUARD
+    if guard is None:
+        yield
+        return
+    if not guard["wall_timer_active"]:
+        raise GateError("coordinator exclusive-wall timer is already paused")
+    remaining, interval = signal.getitimer(signal.ITIMER_REAL)
+    signal.setitimer(signal.ITIMER_REAL, 0.0)
+    guard["wall_remaining"] = remaining
+    guard["wall_timer_active"] = False
+    try:
+        yield
+    finally:
+        overall = (int(guard["overall_deadline_monotonic_ns"]) - time.monotonic_ns()) / 1e9
+        if overall <= 0:
+            raise CoordinatorResourceExceeded("continuation overall wall deadline expired during worker execution")
+        resume = min(float(guard["wall_remaining"]), overall)
+        if resume <= 0:
+            raise CoordinatorResourceExceeded("coordinator exclusive-wall allowance exhausted")
+        signal.setitimer(signal.ITIMER_REAL, resume)
+        guard["wall_timer_active"] = True
+
+
+def finish_coordinator_phase(directory: Path, token: str, *, status: str,
+                            evidence_sha256: str | None = None, reason: str | None = None) -> dict:
+    """Close a phase and charge only residual coordinator CPU/wall, once."""
+    if status not in {"completed", "failed"}:
+        raise GateError("coordinator phase status must be completed or failed")
+    if evidence_sha256 is not None:
+        _require_sha256(evidence_sha256, "coordinator phase evidence_sha256")
+    _, config, protocol_sha = read_frozen_program(directory)
+    plan = config.get("continuation_plan")
+    if plan is None:
+        raise GateError("coordinator phases require an amended continuation")
+    ledger = config["ledger_dir"]
+    lock_fd = os.open(ledger / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(lock_fd, "r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state_path = ledger / "process-budget.json"
+        state = json.loads(state_path.read_text())
+        events = _verify_process_ledger(ledger, state, protocol_sha, plan)
+        active = state.get("active_coordinator_phase")
+        if not isinstance(active, dict) or active.get("token") != token:
+            raise GateError("coordinator phase token is missing, stale, or mismatched")
+        if active.get("pid") != os.getpid() or active.get("boot_id") != _kernel_boot_id():
+            _append_program_terminal(ledger, state, "coordinator_measurement_scope_changed")
+            raise GateError("coordinator phase must finish in its originating process and kernel boot")
+        now_ns = time.monotonic_ns()
+        raw_cpu = _self_cpu_seconds() - float(active["start_cpu_seconds"])
+        raw_wall = (now_ns - int(active["start_monotonic_ns"])) / 1_000_000_000.0
+        phase = active["phase_id"]
+        phase_runs = {"primary_preflight": set(plan["slots"]["primary_preflight"]),
+                      "recovery_preflight": set(plan["slots"]["recovery_preflight"]),
+                      "campaign_orchestration": set(plan["slots"]["campaign"]),
+                      "final_scoring_orchestration": set(plan["slots"]["final_scoring"])}[phase]
+        completed = [event for event in events if event.get("event") == "completed"
+                     and event.get("protocol_sha256") == protocol_sha and event.get("run_id") in phase_runs]
+        run_ids = {event.get("run_id") for event in completed}
+        worker_wall = sum(float(event["worker_span_seconds"]) for event in completed
+                          if isinstance(event.get("worker_span_seconds"), (int, float))
+                          and math.isfinite(float(event["worker_span_seconds"])))
+        coordinator_runs = [event for event in events if event.get("event") == "coordinator_accounted"
+                            and event.get("protocol_sha256") == protocol_sha
+                            and event.get("run_id") in phase_runs]
+        prior_run_cpu = sum(float(event["coordinator_cpu_seconds"]) for event in coordinator_runs)
+        prior_run_wall = sum(float(event["coordinator_exclusive_wall_seconds"]) for event in coordinator_runs)
+        phase_cpu = raw_cpu - prior_run_cpu
+        phase_wall = raw_wall - worker_wall - prior_run_wall
+        measurement_ok = all(math.isfinite(value) and value >= -1e-6
+                             for value in (raw_cpu, raw_wall, phase_cpu, phase_wall))
+        phase_cpu = max(0.0, phase_cpu) if measurement_ok else None
+        phase_wall = max(0.0, phase_wall) if measurement_ok else None
+        peak_rss = _self_peak_rss_bytes()
+        if peak_rss > CONTINUATION_MEMORY_BYTES:
+            status, reason = "failed", "coordinator address-space peak exceeded 512 MiB"
+        if phase in {"primary_preflight", "recovery_preflight"}:
+            expected_runs = (plan["slots"]["primary_preflight"] if phase == "primary_preflight"
+                             else plan["slots"]["recovery_preflight"])
+            prepared = any(event.get("event") == "qualification_prepared"
+                           and event.get("protocol_sha256") == protocol_sha
+                           and event.get("qualification_path") == ("primary" if phase == "primary_preflight" else "recovery")
+                           for event in events)
+            if status == "completed" and (run_ids != set(expected_runs) or not prepared):
+                status, reason = "failed", "preflight outputs did not satisfy the frozen qualification contract"
+        if phase == "campaign_orchestration" and status == "completed" and run_ids != phase_runs:
+            status, reason = "failed", "campaign stage outputs are incomplete"
+        if phase == "final_scoring_orchestration" and status == "completed" and run_ids != phase_runs:
+            status, reason = "failed", "final scoring stage outputs are incomplete"
+        if not measurement_ok or phase_cpu is None or phase_wall is None:
+            status, reason = "failed", "coordinator phase resource measurement unavailable"
+        coordinator_cpu_total = float(state["coordinator_cpu_seconds_charged"]) + (phase_cpu or 0.0)
+        coordinator_wall_total = float(state["coordinator_exclusive_wall_seconds_charged"]) + (phase_wall or 0.0)
+        if (coordinator_cpu_total > state["max_coordinator_cpu_seconds"]
+                or coordinator_wall_total > state["max_coordinator_exclusive_wall_seconds"]):
+            status, reason = "failed", "coordinator phase allowance exceeded"
+        receipt = {"schema": 1, "protocol_sha256": protocol_sha, "amendment_id": plan["amendment_id"],
+                   "phase_id": phase, "token": token, "pid": os.getpid(), "status": status,
+                   "measurement_method": "RUSAGE_SELF_RESIDUAL_AND_EXCLUSIVE_WALL_RESIDUAL",
+                   "raw_cpu_seconds": raw_cpu if measurement_ok else None,
+                   "worker_cpu_already_charged": prior_run_cpu,
+                   "coordinator_cpu_seconds": phase_cpu, "raw_wall_seconds": raw_wall if measurement_ok else None,
+                   "worker_span_seconds_already_charged": worker_wall,
+                   "per_run_coordinator_wall_already_charged": prior_run_wall,
+                   "coordinator_exclusive_wall_seconds": phase_wall,
+                   "coordinator_peak_rss_bytes": peak_rss,
+                   "completed_run_ids": sorted(run_ids), "evidence_sha256": evidence_sha256,
+                   "reason": reason, "measured_at_monotonic_ns": now_ns}
+        receipt_dir = ledger / "coordinator-phases"
+        receipt_dir.mkdir(exist_ok=True)
+        receipt_path = receipt_dir / f"{phase}-{token}.json"
+        write_exclusive(receipt_path, canonical_json(receipt))
+        phase_event = {"event": "coordinator_phase", "protocol_sha256": protocol_sha,
+                       "amendment_id": plan["amendment_id"], "phase_id": phase, "token": token,
+                       "status": status, "receipt_path": str(receipt_path.resolve()),
+                       "receipt_sha256": sha256_file(receipt_path),
+                       "coordinator_cpu_seconds": phase_cpu,
+                       "coordinator_exclusive_wall_seconds": phase_wall,
+                       "coordinator_peak_rss_bytes": peak_rss,
+                       "evidence_sha256": evidence_sha256, "reason": reason}
+        _append_continuation_event(ledger, state, phase_event)
+        state["active_coordinator_phase"] = None
+        if phase_cpu is not None and phase_wall is not None:
+            state["coordinator_cpu_seconds_charged"] = coordinator_cpu_total
+            state["coordinator_exclusive_wall_seconds_charged"] = coordinator_wall_total
+        if status == "completed" and phase in {"primary_preflight", "recovery_preflight"}:
+            path = "primary" if phase == "primary_preflight" else "recovery"
+            _append_continuation_event(ledger, state, {
+                "event": "qualified", "protocol_sha256": protocol_sha,
+                "amendment_id": plan["amendment_id"], "qualification_path": path,
+                "preflight_evidence_sha256": evidence_sha256,
+            })
+            state["qualification_status"] = "qualified"
+            if path == "primary":
+                for run_id in plan["slots"]["recovery_preflight"]:
+                    _append_continuation_event(ledger, state, {
+                        "event": "recovery_retired", "protocol_sha256": protocol_sha,
+                        "amendment_id": plan["amendment_id"], "run_id": run_id,
+                        "charged_cpu_seconds": 0, "charged_wall_seconds": 0,
+                        "reason": "primary_preflight_qualified",
+                    })
+        elif status == "failed" and phase == "primary_preflight":
+            _append_continuation_event(ledger, state, {"event": "preflight_rejected",
+                "protocol_sha256": protocol_sha, "amendment_id": plan["amendment_id"],
+                "reason": reason or "primary preflight failed"})
+            if reason in {"coordinator phase resource measurement unavailable",
+                          "coordinator phase allowance exceeded"} or now_ns >= state["overall_deadline_monotonic_ns"]:
+                _append_program_terminal(ledger, state, reason or "overall_wall_deadline")
+        elif status == "failed" and phase == "recovery_preflight":
+            _append_continuation_event(ledger, state, {"event": "recovery_rejected",
+                "protocol_sha256": protocol_sha, "amendment_id": plan["amendment_id"],
+                "reason": reason or "recovery preflight failed"})
+            _append_program_terminal(ledger, state, "recovery_preflight_failed")
+        elif status == "failed":
+            _append_program_terminal(ledger, state, f"{phase}_failed")
+        if now_ns >= state["overall_deadline_monotonic_ns"]:
+            _append_program_terminal(ledger, state, "overall_wall_deadline")
+        _replace_process_budget(ledger, state)
+        if status != "completed":
+            raise GateError(reason or f"coordinator phase {phase} failed")
+        return receipt
+
+
+@contextmanager
+def measured_coordinator_phase(directory: Path, phase_id: str):
+    """Convenience wrapper for pinned coordinators around campaign/final work."""
+    token = begin_coordinator_phase(directory, phase_id)
+    try:
+        with coordinator_phase_guard(directory, token["token"]):
+            yield token
+        finish_coordinator_phase(directory, token["token"], status="completed")
+    except BaseException as error:
+        try:
+            finish_coordinator_phase(directory, token["token"], status="failed",
+                                     reason=f"{type(error).__name__}: {error}")
+        except BaseException as accounting_error:
+            raise GateError(f"phase failure and accounting failure: {error}; {accounting_error}") from error
+        raise
+
+
+def _require_receipt_measurements(receipt: dict, event: dict,
+                                 fields: tuple[str | tuple[str, str], ...]) -> None:
+    """Bind ledgered resource values to their immutable receipt payload."""
+    for mapping in fields:
+        receipt_field, event_field = mapping if isinstance(mapping, tuple) else (mapping, mapping)
+        receipt_value, event_value = receipt.get(receipt_field), event.get(event_field)
+        if receipt_field.endswith("_bytes") or event_field.endswith("_bytes"):
+            valid = (type(receipt_value) is int and receipt_value >= 0
+                     and type(event_value) is int and event_value >= 0)
+        else:
+            valid = (not isinstance(receipt_value, bool) and isinstance(receipt_value, (int, float))
+                     and math.isfinite(float(receipt_value)) and float(receipt_value) >= 0
+                     and not isinstance(event_value, bool) and isinstance(event_value, (int, float))
+                     and math.isfinite(float(event_value)) and float(event_value) >= 0)
+        if not valid or receipt_value != event_value:
+            raise GateError(f"immutable coordinator receipt disagrees with ledger measurement {event_field}")
+
+
+def execute_continuation_phase(directory: Path, phase_id: str) -> dict:
+    """Execute only the frozen campaign or final-stage slots under one guard."""
+    _, config, protocol_sha = read_frozen_program(directory)
+    plan = config.get("continuation_plan")
+    if plan is None:
+        raise GateError("continuation phase execution requires an amended protocol")
+    slots_by_phase = {"campaign_orchestration": "campaign",
+                      "final_scoring_orchestration": "final_scoring"}
+    if phase_id not in slots_by_phase:
+        raise GateError("execute_continuation_phase handles campaign/final phases only")
+    run_ids = plan["slots"][slots_by_phase[phase_id]]
+    token = begin_coordinator_phase(directory, phase_id)
+    receipts = []
+    try:
+        with coordinator_phase_guard(directory, token["token"]):
+            for run_id in run_ids:
+                result = run_program(directory, run_id)
+                if result.get("status") != "completed":
+                    raise GateError(f"continuation stage {run_id} ended with {result.get('status')}")
+                receipt_path = directory / "runs" / run_id / "receipt.json"
+                receipts.append({"run_id": run_id, "receipt_sha256": sha256_file(receipt_path),
+                                 "output_slots": result.get("output_slots", {})})
+        evidence = sha256_bytes(canonical_json({"protocol_sha256": protocol_sha,
+                                                "phase_id": phase_id, "receipts": receipts}))
+        phase_receipt = finish_coordinator_phase(directory, token["token"], status="completed",
+                                                 evidence_sha256=evidence)
+        return {"status": "completed", "phase_id": phase_id,
+                "completed_stage_count": len(receipts), "evidence_sha256": evidence,
+                "coordinator_receipt_sha256": sha256_bytes(canonical_json(phase_receipt))}
+    except BaseException as error:
+        try:
+            finish_coordinator_phase(directory, token["token"], status="failed",
+                                     reason=f"{type(error).__name__}: {error}")
+        except BaseException as accounting_error:
+            raise GateError(f"phase failure and accounting failure: {error}; {accounting_error}") from error
+        raise
+
+
+def _verify_process_ledger(directory: Path, state: dict, expected_protocol_sha256: str,
+                           continuation_plan: dict | None = None) -> list[dict]:
     if state.get("frozen_protocol_sha256") != expected_protocol_sha256:
         raise GateError("bounded-process ledger is bound to a different frozen protocol")
     events = []
@@ -578,10 +1608,21 @@ def _verify_process_ledger(directory: Path, state: dict, expected_protocol_sha25
         events.append(event)
     if len(events) != state.get("event_count") or previous != state.get("ledger_head"):
         raise GateError("bounded-process ledger state/head mismatch")
-    identity = _process_ledger_identity({"budget": {key: state.get(key) for key in (
-        "max_lifetime_invocations", "max_lifetime_cpu_seconds", "max_lifetime_wall_seconds")},
+    cap_keys = (("max_new_invocations", "max_new_cpu_seconds", "max_new_wall_seconds")
+                if state.get("accounting_scope") == "prospective_continuation_only"
+                else ("max_lifetime_invocations", "max_lifetime_cpu_seconds", "max_lifetime_wall_seconds"))
+    identity = _process_ledger_identity({"budget": {key: state.get(key) for key in cap_keys},
         "program_id": state.get("program_id"),
-        "frozen_protocol_sha256": state.get("frozen_protocol_sha256")})
+        "frozen_protocol_sha256": state.get("frozen_protocol_sha256"),
+        **({"continuation_plan": {
+                "amendment_id": state.get("amendment_id"),
+                "coordinator_allowance": {
+                    "cpu_seconds": state.get("max_coordinator_cpu_seconds"),
+                    "exclusive_wall_seconds": state.get("max_coordinator_exclusive_wall_seconds"),
+                },
+                "overall_deadline_seconds": state.get("overall_deadline_seconds"),
+            }}
+           if state.get("accounting_scope") == "prospective_continuation_only" else {})})
     if not events or any(state.get(key) != value for key, value in identity.items()):
         raise GateError("bounded-process ledger identity mismatch")
     if events[0].get("event") != "created" or any(events[0].get(k) != v for k, v in identity.items()):
@@ -608,8 +1649,118 @@ def _verify_process_ledger(directory: Path, state: dict, expected_protocol_sha25
     qualification_status = "qualified" if qualification_events else "preflight_pending"
     if state.get("qualification_status", "preflight_pending") != qualification_status:
         raise GateError("bounded-process qualification state disagrees with event ledger")
-    if state["invocations_reserved"] > state["max_lifetime_invocations"] or cpu > state["max_lifetime_cpu_seconds"] or wall > state["max_lifetime_wall_seconds"]:
-        raise GateError("bounded-process lifetime ceiling exceeded")
+    invocation_cap, cpu_cap, wall_cap = _process_budget_caps(state)
+    if state["invocations_reserved"] > invocation_cap or cpu > cpu_cap or wall > wall_cap:
+        raise GateError("bounded-process authorized execution ceiling exceeded")
+    if state.get("accounting_scope") == "prospective_continuation_only" and continuation_plan is None:
+        raise GateError("continuation ledger verification requires the frozen continuation contract")
+    if continuation_plan is not None:
+        if state.get("accounting_scope") != "prospective_continuation_only" or state.get("amendment_id") != continuation_plan["amendment_id"]:
+            raise GateError("continuation ledger is not bound to the authorized amendment")
+        validate_continuation_events(continuation_plan, events)
+        imports = [event for event in events if event.get("event") == "historical_import"]
+        authorizations = [event for event in events if event.get("event") == "amendment_authorized"]
+        if len(imports) != 1 or len(authorizations) != 1 or events.index(imports[0]) >= events.index(authorizations[0]):
+            raise GateError("continuation ledger must contain one ordered history import and authorization")
+        if imports[0].get("history") != continuation_plan["history"]:
+            raise GateError("continuation historical import differs from its frozen protocol")
+        if imports[0].get("source_artifact_sha256") != continuation_plan["history_artifact_sha256"]:
+            raise GateError("continuation historical source artifact identity mismatch")
+        if imports[0].get("history_sha256") != sha256_bytes(canonical_json(continuation_plan["history"])):
+            raise GateError("continuation historical import checksum mismatch")
+        if authorizations[0].get("allowance") != continuation_plan["allowance"]:
+            raise GateError("continuation authorization differs from its frozen prospective allowance")
+        if authorizations[0].get("authorization_sha256") != continuation_plan["authorization_sha256"]:
+            raise GateError("continuation authorization evidence checksum mismatch")
+        process_receipts = [event for event in events if event.get("event") == "coordinator_accounted"]
+        receipt_invocations = [event.get("invocation_id") for event in process_receipts]
+        unavailable_events = [event for event in events if event.get("event") == "coordinator_accounting_unavailable"]
+        unavailable_ids = {event.get("invocation_id") for event in unavailable_events}
+        missing_receipts = set(completed_ids) - set(receipt_invocations)
+        if (len(set(receipt_invocations)) != len(receipt_invocations)
+                or set(receipt_invocations) | unavailable_ids != set(completed_ids)
+                or set(receipt_invocations) & unavailable_ids
+                or missing_receipts != unavailable_ids
+                or (unavailable_ids and state.get("terminal_status") is None)):
+            raise GateError("every amended bounded process must have exactly one resource receipt or explicit terminal accounting failure")
+        for receipt_event in process_receipts:
+            receipt_path = Path(receipt_event.get("receipt_path", ""))
+            if not receipt_path.is_file() or sha256_file(receipt_path) != receipt_event.get("receipt_sha256"):
+                raise GateError("coordinator resource receipt is missing or hash-mismatched")
+            receipt = json.loads(receipt_path.read_text())
+            if (receipt.get("invocation_id") != receipt_event.get("invocation_id")
+                    or receipt.get("run_id") != receipt_event.get("run_id")
+                    or receipt.get("measurement_method") != "RUSAGE_SELF_AND_EXCLUSIVE_WALL"):
+                raise GateError("coordinator resource receipt identity/method mismatch")
+            _require_receipt_measurements(receipt, receipt_event,
+                (("cpu_seconds", "coordinator_cpu_seconds"),
+                 ("exclusive_wall_seconds", "coordinator_exclusive_wall_seconds")))
+        coord_cpu = sum(float(event["coordinator_cpu_seconds"]) for event in process_receipts)
+        coord_wall = sum(float(event["coordinator_exclusive_wall_seconds"]) for event in process_receipts)
+        phase_receipts = [event for event in events if event.get("event") == "coordinator_phase"]
+        phase_tokens = [event.get("token") for event in phase_receipts]
+        if len(set(phase_tokens)) != len(phase_tokens):
+            raise GateError("duplicate coordinator phase receipt token")
+        for receipt_event in phase_receipts:
+            cpu_value, wall_value = receipt_event.get("coordinator_cpu_seconds"), receipt_event.get("coordinator_exclusive_wall_seconds")
+            if cpu_value is None or wall_value is None:
+                if receipt_event.get("status") != "failed" or state.get("terminal_status") is None:
+                    raise GateError("coordinator phase receipt has unavailable resource measurements")
+            elif (not math.isfinite(float(cpu_value)) or not math.isfinite(float(wall_value))
+                  or float(cpu_value) < 0 or float(wall_value) < 0):
+                raise GateError("coordinator phase receipt has invalid resource measurements")
+            receipt_path = Path(receipt_event.get("receipt_path", ""))
+            if not receipt_path.is_file() or sha256_file(receipt_path) != receipt_event.get("receipt_sha256"):
+                raise GateError("coordinator phase receipt is missing or hash-mismatched")
+            receipt = json.loads(receipt_path.read_text())
+            if (receipt.get("token") != receipt_event.get("token")
+                    or receipt.get("phase_id") != receipt_event.get("phase_id")
+                    or receipt.get("status") != receipt_event.get("status")
+                    or receipt.get("measurement_method") != "RUSAGE_SELF_RESIDUAL_AND_EXCLUSIVE_WALL_RESIDUAL"):
+                raise GateError("coordinator phase receipt identity/method mismatch")
+            _require_receipt_measurements(receipt, receipt_event,
+                ("coordinator_peak_rss_bytes",) if cpu_value is None else
+                ("coordinator_cpu_seconds", "coordinator_exclusive_wall_seconds", "coordinator_peak_rss_bytes"))
+            if cpu_value is not None and wall_value is not None:
+                coord_cpu += float(cpu_value)
+                coord_wall += float(wall_value)
+        if (not math.isclose(coord_cpu, state.get("coordinator_cpu_seconds_charged", -1), rel_tol=1e-12, abs_tol=1e-9)
+                or not math.isclose(coord_wall, state.get("coordinator_exclusive_wall_seconds_charged", -1), rel_tol=1e-12, abs_tol=1e-9)):
+            raise GateError("coordinator resource counters disagree with immutable receipt events")
+        if (coord_cpu > state["max_coordinator_cpu_seconds"]
+                or coord_wall > state["max_coordinator_exclusive_wall_seconds"]):
+            raise GateError("coordinator overhead allowance exceeded")
+        started = state.get("overall_start_monotonic_ns")
+        deadline = state.get("overall_deadline_monotonic_ns")
+        if (started is None) != (deadline is None) or (started is not None
+                and deadline != started + int(state["overall_deadline_seconds"] * 1_000_000_000)):
+            raise GateError("overall monotonic deadline state is incomplete or inconsistent")
+        start_events = [event for event in events if event.get("event") == "program_started"]
+        if started is None:
+            if start_events:
+                raise GateError("program start event exists without a deadline state")
+        elif (len(start_events) != 1 or start_events[0].get("start_monotonic_ns") != started
+              or start_events[0].get("deadline_monotonic_ns") != deadline
+              or start_events[0].get("boot_id") != state.get("kernel_boot_id")
+              or start_events[0].get("deadline_seconds") != state["overall_deadline_seconds"]):
+            raise GateError("overall deadline is not bound to its immutable program-start event")
+        if started is not None and state.get("kernel_boot_id") != _kernel_boot_id():
+            raise GateError("continuation monotonic deadline cannot be verified after a kernel boot change")
+        phase_starts = [event for event in events if event.get("event") == "coordinator_phase_started"]
+        phase_closes = {event.get("token") for event in phase_receipts}
+        active_starts = [event for event in phase_starts if event.get("token") not in phase_closes]
+        if len(active_starts) > 1:
+            raise GateError("continuation ledger contains overlapping unclosed coordinator phases")
+        expected_active = None
+        if active_starts:
+            start_event = active_starts[0]
+            expected_active = {key: start_event.get(key) for key in
+                               ("token", "phase_id", "pid", "start_monotonic_ns", "start_cpu_seconds", "boot_id")}
+        if state.get("active_coordinator_phase") != expected_active:
+            raise GateError("active coordinator phase state disagrees with immutable ledger")
+        terminal_events = [event for event in events if event.get("event") == "program_terminal"]
+        if len(terminal_events) > 1 or (terminal_events and state.get("terminal_status") != terminal_events[0].get("status")):
+            raise GateError("continuation terminal state differs from immutable ledger")
     return events
 
 
@@ -628,15 +1779,44 @@ def _initialize_process_ledger(config: dict) -> None:
             state = json.loads(state_path.read_text())
             if any(state.get(k) != v for k, v in identity.items()):
                 raise GateError("bounded-process lifetime identity/limits changed")
-            _verify_process_ledger(directory, state, identity["frozen_protocol_sha256"])
+            _verify_process_ledger(directory, state, identity["frozen_protocol_sha256"], config.get("continuation_plan"))
             return
         event = {"event": "created", **identity, "previous_hash": "0" * 64}
         event_hash = sha256_bytes(compact_json(event))
         event["event_sha256"] = event_hash
         write_exclusive(events_path, compact_json(event) + b"\n", 0o600)
-        state = {**identity, "invocations_reserved": 0, "cpu_seconds_charged": 0.0,
-                 "wall_seconds_charged": 0.0, "pending": None, "qualification_status": "preflight_pending", "event_count": 1,
-                 "ledger_head": event_hash}
+        event_count = 1
+        if config.get("continuation_plan") is not None:
+            continuation = config["continuation_plan"]
+            amendment = config["protocol"]["continuation_authorization"]
+            event_hash = _process_ledger_event(events_path, {
+                "event": "historical_import", "amendment_id": continuation["amendment_id"],
+                "history": continuation["history"],
+                "history_sha256": sha256_bytes(canonical_json(continuation["history"])),
+                "source_artifact_sha256": continuation["history_artifact_sha256"],
+                "imported_at_freeze": True,
+            }, event_hash)
+            event_count += 1
+            event_hash = _process_ledger_event(events_path, {
+                "event": "amendment_authorized", "amendment_id": continuation["amendment_id"],
+                "authorization_artifact_id": amendment["authorization_artifact_id"],
+                "authorization_sha256": config["artifacts"][amendment["authorization_artifact_id"]]["sha256"],
+                "allowance": continuation["allowance"],
+                "prior_declared_cap": continuation["history"]["prior_declared_invocation_cap"],
+                "authorized_prospectively": True,
+            }, event_hash)
+            event_count += 1
+            state_caps = {"accounting_scope": "prospective_continuation_only"}
+        else:
+            state_caps = {}
+        state = {**identity, **state_caps, "invocations_reserved": 0, "cpu_seconds_charged": 0.0,
+                 "wall_seconds_charged": 0.0, "pending": None, "qualification_status": "preflight_pending",
+                 "event_count": event_count, "ledger_head": event_hash}
+        if config.get("continuation_plan") is not None:
+            state.update({"coordinator_cpu_seconds_charged": 0.0,
+                          "coordinator_exclusive_wall_seconds_charged": 0.0,
+                          "overall_start_monotonic_ns": None, "overall_deadline_monotonic_ns": None,
+                          "kernel_boot_id": None, "terminal_status": None})
         write_exclusive(state_path, canonical_json(state), 0o600)
 
 
@@ -673,22 +1853,39 @@ def _authorize_program_run(directory: Path, config: dict, protocol_sha: str, run
     with os.fdopen(lock_fd, "r+b") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         state = json.loads((ledger_dir / "process-budget.json").read_text())
-        events = _verify_process_ledger(ledger_dir, state, protocol_sha)
+        events = _verify_process_ledger(ledger_dir, state, protocol_sha, config.get("continuation_plan"))
         protocol_events = [e for e in events if e.get("protocol_sha256") == protocol_sha]
-        qualified = any(e.get("event") == "qualified" for e in protocol_events)
-        if config.get("pipeline_descriptor") is not None and run["phase_id"] != "preflight" and not qualified:
-            raise GateError("campaign and later phases require successful preflight qualification")
+        continuation = config.get("continuation_plan")
+        if continuation is not None:
+            action = validate_continuation_events(continuation, protocol_events)
+            if action["next_run_id"] != run_id:
+                raise GateError(f"continuation phase gate refuses run; required state is {action['state']}")
+            active_phase = state.get("active_coordinator_phase")
+            expected_phase = _phase_id_for_state(continuation, action["state"])
+            if (not isinstance(active_phase, dict) or active_phase.get("phase_id") != expected_phase
+                    or active_phase.get("pid") != os.getpid()):
+                raise GateError("continuation invocation requires its measured coordinator phase to be open")
+        else:
+            qualified = any(e.get("event") == "qualified" for e in protocol_events)
+            if config.get("pipeline_descriptor") is not None and run["phase_id"] != "preflight" and not qualified:
+                raise GateError("campaign and later phases require successful preflight qualification")
         if state.get("pending") is not None:
             raise GateError("prior bounded-program invocation unresolved; fail closed")
         reserved = [e for e in protocol_events if e.get("event") == "reserved"]
-        ordered = [rid for phase in config["phase_plan"] for rid in phase["run_ids"]]
-        if len(reserved) >= len(ordered) or ordered[len(reserved)] != run_id:
-            raise GateError("bounded-program invocation is out of frozen phase-plan order")
+        if continuation is None:
+            ordered = [rid for phase in config["phase_plan"] for rid in phase["run_ids"]]
+            if len(reserved) >= len(ordered) or ordered[len(reserved)] != run_id:
+                raise GateError("bounded-program invocation is out of frozen phase-plan order")
         if any(e.get("run_id") == run_id for e in reserved):
             raise GateError("bounded-program run_id was already consumed")
-        remaining = [config["run_by_id"][rid] for rid in ordered[len(reserved):]]
-        if state["invocations_reserved"] + len(remaining) > state["max_lifetime_invocations"]:
-            raise GateError("complete remaining phase plan does not fit the persistent invocation budget")
+        if continuation is not None:
+            remaining_ids = continuation_remaining_run_ids(continuation, protocol_events)
+            remaining = [config["run_by_id"][rid] for rid in remaining_ids]
+        else:
+            remaining = [config["run_by_id"][rid] for rid in ordered[len(reserved):]]
+        invocation_cap, state_cpu_cap, state_wall_cap = _process_budget_caps(state)
+        if state["invocations_reserved"] + len(remaining) > invocation_cap:
+            raise GateError("complete remaining phase plan does not fit the persistent authorized invocation budget")
         completed = [e for e in protocol_events if e.get("event") == "completed"]
         local_cpu = sum(float(e["charged_cpu_seconds"]) for e in completed)
         local_wall = sum(float(e["charged_wall_seconds"]) for e in completed)
@@ -696,10 +1893,10 @@ def _authorize_program_run(directory: Path, config: dict, protocol_sha: str, run
         remaining_cpu = sum(float(x.get("max_cpu_seconds", limits["max_cpu_seconds"])) + BOUNDED_SUPERVISOR_CPU_ALLOWANCE_SECONDS for x in remaining)
         remaining_wall = sum(float(x.get("max_wall_seconds", limits["max_wall_seconds"])) + BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS for x in remaining)
         if (local_cpu + remaining_cpu > limits["max_total_cpu_seconds"]
-                or state["cpu_seconds_charged"] + remaining_cpu > state["max_lifetime_cpu_seconds"]):
+                or state["cpu_seconds_charged"] + remaining_cpu > state_cpu_cap):
             raise GateError("remaining bounded-program CPU plan does not fit aggregate/lifetime budget")
         if (local_wall + remaining_wall > limits["max_total_wall_seconds"]
-                or state["wall_seconds_charged"] + remaining_wall > state["max_lifetime_wall_seconds"]):
+                or state["wall_seconds_charged"] + remaining_wall > state_wall_cap):
             raise GateError("remaining bounded-program wall plan does not fit aggregate/lifetime budget")
 
 
@@ -725,6 +1922,43 @@ def _verify_program_runtime(config: dict, phase_id: str) -> None:
             raise GateError("bounded-program input artifact changed after freeze")
 
 
+def _resolve_authenticated_run_output(directory: Path, protocol_sha: str,
+                                      ledger_events: list[dict], binding: dict) -> tuple[Path, str]:
+    source_run, source_slot = binding["run_id"], binding["slot"]
+    matching_events = [event for event in ledger_events
+                       if event.get("event") == "completed"
+                       and event.get("protocol_sha256") == protocol_sha
+                       and event.get("run_id") == source_run]
+    if len(matching_events) != 1:
+        raise GateError("pipeline predecessor has no unique authenticated completion event")
+    completion = matching_events[0]
+    if completion.get("status") != "completed":
+        raise GateError("pipeline predecessor completion event is not successful")
+    source_receipt_path = directory / "runs" / source_run / "receipt.json"
+    if not source_receipt_path.is_file():
+        raise GateError("pipeline predecessor output is unavailable")
+    if (Path(completion.get("receipt_path", "")).resolve() != source_receipt_path.resolve()
+            or sha256_file(source_receipt_path) != completion.get("receipt_sha256")):
+        raise GateError("pipeline predecessor receipt does not match its immutable ledger event")
+    source_receipt = json.loads(source_receipt_path.read_text())
+    if (source_receipt.get("protocol_sha256") != protocol_sha
+            or source_receipt.get("run_id") != source_run
+            or source_receipt.get("invocation_id") != completion.get("invocation_id")
+            or source_receipt.get("status") != completion.get("status")):
+        raise GateError("pipeline predecessor receipt identity differs from its ledger event")
+    slot_record = source_receipt.get("output_slots", {}).get(source_slot)
+    if source_receipt.get("status") != "completed" or not isinstance(slot_record, dict):
+        raise GateError("pipeline predecessor did not complete with the requested output")
+    path = Path(slot_record.get("path", ""))
+    expected_path = (directory / "runs" / source_run / "outputs" / f"{source_slot}.json").resolve()
+    if path.resolve() != expected_path or not path.is_file():
+        raise GateError("pipeline predecessor output path differs from its frozen run-owned slot")
+    actual = sha256_file(path)
+    if actual != slot_record.get("sha256"):
+        raise GateError("pipeline predecessor output hash mismatch")
+    return path.resolve(), actual
+
+
 def _resolve_pipeline_inputs(
     directory: Path,
     config: dict,
@@ -734,11 +1968,21 @@ def _resolve_pipeline_inputs(
     ledger_events: list[dict],
 ) -> tuple[list[str], dict[str, str], dict[str, str], dict[str, str]]:
     stage = config["pipeline_descriptor"]["stages"][run["stage_id"]]
-    slots: dict[str, str] = {}
-    input_hashes: dict[str, str] = {}
-    input_paths: dict[str, str] = {}
+    slots: dict[str, str | list[str]] = {}
+    input_hashes: dict[str, object] = {}
+    input_paths: dict[str, object] = {}
     for slot, binding in run["slot_bindings"].items():
-        kind = binding["kind"]
+        if isinstance(binding, list):
+            references = validate_run_output_list_binding(binding, slot, run["run_id"], config["run_by_id"])
+            resolved = [_resolve_authenticated_run_output(directory, protocol_sha, ledger_events, reference)
+                        for reference in references]
+            slots[slot] = [str(path) for path, _ in resolved]
+            input_hashes[slot] = [digest for _, digest in resolved]
+            input_paths[slot] = [str(path) for path, _ in resolved]
+            continue
+        if not isinstance(binding, dict):
+            raise GateError(f"pipeline input slot {slot} must bind an object or supported ordered list")
+        kind = binding.get("kind")
         if kind == "artifact":
             artifact = config["artifacts"][binding["artifact_id"]]
             if artifact.get("role") == "assessment" and (run["phase_id"] != "scoring" or slot != "assessment_bundle"):
@@ -756,40 +2000,7 @@ def _resolve_pipeline_inputs(
             actual = sha256_file(path)
             input_hashes[slot] = actual
         else:
-            source_run = binding["run_id"]
-            matching_events = [
-                event for event in ledger_events
-                if event.get("event") == "completed"
-                and event.get("protocol_sha256") == protocol_sha
-                and event.get("run_id") == source_run
-            ]
-            if len(matching_events) != 1:
-                raise GateError("pipeline predecessor has no unique authenticated completion event")
-            completion = matching_events[0]
-            if completion.get("status") != "completed":
-                raise GateError("pipeline predecessor completion event is not successful")
-            source_receipt_path = directory / "runs" / source_run / "receipt.json"
-            if not source_receipt_path.is_file():
-                raise GateError("pipeline predecessor output is unavailable")
-            if (Path(completion.get("receipt_path", "")).resolve() != source_receipt_path.resolve()
-                    or sha256_file(source_receipt_path) != completion.get("receipt_sha256")):
-                raise GateError("pipeline predecessor receipt does not match its immutable ledger event")
-            source_receipt = json.loads(source_receipt_path.read_text())
-            if (source_receipt.get("protocol_sha256") != protocol_sha
-                    or source_receipt.get("run_id") != source_run
-                    or source_receipt.get("invocation_id") != completion.get("invocation_id")
-                    or source_receipt.get("status") != completion.get("status")):
-                raise GateError("pipeline predecessor receipt identity differs from its ledger event")
-            slot_record = source_receipt.get("output_slots", {}).get(binding["slot"])
-            if source_receipt.get("status") != "completed" or not isinstance(slot_record, dict):
-                raise GateError("pipeline predecessor did not complete with the requested output")
-            path = Path(slot_record["path"])
-            expected_path = (directory / "runs" / source_run / "outputs" / f"{binding['slot']}.json").resolve()
-            if path.resolve() != expected_path:
-                raise GateError("pipeline predecessor output path differs from its frozen run-owned slot")
-            actual = sha256_file(path)
-            if actual != slot_record.get("sha256"):
-                raise GateError("pipeline predecessor output hash mismatch")
+            path, actual = _resolve_authenticated_run_output(directory, protocol_sha, ledger_events, binding)
             input_hashes[slot] = actual
         slots[slot] = str(path.resolve())
         input_paths[slot] = str(path.resolve())
@@ -816,7 +2027,8 @@ def charged_program_resources(outcome: dict, status: str, max_cpu: float, max_wa
     consume_full = (
         status in {"timed_out", "cpu_limit", "memory_limit", "output_limit",
                    "orphaned_process_group", "resource_accounting_unavailable",
-                   "harness_error", "supervisor_timeout", "supervisor_cpu_limit"}
+                   "harness_error", "supervisor_timeout", "supervisor_cpu_limit",
+                   "coordinator_limit"}
         or not outcome.get("process_group_rss_available", False)
     )
     target_cpu = _nonnegative_measurement(outcome.get("target_cpu_seconds"))
@@ -835,12 +2047,20 @@ def charged_program_resources(outcome: dict, status: str, max_cpu: float, max_wa
 
 
 def run_program(directory: Path, run_id: str) -> dict:
+    coordinator_cpu_started = _self_cpu_seconds()
+    coordinator_function_started = time.monotonic()
+    coordinator_function_started_ns = time.monotonic_ns()
     protocol, config, protocol_sha = read_frozen_program(directory)
     _safe_program_id(run_id, "run_id")
     runs = {item["run_id"]: item for item in config["runs"]}
     if run_id not in runs:
         raise GateError("run_id is not allowlisted by the frozen bounded-program protocol")
     run = runs[run_id]
+    continuation = config.get("continuation_plan")
+    if continuation is not None:
+        active_guard = _ACTIVE_COORDINATOR_GUARD
+        if not isinstance(active_guard, dict):
+            raise GateError("continuation run-program requires the enforced coordinator_phase_guard")
     _authorize_program_run(directory, config, protocol_sha, run_id)
     pipeline_mode = config.get("pipeline_descriptor") is not None
     run_dir = directory / "runs" / run_id
@@ -870,10 +2090,33 @@ def run_program(directory: Path, run_id: str) -> dict:
         fcntl.flock(lock, fcntl.LOCK_EX)
         state_path = ledger_dir / "process-budget.json"
         state = json.loads(state_path.read_text())
-        events = _verify_process_ledger(ledger_dir, state, protocol_sha)
-        qualified = any(e.get("event") == "qualified" and e.get("protocol_sha256") == protocol_sha for e in events)
-        if pipeline_mode and run["phase_id"] != "preflight" and not qualified:
-            raise GateError("campaign and later phases require successful preflight qualification")
+        events = _verify_process_ledger(ledger_dir, state, protocol_sha, config.get("continuation_plan"))
+        protocol_events = [e for e in events if e.get("protocol_sha256") == protocol_sha]
+        continuation = config.get("continuation_plan")
+        if continuation is not None:
+            if state.get("terminal_status") is not None:
+                raise GateError(f"continuation stopped after {state['terminal_status']}")
+            boot_id = _kernel_boot_id()
+            if state.get("overall_start_monotonic_ns") is None:
+                raise GateError("continuation must start through a measured coordinator phase")
+            if state.get("kernel_boot_id") != boot_id:
+                raise GateError("continuation deadline is invalid after kernel boot identity changed")
+            elapsed_before = (time.monotonic_ns() - state["overall_start_monotonic_ns"]) / 1_000_000_000.0
+            if elapsed_before >= continuation["overall_deadline_seconds"]:
+                _append_program_terminal(ledger_dir, state, "overall_wall_deadline")
+                raise GateError("continuation overall hard wall deadline expired")
+            action = validate_continuation_events(continuation, protocol_events)
+            if action["next_run_id"] != run_id:
+                raise GateError(f"continuation phase gate refuses run; required state is {action['state']}")
+            active_phase = state.get("active_coordinator_phase")
+            expected_phase = _phase_id_for_state(continuation, action["state"])
+            if (not isinstance(active_phase, dict) or active_phase.get("phase_id") != expected_phase
+                    or active_phase.get("pid") != os.getpid()):
+                raise GateError("continuation invocation requires its measured coordinator phase to be open")
+        else:
+            qualified = any(e.get("event") == "qualified" for e in protocol_events)
+            if pipeline_mode and run["phase_id"] != "preflight" and not qualified:
+                raise GateError("campaign and later phases require successful preflight qualification")
         if pipeline_mode:
             # Authenticate predecessor receipts and resolve their output slots
             # while holding the same lock that protects the invocation
@@ -882,30 +2125,85 @@ def run_program(directory: Path, run_id: str) -> dict:
                 directory, config, run, run_dir, protocol_sha, events)
         if state.get("pending") is not None:
             raise GateError("prior bounded-program invocation unresolved; fail closed")
-        prior_for_protocol = [e for e in events if e.get("protocol_sha256") == protocol_sha and e.get("event") == "reserved"]
+        prior_for_protocol = [e for e in protocol_events if e.get("event") == "reserved"]
         if any(e.get("run_id") == run_id for e in prior_for_protocol):
             raise GateError("bounded-program run_id was already consumed")
-        ordered_run_ids = [run_id for phase in config["phase_plan"] for run_id in phase["run_ids"]]
-        if len(prior_for_protocol) >= len(ordered_run_ids) or ordered_run_ids[len(prior_for_protocol)] != run_id:
-            raise GateError("bounded-program invocation is out of frozen phase-plan order")
-        if state["invocations_reserved"] >= state["max_lifetime_invocations"]:
-            raise GateError("bounded-program lifetime invocation budget exhausted")
-        protocol_completed = [e for e in events if e.get("protocol_sha256") == protocol_sha and e.get("event") == "completed"]
+        if continuation is None:
+            ordered_run_ids = [run_id for phase in config["phase_plan"] for run_id in phase["run_ids"]]
+            if len(prior_for_protocol) >= len(ordered_run_ids) or ordered_run_ids[len(prior_for_protocol)] != run_id:
+                raise GateError("bounded-program invocation is out of frozen phase-plan order")
+        invocation_cap, state_cpu_cap, state_wall_cap = _process_budget_caps(state)
+        if state["invocations_reserved"] >= invocation_cap:
+            raise GateError("bounded-program authorized invocation budget exhausted")
+        protocol_completed = [e for e in protocol_events if e.get("event") == "completed"]
         local_cpu = sum(float(e["charged_cpu_seconds"]) for e in protocol_completed)
         local_wall = sum(float(e["charged_wall_seconds"]) for e in protocol_completed)
         if len(prior_for_protocol) >= limits["max_invocations"]:
             raise GateError("bounded-program protocol invocation budget exhausted")
-        remaining_runs = [config["run_by_id"][rid] for rid in ordered_run_ids[len(prior_for_protocol):]]
-        if state["invocations_reserved"] + len(remaining_runs) > state["max_lifetime_invocations"]:
-            raise GateError("complete remaining phase plan does not fit the persistent invocation budget")
+        if continuation is not None:
+            remaining_ids = continuation_remaining_run_ids(continuation, protocol_events)
+            remaining_runs = [config["run_by_id"][rid] for rid in remaining_ids]
+        else:
+            remaining_runs = [config["run_by_id"][rid] for rid in ordered_run_ids[len(prior_for_protocol):]]
+        continuation_max_cpu = state_cpu_cap
+        continuation_max_wall = state_wall_cap
+        if state["invocations_reserved"] + len(remaining_runs) > invocation_cap:
+            raise GateError("complete remaining phase plan does not fit the persistent authorized invocation budget")
         remaining_cpu = sum(float(item.get("max_cpu_seconds", limits["max_cpu_seconds"])) + BOUNDED_SUPERVISOR_CPU_ALLOWANCE_SECONDS for item in remaining_runs)
         remaining_wall = sum(float(item.get("max_wall_seconds", limits["max_wall_seconds"])) + BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS for item in remaining_runs)
-        if local_cpu + remaining_cpu > limits["max_total_cpu_seconds"] or state["cpu_seconds_charged"] + remaining_cpu > state["max_lifetime_cpu_seconds"]:
+        if local_cpu + remaining_cpu > limits["max_total_cpu_seconds"] or state["cpu_seconds_charged"] + remaining_cpu > state_cpu_cap:
             raise GateError("remaining bounded-program phase-plan CPU allowance does not fit aggregate/lifetime budget")
-        if local_wall + remaining_wall > limits["max_total_wall_seconds"] or state["wall_seconds_charged"] + remaining_wall > state["max_lifetime_wall_seconds"]:
+        if local_wall + remaining_wall > limits["max_total_wall_seconds"] or state["wall_seconds_charged"] + remaining_wall > state_wall_cap:
             raise GateError("remaining bounded-program phase-plan wall allowance does not fit aggregate/lifetime budget")
         max_cpu = float(run.get("max_cpu_seconds", limits["max_cpu_seconds"]))
         max_wall = float(run.get("max_wall_seconds", limits["max_wall_seconds"]))
+        effective_max_wall = max_wall
+        if continuation is not None:
+            phase_start = state.get("active_coordinator_phase")
+            if not isinstance(phase_start, dict):
+                raise GateError("continuation coordinator phase is not active")
+            phase_name = phase_start["phase_id"]
+            phase_ids = {"primary_preflight": set(continuation["slots"]["primary_preflight"]),
+                         "recovery_preflight": set(continuation["slots"]["recovery_preflight"]),
+                         "campaign_orchestration": set(continuation["slots"]["campaign"]),
+                         "final_scoring_orchestration": set(continuation["slots"]["final_scoring"])}[phase_name]
+            phase_completed = [event for event in events if event.get("event") == "completed"
+                               and event.get("protocol_sha256") == protocol_sha
+                               and event.get("run_id") in phase_ids]
+            phase_run_coord = [event for event in events if event.get("event") == "coordinator_accounted"
+                               and event.get("protocol_sha256") == protocol_sha
+                               and event.get("run_id") in phase_ids]
+            phase_raw_cpu = _self_cpu_seconds() - float(phase_start["start_cpu_seconds"])
+            phase_residual_cpu = phase_raw_cpu - sum(float(event["coordinator_cpu_seconds"])
+                                                     for event in phase_run_coord)
+            phase_elapsed = (time.monotonic_ns() - int(phase_start["start_monotonic_ns"])) / 1e9
+            phase_residual_wall = (phase_elapsed
+                - sum(float(event["worker_span_seconds"]) for event in phase_completed
+                      if isinstance(event.get("worker_span_seconds"), (int, float)))
+                - sum(float(event["coordinator_exclusive_wall_seconds"]) for event in phase_run_coord))
+            coordinator_cpu_used = (float(state["coordinator_cpu_seconds_charged"])
+                                     + max(0.0, phase_residual_cpu))
+            coordinator_wall_used = (float(state["coordinator_exclusive_wall_seconds_charged"])
+                                     + max(0.0, phase_residual_wall))
+            elapsed_before = (time.monotonic_ns() - state["overall_start_monotonic_ns"]) / 1_000_000_000.0
+            if (not math.isfinite(coordinator_cpu_used) or coordinator_cpu_used < 0
+                    or not math.isfinite(coordinator_wall_used) or coordinator_wall_used < 0):
+                _append_program_terminal(ledger_dir, state, "coordinator_measurement_unavailable")
+                raise GateError("continuation CPU/exclusive-wall accounting is unavailable")
+            if coordinator_cpu_used >= state["max_coordinator_cpu_seconds"]:
+                _append_program_terminal(ledger_dir, state, "coordinator_cpu_budget_exhausted")
+                raise GateError("continuation coordinator CPU allowance is exhausted")
+            coordinator_wall_remaining = state["max_coordinator_exclusive_wall_seconds"] - coordinator_wall_used
+            future_ids = [rid for rid in remaining_ids if rid != run_id]
+            future_worker_reserve = sum(
+                float(config["run_by_id"][rid].get("max_wall_seconds", limits["max_wall_seconds"]))
+                + BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS for rid in future_ids)
+            available_current_total = (continuation["overall_deadline_seconds"] - elapsed_before
+                                      - future_worker_reserve - coordinator_wall_remaining)
+            effective_max_wall = min(max_wall, available_current_total - BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS)
+            if coordinator_wall_remaining <= 0 or effective_max_wall <= 0:
+                _append_program_terminal(ledger_dir, state, "coordinator_or_wall_budget_exhausted")
+                raise GateError("continuation has insufficient remaining coordinator/deadline allowance")
 
         invocation_id = f"{state['invocations_reserved'] + 1:06d}-{uuid.uuid4().hex}"
         (directory / "runs").mkdir(exist_ok=True)
@@ -922,7 +2220,11 @@ def run_program(directory: Path, run_id: str) -> dict:
                        "input_slot_hashes": input_hashes,
                        "input_slot_paths": input_paths,
                        "output_slot_paths": output_paths,
-                       "reserved_at_unix_ns": time.time_ns(), "limits": limits}
+                       "reserved_at_unix_ns": time.time_ns(), "limits": limits,
+                       **({"declared_max_wall_seconds": max_wall,
+                           "effective_max_wall_seconds": effective_max_wall,
+                           "continuation_amendment_id": continuation["amendment_id"]}
+                          if continuation is not None else {})}
         write_exclusive(run_dir / "reservation.json", canonical_json(reservation))
         state["ledger_head"] = _process_ledger_event(
             ledger_dir / "process-events.jsonl", {"event": "reserved", **reservation}, state["ledger_head"])
@@ -932,15 +2234,16 @@ def run_program(directory: Path, run_id: str) -> dict:
         _replace_process_budget(ledger_dir, state)
 
         exec_limits = {"max_cpu_seconds": max_cpu,
-                       "max_wall_seconds": max_wall,
+                       "max_wall_seconds": effective_max_wall,
                        "max_address_space_bytes": limits["max_address_space_bytes"],
                        "max_stdin_bytes": limits["max_stdin_bytes"],
                        "max_output_bytes": limits["max_output_bytes"],
                        "max_file_bytes": limits["max_file_bytes"]}
         try:
-            outcome = run_bounded_process(
-                reservation["command"], input_bytes, command_config["environment"],
-                run_dir, exec_limits)
+            with _pause_coordinator_exclusive_wall_timer():
+                outcome = run_bounded_process(
+                    reservation["command"], input_bytes, command_config["environment"],
+                    run_dir, exec_limits)
         except BaseException as error:
             outcome = {"status": "harness_error", "returncode": None,
                        "wall_seconds": max_cpu * 0.0, "cpu_seconds": 0.0,
@@ -952,6 +2255,34 @@ def run_program(directory: Path, run_id: str) -> dict:
         write_exclusive(run_dir / "stdout.bin", stdout)
         write_exclusive(run_dir / "stderr.bin", stderr)
         status = outcome.get("status", "harness_error")
+        worker_span = outcome.get("total_invocation_wall_seconds", outcome.get("wall_seconds"))
+        if continuation is not None and (isinstance(worker_span, bool) or not isinstance(worker_span, (int, float))
+                                         or not math.isfinite(worker_span) or worker_span < 0):
+            status = "resource_accounting_unavailable"
+            outcome["harness_diagnostic"] = "bounded-process invocation wall span is unavailable"
+            worker_span = None
+        coordinator_cpu_total = _self_cpu_seconds() - coordinator_cpu_started
+        prior_coordinator_wall = float(state["coordinator_exclusive_wall_seconds_charged"]) if continuation is not None else 0.0
+        coordinator_exclusive_wall = None
+        if continuation is not None and worker_span is not None:
+            coordinator_exclusive_wall = time.monotonic() - coordinator_function_started - float(worker_span)
+            if not math.isfinite(coordinator_exclusive_wall) or coordinator_exclusive_wall < -1e-6:
+                status = "resource_accounting_unavailable"
+                outcome["harness_diagnostic"] = "exclusive coordinator wall time could not be established"
+                coordinator_exclusive_wall = None
+            else:
+                coordinator_exclusive_wall = max(0.0, coordinator_exclusive_wall)
+        if continuation is not None and (coordinator_exclusive_wall is None
+                                         or not math.isfinite(coordinator_cpu_total)
+                                         or coordinator_cpu_total < 0):
+            status = "resource_accounting_unavailable"
+        if continuation is not None and (
+            coordinator_cpu_total > state["max_coordinator_cpu_seconds"]
+            or coordinator_exclusive_wall is None
+            or coordinator_exclusive_wall > state["max_coordinator_exclusive_wall_seconds"]
+        ):
+            status = "coordinator_limit"
+            outcome["harness_diagnostic"] = "coordinator CPU or exclusive-wall envelope exceeded/unavailable"
         output_records = {}
         if pipeline_mode and status == "completed":
             for slot, output_path in output_paths.items():
@@ -978,12 +2309,80 @@ def run_program(directory: Path, run_id: str) -> dict:
              "receipt_sha256": sha256_file(run_dir / "receipt.json"),
              "status": status, "cpu_seconds": receipt.get("cpu_seconds", 0.0),
              "wall_seconds": receipt.get("wall_seconds", 0.0),
+             "worker_span_seconds": worker_span,
              "charged_cpu_seconds": charged_cpu, "charged_wall_seconds": charged_wall},
             state["ledger_head"])
         state["event_count"] += 1
         state["cpu_seconds_charged"] += charged_cpu
         state["wall_seconds_charged"] += charged_wall
         state["pending"] = None
+        if continuation is not None:
+            # Sample after target and completion receipts are persisted. The
+            # separately stored coordinator receipt records this boundary; its
+            # own tiny append cost is reserved inside the fixed envelope.
+            coordinator_cpu_total = _self_cpu_seconds() - coordinator_cpu_started
+            coordinator_exclusive_wall = (
+                time.monotonic() - coordinator_function_started
+                - (float(worker_span) if worker_span is not None else 0.0)
+                if worker_span is not None else None
+            )
+            coordinator_measurement_available = (
+                worker_span is not None and coordinator_exclusive_wall is not None
+                and math.isfinite(coordinator_cpu_total) and coordinator_cpu_total >= 0
+                and math.isfinite(coordinator_exclusive_wall) and coordinator_exclusive_wall >= -1e-6
+            )
+            if coordinator_measurement_available:
+                coordinator_exclusive_wall = max(0.0, coordinator_exclusive_wall)
+                coordinator_receipt = {
+                    "schema": 1,
+                    "program_id": config["program_id"],
+                    "amendment_id": continuation["amendment_id"],
+                    "run_id": run_id,
+                    "invocation_id": invocation_id,
+                    "phase_id": run["phase_id"],
+                    "stage_id": run.get("stage_id"),
+                    "measurement_method": "RUSAGE_SELF_AND_EXCLUSIVE_WALL",
+                    "cpu_seconds": coordinator_cpu_total,
+                    "cpu_scope": "RUSAGE_SELF user+system; excludes child/worker accounting",
+                    "exclusive_wall_seconds": coordinator_exclusive_wall,
+                    "wall_formula": "program elapsed since first slot minus all worker invocation spans minus previously charged exclusive wall",
+                    "overall_elapsed_seconds": (time.monotonic_ns() - state["overall_start_monotonic_ns"]) / 1_000_000_000.0,
+                    "worker_span_seconds": worker_span,
+                    "measured_before_receipt_write": True,
+                    "recorded_at_unix_ns": time.time_ns(),
+                }
+                coordinator_path = run_dir / "coordinator-receipt.json"
+                write_exclusive(coordinator_path, canonical_json(coordinator_receipt))
+                coordinator_receipt_sha = sha256_file(coordinator_path)
+                state["ledger_head"] = _process_ledger_event(
+                    ledger_dir / "process-events.jsonl",
+                    {"event": "coordinator_accounted", "protocol_sha256": protocol_sha,
+                     "run_id": run_id, "invocation_id": invocation_id,
+                     "receipt_path": str(coordinator_path.resolve()),
+                     "receipt_sha256": coordinator_receipt_sha,
+                     "coordinator_cpu_seconds": coordinator_cpu_total,
+                     "coordinator_exclusive_wall_seconds": coordinator_exclusive_wall},
+                    state["ledger_head"])
+                state["event_count"] += 1
+                state["coordinator_cpu_seconds_charged"] += coordinator_cpu_total
+                state["coordinator_exclusive_wall_seconds_charged"] += coordinator_exclusive_wall
+            else:
+                status = "resource_accounting_unavailable"
+                state["ledger_head"] = _process_ledger_event(
+                    ledger_dir / "process-events.jsonl",
+                    {"event": "coordinator_accounting_unavailable", "protocol_sha256": protocol_sha,
+                     "run_id": run_id, "invocation_id": invocation_id,
+                     "reason": "RUSAGE_SELF or worker wall span was unavailable"},
+                    state["ledger_head"])
+                state["event_count"] += 1
+                _append_program_terminal(ledger_dir, state, "resource_accounting_unavailable")
+            if (state["coordinator_cpu_seconds_charged"] > state["max_coordinator_cpu_seconds"]
+                    or state["coordinator_exclusive_wall_seconds_charged"] > state["max_coordinator_exclusive_wall_seconds"]):
+                _append_program_terminal(ledger_dir, state, "coordinator_allowance_exhausted")
+            elif status in {"resource_accounting_unavailable", "coordinator_limit"}:
+                _append_program_terminal(ledger_dir, state, status)
+            elif time.monotonic_ns() >= state["overall_deadline_monotonic_ns"]:
+                _append_program_terminal(ledger_dir, state, "overall_wall_deadline")
         _replace_process_budget(ledger_dir, state)
         return receipt
 
@@ -991,7 +2390,7 @@ def run_program(directory: Path, run_id: str) -> dict:
 def verify_program(directory: Path) -> dict:
     protocol, config, protocol_sha = read_frozen_program(directory)
     state = json.loads((config["ledger_dir"] / "process-budget.json").read_text())
-    events = _verify_process_ledger(config["ledger_dir"], state, protocol_sha)
+    events = _verify_process_ledger(config["ledger_dir"], state, protocol_sha, config.get("continuation_plan"))
     relevant = [e for e in events if e.get("protocol_sha256") == protocol_sha and e.get("event") == "completed"]
     receipt_checks = []
     for event in relevant:
@@ -1011,15 +2410,28 @@ def verify_program(directory: Path) -> dict:
             if not output_path.is_file() or sha256_file(output_path) != output.get("sha256"):
                 raise GateError(f"bounded-program output slot {slot} is missing or hash-mismatched")
         for slot, input_path in receipt.get("input_slot_paths", {}).items():
-            input_path = Path(input_path)
-            if not input_path.is_file() or sha256_file(input_path) != receipt.get("input_slot_hashes", {}).get(slot):
-                raise GateError(f"bounded-program input slot {slot} is missing or hash-mismatched")
+            expected_hashes = receipt.get("input_slot_hashes", {}).get(slot)
+            if isinstance(input_path, list):
+                if not isinstance(expected_hashes, list) or not input_path or len(input_path) != len(expected_hashes):
+                    raise GateError(f"bounded-program input slot {slot} has malformed list path/hash evidence")
+                for item_path, expected_hash in zip(input_path, expected_hashes):
+                    path = Path(item_path)
+                    if not path.is_file() or sha256_file(path) != expected_hash:
+                        raise GateError(f"bounded-program input slot {slot} contains a missing or hash-mismatched item")
+            else:
+                if isinstance(expected_hashes, list):
+                    raise GateError(f"bounded-program input slot {slot} has scalar/list evidence mismatch")
+                path = Path(input_path)
+                if not path.is_file() or sha256_file(path) != expected_hashes:
+                    raise GateError(f"bounded-program input slot {slot} is missing or hash-mismatched")
         receipt_checks.append({"run_id": receipt["run_id"], "status": receipt["status"],
                                "receipt_sha256": event["receipt_sha256"]})
     protocol_qualified = any(e.get("event") == "qualified" and e.get("protocol_sha256") == protocol_sha
                              for e in events)
     valid = state.get("pending") is None and (
         config.get("pipeline_descriptor") is None or protocol_qualified)
+    if config.get("continuation_plan") is not None:
+        valid = valid and state.get("terminal_status") is None and state.get("active_coordinator_phase") is None
     return {"status": "valid" if valid else "incomplete",
             "protocol_sha256": protocol_sha, "invocations_reserved": state["invocations_reserved"],
             "cpu_seconds_charged": state["cpu_seconds_charged"],
@@ -1034,7 +2446,14 @@ def qualify_program(directory: Path) -> dict:
     # Qualification must not trust mutable paths merely because an earlier
     # receipt once named them. Recheck the full captured evidence first.
     verify_program(directory)
-    qualification = config["preflight_qualification"]
+    continuation = config.get("continuation_plan")
+    phase_state = None
+    if continuation is not None:
+        ledger_state = json.loads((config["ledger_dir"] / "process-budget.json").read_text())
+        phase_state = ledger_state.get("active_coordinator_phase", {}).get("phase_id")
+    qualification_path = "recovery" if phase_state == "recovery_preflight" else "primary"
+    qualification = (config["recovery_qualification"] if qualification_path == "recovery"
+                     else config["preflight_qualification"])
     stage_run_ids = qualification["stage_run_ids"]
     ledger_dir = config["ledger_dir"]
     lock_fd = os.open(ledger_dir / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
@@ -1042,7 +2461,7 @@ def qualify_program(directory: Path) -> dict:
         fcntl.flock(lock, fcntl.LOCK_EX)
         state_path = ledger_dir / "process-budget.json"
         state = json.loads(state_path.read_text())
-        events = _verify_process_ledger(ledger_dir, state, protocol_sha)
+        events = _verify_process_ledger(ledger_dir, state, protocol_sha, config.get("continuation_plan"))
         if state.get("pending") is not None or state.get("qualification_status") != "preflight_pending":
             raise GateError("preflight qualification is already consumed or has an unresolved invocation")
         completed = {e["run_id"]: e for e in events if e.get("event") == "completed" and e.get("protocol_sha256") == protocol_sha}
@@ -1066,6 +2485,103 @@ def qualify_program(directory: Path) -> dict:
             raise GateError("preflight score/report output changed after stage completion")
         scores = json.loads(scores_path.read_text())
         report = json.loads(report_path.read_text())
+        if continuation is not None:
+            import base64
+            from scientific_pipeline_preflight import PreflightError, _validate_fdi_synthetic_pipeline
+
+            spec_artifact = config["artifacts"][qualification["spec_artifact_id"]]
+            spec = json.loads(Path(spec_artifact["path"]).read_text())
+            runner_receipt = stage_receipts["runner"]
+            verifier_receipt = stage_receipts["verifier"]
+            runner_output = runner_receipt.get("output_slots", {}).get("candidate_outputs")
+            verifier_output = verifier_receipt.get("output_slots", {}).get("verified_receipts")
+            if not isinstance(runner_output, dict) or not isinstance(verifier_output, dict):
+                raise GateError("continuation preflight runner/verifier outputs are not receipt-bound")
+            runner_manifest_path = Path(runner_receipt.get("input_slot_paths", {}).get("run_manifest", ""))
+            training_bundle_path = Path(runner_receipt.get("input_slot_paths", {}).get("training_bundle", ""))
+            scorer_manifest_path = Path(stage_receipts["scorer"].get("input_slot_paths", {}).get("run_manifest", ""))
+            assessment_bundle_path = Path(stage_receipts["scorer"].get("input_slot_paths", {}).get("assessment_bundle", ""))
+            aggregate_manifest_path = Path(stage_receipts["aggregator"].get("input_slot_paths", {}).get("run_manifest", ""))
+            required_inputs = (runner_manifest_path, training_bundle_path, scorer_manifest_path,
+                               assessment_bundle_path, aggregate_manifest_path)
+            if any(not path.is_file() for path in required_inputs):
+                raise GateError("continuation synthetic pipeline manifests/bundles are missing")
+            runner_manifest_bytes = runner_manifest_path.read_bytes()
+            runner_manifest = json.loads(runner_manifest_bytes)
+            training_bundle = json.loads(training_bundle_path.read_bytes())
+            scorer_manifest = json.loads(scorer_manifest_path.read_bytes())
+            assessment_bundle = json.loads(assessment_bundle_path.read_bytes())
+            aggregate_manifest = json.loads(aggregate_manifest_path.read_bytes())
+            training_rows = {item.get("id"): item for item in training_bundle.get("artifacts", [])
+                             if isinstance(item, dict)}
+            assessment_rows = {item.get("id"): item for item in assessment_bundle.get("artifacts", [])
+                               if isinstance(item, dict)}
+            if len(training_rows) != len(training_bundle.get("artifacts", [])) or len(assessment_rows) != len(assessment_bundle.get("artifacts", [])):
+                raise GateError("continuation bundle contains duplicate/malformed artifact identities")
+            def decode_bundle(rows: dict, role: str) -> dict[str, bytes]:
+                decoded = {}
+                for artifact_id, artifact in rows.items():
+                    try:
+                        content = base64.b64decode(artifact.get("content_base64", ""), validate=True)
+                    except Exception as error:
+                        raise GateError(f"{role} bundle has invalid base64 content") from error
+                    if sha256_bytes(content) != artifact.get("sha256"):
+                        raise GateError(f"{role} bundle content hash mismatch")
+                    decoded[artifact_id] = content
+                return decoded
+            training_by_id = decode_bundle(training_rows, "training")
+            assessment_by_id = decode_bundle(assessment_rows, "assessment")
+            training_path_by_control = {}
+            training_bytes_by_control = {}
+            assessment_bytes_by_control = {}
+            for run in spec.get("runs", []):
+                control_id = run.get("control_id")
+                if control_id in training_path_by_control:
+                    continue
+                training_artifact_id = run.get("training_artifact")
+                assessment_artifact_id = run.get("assessment_artifact")
+                training_by_run = next((row for row in runner_manifest.get("runs", [])
+                                        if row.get("run_id") == run.get("run_id")), None)
+                if (training_artifact_id not in training_by_id or assessment_artifact_id not in assessment_by_id
+                        or not isinstance(training_by_run, dict)):
+                    raise GateError("continuation synthetic run is missing its control-specific bundle mapping")
+                training_path_by_control[control_id] = training_by_run.get("training_path")
+                training_bytes_by_control[control_id] = training_by_id[training_artifact_id]
+                assessment_bytes_by_control[control_id] = assessment_by_id[assessment_artifact_id]
+            try:
+                _validate_fdi_synthetic_pipeline(
+                    preflight_id=spec.get("preflight_id"), runner_manifest=runner_manifest,
+                    runner_manifest_bytes=runner_manifest_bytes, scorer_manifest=scorer_manifest,
+                    runs=spec.get("runs", []), training_bytes_by_control=training_bytes_by_control,
+                    assessment_bytes_by_control=assessment_bytes_by_control,
+                    training_path_by_control=training_path_by_control,
+                    training_bundle=training_bundle, assessment_bundle=assessment_bundle,
+                    aggregate_manifest=aggregate_manifest,
+                    candidate_records=json.loads(Path(runner_output["path"]).read_text()),
+                    verified_records=json.loads(Path(verifier_output["path"]).read_text()),
+                    score_output=scores, report_output=report,
+                    scores_sha256=sha256_file(scores_path))
+            except PreflightError as error:
+                raise GateError(f"continuation synthetic pipeline qualification failed: {error}") from error
+            evidence_sha256 = sha256_bytes(canonical_json({
+                "protocol_sha256": protocol_sha,
+                "stage_receipt_sha256": {name: sha256_file(Path(completed[run_id]["receipt_path"]))
+                                         for name, run_id in stage_run_ids.items()},
+                "scores_sha256": scores_record["sha256"], "report_sha256": report_record["sha256"],
+            }))
+            active_phase = state.get("active_coordinator_phase")
+            required_phase = "primary_preflight" if qualification_path == "primary" else "recovery_preflight"
+            if not isinstance(active_phase, dict) or active_phase.get("phase_id") != required_phase:
+                raise GateError("continuation qualification requires its measured preflight phase")
+            payload = {"event": "qualification_prepared", "protocol_sha256": protocol_sha,
+                       "amendment_id": continuation["amendment_id"],
+                       "qualification_path": qualification_path, "evidence_sha256": evidence_sha256,
+                       "prepared_at_unix_ns": time.time_ns()}
+            state["ledger_head"] = _process_ledger_event(ledger_dir / "process-events.jsonl", payload, state["ledger_head"])
+            state["event_count"] += 1
+            _replace_process_budget(ledger_dir, state)
+            return {"status": "qualification_prepared", "protocol_sha256": protocol_sha,
+                    "preflight_evidence_sha256": evidence_sha256}
         expected_bindings = qualification["expected_score_bindings"]
         expected_ids = [row["run_id"] for row in expected_bindings]
         if not isinstance(scores, list) or len(scores) != len(expected_ids):
@@ -1194,10 +2710,22 @@ def qualify_program(directory: Path) -> dict:
                                      for name, run_id in stage_run_ids.items()},
             "scores_sha256": scores_record["sha256"], "report_sha256": report_record["sha256"],
         }))
-        payload = {"event": "qualified", "protocol_sha256": protocol_sha,
-                   "preflight_evidence_sha256": evidence_sha256, "qualified_at_unix_ns": time.time_ns()}
+        if continuation is None:
+            payload = {"event": "qualified", "protocol_sha256": protocol_sha,
+                       "preflight_evidence_sha256": evidence_sha256, "qualified_at_unix_ns": time.time_ns()}
+        else:
+            active_phase = state.get("active_coordinator_phase")
+            required_phase = "primary_preflight" if qualification_path == "primary" else "recovery_preflight"
+            if not isinstance(active_phase, dict) or active_phase.get("phase_id") != required_phase:
+                raise GateError("continuation preflight qualification requires its measured coordinator phase")
+            payload = {"event": "qualification_prepared", "protocol_sha256": protocol_sha,
+                       "amendment_id": continuation["amendment_id"],
+                       "qualification_path": qualification_path,
+                       "evidence_sha256": evidence_sha256,
+                       "prepared_at_unix_ns": time.time_ns()}
         state["ledger_head"] = _process_ledger_event(ledger_dir / "process-events.jsonl", payload, state["ledger_head"])
-        state["qualification_status"] = "qualified"
+        if continuation is None:
+            state["qualification_status"] = "qualified"
         state["event_count"] += 1
         _replace_process_budget(ledger_dir, state)
         return {"status": "qualified", "protocol_sha256": protocol_sha,

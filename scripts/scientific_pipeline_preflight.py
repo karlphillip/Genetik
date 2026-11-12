@@ -10,6 +10,7 @@ preflight specification and materialized as synthetic files.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import math
@@ -19,6 +20,7 @@ import re
 import resource
 import selectors
 import signal
+import shutil
 import subprocess
 import sys
 import time
@@ -89,6 +91,273 @@ def _index_run_records(records: Any, runs: list[dict[str, Any]], stage: str) -> 
     if set(indexed) != expected_ids:
         raise PreflightError(f"{stage} output identity set differs from frozen run matrix")
     return indexed
+
+
+def _contains_assessment_key(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any("assessment" in str(key).lower() or _contains_assessment_key(item)
+                   for key, item in value.items())
+    if isinstance(value, list):
+        return any(_contains_assessment_key(item) for item in value)
+    return False
+
+
+def _expand_fdi_index(index_doc: Any, index_path: Path, runs: list[dict[str, Any]],
+                     schema: str, filename: str) -> list[dict[str, Any]]:
+    if not isinstance(index_doc, dict) or index_doc.get("schema") != schema:
+        raise PreflightError(f"{schema} schema mismatch")
+    entries = index_doc.get("runs")
+    if not isinstance(entries, list) or len(entries) != len(runs):
+        raise PreflightError("indexed artifacts do not cover the complete frozen run set")
+    index_path = index_path.resolve()
+    evidence_root = Path(str(index_path) + ".evidence").resolve()
+    expanded = []
+    for ordinal, (run, entry) in enumerate(zip(runs, entries)):
+        if not isinstance(entry, dict) or entry.get("run_id") != run["run_id"]:
+            raise PreflightError("indexed artifacts are missing, duplicated, reordered, or misbound")
+        expected = Path(index_path.name + ".evidence") / f"run-{ordinal:02d}" / filename
+        relative = entry.get("path")
+        if (not isinstance(relative, str) or Path(relative).is_absolute()
+                or Path(relative) != expected or ".." in Path(relative).parts):
+            raise PreflightError("indexed artifact path is not its canonical invocation-owned slot")
+        current = index_path.parent
+        for part in Path(relative).parts:
+            current = current / part
+            if current.is_symlink():
+                raise PreflightError("indexed artifact path contains a symlink")
+        artifact_path = (index_path.parent / relative).resolve(strict=True)
+        if not artifact_path.is_relative_to(evidence_root) or not artifact_path.is_file():
+            raise PreflightError("indexed artifact escapes invocation-owned evidence root")
+        if not isinstance(entry.get("sha256"), str) or file_sha(artifact_path) != entry["sha256"]:
+            raise PreflightError("indexed artifact SHA256 mismatch")
+        try:
+            value = json.loads(artifact_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise PreflightError(f"cannot read indexed artifact: {error}") from error
+        if not isinstance(value, dict) or value.get("run_id") != run["run_id"]:
+            raise PreflightError("indexed artifact content identity mismatch")
+        expanded.append(value)
+    return expanded
+
+
+def _validate_fdi_synthetic_pipeline(
+    *, preflight_id: str, runner_manifest: dict[str, Any], runner_manifest_bytes: bytes,
+    scorer_manifest: dict[str, Any], runs: list[dict[str, Any]],
+    training_bytes_by_control: dict[str, bytes], assessment_bytes_by_control: dict[str, bytes],
+    training_path_by_control: dict[str, str],
+    training_bundle: Any, assessment_bundle: Any, aggregate_manifest: Any,
+    candidate_records: Any, verified_records: Any, score_output: Any, report_output: Any,
+    scores_sha256: str, candidate_index_path: Path, receipt_index_path: Path,
+    protocol_training_bindings: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Independently qualify the pinned FDI stages on fixed synthetic fixtures.
+
+    The runner sees only training inputs and a deterministic two-catalogue
+    projection. Assessment bytes enter the scorer input only after candidate and verifier outputs are
+    frozen. This validator recomputes every fixture prediction and aggregate.
+    """
+    if runner_manifest.get("schema") != "genetik-fdi-run-manifest-v2" or runner_manifest.get("mode") != "synthetic-preflight":
+        raise PreflightError("runner preflight manifest is not the pinned FDI v2 synthetic mode")
+    if runner_manifest.get("protocol_id") != preflight_id or runner_manifest.get("preflight_id") != preflight_id:
+        raise PreflightError("runner synthetic manifest has the wrong protocol identity")
+    if _contains_assessment_key(runner_manifest):
+        raise PreflightError("runner-visible synthetic manifest contains assessment data")
+    manifest_sha = digest(runner_manifest_bytes)
+    ordered_control_ids = sorted({run["control_id"] for run in runs})
+    fixture_by_control = {control_id: ("ambiguity" if index % 2 == 0 else "arithmetic")
+                          for index, control_id in enumerate(ordered_control_ids)}
+    expected_bindings = []
+    expected_training = {}
+    expected_assessment = {}
+    expected_synthetic_ids = {}
+    for control_id in ordered_control_ids:
+        fixture = fixture_by_control[control_id]
+        train_rows = [(0, 0)] if fixture == "ambiguity" else [(0, 2)]
+        assess_rows = [(9, 9)] if fixture == "ambiguity" else [(9, 11)]
+        train_bytes = b"genetik-fdi-training-v1\n" + b"".join(f"{x}\t{y}\n".encode() for x, y in train_rows)
+        assess_bytes = b"genetik-fdi-assessment-v1\n" + b"".join(f"{x}\t{y}\n".encode() for x, y in assess_rows)
+        train_id, assess_id = f"synthetic-train-{control_id}", f"synthetic-assess-{control_id}"
+        expected_training[control_id] = train_bytes
+        expected_assessment[control_id] = assess_bytes
+        expected_synthetic_ids[control_id] = (train_id, assess_id)
+        declared = next(item for item in scorer_manifest.get("controls", []) if item.get("id") == control_id)
+        expected_bindings.append({"control_id": control_id,
+            "protocol_training_artifact": declared.get("protocol_training_artifact"),
+            "protocol_training_sha256": declared.get("protocol_training_sha256"),
+            "synthetic_training_artifact": train_id, "synthetic_training_sha256": digest(train_bytes),
+            "protocol_assessment_artifact": declared.get("protocol_assessment_artifact"),
+            "protocol_assessment_sha256": declared.get("protocol_assessment_sha256"),
+            "synthetic_assessment_artifact": assess_id, "synthetic_assessment_sha256": digest(assess_bytes)})
+    if protocol_training_bindings != expected_bindings:
+        raise PreflightError("synthetic-to-protocol artifact bindings are incomplete or misassociated")
+    expected_runs = []
+    control_ids = []
+    for run in runs:
+        control_id = run["control_id"]
+        control_ids.append(control_id)
+        train_bytes = training_bytes_by_control[control_id]
+        if train_bytes != expected_training[control_id]:
+            raise PreflightError("synthetic training bytes differ from the frozen two-fixture projection")
+        expected_runs.append({"run_id": run["run_id"], "control_id": control_id,
+            "method": run["method"], "seed": run["seed"],
+            "training_artifact": expected_synthetic_ids[control_id][0],
+            "training_sha256": digest(expected_training[control_id]),
+            "training_path": training_path_by_control[control_id]})
+    for control_id, path in training_path_by_control.items():
+        training_file = Path(path)
+        if not training_file.is_file() or training_file.read_bytes() != expected_training[control_id]:
+            raise PreflightError("runner-visible training path does not match the exact synthetic training bytes")
+    if runner_manifest.get("runs") != expected_runs:
+        raise PreflightError("runner manifest run rows do not bind exact synthetic training artifacts")
+    expected_catalogue = [{"control_id": control_id, "catalogue": fixture_by_control[control_id],
+                           "reference_member": 0}
+                          for control_id in ordered_control_ids]
+    if runner_manifest.get("catalogue_map") != expected_catalogue:
+        raise PreflightError("synthetic runner catalogue map differs from the frozen ambiguity fixture")
+    if scorer_manifest.get("schema") != "genetik-fdi-scorer-manifest-v2" or scorer_manifest.get("mode") != "synthetic-preflight":
+        raise PreflightError("scorer manifest is not the pinned FDI v2 synthetic mode")
+    if scorer_manifest.get("protocol_id") != preflight_id or scorer_manifest.get("preflight_id") != preflight_id:
+        raise PreflightError("scorer synthetic manifest has the wrong protocol identity")
+    if scorer_manifest.get("runner_manifest_sha256") != manifest_sha or scorer_manifest.get("runs") != expected_runs:
+        raise PreflightError("scorer manifest is detached from the training-only runner manifest")
+    expected_controls = [{"id": control_id, "catalogue": fixture_by_control[control_id],
+        "reference_member": 0,
+        "protocol_training_artifact": next(item["protocol_training_artifact"] for item in expected_bindings if item["control_id"] == control_id),
+        "protocol_training_sha256": next(item["protocol_training_sha256"] for item in expected_bindings if item["control_id"] == control_id),
+        "protocol_assessment_artifact": next(item["protocol_assessment_artifact"] for item in expected_bindings if item["control_id"] == control_id),
+        "protocol_assessment_sha256": next(item["protocol_assessment_sha256"] for item in expected_bindings if item["control_id"] == control_id),
+        "training": {"id": expected_synthetic_ids[control_id][0],
+                     "sha256": digest(expected_training[control_id])},
+        "assessment": {"id": expected_synthetic_ids[control_id][1],
+                       "sha256": digest(expected_assessment[control_id])}}
+        for control_id in ordered_control_ids]
+    if scorer_manifest.get("controls") != expected_controls:
+        raise PreflightError("scorer manifest does not bind exact synthetic training/assessment identities")
+    expected_training_bundle = {"schema": "genetik-fdi-training-bundle-v1", "artifacts": [
+        {"id": expected_synthetic_ids[control_id][0], "sha256": digest(expected_training[control_id]),
+         "content_base64": base64.b64encode(expected_training[control_id]).decode("ascii")}
+        for control_id in ordered_control_ids]}
+    if training_bundle != expected_training_bundle:
+        raise PreflightError("runner training bundle differs from the exact synthetic training fixture")
+    expected_assessment_bundle = {"schema": "genetik-fdi-assessment-bundle-v1", "artifacts": [
+        {"id": expected_synthetic_ids[control_id][1],
+         "sha256": digest(expected_assessment[control_id]),
+         "content_base64": base64.b64encode(expected_assessment[control_id]).decode("ascii")}
+        for control_id in ordered_control_ids]}
+    if assessment_bundle != expected_assessment_bundle:
+        raise PreflightError("scorer assessment bundle differs from the exact synthetic assessment fixture")
+    if (not isinstance(aggregate_manifest, dict)
+            or aggregate_manifest.get("schema") != "genetik-fdi-aggregate-manifest-v2"
+            or aggregate_manifest.get("mode") != "synthetic-preflight"
+            or aggregate_manifest.get("protocol_id") != preflight_id
+            or aggregate_manifest.get("preflight_id") != preflight_id
+            or aggregate_manifest.get("runs") != expected_runs):
+        raise PreflightError("aggregator manifest does not bind the full synthetic run set")
+
+    if (not isinstance(candidate_records, dict)
+            or candidate_records.get("protocol_id") != preflight_id
+            or candidate_records.get("run_manifest_sha256") != manifest_sha):
+        raise PreflightError("candidate index is detached from the exact synthetic runner manifest")
+    candidate_records = _expand_fdi_index(candidate_records, candidate_index_path, runs,
+        "genetik-fdi-candidate-output-index-v1", "candidate.json")
+    verified_records = _expand_fdi_index(verified_records, receipt_index_path, runs,
+        "genetik-fdi-verified-receipt-index-v1", "receipt.json")
+    if not isinstance(score_output, dict) or score_output.get("schema") != "genetik-fdi-scores-v2":
+        raise PreflightError("scorer output has the wrong v2 schema")
+    scorer_manifest_sha = digest(canonical(scorer_manifest) + b"\n")
+    if score_output.get("protocol_id") != preflight_id or score_output.get("run_manifest_sha256") != scorer_manifest_sha:
+        raise PreflightError("scorer output is detached from the exact scorer manifest")
+    scores = score_output.get("scores")
+    if not isinstance(scores, list) or len(scores) != len(runs):
+        raise PreflightError("scorer output count differs from the frozen synthetic run set")
+    if not isinstance(report_output, dict) or report_output.get("schema") != "genetik-fdi-report-v2":
+        raise PreflightError("aggregator output has the wrong v2 schema")
+    if report_output.get("protocol_id") != preflight_id:
+        raise PreflightError("aggregator report has the wrong synthetic protocol identity")
+    if report_output.get("scores_sha256") != scores_sha256:
+        raise PreflightError("aggregator report is not bound to exact scorer output bytes")
+
+    for index, run in enumerate(runs):
+        candidate = candidate_records[index]
+        verified = verified_records[index]
+        score = scores[index]
+        run_id, control_id = run["run_id"], run["control_id"]
+        expected_identity = {key: run[key] for key in ("run_id", "control_id", "method", "seed")}
+        fixture = fixture_by_control[control_id]
+        if not isinstance(candidate, dict) or candidate.get("schema") != "genetik-fdi-candidate-output-v2":
+            raise PreflightError(f"runner output schema is invalid for {run_id}")
+        if (any(candidate.get(key) != value for key, value in expected_identity.items())
+                or candidate.get("protocol_id") != preflight_id
+                or candidate.get("run_manifest_sha256") != manifest_sha
+                or candidate.get("training_artifact") != expected_synthetic_ids[control_id][0]
+                or candidate.get("training_sha256") != digest(training_bytes_by_control[control_id])):
+            raise PreflightError(f"runner candidate identity/training binding is invalid for {run_id}")
+        if (candidate.get("completion_status") != "completed"
+                or candidate.get("report_validation_status") != "valid_report"
+                or not isinstance(candidate.get("transcript"), dict)
+                or candidate["transcript"].get("stop_reason") != "one_finite_behavior_class"
+                or not isinstance(candidate.get("receipt"), dict)
+                or not isinstance(candidate.get("evidence_directory"), str)):
+            raise PreflightError(f"runner candidate transcript/receipt is incomplete for {run_id}")
+        if _contains_assessment_key(candidate):
+            raise PreflightError(f"runner candidate output contains assessment-derived fields for {run_id}")
+        if candidate.get("receipt").get("wait4_usage_complete") is not True:
+            raise PreflightError(f"runner child resource receipt is incomplete for {run_id}")
+        stream_hashes = candidate.get("raw_stream_sha256")
+        if not isinstance(stream_hashes, dict) or set(stream_hashes) != {
+                "producer_stdout", "peer_stdout", "producer_stderr", "peer_stderr"}:
+            raise PreflightError(f"runner stream evidence map is malformed for {run_id}")
+        for stream_name, value in stream_hashes.items():
+            if not isinstance(value, str) or len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+                raise PreflightError(f"runner stream evidence is malformed for {run_id}")
+        if not isinstance(verified, dict) or verified.get("schema") != "genetik-fdi-verified-receipt-v2":
+            raise PreflightError(f"verifier receipt schema is invalid for {run_id}")
+        if (verified.get("run_id") != run_id
+                or verified.get("candidate_output_sha256") != digest(canonical(candidate))
+                or verified.get("run_manifest_sha256") != manifest_sha
+                or verified.get("training_sha256") != digest(training_bytes_by_control[control_id])
+                or verified.get("transcript") != candidate.get("transcript")
+                or verified.get("candidate_identity") != {key: candidate.get(key) for key in (
+                    "schema","protocol_id","run_id","control_id","method","seed",
+                    "training_artifact","training_sha256","completion_status","report_validation_status")}
+                or verified.get("verified") is not True):
+            raise PreflightError(f"verifier did not authenticate exact candidate/training identity for {run_id}")
+        if not isinstance(score, dict) or any(score.get(key) != value for key, value in expected_identity.items()):
+            raise PreflightError(f"scorer row identity is invalid for {run_id}")
+        if fixture == "ambiguity":
+            expected_prediction_map = {"c0": {"training": [0], "assessment": [9]},
+                "c1": {"training": [0], "assessment": [9]},
+                "c2": {"training": [0], "assessment": [10]}}
+            expected_training_ids, expected_assess_ids = ["c0", "c1", "c2"], ["c0", "c1"]
+        else:
+            expected_prediction_map = {"c0": {"training": [2, -6], "assessment": [11]},
+                "c1": {"training": [2, -6], "assessment": [11]}}
+            expected_training_ids, expected_assess_ids = ["c0", "c1"], ["c0", "c1"]
+            steps = candidate["transcript"].get("steps", [])
+            if (len(steps) != 1 or steps[0].get("input") != -8
+                    or steps[0].get("response", {}).get("value") != -6
+                    or type(steps[0].get("revision")) is not int or steps[0].get("revision") != 1):
+                raise PreflightError(f"arithmetic fixture lacks the frozen adaptive counterexample for {run_id}")
+        if (score.get("training_exact_candidate_ids") != expected_training_ids
+                or score.get("assessment_exact_candidate_ids") != expected_assess_ids
+                or score.get("predictions") != expected_prediction_map
+                or score.get("exact") is not True or score.get("status") != "scored"):
+            raise PreflightError(f"independent scorer disagrees with synthetic {fixture} fixture for {run_id}")
+    expected_count = len(runs)
+    if (report_output.get("expected_run_count") != expected_count
+            or report_output.get("scored_run_count") != expected_count
+            or report_output.get("all_scored") is not True
+            or report_output.get("acceptance_gate_passed") is not True):
+        raise PreflightError("aggregator report does not qualify all synthetic runs")
+    expected_per_control = {}
+    for run in runs:
+        row = expected_per_control.setdefault(run["control_id"], {"run_count": 0, "exact_run_count": 0})
+        row["run_count"] += 1
+        row["exact_run_count"] += 1
+    if report_output.get("per_control") != expected_per_control:
+        raise PreflightError("aggregator per-control counts do not match independent synthetic scoring")
+    return {"run_count": expected_count, "exact_run_count": expected_count,
+            "run_ids": [run["run_id"] for run in runs]}
 
 
 def validate_spec(spec: dict[str, Any], base: Path, protocol: dict[str, Any]) -> tuple[dict[str, Path], list[dict[str, Any]], dict | None]:
@@ -367,6 +636,12 @@ def _invoke_descriptor_stage(stage: str, execution_program_dir: Path, run_id: st
         raise PreflightError(f"{stage} bounded-program receipt omitted its declared output")
     destination = workdir / filename
     destination.write_bytes(Path(output["path"]).read_bytes())
+    source_evidence=Path(output["path"]+".evidence")
+    if source_evidence.exists():
+        destination_evidence=Path(str(destination)+".evidence")
+        if destination_evidence.exists():
+            raise PreflightError(f"{stage} evidence destination already exists")
+        shutil.copytree(source_evidence,destination_evidence,symlinks=True)
     return {"stage": stage, "run_id": run_id, "argv": receipt["command"],
             "executable_sha256": receipt["executable_sha256"],
             "returncode": receipt["returncode"], "status": receipt["status"],
@@ -377,7 +652,7 @@ def _invoke_descriptor_stage(stage: str, execution_program_dir: Path, run_id: st
             "bounded_program_receipt_sha256": digest(canonical(receipt))}
 
 
-def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> dict[str, Any]:
+def _run_preflight_impl(protocol_path: Path, spec_path: Path, receipt_path: Path) -> dict[str, Any]:
     protocol_bytes = protocol_path.read_bytes()
     protocol = json.loads(protocol_bytes)
     spec_bytes = spec_path.read_bytes()
@@ -422,6 +697,10 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
                 "id": control["id"],
                 "training": {"id": control["training"]["id"], "path": str(paths[control["training"]["id"]]), "sha256": file_sha(paths[control["training"]["id"]])},
                 "assessment": {"id": control["assessment"]["id"], "path": str(paths[control["assessment"]["id"]]), "sha256": file_sha(paths[control["assessment"]["id"]])},
+                "protocol_training_artifact": control["protocol_training_artifact"],
+                "protocol_training_sha256": control["protocol_training_sha256"],
+                "protocol_assessment_artifact": control["protocol_assessment_artifact"],
+                "protocol_assessment_sha256": control["protocol_assessment_sha256"],
             })
         run_bindings = [
             {"run_id": r["run_id"], "control_id": r["control_id"], "method": r["method"], "seed": r["seed"]}
@@ -431,12 +710,119 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
             {key: run[key] for key in ("run_id", "control_id", "method", "seed", "training_artifact")}
             for run in runs
         ]
-        runner_manifest_obj = {
-            "schema": 1, "preflight_id": spec["preflight_id"],
-            "controls": [{"id": c["id"], "training": c["training"]} for c in controls], "runs": runner_runs,
-            "expected_run_count": spec["expected_run_count"],
-            "outputs_dir": str(workdir / "outputs"),
-        }
+        continuation = execution_config.get("continuation_plan") if execution_config is not None else None
+        if continuation is not None:
+            def pairs(rows: list[Any], label: str) -> list[tuple[int, int]]:
+                result = []
+                for row in rows:
+                    if isinstance(row, list) and len(row) == 2:
+                        pair = row
+                    elif isinstance(row, dict):
+                        input_keys = [key for key in ("n", "x", "input") if key in row]
+                        output_keys = [key for key in ("expected", "value", "y", "output") if key in row]
+                        if len(input_keys) != 1 or len(output_keys) != 1:
+                            raise PreflightError(f"synthetic {label} rows require one integer input/output pair")
+                        pair = [row[input_keys[0]], row[output_keys[0]]]
+                    else:
+                        raise PreflightError(f"synthetic {label} rows require integer pairs")
+                    if any(type(value) is not int or not -(1 << 63) <= value < (1 << 63) for value in pair):
+                        raise PreflightError(f"synthetic {label} values must be signed Int64 integers")
+                    result.append((pair[0], pair[1]))
+                return result
+
+            training_tsv: dict[str, tuple[Path, bytes]] = {}
+            assessment_tsv: dict[str, tuple[Path, bytes]] = {}
+            fixture_by_control = {control_id: ("ambiguity" if ordinal % 2 == 0 else "arithmetic")
+                                  for ordinal, control_id in enumerate(sorted(c["id"] for c in controls))}
+            synthetic_ids = {control_id: (f"synthetic-train-{control_id}", f"synthetic-assess-{control_id}")
+                             for control_id in fixture_by_control}
+            for control in controls:
+                control_id = control["id"]
+                fixture = fixture_by_control[control_id]
+                train_bytes = (b"genetik-fdi-training-v1\n0\t0\n" if fixture == "ambiguity"
+                               else b"genetik-fdi-training-v1\n0\t2\n")
+                assess_bytes = (b"genetik-fdi-assessment-v1\n9\t9\n" if fixture == "ambiguity"
+                                else b"genetik-fdi-assessment-v1\n9\t11\n")
+                train_path = workdir / f"{control_id}-synthetic-training.tsv"
+                assess_path = workdir / f"{control_id}-synthetic-assessment.tsv"
+                train_path.write_bytes(train_bytes)
+                assess_path.write_bytes(assess_bytes)
+                training_tsv[control_id] = (train_path, train_bytes)
+                assessment_tsv[control_id] = (assess_path, assess_bytes)
+            runner_runs_v2 = []
+            for run in runs:
+                train_path, train_bytes = training_tsv[run["control_id"]]
+                runner_runs_v2.append({
+                    "run_id": run["run_id"], "control_id": run["control_id"],
+                    "method": run["method"], "seed": run["seed"],
+                    "training_artifact": synthetic_ids[run["control_id"]][0],
+                    "training_sha256": digest(train_bytes), "training_path": str(train_path.resolve()),
+                })
+            interactive_session = continuation["interactive_session"]
+            runner_manifest_obj = {
+                "schema": "genetik-fdi-run-manifest-v2", "mode": "synthetic-preflight",
+                "protocol_id": spec["preflight_id"], "preflight_id": spec["preflight_id"],
+                "interactive_session": interactive_session,
+                "catalogue_map": [{"control_id": control_id, "catalogue": fixture_by_control[control_id],
+                                   "reference_member": 0}
+                                   for control_id in sorted(fixture_by_control)],
+                "runs": runner_runs_v2,
+            }
+            training_bundle_obj = {"schema": "genetik-fdi-training-bundle-v1", "artifacts": [
+                {"id": synthetic_ids[control["id"]][0], "sha256": digest(training_tsv[control["id"]][1]),
+                 "content_base64": base64.b64encode(training_tsv[control["id"]][1]).decode("ascii")}
+                for control in sorted(controls, key=lambda item: item["id"])
+            ]}
+            assessment_bundle_obj = {"schema": "genetik-fdi-assessment-bundle-v1", "artifacts": [
+                {"id": synthetic_ids[control["id"]][1], "sha256": digest(assessment_tsv[control["id"]][1]),
+                 "content_base64": base64.b64encode(assessment_tsv[control["id"]][1]).decode("ascii")}
+                for control in controls
+            ]}
+            training_bundle = workdir / "training-bundle.json"
+            training_bundle.write_bytes(canonical(training_bundle_obj) + b"\n")
+            assessment_bundle = workdir / "assessment-bundle.json"
+            assessment_bundle.write_bytes(canonical(assessment_bundle_obj) + b"\n")
+            scorer_manifest_obj = {
+                "schema": "genetik-fdi-scorer-manifest-v2", "mode": "synthetic-preflight",
+                "protocol_id": spec["preflight_id"], "preflight_id": spec["preflight_id"],
+                "interactive_session": interactive_session,
+                "runs": runner_runs_v2,
+                "controls": [{"id": control["id"], "catalogue": fixture_by_control[control["id"]],
+                              "reference_member": 0,
+                              "protocol_training_artifact": control["protocol_training_artifact"],
+                              "protocol_training_sha256": control["protocol_training_sha256"],
+                              "protocol_assessment_artifact": control["protocol_assessment_artifact"],
+                              "protocol_assessment_sha256": control["protocol_assessment_sha256"],
+                              "training": {"id": synthetic_ids[control["id"]][0],
+                                           "sha256": digest(training_tsv[control["id"]][1])},
+                              "assessment": {"id": synthetic_ids[control["id"]][1],
+                                             "sha256": digest(assessment_tsv[control["id"]][1])}}
+                for control in sorted(controls, key=lambda item: item["id"])],
+                "runner_manifest_sha256": digest(canonical(runner_manifest_obj) + b"\n"),
+            }
+            protocol_training_bindings = [{"control_id": control["id"],
+                "protocol_training_artifact": control["protocol_training_artifact"],
+                "protocol_training_sha256": control["protocol_training_sha256"],
+                "synthetic_training_artifact": synthetic_ids[control["id"]][0],
+                "synthetic_training_sha256": digest(training_tsv[control["id"]][1]),
+                "protocol_assessment_artifact": control["protocol_assessment_artifact"],
+                "protocol_assessment_sha256": control["protocol_assessment_sha256"],
+                "synthetic_assessment_artifact": synthetic_ids[control["id"]][1],
+                "synthetic_assessment_sha256": digest(assessment_tsv[control["id"]][1])}
+                for control in sorted(controls, key=lambda item: item["id"])]
+        else:
+            runner_manifest_obj = {
+                "schema": 1, "preflight_id": spec["preflight_id"],
+                "controls": [{"id": c["id"], "training": c["training"]} for c in controls], "runs": runner_runs,
+                "expected_run_count": spec["expected_run_count"],
+                "outputs_dir": str(workdir / "outputs"),
+            }
+            scorer_manifest_obj = {
+                **runner_manifest_obj, "runs": runs,
+                "controls": controls,
+                "candidate_outputs": str(workdir / "candidate-outputs.json"),
+                "verified_receipts": str(workdir / "verified-receipts.json"),
+            }
         def contains_assessment_field(value: Any) -> bool:
             if isinstance(value, dict):
                 return any("assessment" in str(key).lower() or contains_assessment_field(item)
@@ -450,28 +836,36 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
         for control in controls:
             if control["assessment"]["path"].encode() in runner_manifest_bytes or control["assessment"]["id"].encode() in runner_manifest_bytes:
                 raise PreflightError("runner-visible manifest contains an assessment artifact binding")
-        scorer_manifest_obj = {
-            **runner_manifest_obj, "runs": runs,
-            "controls": controls,
-            "candidate_outputs": str(workdir / "candidate-outputs.json"),
-            "verified_receipts": str(workdir / "verified-receipts.json"),
-        }
         (workdir / "outputs").mkdir()
         runner_manifest = workdir / "runner-manifest.json"
         runner_manifest.write_bytes(runner_manifest_bytes)
         scorer_manifest = workdir / "scorer-manifest.json"
         scorer_manifest.write_bytes(canonical(scorer_manifest_obj) + b"\n")
         aggregate_manifest = workdir / "aggregate-manifest.json"
-        aggregate_manifest.write_bytes(canonical({
+        aggregate_manifest_obj = ({
+            "schema": "genetik-fdi-aggregate-manifest-v2", "mode": "synthetic-preflight",
+            "protocol_id": spec["preflight_id"], "preflight_id": spec["preflight_id"],
+            "runs": runner_manifest_obj["runs"],
+        } if continuation is not None else {
             "schema": 1, "preflight_id": spec["preflight_id"],
             "runs": runs, "scores": str(workdir / "independent-scores.json"),
             "expected_run_count": len(runs), "report": str(workdir / "scientific-report.json"),
-        }) + b"\n")
+        })
+        aggregate_manifest.write_bytes(canonical(aggregate_manifest_obj) + b"\n")
         stage_manifests = {"runner_manifest": runner_manifest, "scorer_manifest": scorer_manifest}
         descriptor = normalized_descriptor
         if descriptor is not None:
             written_preflight_inputs = {}
-            for stage_name, run_id in execution_config["preflight_qualification"]["stage_run_ids"].items():
+            selected_qualification = execution_config["preflight_qualification"]
+            # Recovery is selected by the authorized state machine rather than
+            # by a caller flag. The public wrapper computes that phase before
+            # any stage begins; the frozen runner slot set is then chosen here.
+            if execution_config.get("continuation_plan") is not None:
+                ledger_events = [json.loads(line) for line in (execution_config["ledger_dir"] / "process-events.jsonl").read_text().splitlines()]
+                selected_qualification = (execution_config["recovery_qualification"]
+                    if any(event.get("event") == "preflight_rejected" for event in ledger_events)
+                    else execution_config["preflight_qualification"])
+            for stage_name, run_id in selected_qualification["stage_run_ids"].items():
                 stage_run = execution_config["run_by_id"][run_id]
                 for slot, binding in stage_run["slot_bindings"].items():
                     if binding["kind"] != "controller_file":
@@ -479,9 +873,16 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
                     target = (execution_program_dir / binding["path"]).resolve()
                     if execution_program_dir not in target.parents:
                         raise PreflightError("frozen preflight controller input path escapes program directory")
-                    source = (runner_manifest if slot == "run_manifest" and stage_name in {"runner", "verifier"}
-                              else scorer_manifest if stage_name == "scorer"
-                              else aggregate_manifest)
+                    if continuation is not None:
+                        source = (runner_manifest if slot == "run_manifest" and stage_name in {"runner", "verifier"}
+                                  else training_bundle if slot == "training_bundle"
+                                  else assessment_bundle if slot == "assessment_bundle"
+                                  else scorer_manifest if slot == "run_manifest" and stage_name == "scorer"
+                                  else aggregate_manifest)
+                    else:
+                        source = (runner_manifest if slot == "run_manifest" and stage_name in {"runner", "verifier"}
+                                  else scorer_manifest if stage_name == "scorer"
+                                  else aggregate_manifest)
                     source_bytes = source.read_bytes()
                     if target.exists():
                         if target not in written_preflight_inputs or target.read_bytes() != written_preflight_inputs[target]:
@@ -494,7 +895,7 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
         for stage in ("runner", "verifier", "scorer", "aggregator"):
             manifest = scorer_manifest if stage == "scorer" else aggregate_manifest if stage == "aggregator" else runner_manifest
             if descriptor is not None:
-                run_id = execution_config["preflight_qualification"]["stage_run_ids"][stage]
+                run_id = selected_qualification["stage_run_ids"][stage]
                 record = _invoke_descriptor_stage(stage, execution_program_dir, run_id, workdir)
             else:
                 record = _invoke(
@@ -519,70 +920,89 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
             raise PreflightError("runner or verifier omitted candidate outputs or execution receipts")
         output_records = json.loads(outputs_path.read_text())
         receipt_records = json.loads(receipts_path.read_text())
-        if not isinstance(output_records, list) or len(output_records) != len(runs) or not isinstance(receipt_records, list) or len(receipt_records) != len(runs):
+        if continuation is None and (not isinstance(output_records, list) or len(output_records) != len(runs)
+                or not isinstance(receipt_records, list) or len(receipt_records) != len(runs)):
             raise PreflightError("candidate/receipt count differs from frozen run matrix")
-        controls_by_id = {control["id"]: control for control in spec["controls"]}
-        output_by_id = {row.get("run_id"): row for row in output_records if isinstance(row, dict)}
-        receipt_by_id = {row.get("run_id"): row for row in receipt_records if isinstance(row, dict)}
-        if len(output_by_id) != len(runs) or len(receipt_by_id) != len(runs):
-            raise PreflightError("candidate or receipt output has duplicate/malformed run identity")
-        for run in runs:
-            control = controls_by_id[run["control_id"]]
-            train_path = paths[control["training"]["id"]]
-            output = output_by_id.get(run["run_id"])
-            if not isinstance(output, dict) or any(output.get(key) != run[key] for key in ("run_id", "control_id", "method", "seed")):
-                raise PreflightError(f"candidate output is misassociated for {run['run_id']}")
-            if output.get("training_artifact") != control["training"]["id"] or output.get("training_sha256") != file_sha(train_path):
-                raise PreflightError(f"candidate output has wrong control-specific training identity for {run['run_id']}")
-            if not isinstance(output.get("predictions"), list) or not output["predictions"]:
-                raise PreflightError(f"candidate output predictions are missing for {run['run_id']}")
-            receipt = receipt_by_id.get(run["run_id"])
-            if not isinstance(receipt, dict) or any(receipt.get(key) != run[key] for key in ("run_id", "control_id", "method", "seed")):
-                raise PreflightError(f"execution receipt is misassociated for {run['run_id']}")
-            if receipt.get("candidate_sha256") != digest(canonical(output)) or receipt.get("status") != "verified":
-                raise PreflightError(f"execution receipt does not verify candidate output for {run['run_id']}")
         scores_path = workdir / "independent-scores.json"
         if not scores_path.is_file():
             raise PreflightError("scorer did not produce independent-scores.json")
-        score_records = json.loads(scores_path.read_text())
-        scores_by_id = _index_run_records(score_records, runs, "scorer")
-        for run in runs:
-            control = controls_by_id[run["control_id"]]
-            assessment_path = paths[control["assessment"]["id"]]
-            expected_values = [row["expected"] for row in json.loads(assessment_path.read_text())["rows"]]
-            score = scores_by_id.get(run["run_id"])
-            output = output_by_id[run["run_id"]]
-            if not isinstance(score, dict) or any(score.get(key) != run[key] for key in ("run_id", "control_id", "method", "seed")):
-                raise PreflightError(f"score is misassociated for {run['run_id']}")
-            if score.get("assessment_artifact") != control["assessment"]["id"] or score.get("assessment_sha256") != file_sha(assessment_path):
-                raise PreflightError(f"score used wrong control-specific assessment artifact for {run['run_id']}")
-            if output.get("predictions") != expected_values or score.get("exact") is not True or score.get("checked_observations") != len(expected_values):
-                raise PreflightError(f"independent synthetic assessment mismatch for {run['run_id']}")
-        expected_per_control: dict[str, dict[str, int]] = {}
-        for run in runs:
-            score = scores_by_id[run["run_id"]]
-            entry = expected_per_control.setdefault(
-                run["control_id"], {"run_count": 0, "exact_run_count": 0}
-            )
-            entry["run_count"] += 1
-            entry["exact_run_count"] += int(score.get("exact") is True)
-        expected_exact_count = sum(row["exact_run_count"] for row in expected_per_control.values())
         report = workdir / "scientific-report.json"
         if not report.is_file():
             raise PreflightError("aggregator did not produce scientific-report.json")
         report_obj = json.loads(report.read_text())
-        if (
-            report_obj.get("preflight_id") != spec["preflight_id"]
-            or report_obj.get("assessment_source") != "synthetic"
-            or report_obj.get("run_count") != len(runs)
-            or report_obj.get("scored_run_count") != len(runs)
-            or report_obj.get("exact_run_count") != expected_exact_count
-            or report_obj.get("per_control") != expected_per_control
-            or report_obj.get("status") != "passed"
-            or report_obj.get("run_ids") != [r["run_id"] for r in runs]
-            or report_obj.get("run_bindings") != run_bindings
-        ):
-            raise PreflightError("final scientific report does not qualify the complete synthetic run set")
+        if continuation is not None:
+            runner_manifest_read = json.loads(runner_manifest.read_bytes())
+            scorer_manifest_read = json.loads(scorer_manifest.read_bytes())
+            score_output = json.loads(scores_path.read_bytes())
+            aggregate_manifest_read = json.loads(aggregate_manifest.read_bytes())
+            synthetic_result = _validate_fdi_synthetic_pipeline(
+                preflight_id=spec["preflight_id"], runner_manifest=runner_manifest_read,
+                runner_manifest_bytes=runner_manifest.read_bytes(), scorer_manifest=scorer_manifest_read,
+                runs=runs, training_bytes_by_control={key: value[1] for key, value in training_tsv.items()},
+                assessment_bytes_by_control={key: value[1] for key, value in assessment_tsv.items()},
+                training_path_by_control={key: str(value[0].resolve()) for key, value in training_tsv.items()},
+                training_bundle=training_bundle_obj, assessment_bundle=assessment_bundle_obj,
+                aggregate_manifest=aggregate_manifest_read,
+                candidate_records=output_records, verified_records=receipt_records,
+                score_output=score_output, report_output=report_obj,
+                scores_sha256=file_sha(scores_path), candidate_index_path=outputs_path,
+                receipt_index_path=receipts_path, protocol_training_bindings=protocol_training_bindings)
+            expected_per_control = {}
+            for run in runs:
+                row = expected_per_control.setdefault(run["control_id"], {"run_count": 0, "exact_run_count": 0})
+                row["run_count"] += 1
+                row["exact_run_count"] += 1
+        else:
+            controls_by_id = {control["id"]: control for control in spec["controls"]}
+            output_by_id = {row.get("run_id"): row for row in output_records if isinstance(row, dict)}
+            receipt_by_id = {row.get("run_id"): row for row in receipt_records if isinstance(row, dict)}
+            if len(output_by_id) != len(runs) or len(receipt_by_id) != len(runs):
+                raise PreflightError("candidate or receipt output has duplicate/malformed run identity")
+            for run in runs:
+                control = controls_by_id[run["control_id"]]
+                train_path = paths[control["training"]["id"]]
+                output = output_by_id.get(run["run_id"])
+                if not isinstance(output, dict) or any(output.get(key) != run[key] for key in ("run_id", "control_id", "method", "seed")):
+                    raise PreflightError(f"candidate output is misassociated for {run['run_id']}")
+                if output.get("training_artifact") != control["training"]["id"] or output.get("training_sha256") != file_sha(train_path):
+                    raise PreflightError(f"candidate output has wrong control-specific training identity for {run['run_id']}")
+                if not isinstance(output.get("predictions"), list) or not output["predictions"]:
+                    raise PreflightError(f"candidate output predictions are missing for {run['run_id']}")
+                receipt = receipt_by_id.get(run["run_id"])
+                if not isinstance(receipt, dict) or any(receipt.get(key) != run[key] for key in ("run_id", "control_id", "method", "seed")):
+                    raise PreflightError(f"execution receipt is misassociated for {run['run_id']}")
+                if receipt.get("candidate_sha256") != digest(canonical(output)) or receipt.get("status") != "verified":
+                    raise PreflightError(f"execution receipt does not verify candidate output for {run['run_id']}")
+            score_records = json.loads(scores_path.read_text())
+            scores_by_id = _index_run_records(score_records, runs, "scorer")
+            for run in runs:
+                control = controls_by_id[run["control_id"]]
+                assessment_path = paths[control["assessment"]["id"]]
+                expected_values = [row["expected"] for row in json.loads(assessment_path.read_text())["rows"]]
+                score = scores_by_id.get(run["run_id"])
+                output = output_by_id[run["run_id"]]
+                if not isinstance(score, dict) or any(score.get(key) != run[key] for key in ("run_id", "control_id", "method", "seed")):
+                    raise PreflightError(f"score is misassociated for {run['run_id']}")
+                if score.get("assessment_artifact") != control["assessment"]["id"] or score.get("assessment_sha256") != file_sha(assessment_path):
+                    raise PreflightError(f"score used wrong control-specific assessment artifact for {run['run_id']}")
+                if output.get("predictions") != expected_values or score.get("exact") is not True or score.get("checked_observations") != len(expected_values):
+                    raise PreflightError(f"independent synthetic assessment mismatch for {run['run_id']}")
+            expected_per_control = {}
+            for run in runs:
+                score = scores_by_id[run["run_id"]]
+                entry = expected_per_control.setdefault(run["control_id"], {"run_count": 0, "exact_run_count": 0})
+                entry["run_count"] += 1
+                entry["exact_run_count"] += int(score.get("exact") is True)
+            if (report_obj.get("preflight_id") != spec["preflight_id"]
+                    or report_obj.get("assessment_source") != "synthetic"
+                    or report_obj.get("run_count") != len(runs)
+                    or report_obj.get("scored_run_count") != len(runs)
+                    or report_obj.get("exact_run_count") != sum(row["exact_run_count"] for row in expected_per_control.values())
+                    or report_obj.get("per_control") != expected_per_control
+                    or report_obj.get("status") != "passed"
+                    or report_obj.get("run_ids") != [r["run_id"] for r in runs]
+                    or report_obj.get("run_bindings") != run_bindings):
+                raise PreflightError("final scientific report does not qualify the complete synthetic run set")
         evidence_hashes = {
             path.relative_to(evidence_root).as_posix(): file_sha(path)
             for path in sorted(evidence_root.rglob("*")) if path.is_file()
@@ -599,13 +1019,14 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
                     "protocol_training_sha256": c["protocol_training_sha256"],
                     "protocol_assessment_artifact": c["protocol_assessment_artifact"],
                     "protocol_assessment_sha256": c["protocol_assessment_sha256"],
-                    "synthetic_training_id": c["training"]["id"],
-                    "synthetic_training_sha256": c["training"]["sha256"],
-                    "synthetic_assessment_id": c["assessment"]["id"],
-                    "synthetic_assessment_sha256": c["assessment"]["sha256"],
+                    "synthetic_training_id": synthetic_ids[c["id"]][0] if continuation is not None else c["training"]["id"],
+                    "synthetic_training_sha256": digest(training_tsv[c["id"]][1]) if continuation is not None else c["training"]["sha256"],
+                    "synthetic_assessment_id": synthetic_ids[c["id"]][1] if continuation is not None else c["assessment"]["id"],
+                    "synthetic_assessment_sha256": digest(assessment_tsv[c["id"]][1]) if continuation is not None else c["assessment"]["sha256"],
                 }
                 for c in spec["controls"]
             ],
+            "protocol_training_bindings": protocol_training_bindings if continuation is not None else None,
             "run_ids": [run["run_id"] for run in runs],
             "run_bindings": run_bindings,
             "pipeline_identity": (protocol.get("pipeline_identity") if descriptor is not None else spec["commands"]),
@@ -632,6 +1053,51 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
         return receipt
     except Exception:
         # Partial evidence remains in its unique directory for diagnosis.
+        raise
+
+
+def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> dict[str, Any]:
+    """Run preflight inside the continuation's measured coordinator phase."""
+    protocol = json.loads(protocol_path.read_bytes())
+    if protocol.get("pipeline_descriptor") is None:
+        return _run_preflight_impl(protocol_path, spec_path, receipt_path)
+    execution_program_dir = Path(protocol.get("execution_program_dir", "")).resolve()
+    from research_execution import (begin_coordinator_phase, coordinator_phase_guard,
+                                    finish_coordinator_phase,
+                                    read_frozen_program)
+    try:
+        _, execution_config, _ = read_frozen_program(execution_program_dir)
+    except Exception as error:
+        raise PreflightError(f"frozen pipeline execution protocol is invalid: {error}") from error
+    continuation = execution_config.get("continuation_plan")
+    if continuation is None:
+        return _run_preflight_impl(protocol_path, spec_path, receipt_path)
+    preflight_pin = continuation.get("preflight_coordinator_entrypoint")
+    actual_preflight = Path(__file__).resolve()
+    if (not isinstance(preflight_pin, dict)
+            or Path(str(preflight_pin.get("path", ""))).resolve() != actual_preflight
+            or file_sha(actual_preflight) != preflight_pin.get("sha256")):
+        raise PreflightError("continuation preflight coordinator entrypoint hash/path mismatch")
+    ledger_events = [json.loads(line) for line in
+                     (execution_config["ledger_dir"] / "process-events.jsonl").read_text().splitlines()]
+    phase_id = ("recovery_preflight" if any(event.get("event") == "preflight_rejected"
+                                             for event in ledger_events)
+                else "primary_preflight")
+    token = begin_coordinator_phase(execution_program_dir, phase_id)
+    try:
+        with coordinator_phase_guard(execution_program_dir, token["token"]):
+            receipt = _run_preflight_impl(protocol_path, spec_path, receipt_path)
+        finish_coordinator_phase(execution_program_dir, token["token"], status="completed",
+                                 evidence_sha256=file_sha(receipt_path))
+        return receipt
+    except BaseException as error:
+        try:
+            finish_coordinator_phase(execution_program_dir, token["token"], status="failed",
+                                     reason=f"{type(error).__name__}: {error}")
+        except BaseException as accounting_error:
+            raise PreflightError(
+                f"preflight failed ({type(error).__name__}: {error}); phase accounting also failed "
+                f"({type(accounting_error).__name__}: {accounting_error})") from error
         raise
 
 

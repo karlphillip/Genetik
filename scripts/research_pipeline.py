@@ -153,7 +153,7 @@ def validate_descriptor(descriptor: object, frozen_artifacts: list[dict]) -> dic
     return normalized
 
 
-def expand_argv(descriptor: dict, stage_name: str, slots: dict[str, str]) -> list[str]:
+def expand_argv(descriptor: dict, stage_name: str, slots: dict[str, str | list[str]]) -> list[str]:
     stage = descriptor["stages"][stage_name]
     allowed = set(STAGE_INPUT_ROLES[stage_name] | STAGE_OUTPUT_ROLES[stage_name])
     result = []
@@ -165,8 +165,9 @@ def expand_argv(descriptor: dict, stage_name: str, slots: dict[str, str]) -> lis
         slot = match.group(1)
         if slot not in allowed or slot not in slots:
             raise PipelineDescriptorError(f"{stage_name} missing permitted slot {slot}")
-        path = Path(slots[slot])
-        if not path.is_absolute():
-            raise PipelineDescriptorError(f"{stage_name} slot {slot} must be an absolute path")
-        result.append(str(path.resolve()))
+        value = slots[slot]
+        paths = value if isinstance(value, list) else [value]
+        if not paths or not all(isinstance(item, str) and Path(item).is_absolute() for item in paths):
+            raise PipelineDescriptorError(f"{stage_name} slot {slot} must contain absolute path(s)")
+        result.extend(str(Path(item).resolve()) for item in paths)
     return result

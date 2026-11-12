@@ -84,6 +84,71 @@ class RunnerScorerContract(unittest.TestCase):
             with self.assertRaises(run_matrix.Failure):
                 run_matrix._validate_stage_inputs(manifest,corrupt,False,runner)
 
+    def test_fixed_mode_from_manifest_argv_dispatches_campaign_and_preflight(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp); runner=root/"selector"; runner.write_bytes(b"fixture selector")
+            runner.chmod(0o755)
+            training=b"genetik-fdi-training-v1\n0\t0\n"
+            training_hash=hashlib.sha256(training).hexdigest()
+            bundle={"schema":"genetik-fdi-training-bundle-v1","artifacts":[{
+                "id":"train-a","sha256":training_hash,
+                "content_base64":base64.b64encode(training).decode("ascii")} ]}
+            bundle_path=root/"training.json"
+            bundle_path.write_text(json.dumps(bundle,separators=(",",":"))+"\n")
+            selector_identity={"path":str(runner.resolve()),"sha256":self.digest(runner)}
+            common={"schema":"genetik-fdi-run-manifest-v2","protocol_id":"fixture-study",
+                "selector_runner":selector_identity,"interactive_session":self.session_config()}
+            campaign={**common,"mode":"campaign","runs":[{"run_id":"campaign-one",
+                "control_id":"arithmetic_m0","method":"ascending","seed":0,
+                "training_artifact":"train-a","training_sha256":training_hash,
+                "peer_private":{"control":"arithmetic","reference_member":0}}]}
+            preflight={**common,"mode":"synthetic-preflight",
+                "catalogue_map":[{"control_id":"fixture-control","catalogue":"arithmetic","reference_member":0}],
+                "runs":[{"run_id":"preflight-one","control_id":"fixture-control",
+                    "method":"ascending","seed":0,"training_artifact":"train-a",
+                    "training_sha256":training_hash}]}
+            fixed_tail=["--training-bundle",str(bundle_path),"--selector-runner",str(runner),
+                        "--output",str(root/"output.json"),"--mode-from-manifest"]
+            for name,manifest,expected_synthetic in (("campaign",campaign,False),
+                                                     ("preflight",preflight,True)):
+                path=root/f"{name}-manifest.json"
+                path.write_text(json.dumps(manifest,separators=(",",":"))+"\n")
+                argv=["--run-manifest",str(path),*fixed_tail]
+                args=run_matrix._stage_argument_parser().parse_args(argv)
+                prepared=run_matrix.prepare_stage_inputs(args)
+                self.assertEqual(prepared[3],expected_synthetic)
+                self.assertEqual(prepared[4],runner.resolve())
+                self.assertEqual(len(prepared[5]),1)
+            invalid_campaign={**campaign,"runs":[campaign["runs"][0],
+                {**campaign["runs"][0],"run_id":"campaign-two"}]}
+            invalid_path=root/"invalid-campaign.json"
+            invalid_path.write_text(json.dumps(invalid_campaign,separators=(",",":"))+"\n")
+            invalid_args=run_matrix._stage_argument_parser().parse_args(
+                ["--run-manifest",str(invalid_path),*fixed_tail])
+            with self.assertRaises(run_matrix.Failure):
+                run_matrix.prepare_stage_inputs(invalid_args)
+
+    def test_mode_from_manifest_rejects_bad_schema_mode_flags_and_missing_bundle(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp); runner=root/"selector"; runner.write_bytes(b"fixture selector")
+            runner.chmod(0o755)
+            base=["--run-manifest",str(root/"manifest.json"),"--selector-runner",str(runner),
+                  "--output",str(root/"output.json"),"--mode-from-manifest"]
+            manifest_path=Path(base[1])
+            for manifest in ({"schema":1,"mode":"campaign"},
+                             {"schema":"genetik-fdi-run-manifest-v2","mode":"unknown"}):
+                manifest_path.write_text(json.dumps(manifest))
+                args=run_matrix._stage_argument_parser().parse_args(base)
+                with self.assertRaises(run_matrix.Failure):
+                    run_matrix.prepare_stage_inputs(args)
+            manifest_path.write_text(json.dumps({"schema":"genetik-fdi-run-manifest-v2","mode":"campaign"}))
+            contradictory=run_matrix._stage_argument_parser().parse_args([*base,"--synthetic-preflight"])
+            with self.assertRaises(run_matrix.Failure):
+                run_matrix.prepare_stage_inputs(contradictory)
+            args=run_matrix._stage_argument_parser().parse_args(base)
+            with self.assertRaises(run_matrix.Failure):
+                run_matrix.prepare_stage_inputs(args)
+
     def test_synthetic_manifest_requires_explicit_fixture_flag(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp); runner=root/"selector"; runner.write_bytes(b"fixture binary"); runner.chmod(0o755)
@@ -308,6 +373,42 @@ class RunnerScorerContract(unittest.TestCase):
                 verify_matrix.expand_candidate_index(
                     {"schema":"genetik-fdi-candidate-output-index-v1","runs":entries},runs,index_path)
 
+    def test_one_verifier_option_loads_two_row_combined_index(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp); manifest_path=root/"manifest.json"
+            runs=[{"run_id":"run-a"},{"run_id":"run-b"}]
+            manifest={"protocol_id":"study-fixture","runs":runs}
+            manifest_path.write_text(json.dumps(manifest,separators=(",",":"))+"\n")
+            source_sha=self.digest(manifest_path)
+            index_path=root/"candidate-output-index.json"
+            evidence=index_path.with_name(index_path.name+".evidence")
+            entries=[]
+            for ordinal,run in enumerate(runs):
+                slot=evidence/f"run-{ordinal:02d}"; slot.mkdir(parents=True)
+                output=slot/"candidate.json"
+                output.write_text(json.dumps({"run_id":run["run_id"]},separators=(",",":"))+"\n")
+                entries.append({"run_id":run["run_id"],"path":str(output.relative_to(root)),
+                                "sha256":self.digest(output)})
+            index={"schema":"genetik-fdi-candidate-output-index-v1","protocol_id":"study-fixture",
+                   "run_manifest_sha256":source_sha,"runs":entries}
+            index_path.write_text(json.dumps(index,separators=(",",":"))+"\n")
+            candidates,_=verify_matrix.load_cli_candidate_outputs(manifest,source_sha,
+                None,[index_path])
+            self.assertEqual([item["run_id"] for item in candidates],["run-a","run-b"])
+            bad={**index,"protocol_id":"wrong"}
+            bad_path=root/"bad-index.json"
+            bad_path.write_text(json.dumps(bad,separators=(",",":"))+"\n")
+            with self.assertRaises(run_matrix.Failure):
+                verify_matrix.load_candidate_outputs(manifest,source_sha,combined_index_path=bad_path)
+            with self.assertRaises(run_matrix.Failure):
+                verify_matrix.load_cli_candidate_outputs(manifest,source_sha,index_path,[index_path])
+            with self.assertRaises(run_matrix.Failure):
+                verify_matrix.load_cli_candidate_outputs(manifest,source_sha,None,[])
+            detached={**index,"run_manifest_sha256":"c"*64}
+            bad_path.write_text(json.dumps(detached,separators=(",",":"))+"\n")
+            with self.assertRaises(run_matrix.Failure):
+                verify_matrix.load_candidate_outputs(manifest,source_sha,combined_index_path=bad_path)
+
     def test_final_verifier_expands_38_explicit_run_output_slots(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp); runs=[]; paths=[]
@@ -321,10 +422,18 @@ class RunnerScorerContract(unittest.TestCase):
                     "protocol_id":"study","run_manifest_sha256":runner_sha,"runs":[{
                         "run_id":run_id,"path":str(candidate.relative_to(root)),"sha256":self.digest(candidate)}]}))
                 paths.append(index)
-            expanded,parents=verify_matrix.expand_per_run_candidate_indexes(paths,runs,"study")
+            expanded,parents=verify_matrix.load_cli_candidate_outputs(
+                {"protocol_id":"study","runs":runs},"unused",None,paths)
             self.assertEqual([row["run_id"] for row in expanded],[row["run_id"] for row in runs])
             with self.assertRaises(run_matrix.Failure):
-                verify_matrix.expand_per_run_candidate_indexes(paths[::-1],runs,"study")
+                verify_matrix.load_candidate_outputs(
+                    {"protocol_id":"study","runs":runs},"unused",per_run_index_paths=paths[::-1])
+            with self.assertRaises(run_matrix.Failure):
+                verify_matrix.load_candidate_outputs(
+                    {"protocol_id":"study","runs":runs},"unused",per_run_index_paths=paths[:-1])
+            with self.assertRaises(run_matrix.Failure):
+                verify_matrix.load_candidate_outputs(
+                    {"protocol_id":"study","runs":runs},"unused",per_run_index_paths=[paths[0]]*len(runs))
 
     def test_receipt_index_is_compact_ordered_and_confined(self):
         with tempfile.TemporaryDirectory() as temp:

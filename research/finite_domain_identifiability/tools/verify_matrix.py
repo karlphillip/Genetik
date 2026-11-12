@@ -146,6 +146,9 @@ def expand_candidate_index(candidate_source, runs, index_path):
 def expand_per_run_candidate_indexes(index_paths,runs,protocol_id):
     if not isinstance(index_paths,list) or len(index_paths)!=len(runs):
         raise Failure("one ordered candidate output index is required for each frozen run")
+    resolved_paths=[str(Path(value).resolve()) for value in index_paths]
+    if len(set(resolved_paths))!=len(resolved_paths):
+        raise Failure("per-run candidate output indexes must be distinct")
     candidates=[]; source_parents=[]
     for run,path_value in zip(runs,index_paths):
         one_path=Path(path_value).resolve()
@@ -156,6 +159,38 @@ def expand_per_run_candidate_indexes(index_paths,runs,protocol_id):
         one_candidates,one_parents=expand_candidate_index(one_source,[run],one_path)
         candidates.extend(one_candidates); source_parents.extend(one_parents)
     return candidates,source_parents
+
+def load_candidate_outputs(manifest, source_manifest_sha, combined_index_path=None, per_run_index_paths=None):
+    """Load either one combined index or a complete ordered per-run index list."""
+    runs=manifest.get("runs") if isinstance(manifest,dict) else None
+    if not isinstance(runs,list) or not runs:
+        raise Failure("run manifest has no ordered run records")
+    if (combined_index_path is None) == (per_run_index_paths is None):
+        raise Failure("provide exactly one combined index or ordered per-run indexes")
+    if combined_index_path is not None:
+        candidate_path=Path(combined_index_path).resolve()
+        source=_read_json(candidate_path,"candidate output index")
+        if (not isinstance(source,dict) or source.get("protocol_id")!=manifest.get("protocol_id") or
+            source.get("run_manifest_sha256")!=source_manifest_sha):
+            raise Failure("candidate index is detached from the exact run manifest")
+        candidates,parents=expand_candidate_index(source,runs,candidate_path)
+        return candidates,parents
+    paths=list(per_run_index_paths)
+    if len(paths)!=len(runs):
+        raise Failure("per-run candidate index list does not cover the complete ordered run set")
+    return expand_per_run_candidate_indexes(paths,runs,manifest.get("protocol_id"))
+
+def load_cli_candidate_outputs(manifest, source_manifest_sha, candidate_path, index_paths):
+    """Apply the fixed verifier CLI's mutually exclusive index forms."""
+    if candidate_path is not None and index_paths:
+        raise Failure("combined and per-run candidate index forms cannot be mixed")
+    if candidate_path is not None:
+        return load_candidate_outputs(manifest,source_manifest_sha,combined_index_path=candidate_path)
+    if not index_paths:
+        raise Failure("candidate output indexes are required")
+    if len(index_paths)==1:
+        return load_candidate_outputs(manifest,source_manifest_sha,combined_index_path=index_paths[0])
+    return load_candidate_outputs(manifest,source_manifest_sha,per_run_index_paths=index_paths)
 
 def main():
     ap=argparse.ArgumentParser()
@@ -170,23 +205,14 @@ def main():
     manifest=source_manifest
     if isinstance(source_manifest,dict) and source_manifest.get("schema")==1:
         manifest,_=normalize_synthetic_manifest(source_manifest)
-    if bool(candidate_path)==bool(args.candidate_output_index):
-        raise Failure("provide one complete candidate index or ordered per-run indexes")
     if (not isinstance(manifest,dict) or manifest.get("schema")!="genetik-fdi-run-manifest-v2" or
         manifest.get("mode") not in {"campaign","synthetic-preflight"} or _has_assessment_key(source_manifest)):
         raise Failure("run manifest schema invalid or assessment data leaked to verifier")
     runs=manifest.get("runs")
     if not isinstance(runs,list) or not runs or (manifest["mode"]=="campaign" and len(runs) not in {1,38}):
         raise Failure("campaign verifier requires one run or the complete ordered 38-run index")
-    if candidate_path is not None:
-        candidate_source=_read_json(candidate_path,"candidate output index")
-        candidates,source_parents=expand_candidate_index(candidate_source,runs,candidate_path)
-        if (not isinstance(candidate_source,dict) or candidate_source.get("protocol_id")!=manifest.get("protocol_id")
-                or candidate_source.get("run_manifest_sha256")!=source_manifest_sha):
-            raise Failure("candidate index is detached from the exact run manifest")
-    else:
-        candidates,source_parents=expand_per_run_candidate_indexes(
-            args.candidate_output_index,runs,manifest.get("protocol_id"))
+    candidates,source_parents=load_cli_candidate_outputs(manifest,source_manifest_sha,
+        candidate_path,args.candidate_output_index)
     if not isinstance(candidates,list) or len(candidates)!=len(runs):
         raise Failure("candidate output count differs from run manifest")
     verified=[]

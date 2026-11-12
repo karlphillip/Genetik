@@ -438,26 +438,56 @@ def normalize_synthetic_manifest(source):
         "selector_runner":source.get("selector_runner")},
         {"schema":"genetik-fdi-training-bundle-v1","artifacts":artifacts})
 
-def stage_main(argv=None):
+def resolve_stage_mode(manifest, *, mode_from_manifest=False, synthetic_preflight=False):
+    """Resolve stage mode while keeping the legacy switch unambiguous."""
+    if mode_from_manifest and synthetic_preflight:
+        raise Failure("--mode-from-manifest contradicts --synthetic-preflight")
+    if mode_from_manifest:
+        if not isinstance(manifest,dict) or manifest.get("schema")!="genetik-fdi-run-manifest-v2":
+            raise Failure("--mode-from-manifest requires a strictly versioned v2 run manifest")
+        mode=manifest.get("mode")
+        if mode not in {"campaign","synthetic-preflight"}:
+            raise Failure("v2 run manifest has an unsupported execution mode")
+        return mode == "synthetic-preflight"
+    return synthetic_preflight
+
+def _stage_argument_parser():
     ap=argparse.ArgumentParser()
     ap.add_argument("--run-manifest",required=True)
     ap.add_argument("--training-bundle")
     ap.add_argument("--selector-runner",required=True)
     ap.add_argument("--output",required=True)
     ap.add_argument("--synthetic-preflight",action="store_true")
-    args=ap.parse_args(argv)
+    ap.add_argument("--mode-from-manifest",action="store_true")
+    return ap
+
+def prepare_stage_inputs(args):
+    """Load and validate mode-bound runner inputs without launching children."""
     manifest_path=Path(args.run_manifest).resolve()
     manifest=_load_json(manifest_path,"run manifest")
     bundle_path=Path(args.training_bundle).resolve() if args.training_bundle else None
-    if args.synthetic_preflight:
+    synthetic_mode=resolve_stage_mode(manifest,mode_from_manifest=args.mode_from_manifest,
+                                      synthetic_preflight=args.synthetic_preflight)
+    if args.mode_from_manifest:
+        if bundle_path is None:
+            raise Failure("--mode-from-manifest requires the mode-appropriate training bundle")
+        bundle=_load_json(bundle_path,"training bundle")
+    elif synthetic_mode:
         if manifest.get("schema")==1:
             manifest,bundle=normalize_synthetic_manifest(manifest)
         else:
-            bundle=_load_json(bundle_path,"synthetic training bundle") if bundle_path else None
+            if bundle_path is None:
+                raise Failure("versioned synthetic-preflight manifest requires a training bundle")
+            bundle=_load_json(bundle_path,"synthetic training bundle")
     else:
         if bundle_path is None: raise Failure("campaign mode requires the training bundle")
         bundle=_load_json(bundle_path,"training bundle")
-    runner,artifacts=_validate_stage_inputs(manifest,bundle,args.synthetic_preflight,args.selector_runner)
+    runner,artifacts=_validate_stage_inputs(manifest,bundle,synthetic_mode,args.selector_runner)
+    return manifest_path,manifest,bundle_path,synthetic_mode,runner,artifacts
+
+def stage_main(argv=None):
+    args=_stage_argument_parser().parse_args(argv)
+    manifest_path,manifest,bundle_path,synthetic_mode,runner,artifacts=prepare_stage_inputs(args)
     output=Path(args.output).resolve(); evidence_root=output.with_name(output.name+".evidence")
     if output.exists() or evidence_root.exists(): raise Failure("candidate output and evidence are create-exclusive")
     evidence_root.mkdir(parents=True,exist_ok=False)

@@ -170,6 +170,13 @@ target_link_libraries(example_header_EvaluationCorpus PRIVATE genetik_lib)
 # Python is development integration tooling only, never an installed dependency.
 find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
 add_executable(genetik_research_process_fixture research_process_fixture.cpp)
+add_executable(genetik_fdi_runner ${PROJECT_SOURCE_DIR}/research/finite_domain_identifiability/runner.cpp)
+target_link_libraries(genetik_fdi_runner PRIVATE Genetik::Genetik)
+add_executable(genetik_fdi_selector_contract_tests
+    ${PROJECT_SOURCE_DIR}/research/finite_domain_identifiability/tests/selector_contract.cpp)
+target_link_libraries(genetik_fdi_selector_contract_tests PRIVATE Genetik::Genetik)
+add_test(NAME genetik_fdi_selector_contracts COMMAND genetik_fdi_selector_contract_tests)
+set_tests_properties(genetik_fdi_selector_contracts PROPERTIES TIMEOUT 30)
 add_test(NAME genetik_research_execution_contracts COMMAND ${Python3_EXECUTABLE}
     ${PROJECT_SOURCE_DIR}/tests/test_research_execution.py)
 set_tests_properties(genetik_research_execution_contracts PROPERTIES
@@ -199,6 +206,16 @@ add_test(NAME genetik_scientific_pipeline_preflight_contracts COMMAND ${Python3_
 set_tests_properties(genetik_scientific_pipeline_preflight_contracts PROPERTIES
     TIMEOUT 120
     ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache")
+add_test(NAME genetik_fdi_runner_scorer_contracts COMMAND ${CMAKE_COMMAND} -E env
+    "PYTHONDONTWRITEBYTECODE=1"
+    "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache"
+    ${Python3_EXECUTABLE} -B ${PROJECT_SOURCE_DIR}/research/finite_domain_identifiability/tests/test_runner_scorer_contract.py)
+set_tests_properties(genetik_fdi_runner_scorer_contracts PROPERTIES TIMEOUT 60)
+add_test(NAME genetik_fdi_scorer_contracts COMMAND ${CMAKE_COMMAND} -E env
+    "PYTHONDONTWRITEBYTECODE=1"
+    "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache"
+    ${Python3_EXECUTABLE} -B ${PROJECT_SOURCE_DIR}/research/finite_domain_identifiability/tests/test_scorer_contract.py)
+set_tests_properties(genetik_fdi_scorer_contracts PROPERTIES TIMEOUT 60)
 add_test(NAME genetik_installed_package COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/package_integration.py
     --source ${PROJECT_SOURCE_DIR}

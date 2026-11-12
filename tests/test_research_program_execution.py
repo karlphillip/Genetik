@@ -11,10 +11,20 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / "scripts" / "research_execution.py"
 sys.path.insert(0, str(ROOT / "scripts"))
+from research_execution import (GateError, continuation_next_action,
+                                _resolve_authenticated_run_output,
+                                _require_receipt_measurements,
+                                _validate_controller_file_phase,
+                                validate_continuation_events,
+                                validate_continuation_history,
+                                validate_continuation_phase_plan,
+                                validate_run_output_list_binding)
+from research_pipeline import PipelineDescriptorError, expand_argv
 
 
 def sha(path):
@@ -105,6 +115,7 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         self.assertEqual(verified.returncode, 0, verified.stderr)
         self.assertTrue(json.loads(verified.stdout)["status"] == "valid")
         self.assertFalse((self.solver_ledger / "sample-program").exists())
+
 
     def test_pinned_bounded_program_can_run_correlated_interactive_session(self):
         helper = ROOT / "scripts" / "bounded_interactive_session.py"
@@ -594,6 +605,415 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         again = self.command("run-program", "--protocol-dir", frozen, "--run-id", "preflight-unit")
         self.assertEqual(again.returncode, 3)
+
+
+class ContinuationLifecycleContractTests(unittest.TestCase):
+    """Offline pure-state tests; these never create a process ledger or launch a program."""
+
+    def setUp(self):
+        self.plan = {
+            "amendment_id": "amendment-test",
+            "coordinator_phase_ids": ["primary_preflight", "recovery_preflight",
+                                       "campaign_orchestration", "final_scoring_orchestration"],
+            "slots": {"primary_preflight": ["p1", "p2"], "recovery_preflight": ["r1", "r2"],
+                      "campaign": ["c1"], "final_scoring": ["s1"]},
+        }
+        self.events = [{"event": "program_started", "protocol_sha256": "a" * 64,
+                        "amendment_id": self.plan["amendment_id"],
+                        "start_monotonic_ns": 1, "deadline_monotonic_ns": 426_000_000_001,
+                        "deadline_seconds": 426.0, "boot_id": "boot"}]
+
+    def start_phase(self, phase, token):
+        self.events.append({"event": "coordinator_phase_started", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "phase_id": phase, "token": token,
+            "pid": 100, "boot_id": "boot", "start_monotonic_ns": 1000, "start_cpu_seconds": 1.0})
+
+    def finish_phase(self, phase, token, status):
+        self.events.append({"event": "coordinator_phase", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "phase_id": phase, "token": token,
+            "status": status, "receipt_sha256": "b" * 64,
+            "coordinator_cpu_seconds": 0.1, "coordinator_exclusive_wall_seconds": 0.2})
+
+    def run_slots(self, ids, *, status="completed"):
+        for run_id in ids:
+            self.events.append({"event": "reserved", "run_id": run_id})
+            self.events.append({"event": "completed", "run_id": run_id,
+                                "status": status if run_id == ids[-1] else "completed"})
+
+    def test_primary_success_retires_recovery_before_campaign(self):
+        self.start_phase("primary_preflight", "primary-token")
+        self.run_slots(self.plan["slots"]["primary_preflight"])
+        self.assertEqual(continuation_next_action(self.plan, self.events)["state"],
+                         "primary_qualification_required")
+        self.events.append({"event": "qualification_prepared", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "qualification_path": "primary",
+            "evidence_sha256": "c" * 64})
+        self.finish_phase("primary_preflight", "primary-token", "completed")
+        self.events.append({"event": "qualified", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "qualification_path": "primary"})
+        for run_id in self.plan["slots"]["recovery_preflight"]:
+            self.events.append({"event": "recovery_retired", "run_id": run_id,
+                "amendment_id": self.plan["amendment_id"], "charged_cpu_seconds": 0,
+                "charged_wall_seconds": 0})
+        action = validate_continuation_events(self.plan, self.events)
+        self.assertEqual(action["state"], "campaign")
+        self.assertEqual(action["next_run_id"], "c1")
+
+    def test_no_primary_run_can_be_admitted_outside_measured_phase(self):
+        self.events.append({"event": "reserved", "run_id": "p1"})
+        with self.assertRaises(GateError):
+            validate_continuation_events(self.plan, self.events)
+
+    def test_primary_failure_opens_exactly_one_recovery_path(self):
+        self.start_phase("primary_preflight", "primary-token")
+        self.run_slots(["p1"], status="failed")
+        self.finish_phase("primary_preflight", "primary-token", "failed")
+        self.events.append({"event": "preflight_rejected", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "reason": "synthetic failure"})
+        self.assertEqual(continuation_next_action(self.plan, self.events)["state"], "recovery")
+        self.assertEqual(continuation_next_action(self.plan, self.events)["next_run_id"], "r1")
+        self.start_phase("recovery_preflight", "recovery-token")
+        self.run_slots(self.plan["slots"]["recovery_preflight"], status="failed")
+        self.finish_phase("recovery_preflight", "recovery-token", "failed")
+        self.events.append({"event": "recovery_rejected", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "reason": "recovery failed"})
+        self.assertEqual(continuation_next_action(self.plan, self.events)["state"], "terminal_failure")
+
+    def test_campaign_cannot_begin_until_every_recovery_slot_is_retired(self):
+        self.start_phase("primary_preflight", "primary-token")
+        self.run_slots(self.plan["slots"]["primary_preflight"])
+        self.events.append({"event": "qualification_prepared", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "qualification_path": "primary",
+            "evidence_sha256": "c" * 64})
+        self.finish_phase("primary_preflight", "primary-token", "completed")
+        self.events.append({"event": "qualified", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "qualification_path": "primary"})
+        self.events.append({"event": "recovery_retired", "run_id": "r1",
+            "amendment_id": self.plan["amendment_id"], "charged_cpu_seconds": 0,
+            "charged_wall_seconds": 0})
+        action = validate_continuation_events(self.plan, self.events)
+        self.assertEqual(action["state"], "retire_recovery")
+
+    def test_history_import_preserves_exact_measurements_and_unknowns(self):
+        history = {
+            "source_protocol_artifact_id": "historical-protocol",
+            "evidence_manifest_artifact_id": "historical-manifest",
+            "prior_declared_invocation_cap": 45,
+            "known_governed_preflight": {
+                "count": 16, "status": "successful", "cpu_seconds": None,
+                "stage_wall_seconds": 4.365234316792339,
+                "stage_wall_scope": "sum_of_16_bounded_stage_wall_records_only; coordinator_total_unknown",
+                "receipt_sha256_by_version": {
+                    "v2": "8d0f868433735f8188135b7bc7f493332622e66caa8d3ca1612921a2f0049263",
+                    "v3": "6c2bb1b4106b2baa674c925f034a20f7740d44512ea07d1051bfbc258a2db581",
+                    "v4": "ac8e835f2b9fdc1dcbf565737c8b1df83c4be3a8e9c9c70a73b9b5727f776074",
+                    "v5": "6d85cee6426bde045ffcd3dd88addb6493cbb6eac74fd77ea66d21f3f26fb540",
+                },
+            },
+            "unmeasured_pre_freeze_executions": {"count": 2, "cpu_seconds": None, "wall_seconds": None},
+            "prior_v1_activity": {"invocations": None, "cpu_seconds": None, "wall_seconds": None},
+        }
+        self.assertEqual(validate_continuation_history(history), history)
+        for mutate in (
+            lambda value: value["known_governed_preflight"].update(cpu_seconds=0.0),
+            lambda value: value["known_governed_preflight"].update(stage_wall_seconds=0.0),
+            lambda value: value["unmeasured_pre_freeze_executions"].update(wall_seconds=0.0),
+            lambda value: value["prior_v1_activity"].update(invocations=0),
+        ):
+            corrupted = json.loads(json.dumps(history))
+            mutate(corrupted)
+            with self.assertRaises(GateError):
+                validate_continuation_history(corrupted)
+
+    def test_amended_phase_plan_orders_recovery_before_science(self):
+        slots = {"primary_preflight": ["p"], "recovery_preflight": ["r"],
+                 "campaign": ["c"], "final_scoring": ["s"]}
+        runs = [{"run_id": "p", "phase_id": "preflight"},
+                {"run_id": "r", "phase_id": "recovery"},
+                {"run_id": "c", "phase_id": "campaign"},
+                {"run_id": "s", "phase_id": "scoring"}]
+        plan = [{"phase_id": "primary_preflight", "run_ids": ["p"]},
+                {"phase_id": "recovery_preflight", "run_ids": ["r"]},
+                {"phase_id": "campaign", "run_ids": ["c"]},
+                {"phase_id": "final_scoring", "run_ids": ["s"]}]
+        self.assertEqual(validate_continuation_phase_plan(plan, runs, slots), ["p", "r", "c", "s"])
+        late_recovery = [plan[0], plan[2], plan[3], plan[1]]
+        with self.assertRaises(GateError):
+            validate_continuation_phase_plan(late_recovery, runs, slots)
+        wrong_slot = [*plan]
+        wrong_slot[1] = {"phase_id": "recovery_preflight", "run_ids": ["c"]}
+        with self.assertRaises(GateError):
+            validate_continuation_phase_plan(wrong_slot, runs, slots)
+
+    def test_recovery_preflight_controller_files_and_receipt_binding(self):
+        _validate_controller_file_phase("preflight", "run_manifest")
+        _validate_controller_file_phase("recovery", "run_manifest")
+        _validate_controller_file_phase("recovery", "assessment_bundle")
+        with self.assertRaises(GateError):
+            _validate_controller_file_phase("campaign", "run_manifest")
+        receipt = {"coordinator_cpu_seconds": 0.125,
+                   "coordinator_exclusive_wall_seconds": 0.25,
+                   "coordinator_peak_rss_bytes": 4096}
+        _require_receipt_measurements(receipt, dict(receipt), tuple(receipt))
+        altered = dict(receipt, coordinator_cpu_seconds=0.126)
+        with self.assertRaises(GateError):
+            _require_receipt_measurements(receipt, altered, tuple(receipt))
+
+    def test_begin_phase_writes_start_events_to_canonical_ledger_directory(self):
+        from research_execution import begin_coordinator_phase
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            frozen_dir, ledger = root / "frozen", root / "ledger"
+            frozen_dir.mkdir()
+            ledger.mkdir()
+            (ledger / "process-budget.lock").write_bytes(b"")
+            (ledger / "process-events.jsonl").write_bytes(b"")
+            state = {"ledger_head": "0" * 64, "event_count": 0,
+                     "active_coordinator_phase": None, "terminal_status": None,
+                     "overall_start_monotonic_ns": None,
+                     "overall_deadline_monotonic_ns": None, "kernel_boot_id": None}
+            (ledger / "process-budget.json").write_text(json.dumps(state))
+            plan = {"amendment_id": "test-amendment",
+                    "coordinator_phase_ids": ["primary_preflight"],
+                    "overall_deadline_seconds": 426.0,
+                    "slots": {"primary_preflight": ["p1"], "recovery_preflight": ["r1"],
+                              "campaign": ["c1"], "final_scoring": ["s1"]}}
+            config = {"continuation_plan": plan, "ledger_dir": ledger}
+            with (mock.patch("research_execution.read_frozen_program", return_value=({}, config, "a" * 64)),
+                  mock.patch("research_execution._verify_process_ledger", return_value=[]),
+                  mock.patch("research_execution.validate_continuation_events",
+                             return_value={"state": "primary_preflight"}),
+                  mock.patch("research_execution._enforce_coordinator_address_space"),
+                  mock.patch("research_execution._self_peak_rss_bytes", return_value=1024),
+                  mock.patch("research_execution._kernel_boot_id", return_value="test-boot")):
+                begin_coordinator_phase(frozen_dir, "primary_preflight")
+            rows = [json.loads(line) for line in (ledger / "process-events.jsonl").read_text().splitlines()]
+            self.assertEqual([row["event"] for row in rows], ["program_started", "coordinator_phase_started"])
+            self.assertFalse((frozen_dir / "process-events.jsonl").exists())
+
+    def test_coordinator_cpu_guard_uses_user_and_system_cpu_timer(self):
+        from research_execution import coordinator_phase_guard
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            ledger = root / "ledger"
+            ledger.mkdir()
+            state = {"active_coordinator_phase": {"token": "t", "phase_id": "campaign_orchestration",
+                     "pid": os.getpid(), "start_monotonic_ns": time.monotonic_ns(),
+                     "start_cpu_seconds": 0.0},
+                     "max_coordinator_cpu_seconds": 11.0,
+                     "max_coordinator_exclusive_wall_seconds": 11.0,
+                     "coordinator_cpu_seconds_charged": 0.0,
+                     "coordinator_exclusive_wall_seconds_charged": 0.0,
+                     "overall_deadline_monotonic_ns": time.monotonic_ns() + 20_000_000_000}
+            (ledger / "process-budget.json").write_text(json.dumps(state))
+            (ledger / "process-events.jsonl").write_text("")
+            plan = {"slots": {"primary_preflight": [], "recovery_preflight": [],
+                              "campaign": ["c1"], "final_scoring": []}}
+            config = {"continuation_plan": plan, "ledger_dir": ledger}
+            timer_calls = []
+            with (mock.patch("research_execution.read_frozen_program", return_value=({}, config, "a" * 64)),
+                  mock.patch("research_execution._self_cpu_seconds", return_value=0.01),
+                  mock.patch("research_execution.signal.getitimer", return_value=(0.0, 0.0)),
+                  mock.patch("research_execution.signal.signal"),
+                  mock.patch("research_execution.signal.setitimer",
+                             side_effect=lambda which, seconds: timer_calls.append((which, seconds)))):
+                with coordinator_phase_guard(root, "t"):
+                    pass
+            self.assertIn(signal.ITIMER_PROF, [which for which, _ in timer_calls])
+            self.assertNotIn(signal.ITIMER_VIRTUAL, [which for which, _ in timer_calls])
+
+    def test_ordered_candidate_output_fan_in_binding_is_strict(self):
+        prior = {"run-a": {"stage_id": "runner"}, "run-b": {"stage_id": "runner"}}
+        refs = [{"kind": "run_output", "run_id": "run-a", "slot": "candidate_outputs"},
+                {"kind": "run_output", "run_id": "run-b", "slot": "candidate_outputs"}]
+        self.assertEqual(validate_run_output_list_binding(refs, "candidate_outputs", "verify", prior), refs)
+        with self.assertRaises(GateError):
+            validate_run_output_list_binding(refs, "verified_receipts", "verify", prior)
+        with self.assertRaises(GateError):
+            validate_run_output_list_binding([refs[0], refs[0]], "candidate_outputs", "verify", prior)
+        with self.assertRaises(GateError):
+            validate_run_output_list_binding([*refs, {"kind": "run_output", "run_id": "missing",
+                                                       "slot": "candidate_outputs"}],
+                                             "candidate_outputs", "verify", prior)
+        with self.assertRaises(GateError):
+            validate_run_output_list_binding([{"kind": "artifact", "run_id": "run-a",
+                                                "slot": "candidate_outputs"}],
+                                             "candidate_outputs", "verify", prior)
+
+    def test_candidate_output_argv_expansion_preserves_order_and_scalar_behavior(self):
+        first, second = Path("/tmp/candidate-a.json"), Path("/tmp/candidate-b.json")
+        descriptor = {"stages": {"verifier": {"argv": ["/usr/bin/python3", "verify.py",
+                                                             "--candidate-output-index", "{candidate_outputs}"]}}}
+        self.assertEqual(expand_argv(descriptor, "verifier", {
+            "candidate_outputs": [str(first), str(second)]}),
+            ["/usr/bin/python3", "verify.py", "--candidate-output-index",
+             str(first), str(second)])
+        scalar_descriptor = {"stages": {"runner": {"argv": ["/usr/bin/python3", "runner.py",
+                                                                  "--candidate-output", "{candidate_outputs}"]}}}
+        self.assertEqual(expand_argv(scalar_descriptor, "runner", {"candidate_outputs": str(first)}),
+                         ["/usr/bin/python3", "runner.py", "--candidate-output", str(first)])
+        with self.assertRaises(PipelineDescriptorError):
+            expand_argv(descriptor, "verifier", {"candidate_outputs": [str(first), "relative.json"]})
+
+    def test_candidate_output_resolution_authenticates_each_receipt_and_hash_in_order(self):
+        from research_execution import _resolve_pipeline_inputs, verify_program
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            protocol_sha = "a" * 64
+            events = []
+            refs = []
+            expected = []
+            for run_id, payload in (("run-a", b"first"), ("run-b", b"second")):
+                run_dir = root / "runs" / run_id
+                output_dir = run_dir / "outputs"
+                output_dir.mkdir(parents=True)
+                output = output_dir / "candidate_outputs.json"
+                output.write_bytes(payload)
+                receipt_path = run_dir / "receipt.json"
+                receipt = {"protocol_sha256": protocol_sha, "run_id": run_id,
+                           "invocation_id": f"inv-{run_id}", "status": "completed",
+                           "output_slots": {"candidate_outputs": {"path": str(output.resolve()),
+                                                                    "sha256": sha(output)}}}
+                receipt_path.write_text(json.dumps(receipt, sort_keys=True))
+                events.append({"event": "completed", "protocol_sha256": protocol_sha,
+                               "run_id": run_id, "invocation_id": f"inv-{run_id}",
+                               "status": "completed", "receipt_path": str(receipt_path.resolve()),
+                               "receipt_sha256": sha(receipt_path)})
+                refs.append({"kind": "run_output", "run_id": run_id, "slot": "candidate_outputs"})
+                expected.append((output.resolve(), sha(output)))
+            resolved = [_resolve_authenticated_run_output(root, protocol_sha, events, ref) for ref in refs]
+            self.assertEqual(resolved, expected)
+            run_by_id = {run_id: {"stage_id": "runner", "run_id": run_id}
+                         for run_id in ("run-a", "run-b")}
+            bindings = [dict(reference) for reference in refs]
+            config = {"run_by_id": run_by_id | {"verify": {"run_id": "verify", "stage_id": "verifier"}},
+                "pipeline_descriptor": {"schema": 1, "stages": {"verifier": {
+                    "argv": ["/usr/bin/python3", "verify.py", "--candidate-output-index", "{candidate_outputs}"],
+                    "input_roles": ["candidate_outputs"], "output_roles": ["verified_receipts"]}}},
+                "artifacts": {}, "pipeline_identity": None,
+                "commands_by_stage": {}, "ledger_dir": root / "ledger", "continuation_plan": None}
+            target_run = {"run_id": "verify", "stage_id": "verifier", "phase_id": "scoring",
+                          "slot_bindings": {"candidate_outputs": bindings}}
+            verify_run_dir = root / "runs" / "verify"
+            verify_run_dir.mkdir(parents=True)
+            argv, input_hashes, output_slots, input_paths = _resolve_pipeline_inputs(
+                root, config, target_run, verify_run_dir, protocol_sha, events)
+            self.assertEqual(argv[-2:], [str(path) for path, _ in expected])
+            self.assertEqual(input_hashes["candidate_outputs"], [digest for _, digest in expected])
+            self.assertEqual(input_paths["candidate_outputs"], [str(path) for path, _ in expected])
+
+            # Round-trip the resolved list through a normal run receipt and the
+            # same immutable-input verification used by verify_program().
+            stdout_path, stderr_path = verify_run_dir / "stdout.bin", verify_run_dir / "stderr.bin"
+            stdout_path.write_bytes(b"")
+            stderr_path.write_bytes(b"")
+            verified_output = verify_run_dir / "outputs" / "verified_receipts.json"
+            verified_output.parent.mkdir()
+            verified_output.write_bytes(b"[]")
+            receipt = {"run_id": "verify", "invocation_id": "inv-verify", "status": "completed",
+                       "stdout_sha256": sha(stdout_path), "stderr_sha256": sha(stderr_path),
+                       "input_slot_paths": input_paths, "input_slot_hashes": input_hashes,
+                       "output_slots": {"verified_receipts": {"path": str(verified_output.resolve()),
+                                                                 "sha256": sha(verified_output)}}}
+            receipt_path = verify_run_dir / "receipt.json"
+            receipt_path.write_text(json.dumps(receipt, sort_keys=True))
+            (root / "ledger").mkdir()
+            (root / "ledger" / "process-budget.json").write_text(json.dumps({
+                "pending": None, "invocations_reserved": 1,
+                "cpu_seconds_charged": 1.0, "wall_seconds_charged": 1.0}))
+            target_events = [{"event": "completed", "protocol_sha256": protocol_sha,
+                "run_id": "verify", "invocation_id": "inv-verify", "status": "completed",
+                "receipt_path": str(receipt_path.resolve()), "receipt_sha256": sha(receipt_path)},
+                {"event": "qualified", "protocol_sha256": protocol_sha}]
+            with (mock.patch("research_execution.read_frozen_program",
+                             return_value=({}, config, protocol_sha)),
+                  mock.patch("research_execution._verify_process_ledger", return_value=target_events)):
+                self.assertEqual(verify_program(root)["status"], "valid")
+                second_input = Path(input_paths["candidate_outputs"][1])
+                second_input.write_bytes(b"mutated")
+                with self.assertRaises(GateError):
+                    verify_program(root)
+            bad_slot = {"kind": "run_output", "run_id": "run-a", "slot": "missing_slot"}
+            with self.assertRaises(GateError):
+                _resolve_authenticated_run_output(root, protocol_sha, events, bad_slot)
+            second_output = root / "runs" / "run-b" / "outputs" / "candidate_outputs.json"
+            second_output.unlink()
+            with self.assertRaises(GateError):
+                _resolve_authenticated_run_output(root, protocol_sha, events, refs[1])
+            second_output.write_bytes(b"altered")
+            with self.assertRaises(GateError):
+                _resolve_authenticated_run_output(root, protocol_sha, events, refs[1])
+
+    def test_process_ledger_roundtrips_emitted_coordinator_receipt_measurements(self):
+        from research_execution import (_process_ledger_identity, _verify_process_ledger,
+                                        canonical_json, compact_json, sha256_bytes)
+
+        def build_ledger(cpu_event):
+            with tempfile.TemporaryDirectory() as temp:
+                ledger = Path(temp)
+                protocol_sha = "a" * 64
+                history = {"prior": "unknown"}
+                source_hashes = {"source_protocol": "b" * 64, "evidence_manifest": "c" * 64}
+                allowance = {"invocations": 49, "cpu_seconds": 333.0, "wall_seconds": 426.0}
+                plan = {"amendment_id": "amendment", "coordinator_allowance":
+                        {"cpu_seconds": 11.0, "exclusive_wall_seconds": 11.0},
+                        "overall_deadline_seconds": 426.0, "history": history,
+                        "history_artifact_sha256": source_hashes, "allowance": allowance,
+                        "authorization_sha256": "d" * 64}
+                budget = {"max_new_invocations": 49, "max_new_cpu_seconds": 333.0,
+                          "max_new_wall_seconds": 426.0}
+                identity = _process_ledger_identity({"budget": budget, "program_id": "program",
+                    "frozen_protocol_sha256": protocol_sha, "continuation_plan": plan})
+                receipt_path = ledger / "coordinator-receipt.json"
+                receipt = {"invocation_id": "inv-1", "run_id": "r1",
+                           "measurement_method": "RUSAGE_SELF_AND_EXCLUSIVE_WALL",
+                           "cpu_seconds": 0.125, "exclusive_wall_seconds": 0.25}
+                receipt_path.write_text(json.dumps(receipt, sort_keys=True))
+                payloads = [
+                    {"event": "created", **identity},
+                    {"event": "historical_import", "history": history,
+                     "history_sha256": sha256_bytes(canonical_json(history)),
+                     "source_artifact_sha256": source_hashes},
+                    {"event": "amendment_authorized", "allowance": allowance,
+                     "authorization_sha256": "d" * 64},
+                    {"event": "reserved", "invocation_id": "inv-1", "run_id": "r1"},
+                    {"event": "completed", "protocol_sha256": protocol_sha,
+                     "invocation_id": "inv-1", "run_id": "r1", "status": "completed",
+                     "charged_cpu_seconds": 1.0, "charged_wall_seconds": 2.0},
+                    {"event": "coordinator_accounted", "protocol_sha256": protocol_sha,
+                     "invocation_id": "inv-1", "run_id": "r1",
+                     "receipt_path": str(receipt_path.resolve()),
+                     "receipt_sha256": sha(receipt_path),
+                     "coordinator_cpu_seconds": cpu_event,
+                     "coordinator_exclusive_wall_seconds": 0.25},
+                ]
+                previous = "0" * 64
+                encoded = []
+                for payload in payloads:
+                    event = {**payload, "previous_hash": previous}
+                    previous = sha256_bytes(compact_json(event))
+                    encoded.append(compact_json({**event, "event_sha256": previous}) + b"\n")
+                events_path = ledger / "process-events.jsonl"
+                events_path.write_bytes(b"".join(encoded))
+                state = {**identity, "invocations_reserved": 1, "cpu_seconds_charged": 1.0,
+                         "wall_seconds_charged": 2.0, "pending": None,
+                         "qualification_status": "preflight_pending", "event_count": len(payloads),
+                         "ledger_head": previous, "coordinator_cpu_seconds_charged": cpu_event,
+                         "coordinator_exclusive_wall_seconds_charged": 0.25,
+                         "overall_start_monotonic_ns": None, "overall_deadline_monotonic_ns": None,
+                         "kernel_boot_id": None, "terminal_status": None,
+                         "active_coordinator_phase": None}
+                (ledger / "process-budget.json").write_text(json.dumps(state, sort_keys=True))
+                with mock.patch("research_execution.validate_continuation_events"):
+                    if cpu_event == 0.125:
+                        verified = _verify_process_ledger(ledger, state, protocol_sha, plan)
+                        self.assertEqual(len(verified), len(payloads))
+                    else:
+                        with self.assertRaisesRegex(GateError, "receipt disagrees"):
+                            _verify_process_ledger(ledger, state, protocol_sha, plan)
+
+        build_ledger(0.125)
+        build_ledger(0.126)
 
 
 if __name__ == "__main__":

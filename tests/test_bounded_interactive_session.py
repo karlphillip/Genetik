@@ -32,7 +32,7 @@ class BoundedInteractiveSession(unittest.TestCase):
 
     def execute(self, requester: str, responder: str, *, wall=2.0,
                 max_frame=4096, max_bytes=65536, max_requests=8,
-                identity_override=None):
+                max_terminal_frame=None, identity_override=None):
         self.requester.write_text(requester)
         self.responder.write_text(responder)
         def file_sha(path):
@@ -52,6 +52,8 @@ class BoundedInteractiveSession(unittest.TestCase):
             "max_protocol_bytes": max_bytes, "max_requests": max_requests,
             "max_cpu_seconds": 1.25, "max_memory_bytes": 256 * 1024 * 1024,
         }
+        if max_terminal_frame is not None:
+            config["max_terminal_frame_bytes"] = max_terminal_frame
         if identity_override is not None:
             config["request_identity"] = identity_override
         config_path = self.root / "session.json"
@@ -63,6 +65,7 @@ class BoundedInteractiveSession(unittest.TestCase):
             "r=run_session(c['request_argv'],c['response_argv'],cwd=__import__('pathlib').Path(c['cwd']),"
             "environment=c['environment'],wall_seconds=c['wall_seconds'],max_frame_bytes=c['max_frame_bytes'],"
             "max_protocol_bytes=c['max_protocol_bytes'],max_requests=c['max_requests'],"
+            "max_terminal_frame_bytes=c.get('max_terminal_frame_bytes'),"
             "request_identity=c['request_identity'],response_identity=c['response_identity'],"
             "max_cpu_seconds=c['max_cpu_seconds'],max_memory_bytes=c['max_memory_bytes']); "
             "print(json.dumps(r,sort_keys=True,separators=(',',':'))); "
@@ -91,6 +94,10 @@ class BoundedInteractiveSession(unittest.TestCase):
         )
         self.assertEqual(result["status"], "completed", result)
         self.assertEqual(result["session"]["request_count"], 1)
+        self.assertGreater(result["session"]["waited_child_peak_rss_bytes"], 0)
+        self.assertGreaterEqual(result["session"]["conservative_rss_sum_bytes"],
+                                result["session"]["waited_child_peak_rss_bytes"])
+        self.assertIn("not simultaneous group RSS", result["session"]["group_memory_measurement"])
         self.assertEqual(result["session"]["events"][0]["kind"], "exchange")
         self.assertEqual(result["session"]["events"][0]["response_sha256"],
                          hashlib.sha256(b'{"id":"q1","value":14}\n').hexdigest())
@@ -105,6 +112,15 @@ class BoundedInteractiveSession(unittest.TestCase):
                               wall=3.0)
         self.assertEqual(result["status"], "completed", result)
         self.assertGreater(result["session"]["protocol_bytes"], 350000)
+
+    def test_terminal_frame_has_a_separate_declared_limit(self):
+        payload = "z" * 600
+        result = self.execute(
+            "import json;print(json.dumps({'type':'final','payload':'" + payload + "'}),flush=True)\n",
+            "pass\n", max_frame=128, max_terminal_frame=1024,
+            max_bytes=2048)
+        self.assertEqual(result["status"], "completed", result)
+        self.assertEqual(result["session"]["status"], "completed")
 
     def test_malformed_frame_is_rejected(self):
         result = self.execute("import os;os.write(1,b'{broken}\\n')\n", "import time;time.sleep(2)\n")

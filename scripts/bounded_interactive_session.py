@@ -231,7 +231,7 @@ def run_session(
     max_protocol_bytes: int, max_requests: int,
     request_identity: dict[str, Any], response_identity: dict[str, Any],
     max_cpu_seconds: float, max_memory_bytes: int,
-    terminal_type: str = "final",
+    terminal_type: str = "final", max_terminal_frame_bytes: int | None = None,
 ) -> dict[str, Any]:
     """Run a deterministic two-process session with one outstanding request.
 
@@ -251,7 +251,11 @@ def run_session(
             or not 0 < max_cpu_seconds < float("inf") or type(max_memory_bytes) is not int
             or max_memory_bytes <= 0):
         raise ValueError("session CPU and memory limits must be finite and positive")
-    if max_frame_bytes <= 0 or max_protocol_bytes < max_frame_bytes or max_requests <= 0:
+    if max_terminal_frame_bytes is None:
+        max_terminal_frame_bytes = max_frame_bytes
+    if (type(max_terminal_frame_bytes) is not int or max_frame_bytes <= 0
+            or max_terminal_frame_bytes < max_frame_bytes
+            or max_protocol_bytes < max_terminal_frame_bytes or max_requests <= 0):
         raise ValueError("invalid session limits")
     if not isinstance(environment, dict) or not environment or not all(
             isinstance(key, str) and isinstance(value, str) for key, value in environment.items()):
@@ -375,7 +379,7 @@ def run_session(
         while not terminal_seen:
             # Drain buffered stdout before classifying an exited child. A
             # short-lived producer may have written a complete final frame.
-            request = _read_line(producer.stdout, deadline, max_frame_bytes, output_overflow,
+            request = _read_line(producer.stdout, deadline, max_terminal_frame_bytes, output_overflow,
                                  lambda chunk: capture("producer_stdout", chunk),
                                  lambda: byte_evidence["producer_stdout"].__setitem__("complete", True))
             if output_overflow.is_set():
@@ -391,6 +395,8 @@ def run_session(
                 if output_overflow.is_set():
                     raise SessionResourceLimit("combined stdout/stderr/protocol byte limit exceeded")
                 break
+            if len(request) > max_frame_bytes:
+                raise SessionResourceLimit("nonterminal request frame exceeds configured maximum")
             request_id = request_object.get("id")
             if (not isinstance(request_object.get("type"), str) or not request_object["type"]
                     or isinstance(request_id, bool) or not isinstance(request_id, (int, str))
@@ -512,12 +518,13 @@ def run_session(
         return {"status": "completed", "request_count": requests,
                 "protocol_bytes": consumed, "events": events,
                 "session_cpu_seconds": cpu_estimate, "waited_child_cpu_seconds": child_cpu,
+                "waited_child_peak_rss_bytes": child_peak_rss,
                 "wait4_usage_complete": True,
                 "stream_capture_complete": all(item["complete"] and
                                                 sum(map(len, item["chunks"])) == item["bytes"]
                                                 for item in byte_evidence.values()),
                 "conservative_rss_sum_bytes": conservative_rss,
-                "group_memory_measurement": "outer supervisor sampled separately",
+                "group_memory_measurement": "outer supervisor sampled separately; conservative_rss_sum_bytes is not simultaneous group RSS",
                 "byte_evidence": byte_evidence_record(),
                 "producer_returncode": producer.returncode,
                 "peer_returncode": peer.returncode}
@@ -558,7 +565,8 @@ def _main(argv: list[str]) -> int:
             max_requests=config["max_requests"],
             request_identity=config["request_identity"], response_identity=config["response_identity"],
             max_cpu_seconds=config["max_cpu_seconds"], max_memory_bytes=config["max_memory_bytes"],
-            terminal_type=config.get("terminal_type", "final"))
+            terminal_type=config.get("terminal_type", "final"),
+            max_terminal_frame_bytes=config.get("max_terminal_frame_bytes"))
         sys.stdout.write(json.dumps(result, sort_keys=True, separators=(",", ":")) + "\n")
         return 0 if result["status"] == "completed" else 3
     except BaseException as error:

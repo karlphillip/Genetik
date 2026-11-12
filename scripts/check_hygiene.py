@@ -11,8 +11,9 @@ ROOT_FILES = {
     'CMakeLists.txt', 'CONTRIBUTING.md', 'LICENSE', 'README.md', 'pyproject.toml',
 }
 ROOT_DIRS = {'.agents', '.git', '.github', 'apps', 'benchmarks', 'cmake', 'docs', 'examples',
-             'genetik', 'scripts', 'tests', 'out', 'build', 'python', 'integrations'}
-WORKSPACE = {'Genetik', 'Genetik-data', '.tools', 'delivery-tools', 'archive', 'docs', 'examples', 'session.md'}
+             'genetik', 'scripts', 'tests', 'out', 'build', 'python', 'integrations', 'research'}
+WORKSPACE = {'Genetik', 'Genetik-data', '.tools', 'delivery-tools', 'archive', 'docs', 'examples',
+             'session.md', 'Testing', 'analysis'}
 OUTPUT_DIRS = {'build', 'install', 'consumers', 'runs', 'data', 'logs', 'tmp', 'cleanup', 'worktrees'}
 # Retained D7 delivery assets/evidence predate the current role layout. They are
 # explicitly preserved, never used for new transient outputs, and not scanned.
@@ -101,7 +102,7 @@ def audit(source, workspace=False):
 def self_test():
     with tempfile.TemporaryDirectory(prefix='genetik-hygiene-') as tmp:
         workspace_root = Path(tmp) / 'primeResearcher'
-        for name in ('.tools', 'delivery-tools', 'archive', 'docs', 'examples'):
+        for name in ('.tools', 'delivery-tools', 'archive', 'docs', 'examples', 'Testing', 'analysis'):
             (workspace_root / name).mkdir(parents=True, exist_ok=True)
         (workspace_root / 'session.md').write_text('workspace note\n')
         (workspace_root / 'Genetik-data' / 'research-runs').mkdir(parents=True)

@@ -187,11 +187,14 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         second_protocol["runs"][0]["run_id"] = "second-run"
         second_protocol["phase_plan"][0]["run_ids"] = ["second-run"]
         second_protocol["program_budget"]["ledger_dir"] = protocol["program_budget"]["ledger_dir"]
-        second = self.freeze(second_protocol, self.root / "second-protocol")
-        result = self.command("run-program", "--protocol-dir", second, "--run-id", "second-run")
+        second_source = self._write_source(second_protocol)
+        second = self.root / "second-protocol"
+        result = self.command("freeze-program", "--protocol", second_source, "--destination", second)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("remaining phase plan", result.stderr)
-        self.assertFalse((second / "runs/second-run").exists())
+        self.assertIn("lifetime identity/limits changed", result.stderr)
+        self.assertFalse(second.exists())
+        state = json.loads((self.ledger / "sample-program/process-budget.json").read_text())
+        self.assertEqual(state["invocations_reserved"], 1)
 
     def _write_source(self, protocol):
         path = self.root / "bad-protocol.json"
@@ -206,6 +209,25 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 3)
         state = json.loads((self.ledger / "sample-program/process-budget.json").read_text())
         self.assertEqual(state["invocations_reserved"], 0)
+
+    def test_coordinated_frozen_protocol_and_marker_tamper_refused_without_invocation(self):
+        frozen = self.freeze()
+        program_path = frozen / "program.json"
+        protocol = json.loads(program_path.read_text())
+        protocol["protocol_id"] = "substituted-frozen-plan"
+        encoded = json.dumps(protocol, sort_keys=True, separators=(",", ":")).encode()
+        program_path.chmod(0o644)
+        program_path.write_bytes(encoded)
+        marker_path = frozen / "PROGRAM.sha256"
+        marker_path.chmod(0o644)
+        marker_path.write_text(f"{hashlib.sha256(encoded).hexdigest()}  program.json\n")
+
+        result = self.command("run-program", "--protocol-dir", frozen, "--run-id", "preflight-unit")
+        self.assertEqual(result.returncode, 3)
+        self.assertIn("different frozen protocol", result.stderr)
+        state = json.loads((self.ledger / "sample-program/process-budget.json").read_text())
+        self.assertEqual(state["invocations_reserved"], 0)
+        self.assertFalse((frozen / "runs/preflight-unit").exists())
 
     def test_assessment_identity_is_not_opened_before_scoring(self):
         protocol = self.protocol()

@@ -534,7 +534,11 @@ def _validate_bounded_program(protocol: object) -> dict:
 
 def _process_ledger_identity(config: dict) -> dict:
     budget = config["budget"]
+    protocol_sha256 = config.get("frozen_protocol_sha256")
+    if protocol_sha256 is None:
+        protocol_sha256 = sha256_bytes(canonical_json(config["protocol"]))
     return {"schema": 1, "kind": "bounded_program_ledger", "program_id": config["program_id"],
+            "frozen_protocol_sha256": protocol_sha256,
             "max_lifetime_invocations": budget["max_lifetime_invocations"],
             "max_lifetime_cpu_seconds": budget["max_lifetime_cpu_seconds"],
             "max_lifetime_wall_seconds": budget["max_lifetime_wall_seconds"]}
@@ -559,7 +563,9 @@ def _replace_process_budget(directory: Path, state: dict) -> None:
     _fsync_directory(directory)
 
 
-def _verify_process_ledger(directory: Path, state: dict) -> list[dict]:
+def _verify_process_ledger(directory: Path, state: dict, expected_protocol_sha256: str) -> list[dict]:
+    if state.get("frozen_protocol_sha256") != expected_protocol_sha256:
+        raise GateError("bounded-process ledger is bound to a different frozen protocol")
     events = []
     previous = "0" * 64
     for line in (directory / "process-events.jsonl").read_bytes().splitlines():
@@ -574,7 +580,8 @@ def _verify_process_ledger(directory: Path, state: dict) -> list[dict]:
         raise GateError("bounded-process ledger state/head mismatch")
     identity = _process_ledger_identity({"budget": {key: state.get(key) for key in (
         "max_lifetime_invocations", "max_lifetime_cpu_seconds", "max_lifetime_wall_seconds")},
-        "program_id": state.get("program_id")})
+        "program_id": state.get("program_id"),
+        "frozen_protocol_sha256": state.get("frozen_protocol_sha256")})
     if not events or any(state.get(key) != value for key, value in identity.items()):
         raise GateError("bounded-process ledger identity mismatch")
     if events[0].get("event") != "created" or any(events[0].get(k) != v for k, v in identity.items()):
@@ -621,7 +628,7 @@ def _initialize_process_ledger(config: dict) -> None:
             state = json.loads(state_path.read_text())
             if any(state.get(k) != v for k, v in identity.items()):
                 raise GateError("bounded-process lifetime identity/limits changed")
-            _verify_process_ledger(directory, state)
+            _verify_process_ledger(directory, state, identity["frozen_protocol_sha256"])
             return
         event = {"event": "created", **identity, "previous_hash": "0" * 64}
         event_hash = sha256_bytes(compact_json(event))
@@ -666,7 +673,7 @@ def _authorize_program_run(directory: Path, config: dict, protocol_sha: str, run
     with os.fdopen(lock_fd, "r+b") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         state = json.loads((ledger_dir / "process-budget.json").read_text())
-        events = _verify_process_ledger(ledger_dir, state)
+        events = _verify_process_ledger(ledger_dir, state, protocol_sha)
         protocol_events = [e for e in events if e.get("protocol_sha256") == protocol_sha]
         qualified = any(e.get("event") == "qualified" for e in protocol_events)
         if config.get("pipeline_descriptor") is not None and run["phase_id"] != "preflight" and not qualified:
@@ -863,7 +870,7 @@ def run_program(directory: Path, run_id: str) -> dict:
         fcntl.flock(lock, fcntl.LOCK_EX)
         state_path = ledger_dir / "process-budget.json"
         state = json.loads(state_path.read_text())
-        events = _verify_process_ledger(ledger_dir, state)
+        events = _verify_process_ledger(ledger_dir, state, protocol_sha)
         qualified = any(e.get("event") == "qualified" and e.get("protocol_sha256") == protocol_sha for e in events)
         if pipeline_mode and run["phase_id"] != "preflight" and not qualified:
             raise GateError("campaign and later phases require successful preflight qualification")
@@ -984,7 +991,7 @@ def run_program(directory: Path, run_id: str) -> dict:
 def verify_program(directory: Path) -> dict:
     protocol, config, protocol_sha = read_frozen_program(directory)
     state = json.loads((config["ledger_dir"] / "process-budget.json").read_text())
-    events = _verify_process_ledger(config["ledger_dir"], state)
+    events = _verify_process_ledger(config["ledger_dir"], state, protocol_sha)
     relevant = [e for e in events if e.get("protocol_sha256") == protocol_sha and e.get("event") == "completed"]
     receipt_checks = []
     for event in relevant:
@@ -1035,7 +1042,7 @@ def qualify_program(directory: Path) -> dict:
         fcntl.flock(lock, fcntl.LOCK_EX)
         state_path = ledger_dir / "process-budget.json"
         state = json.loads(state_path.read_text())
-        events = _verify_process_ledger(ledger_dir, state)
+        events = _verify_process_ledger(ledger_dir, state, protocol_sha)
         if state.get("pending") is not None or state.get("qualification_status") != "preflight_pending":
             raise GateError("preflight qualification is already consumed or has an unresolved invocation")
         completed = {e["run_id"]: e for e in events if e.get("event") == "completed" and e.get("protocol_sha256") == protocol_sha}

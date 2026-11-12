@@ -24,6 +24,12 @@ import sys
 import time
 from typing import Any
 
+from bounded_process import run_bounded_process
+from research_pipeline import (
+    PipelineDescriptorError, expand_argv, pipeline_identity as build_pipeline_identity,
+    validate_descriptor as validate_pipeline_descriptor,
+)
+
 
 class PreflightError(RuntimeError):
     pass
@@ -85,7 +91,7 @@ def _index_run_records(records: Any, runs: list[dict[str, Any]], stage: str) -> 
     return indexed
 
 
-def validate_spec(spec: dict[str, Any], base: Path, protocol: dict[str, Any]) -> tuple[dict[str, Path], list[dict[str, Any]]]:
+def validate_spec(spec: dict[str, Any], base: Path, protocol: dict[str, Any]) -> tuple[dict[str, Path], list[dict[str, Any]], dict | None]:
     if spec.get("schema") != 1:
         raise PreflightError("unsupported or incomplete preflight specification")
     _require_identifier(spec.get("preflight_id"), "preflight_id")
@@ -188,10 +194,30 @@ def validate_spec(spec: dict[str, Any], base: Path, protocol: dict[str, Any]) ->
     expected_count = spec.get("expected_run_count")
     if type(expected_count) is not int or expected_count != len(runs):
         raise PreflightError("expected_run_count does not match complete run matrix")
-    command_set = spec.get("commands")
-    if not isinstance(command_set, dict) or set(command_set) != {"runner", "verifier", "scorer", "aggregator"}:
-        raise PreflightError("runner, verifier, scorer and aggregator commands are required")
-    for stage, command in command_set.items():
+    descriptor = protocol.get("pipeline_descriptor")
+    if descriptor is not None:
+        try:
+            normalized_descriptor = validate_pipeline_descriptor(descriptor, protocol.get("frozen_artifacts", []))
+        except PipelineDescriptorError as error:
+            raise PreflightError(str(error)) from error
+        if spec.get("pipeline_descriptor_sha256") != descriptor.get("sha256"):
+            raise PreflightError("preflight spec does not bind the frozen pipeline descriptor")
+        if "commands" in spec:
+            raise PreflightError("preflight spec cannot override descriptor stage commands")
+        command_set = None
+        if protocol.get("pipeline_identity") != build_pipeline_identity(descriptor):
+            raise PreflightError("pipeline_identity differs from authoritative descriptor")
+    else:
+        normalized_descriptor = None
+        command_set = spec.get("commands")
+        if not isinstance(command_set, dict) or set(command_set) != {"runner", "verifier", "scorer", "aggregator"}:
+            raise PreflightError("runner, verifier, scorer and aggregator commands are required")
+        if not isinstance(protocol.get("pipeline_identity"), dict):
+            raise PreflightError("campaign protocol must pin runner, verifier, scorer and aggregator identities")
+        if spec.get("pipeline_descriptor_sha256") is not None:
+            raise PreflightError("legacy preflight spec cannot declare a descriptor digest")
+    pipeline_identity = protocol.get("pipeline_identity")
+    for stage, command in (command_set or {}).items():
         if not isinstance(command, dict) or not isinstance(command.get("argv"), list) or not command["argv"]:
             raise PreflightError(f"{stage} command argv is required")
         executable = Path(command["argv"][0]).resolve()
@@ -243,7 +269,7 @@ def validate_spec(spec: dict[str, Any], base: Path, protocol: dict[str, Any]) ->
         value = limits.get(name)
         if type(value) is not int or value < 1024 * 1024:
             raise PreflightError(f"{name} must be an integer of at least one MiB")
-    return artifact_paths, runs
+    return artifact_paths, runs, normalized_descriptor
 
 
 def _invoke(stage: str, command_spec: dict[str, Any], manifest: Path, workdir: Path,
@@ -324,11 +350,58 @@ def _invoke(stage: str, command_spec: dict[str, Any], manifest: Path, workdir: P
     return {"stage": stage, "argv": argv, "executable_sha256": command_spec["sha256"], "returncode": returncode, "wall_seconds": wall, "stdout_sha256": digest(stdout), "stderr_sha256": digest(stderr)}
 
 
+def _invoke_descriptor_stage(stage: str, execution_program_dir: Path, run_id: str,
+                             workdir: Path) -> dict[str, Any]:
+    # Lazy import avoids the research_execution <-> preflight module cycle.
+    from research_execution import run_program
+    receipt = run_program(execution_program_dir, run_id)
+    if receipt.get("status") != "completed" or receipt.get("stage_id") != stage:
+        raise PreflightError(f"{stage} bounded-program invocation failed: {receipt.get('status')}")
+    names = {"runner": ("candidate_outputs", "candidate-outputs.json"),
+             "verifier": ("verified_receipts", "verified-receipts.json"),
+             "scorer": ("scores_output", "independent-scores.json"),
+             "aggregator": ("report_output", "scientific-report.json")}
+    slot, filename = names[stage]
+    output = receipt.get("output_slots", {}).get(slot)
+    if not isinstance(output, dict) or not Path(output["path"]).is_file():
+        raise PreflightError(f"{stage} bounded-program receipt omitted its declared output")
+    destination = workdir / filename
+    destination.write_bytes(Path(output["path"]).read_bytes())
+    return {"stage": stage, "run_id": run_id, "argv": receipt["command"],
+            "executable_sha256": receipt["executable_sha256"],
+            "returncode": receipt["returncode"], "status": receipt["status"],
+            "wall_seconds": receipt["wall_seconds"], "cpu_seconds": receipt["cpu_seconds"],
+            "peak_process_group_rss_bytes": receipt.get("peak_process_group_rss_bytes"),
+            "process_group_rss_available": receipt.get("process_group_rss_available"),
+            "stdout_sha256": receipt["stdout_sha256"], "stderr_sha256": receipt["stderr_sha256"],
+            "bounded_program_receipt_sha256": digest(canonical(receipt))}
+
+
 def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> dict[str, Any]:
     protocol_bytes = protocol_path.read_bytes()
     protocol = json.loads(protocol_bytes)
     spec_bytes = spec_path.read_bytes()
     spec = json.loads(spec_bytes)
+    execution_program_dir = None
+    execution_config = None
+    if protocol.get("pipeline_descriptor") is not None:
+        configured_dir = protocol.get("execution_program_dir")
+        if not isinstance(configured_dir, str):
+            raise PreflightError("descriptor pipeline requires its frozen bounded-program directory")
+        execution_program_dir = Path(configured_dir).resolve()
+        from research_execution import read_frozen_program
+        try:
+            _, execution_config, _ = read_frozen_program(execution_program_dir)
+        except Exception as error:
+            raise PreflightError(f"frozen pipeline execution protocol is invalid: {error}") from error
+        if (execution_config.get("pipeline_descriptor") is None
+                or execution_config["protocol"]["pipeline_descriptor"].get("sha256") != protocol["pipeline_descriptor"].get("sha256")):
+            raise PreflightError("bounded-program descriptor differs from scientific pipeline descriptor")
+        spec_artifact_id = execution_config["preflight_qualification"]["spec_artifact_id"]
+        pinned_spec = execution_config["artifacts"][spec_artifact_id]
+        if (Path(pinned_spec["path"]).resolve() != spec_path.resolve()
+                or file_sha(spec_path) != pinned_spec["sha256"]):
+            raise PreflightError("synthetic preflight spec differs from the pinned bounded-program artifact")
     preflight_id = _require_identifier(spec.get("preflight_id"), "preflight_id")
     if receipt_path.exists():
         raise PreflightError("receipt destination already exists; evidence is write-once")
@@ -342,7 +415,7 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
         synthetic.mkdir()
         workdir = evidence_root / "pipeline"
         workdir.mkdir()
-        paths, runs = validate_spec(spec, synthetic, protocol)
+        paths, runs, normalized_descriptor = validate_spec(spec, synthetic, protocol)
         controls = []
         for control in spec["controls"]:
             controls.append({
@@ -354,47 +427,92 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
             {"run_id": r["run_id"], "control_id": r["control_id"], "method": r["method"], "seed": r["seed"]}
             for r in runs
         ]
+        runner_runs = [
+            {key: run[key] for key in ("run_id", "control_id", "method", "seed", "training_artifact")}
+            for run in runs
+        ]
         runner_manifest_obj = {
-            "schema": 1, "preflight_id": spec["preflight_id"], "synthetic_only": True,
-            "controls": [{"id": c["id"], "training": c["training"]} for c in controls], "runs": runs,
+            "schema": 1, "preflight_id": spec["preflight_id"],
+            "controls": [{"id": c["id"], "training": c["training"]} for c in controls], "runs": runner_runs,
             "expected_run_count": spec["expected_run_count"],
             "outputs_dir": str(workdir / "outputs"),
         }
+        def contains_assessment_field(value: Any) -> bool:
+            if isinstance(value, dict):
+                return any("assessment" in str(key).lower() or contains_assessment_field(item)
+                           for key, item in value.items())
+            if isinstance(value, list):
+                return any(contains_assessment_field(item) for item in value)
+            return False
+        if contains_assessment_field(runner_manifest_obj):
+            raise PreflightError("runner-visible manifest contains an assessment field")
+        runner_manifest_bytes = canonical(runner_manifest_obj) + b"\n"
+        for control in controls:
+            if control["assessment"]["path"].encode() in runner_manifest_bytes or control["assessment"]["id"].encode() in runner_manifest_bytes:
+                raise PreflightError("runner-visible manifest contains an assessment artifact binding")
         scorer_manifest_obj = {
-            **runner_manifest_obj,
+            **runner_manifest_obj, "runs": runs,
             "controls": controls,
             "candidate_outputs": str(workdir / "candidate-outputs.json"),
             "verified_receipts": str(workdir / "verified-receipts.json"),
         }
         (workdir / "outputs").mkdir()
         runner_manifest = workdir / "runner-manifest.json"
-        runner_manifest.write_bytes(canonical(runner_manifest_obj) + b"\n")
+        runner_manifest.write_bytes(runner_manifest_bytes)
         scorer_manifest = workdir / "scorer-manifest.json"
         scorer_manifest.write_bytes(canonical(scorer_manifest_obj) + b"\n")
         aggregate_manifest = workdir / "aggregate-manifest.json"
         aggregate_manifest.write_bytes(canonical({
-            "schema": 1, "preflight_id": spec["preflight_id"], "synthetic_only": True,
+            "schema": 1, "preflight_id": spec["preflight_id"],
             "runs": runs, "scores": str(workdir / "independent-scores.json"),
             "expected_run_count": len(runs), "report": str(workdir / "scientific-report.json"),
         }) + b"\n")
+        stage_manifests = {"runner_manifest": runner_manifest, "scorer_manifest": scorer_manifest}
+        descriptor = normalized_descriptor
+        if descriptor is not None:
+            written_preflight_inputs = {}
+            for stage_name, run_id in execution_config["preflight_qualification"]["stage_run_ids"].items():
+                stage_run = execution_config["run_by_id"][run_id]
+                for slot, binding in stage_run["slot_bindings"].items():
+                    if binding["kind"] != "controller_file":
+                        continue
+                    target = (execution_program_dir / binding["path"]).resolve()
+                    if execution_program_dir not in target.parents:
+                        raise PreflightError("frozen preflight controller input path escapes program directory")
+                    source = (runner_manifest if slot == "run_manifest" and stage_name in {"runner", "verifier"}
+                              else scorer_manifest if stage_name == "scorer"
+                              else aggregate_manifest)
+                    source_bytes = source.read_bytes()
+                    if target.exists():
+                        if target not in written_preflight_inputs or target.read_bytes() != written_preflight_inputs[target]:
+                            raise PreflightError("frozen preflight controller input is already present")
+                        continue
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(source_bytes)
+                    written_preflight_inputs[target] = source_bytes
         stages = []
         for stage in ("runner", "verifier", "scorer", "aggregator"):
             manifest = scorer_manifest if stage == "scorer" else aggregate_manifest if stage == "aggregator" else runner_manifest
-            record = _invoke(
-                stage, spec["commands"][stage], manifest, workdir,
-                float(spec["limits"]["wall_seconds"]),
-                spec["limits"]["cpu_seconds"],
-                spec["limits"]["address_space_bytes"],
-                spec["limits"]["output_bytes"],
-            )
+            if descriptor is not None:
+                run_id = execution_config["preflight_qualification"]["stage_run_ids"][stage]
+                record = _invoke_descriptor_stage(stage, execution_program_dir, run_id, workdir)
+            else:
+                record = _invoke(
+                    stage, spec["commands"][stage], manifest, workdir,
+                    float(spec["limits"]["wall_seconds"]),
+                    spec["limits"]["cpu_seconds"],
+                    spec["limits"]["address_space_bytes"],
+                    spec["limits"]["output_bytes"],
+                )
             stages.append(record)
             status_path = workdir / f"{stage}.status.json"
-            if not status_path.is_file():
-                raise PreflightError(f"{stage} did not write its required status artifact")
-            status = json.loads(status_path.read_text())
-            if status.get("status") != "passed" or status.get("preflight_id") != spec["preflight_id"] or status.get("run_bindings") != run_bindings:
-                raise PreflightError(f"{stage} status artifact is invalid")
-            record["status_artifact_sha256"] = file_sha(status_path)
+            if descriptor is None:
+                if not status_path.is_file():
+                    raise PreflightError(f"{stage} did not produce its required status artifact")
+                status = json.loads(status_path.read_text())
+                if status.get("status") != "passed" or status.get("preflight_id") != spec["preflight_id"] or status.get("run_bindings") != run_bindings:
+                    raise PreflightError(f"{stage} status artifact is invalid")
+                record["status_artifact_sha256"] = file_sha(status_path)
         outputs_path = workdir / "candidate-outputs.json"
         receipts_path = workdir / "verified-receipts.json"
         if not outputs_path.is_file() or not receipts_path.is_file():
@@ -490,7 +608,9 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
             ],
             "run_ids": [run["run_id"] for run in runs],
             "run_bindings": run_bindings,
-            "pipeline_identity": spec["commands"], "stages": stages,
+            "pipeline_identity": (protocol.get("pipeline_identity") if descriptor is not None else spec["commands"]),
+            "pipeline_descriptor_sha256": (protocol["pipeline_descriptor"]["sha256"] if descriptor is not None else None),
+            "stages": stages,
             "report_sha256": file_sha(report),
             "evidence_hashes": evidence_hashes,
         }
@@ -500,6 +620,9 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
             stream.write(encoded)
             stream.flush()
             os.fsync(stream.fileno())
+        if execution_program_dir is not None:
+            from research_execution import qualify_program
+            qualify_program(execution_program_dir)
         for path in sorted(evidence_root.rglob("*"), reverse=True):
             if path.is_file():
                 path.chmod(0o444)
@@ -527,6 +650,19 @@ def verify_admission(protocol: dict[str, Any]) -> dict[str, Any]:
         raise PreflightError("admission preflight receipt is not a successful matching receipt")
     if receipt.get("spec_sha256") != admission["spec_sha256"] or receipt.get("protocol_binding_sha256") != binding or admission["protocol_binding_sha256"] != binding:
         raise PreflightError("admission preflight is bound to a different protocol")
+    execution_program_dir = None
+    execution_config = None
+    if protocol.get("pipeline_descriptor") is not None:
+        execution_program_dir = Path(protocol.get("execution_program_dir", "")).resolve()
+        from research_execution import read_frozen_program, verify_program
+        try:
+            _, execution_config, _ = read_frozen_program(execution_program_dir)
+            verification = verify_program(execution_program_dir)
+        except Exception as error:
+            raise PreflightError(f"bounded pipeline ledger verification failed: {error}") from error
+        if (verification.get("status") != "valid"
+                or execution_config["protocol"]["pipeline_descriptor"].get("sha256") != protocol["pipeline_descriptor"].get("sha256")):
+            raise PreflightError("bounded pipeline is not qualified by its immutable execution ledger")
     spec = json.loads(spec_path.read_text())
     expected_controls = {entry["id"] for entry in protocol.get("controls", [])}
     spec_controls = spec.get("controls")
@@ -559,13 +695,28 @@ def verify_admission(protocol: dict[str, Any]) -> dict[str, Any]:
     ]
     if spec.get("protocol_binding_sha256") != binding or spec.get("runs") != protocol["run_matrix"] or receipt.get("run_bindings") != expected_run_bindings:
         raise PreflightError("preflight run matrix differs from campaign protocol")
-    expected_pipeline = protocol.get("pipeline_identity")
-    spec_pipeline = {
-        stage: {key: command.get(key) for key in ("version", "executable", "sha256", "identity_files", "runtime_identity")}
-        for stage, command in spec.get("commands", {}).items()
-    }
-    if spec_pipeline != expected_pipeline or receipt.get("pipeline_identity") != spec.get("commands"):
-        raise PreflightError("preflight stage commands differ from pinned campaign pipeline identities")
+    descriptor = protocol.get("pipeline_descriptor")
+    if descriptor is not None:
+        try:
+            normalized_descriptor = validate_pipeline_descriptor(descriptor, protocol.get("frozen_artifacts", []))
+        except PipelineDescriptorError as error:
+            raise PreflightError(str(error)) from error
+        if (spec.get("pipeline_descriptor_sha256") != descriptor.get("sha256") or "commands" in spec
+                or receipt.get("pipeline_descriptor_sha256") != descriptor.get("sha256")
+                or receipt.get("pipeline_identity") != protocol.get("pipeline_identity")):
+            raise PreflightError("preflight spec attempts to replace or misbind the frozen command descriptor")
+        if receipt.get("pipeline_descriptor_sha256") != descriptor.get("sha256") or receipt.get("pipeline_identity") != protocol.get("pipeline_identity"):
+            raise PreflightError("preflight receipt differs from the frozen pipeline descriptor")
+        artifact_by_id = {artifact["id"]: artifact for artifact in protocol["frozen_artifacts"]}
+    else:
+        normalized_descriptor = None
+        expected_pipeline = protocol.get("pipeline_identity")
+        spec_pipeline = {
+            stage: {key: command.get(key) for key in ("version", "executable", "sha256", "identity_files", "runtime_identity")}
+            for stage, command in spec.get("commands", {}).items()
+        }
+        if spec_pipeline != expected_pipeline or receipt.get("pipeline_identity") != spec.get("commands"):
+            raise PreflightError("preflight stage commands differ from pinned campaign pipeline identities")
     evidence_root = Path(receipt.get("evidence_directory", "")).resolve()
     if not evidence_root.is_dir() or evidence_root.parent != receipt_path.parent.resolve():
         raise PreflightError("preflight evidence directory is missing")
@@ -599,24 +750,33 @@ def verify_admission(protocol: dict[str, Any]) -> dict[str, Any]:
     for stage_record, stage_name in zip(receipt["stages"], expected_stage_order):
         if stage_record.get("stage") != stage_name:
             raise PreflightError("preflight stage order mismatch")
-        command = spec["commands"].get(stage_name, {})
-        executable = Path(command.get("argv", [""])[0]).resolve()
-        if not executable.is_file() or file_sha(executable) != stage_record.get("executable_sha256"):
-            raise PreflightError(f"preflight {stage_name} executable changed after qualification")
-        for identity in command.get("identity_files", []):
-            dependency = Path(identity["path"]).resolve()
-            if not dependency.is_file() or file_sha(dependency) != identity.get("sha256"):
-                raise PreflightError(f"preflight {stage_name} dependency changed after qualification")
-        status_path = evidence_root / "pipeline" / f"{stage_name}.status.json"
-        if not status_path.is_file() or file_sha(status_path) != stage_record.get("status_artifact_sha256"):
-            raise PreflightError(f"preflight {stage_name} status artifact changed after qualification")
-        status = json.loads(status_path.read_text())
-        if (
-            status.get("status") != "passed"
-            or status.get("preflight_id") != receipt["preflight_id"]
-            or status.get("run_bindings") != expected_run_bindings
-        ):
-            raise PreflightError(f"preflight {stage_name} status artifact does not match the run matrix")
+        if normalized_descriptor is not None:
+            run_id = stage_record.get("run_id")
+            if execution_config["preflight_qualification"]["stage_run_ids"].get(stage_name) != run_id:
+                raise PreflightError(f"preflight {stage_name} run ID differs from frozen phase plan")
+            run_receipt = execution_program_dir / "runs" / run_id / "receipt.json"
+            if not run_receipt.is_file() or digest(canonical(json.loads(run_receipt.read_text()))) != stage_record.get("bounded_program_receipt_sha256"):
+                raise PreflightError(f"preflight {stage_name} bounded-process receipt changed")
+            saved = json.loads(run_receipt.read_text())
+            if saved.get("status") != "completed" or saved.get("command") != stage_record.get("argv"):
+                raise PreflightError(f"preflight {stage_name} command/status does not match ledger receipt")
+        else:
+            command = spec["commands"].get(stage_name, {})
+            executable = Path(command.get("argv", [""])[0]).resolve()
+            if not executable.is_file() or file_sha(executable) != stage_record.get("executable_sha256"):
+                raise PreflightError(f"preflight {stage_name} executable changed after qualification")
+            for identity in command.get("identity_files", []):
+                dependency = Path(identity["path"]).resolve()
+                if not dependency.is_file() or file_sha(dependency) != identity.get("sha256"):
+                    raise PreflightError(f"preflight {stage_name} dependency changed after qualification")
+        if normalized_descriptor is None:
+            status_path = evidence_root / "pipeline" / f"{stage_name}.status.json"
+            if not status_path.is_file() or file_sha(status_path) != stage_record.get("status_artifact_sha256"):
+                raise PreflightError(f"preflight {stage_name} status artifact changed after qualification")
+            status = json.loads(status_path.read_text())
+            if (status.get("status") != "passed" or status.get("preflight_id") != receipt["preflight_id"]
+                    or status.get("run_bindings") != expected_run_bindings):
+                raise PreflightError(f"preflight {stage_name} status artifact does not match the run matrix")
     if receipt.get("run_ids") != [run["run_id"] for run in protocol["run_matrix"]]:
         raise PreflightError("preflight receipt has missing or duplicate run identities")
     report = json.loads(report_path.read_text())

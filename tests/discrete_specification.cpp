@@ -419,6 +419,14 @@ void certificateAccounting() {
               copied.observations().front().expected == DiscreteValue::integer(0),
           "specification owns an immutable copy of caller observations");
 }
+
+void crossLanguageCanonicalIdentity() {
+    const DiscreteSpecification specification(1, {{{0}, DiscreteValue::integer(0)},
+                                                  {{1}, DiscreteValue::boolean(true)},
+                                                  {{-2}, DiscreteValue::boolean(false)}});
+    check(specification.identity() == "discrete-spec-v1;d=1;rows=3;[0,]=i0;[1,]=b1;[-2,]=b0;",
+          "canonical identity matches the independently frozen cross-language literal");
+}
 } // namespace
 
 int main() {
@@ -429,6 +437,7 @@ int main() {
         reductionsAndInvalidity();
         failuresAndAccounting();
         certificateAccounting();
+        crossLanguageCanonicalIdentity();
         std::cout << "discrete specification checks=" << checks << '\n';
         return 0;
     } catch (const std::exception& error) {

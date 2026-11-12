@@ -181,3 +181,32 @@ transfer cannot block past the outer deadline. Protocol admission reserves
 three additional CPU-seconds and three wall-seconds per invocation for the
 isolated worker's hard-fallback envelope, and includes this in complete and
 lifetime budget checks.
+
+### Adaptive request/response programs
+
+A bounded-program stage may use `scripts/bounded_interactive_session.py` when
+the stage itself is the supervised process-group leader. Pin the request
+producer, response peer, executable hashes, imported runtime files, explicit
+environment and helper in the frozen stage dependencies. The helper uses
+bounded JSON Lines; requests carry a unique typed `id`, and the response must
+echo it. Only one request is outstanding. Frame size, request count, aggregate
+protocol plus stdout/stderr bytes, and wall time are bounded. Each exchange's
+request and response hashes are recorded in a deterministic hash chain, with
+capped lossless per-stream bytes retained in the receipt. Malformed schemas,
+correlation-mismatched responses, extra output after the terminal frame, EOF, timeout, and resource
+exhaustion are incomplete outcomes. The outer `run-program` process-group
+supervisor accounts and cleans both children.
+
+For append-only finite specifications, use
+`scripts/specification_revision.py` to recompute each identity from ordered
+observations and authenticate each predecessor/counterexample link. A finite
+validation result only concerns the exact finite observation set; it is not a
+universal equivalence certificate. Unresolved candidate checks cannot count
+as successful identification.
+
+Run these offline engineering contracts with:
+
+```sh
+python3 tests/test_bounded_interactive_session.py
+python3 tests/test_specification_revision.py
+```

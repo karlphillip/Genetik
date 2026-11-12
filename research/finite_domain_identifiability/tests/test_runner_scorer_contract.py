@@ -84,6 +84,71 @@ class RunnerScorerContract(unittest.TestCase):
             with self.assertRaises(run_matrix.Failure):
                 run_matrix._validate_stage_inputs(manifest,corrupt,False,runner)
 
+    def test_fixed_mode_from_manifest_argv_dispatches_campaign_and_preflight(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp); runner=root/"selector"; runner.write_bytes(b"fixture selector")
+            runner.chmod(0o755)
+            training=b"genetik-fdi-training-v1\n0\t0\n"
+            training_hash=hashlib.sha256(training).hexdigest()
+            bundle={"schema":"genetik-fdi-training-bundle-v1","artifacts":[{
+                "id":"train-a","sha256":training_hash,
+                "content_base64":base64.b64encode(training).decode("ascii")} ]}
+            bundle_path=root/"training.json"
+            bundle_path.write_text(json.dumps(bundle,separators=(",",":"))+"\n")
+            selector_identity={"path":str(runner.resolve()),"sha256":self.digest(runner)}
+            common={"schema":"genetik-fdi-run-manifest-v2","protocol_id":"fixture-study",
+                "selector_runner":selector_identity,"interactive_session":self.session_config()}
+            campaign={**common,"mode":"campaign","runs":[{"run_id":"campaign-one",
+                "control_id":"arithmetic_m0","method":"ascending","seed":0,
+                "training_artifact":"train-a","training_sha256":training_hash,
+                "peer_private":{"control":"arithmetic","reference_member":0}}]}
+            preflight={**common,"mode":"synthetic-preflight",
+                "catalogue_map":[{"control_id":"fixture-control","catalogue":"arithmetic","reference_member":0}],
+                "runs":[{"run_id":"preflight-one","control_id":"fixture-control",
+                    "method":"ascending","seed":0,"training_artifact":"train-a",
+                    "training_sha256":training_hash}]}
+            fixed_tail=["--training-bundle",str(bundle_path),"--selector-runner",str(runner),
+                        "--output",str(root/"output.json"),"--mode-from-manifest"]
+            for name,manifest,expected_synthetic in (("campaign",campaign,False),
+                                                     ("preflight",preflight,True)):
+                path=root/f"{name}-manifest.json"
+                path.write_text(json.dumps(manifest,separators=(",",":"))+"\n")
+                argv=["--run-manifest",str(path),*fixed_tail]
+                args=run_matrix._stage_argument_parser().parse_args(argv)
+                prepared=run_matrix.prepare_stage_inputs(args)
+                self.assertEqual(prepared[3],expected_synthetic)
+                self.assertEqual(prepared[4],runner.resolve())
+                self.assertEqual(len(prepared[5]),1)
+            invalid_campaign={**campaign,"runs":[campaign["runs"][0],
+                {**campaign["runs"][0],"run_id":"campaign-two"}]}
+            invalid_path=root/"invalid-campaign.json"
+            invalid_path.write_text(json.dumps(invalid_campaign,separators=(",",":"))+"\n")
+            invalid_args=run_matrix._stage_argument_parser().parse_args(
+                ["--run-manifest",str(invalid_path),*fixed_tail])
+            with self.assertRaises(run_matrix.Failure):
+                run_matrix.prepare_stage_inputs(invalid_args)
+
+    def test_mode_from_manifest_rejects_bad_schema_mode_flags_and_missing_bundle(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp); runner=root/"selector"; runner.write_bytes(b"fixture selector")
+            runner.chmod(0o755)
+            base=["--run-manifest",str(root/"manifest.json"),"--selector-runner",str(runner),
+                  "--output",str(root/"output.json"),"--mode-from-manifest"]
+            manifest_path=Path(base[1])
+            for manifest in ({"schema":1,"mode":"campaign"},
+                             {"schema":"genetik-fdi-run-manifest-v2","mode":"unknown"}):
+                manifest_path.write_text(json.dumps(manifest))
+                args=run_matrix._stage_argument_parser().parse_args(base)
+                with self.assertRaises(run_matrix.Failure):
+                    run_matrix.prepare_stage_inputs(args)
+            manifest_path.write_text(json.dumps({"schema":"genetik-fdi-run-manifest-v2","mode":"campaign"}))
+            contradictory=run_matrix._stage_argument_parser().parse_args([*base,"--synthetic-preflight"])
+            with self.assertRaises(run_matrix.Failure):
+                run_matrix.prepare_stage_inputs(contradictory)
+            args=run_matrix._stage_argument_parser().parse_args(base)
+            with self.assertRaises(run_matrix.Failure):
+                run_matrix.prepare_stage_inputs(args)
+
     def test_synthetic_manifest_requires_explicit_fixture_flag(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp); runner=root/"selector"; runner.write_bytes(b"fixture binary"); runner.chmod(0o755)

@@ -1156,6 +1156,17 @@ template recovered exact structure for both recorded seeds, while ordinary
 search produced one exact and one approximate result. This bounded demonstration
 does not establish general search superiority. See `MULTI_COMPONENT_TEMPLATES.md`.
 
+## Reusable exact discrete components (optional capability)
+
+`DiscreteExpressionComponents.hpp` adds a bounded construction DAG that shares
+typed, immutable Int64/Bool components and materializes them as the existing
+checked `DiscreteExpression`. Closed reductions are copied with deterministic
+fresh binder identities on each expanded occurrence. Evaluation remains
+occurrence-based after materialization; this capability makes no search-recovery
+or evaluation-speed claim. The generic GA, defaults, RNG, checkpoints, and
+existing discrete expression semantics are unchanged. See
+`DISCRETE_EXPRESSION_COMPONENTS.md`.
+
 ## Engineering Foundation
 
 The Engineering Foundation milestone adds repository C++ formatting and focused

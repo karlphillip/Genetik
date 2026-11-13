@@ -687,12 +687,14 @@ class BoundedProgramExecutionTests(unittest.TestCase):
     def test_escaped_session_descendant_cannot_hold_output_pipe_past_deadline(self):
         pid_file = self.root / "escaped-descendant.pid"
         self._write_program(
-            "import pathlib,subprocess,sys\n"
+            "import pathlib,subprocess,sys,time\n"
             "p=subprocess.Popen([sys.executable,'-c',\"import os,sys,time; os.setsid(); "
             "open(sys.argv[1],'w').write(str(os.getpid())); time.sleep(10)\",str(sys.argv[1])])\n"
+            "deadline=time.monotonic()+0.4\n"
+            "while time.monotonic()<deadline and not pathlib.Path(sys.argv[1]).exists(): time.sleep(0.005)\n"
             "pathlib.Path(sys.argv[1]+'.parent').write_text(str(p.pid))\n",
         )
-        protocol = self.protocol(max_wall=0.25, max_total_wall=3.25)
+        protocol = self.protocol(max_wall=0.5, max_total_wall=3.5)
         protocol["runs"][0]["stdin_artifact"] = None
         protocol["command"]["args"].append(str(pid_file))
         frozen = self.freeze(protocol)
@@ -809,12 +811,27 @@ class BoundedProgramExecutionTests(unittest.TestCase):
 
     def test_target_cpu_limit_can_exceed_isolated_supervisor_limit(self):
         from bounded_process import run_bounded_process
-        limits = {"max_cpu_seconds": 5, "max_wall_seconds": 2, "max_address_space_bytes": 256*1024*1024,
+        limits = {"max_cpu_seconds": 5.5, "max_wall_seconds": 8, "max_address_space_bytes": 256*1024*1024,
                   "max_stdin_bytes": 10, "max_output_bytes": 1000, "max_file_bytes": 1000}
-        result = run_bounded_process([str(self.python), "-c", "import time; time.sleep(.05); print('ok')"],
+        busy_target = ("import time\nend=time.process_time()+3.25\nvalue=0\n"
+                       "while time.process_time()<end: value+=1\nprint(value)\n")
+        result = run_bounded_process([str(self.python), "-c", busy_target],
             b"", {"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C"}, self.root, limits)
-        self.assertEqual(result["status"], "completed")
-        self.assertGreaterEqual(result["target_cpu_seconds"], result["waited_child_cpu_seconds"])
+        self.assertEqual(result["status"], "completed", result.get("harness_diagnostic"))
+        self.assertGreaterEqual(result["target_cpu_seconds"], 3.0)
+        self.assertGreaterEqual(result["waited_child_cpu_seconds"], 3.0)
+        self.assertLess(result["supervisor_cpu_seconds"], 3.0)
+
+    def test_target_cpu_exhaustion_remains_distinct_from_supervisor_cpu_limit(self):
+        from bounded_process import run_bounded_process
+        limits = {"max_cpu_seconds": 1.0, "max_wall_seconds": 5,
+                  "max_address_space_bytes": 256*1024*1024,
+                  "max_stdin_bytes": 10, "max_output_bytes": 1000, "max_file_bytes": 1000}
+        result = run_bounded_process(
+            [str(self.python), "-c", "while True: pass"], b"",
+            {"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C"}, self.root, limits)
+        self.assertEqual(result["status"], "cpu_limit")
+        self.assertIsNotNone(result["target_cpu_seconds"])
         self.assertLess(result["supervisor_cpu_seconds"], 3.0)
 
     def test_nonzero_and_signal_exit_are_distinct(self):
@@ -1024,11 +1041,51 @@ class ContinuationLifecycleContractTests(unittest.TestCase):
         self.run_slots(["p1"], status="failed")
         self.finish_phase("primary_preflight", "primary-token", "failed", "coordinator_phase_failure")
         self.supervise_phase("primary_preflight", "primary-token")
-        self.events.append({"event": "preflight_rejected", "protocol_sha256": "a" * 64,
-            "amendment_id": self.plan["amendment_id"],
-            "failure_category": "coordinator_phase_failure", "reason": "RSS unavailable"})
-        with self.assertRaisesRegex(GateError, "qualification boundary"):
+        self.events.append({"event": "program_terminal", "status": "primary_preflight_failed"})
+        action = validate_continuation_events(self.plan, self.events)
+        self.assertEqual(action["state"], "terminal_failure")
+
+    def test_active_phase_terminal_request_closes_before_supervision_and_terminal(self):
+        self.start_phase("primary_preflight", "primary-token")
+        request = {"event": "coordinator_phase_failure_requested", "protocol_sha256": "a" * 64,
+                   "amendment_id": self.plan["amendment_id"], "phase_id": "primary_preflight",
+                   "token": "primary-token", "terminal_status": "coordinator_or_wall_budget_exhausted",
+                   "reason": "future-stage reserve no longer fits"}
+        self.events.append(request)
+        self.assertEqual(continuation_next_action(self.plan, self.events)["state"], "terminal_failure")
+        closed = {"event": "coordinator_phase", "protocol_sha256": "a" * 64,
+                  "amendment_id": self.plan["amendment_id"], "phase_id": "primary_preflight",
+                  "token": "primary-token", "pid": 100, "pid_starttime_ticks": 1000,
+                  "status": "failed", "receipt_sha256": "b" * 64,
+                  "failure_category": "coordinator_phase_failure",
+                  "terminal_status": request["terminal_status"],
+                  "coordinator_peak_rss_bytes": 4096, "coordinator_proc_vm_hwm_bytes": 4096,
+                  "coordinator_cpu_seconds": 0.1, "coordinator_exclusive_wall_seconds": 0.2}
+        self.events.append(closed)
+        with self.assertRaisesRegex(GateError, "precedes coordinator parent supervision"):
+            self.events.append({"event": "program_terminal", "status": request["terminal_status"]})
             validate_continuation_events(self.plan, self.events)
+        self.events.pop()
+        self.supervise_phase("primary_preflight", "primary-token")
+        self.events.append({"event": "program_terminal", "status": request["terminal_status"]})
+        self.assertEqual(validate_continuation_events(self.plan, self.events)["state"], "terminal_failure")
+
+    def test_interrupted_phase_terminal_transition_is_incomplete_and_fail_closed(self):
+        self.start_phase("primary_preflight", "primary-token")
+        self.run_slots(["p1"], status="failed")
+        self.finish_phase("primary_preflight", "primary-token", "failed", "stage_failure")
+        self.supervise_phase("primary_preflight", "primary-token")
+        self.events.append({"event": "preflight_rejected", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "failure_category": "stage_failure",
+            "reason": "synthetic primary failure"})
+        self.start_phase("recovery_preflight", "recovery-token")
+        self.events.append({"event": "coordinator_phase_failure_requested", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "phase_id": "recovery_preflight",
+            "token": "recovery-token", "terminal_status": "overall_wall_deadline",
+            "reason": "deadline reached during recovery admission"})
+        result = validate_continuation_events(self.plan, self.events)
+        self.assertEqual(result["state"], "terminal_failure")
+        self.assertFalse(any(row["event"] == "program_terminal" for row in self.events))
 
     def test_recovery_phase_cannot_start_before_primary_failure_authorizes_it(self):
         self.start_phase("recovery_preflight", "recovery-token")

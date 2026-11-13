@@ -127,12 +127,28 @@ separate terminal accounting status to `resource_accounting_unavailable`. The
 harness is not a hostile same-user sandbox and cannot detect direct solver
 processes launched outside the approved repository workflow.
 
+The general bounded-process supervisor keeps the launched process tree between
+membership refreshes and requests both membership and resource samples at 5 ms
+intervals. Linux procfs builds that expose task-local child lists use them;
+other procfs builds refresh membership by scanning process ancestry. The
+fallback uses low-allocation `/proc/<pid>/stat` reads, avoiding repeated
+unrelated status-file reads. The time to perform that scan is additional to the
+5 ms wait, so the receipt's observed cadence depends on process-table size.
+This optimization retains the prior sampling interval and does not change
+per-process `RLIMIT_CPU`, `RLIMIT_AS`, wall, or output limits. A newly spawned
+descendant becomes visible at the next membership refresh. Aggregate CPU/RSS
+remain sampled lower bounds, not instantaneous hard caps. Receipts keep target
+CPU, supervisor CPU, and waited process-tree CPU separate so supervisor work
+cannot be misreported as target computation.
+
 ## Offline qualification
 
 Run:
 
 ```sh
 python3 -m unittest discover -s tests -p 'test_research_execution.py' -v
+python3 -B tests/test_research_program_execution.py
+python3 -B tests/test_coordinator_supervisor.py
 ```
 
 The deterministic tests use fake executables and cover missing/tampered

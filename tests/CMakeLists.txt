@@ -191,6 +191,11 @@ add_test(NAME genetik_research_program_execution_contracts COMMAND ${CMAKE_COMMA
 set_tests_properties(genetik_research_program_execution_contracts PROPERTIES
     TIMEOUT 60
     ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1")
+add_test(NAME genetik_coordinator_supervisor_contracts COMMAND ${CMAKE_COMMAND} -E env
+    "PYTHONDONTWRITEBYTECODE=1"
+    "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache"
+    ${Python3_EXECUTABLE} -B ${PROJECT_SOURCE_DIR}/tests/test_coordinator_supervisor.py)
+set_tests_properties(genetik_coordinator_supervisor_contracts PROPERTIES TIMEOUT 30)
 add_test(NAME genetik_bounded_interactive_session_contracts COMMAND ${CMAKE_COMMAND} -E env
     "PYTHONDONTWRITEBYTECODE=1"
     "PYTHONPYCACHEPREFIX=${CMAKE_CURRENT_BINARY_DIR}/python-cache"

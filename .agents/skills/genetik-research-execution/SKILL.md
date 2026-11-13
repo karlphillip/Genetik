@@ -118,6 +118,29 @@ delegated review actually completed before treating it as a gate result.
    protocol review and successful offline qualification. The scientific
    protocol must be frozen before implementation tuning or solver execution.
 
+8. A frozen bounded-program protocol cannot be edited or re-frozen against an
+   existing lifetime ledger to change its identity. If an unused program needs
+   a software-only correction, first obtain independent review, then use the
+   append-only `successor-program` operation. It requires the same program ID,
+   canonical ledger, authorization, science/data artifacts, complete run and
+   phase plan, criteria, and resource ceilings; it permits only pinned software
+   identities and protocol-version bindings, including the qualified
+   coordinator-supervisor schema upgrade. It refuses any reservation, started
+   deadline, active phase, charge, qualification, or terminal state. The
+   operation writes an immutable successor package and a ledger-linked
+   activation record; admission refuses the predecessor after activation.
+   Interrupted activation is reconciled only from a complete, matching record.
+   It never resets counters or turns a pre-phase refusal into an executed
+   failure. Do not use succession to change a scientific protocol or recover
+   spent allowance.
+
+   ```sh
+   python3 scripts/research_execution.py successor-program \
+     --predecessor-dir out/research/v7 \
+     --protocol out/research/v8-candidate.json \
+     --destination out/research/v8
+   ```
+
 ## Gated execution
 
 All solver processes, including parser/feasibility probes and retries, must be

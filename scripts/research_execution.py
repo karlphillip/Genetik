@@ -604,7 +604,13 @@ def validate_bounded_program_continuation(
 
 def continuation_next_action(plan: dict, events: list[dict]) -> dict:
     """Pure state transition used by run admission; no files or processes touched."""
-    if any(event.get("event") in {"admission_refused", "program_terminal"} for event in events):
+    if any(event.get("event") in {"admission_refused", "program_terminal",
+                                   "coordinator_phase_failure_requested"}
+           or (event.get("event") == "coordinator_phase"
+               and (event.get("terminal_status") is not None
+                    or (event.get("status") == "failed"
+                        and event.get("failure_category") == "coordinator_phase_failure")))
+           for event in events):
         return {"state": "terminal_failure", "next_run_id": None, "retire_run_ids": []}
     slots = plan["slots"]
     reserved = {event.get("run_id") for event in events if event.get("event") == "reserved"}
@@ -693,6 +699,7 @@ def validate_continuation_events(plan: dict, events: list[dict]) -> dict:
     seen_phases: set[str] = set()
     closed_phase_status: dict[str, str] = {}
     closed_phase_category: dict[str, str | None] = {}
+    phase_failure_requests: dict[str, dict] = {}
     terminal_seen = False
     for event in events:
         kind = event.get("event")
@@ -765,6 +772,16 @@ def validate_continuation_events(plan: dict, events: list[dict]) -> dict:
             _require_sha256(event["receipt_sha256"], "coordinator_phase.receipt_sha256")
             closed_phase_status[event["phase_id"]] = event["status"]
             category = event.get("failure_category")
+            if (event.get("terminal_status") is not None
+                    and (not isinstance(event["terminal_status"], str)
+                         or not event["terminal_status"])):
+                raise GateError("coordinator phase terminal status is malformed")
+            requested = phase_failure_requests.get(event.get("token"))
+            if requested is not None:
+                if (event.get("status") != "failed"
+                        or category != "coordinator_phase_failure"
+                        or event.get("terminal_status") != requested.get("terminal_status")):
+                    raise GateError("coordinator phase did not close its terminal request consistently")
             if event["status"] == "completed" and category is not None:
                 raise GateError("successful coordinator phase has a failure category")
             if event["status"] == "failed" and category not in {
@@ -772,6 +789,18 @@ def validate_continuation_events(plan: dict, events: list[dict]) -> dict:
                 raise GateError("failed coordinator phase lacks a valid failure category")
             closed_phase_category[event["phase_id"]] = category
             active_phase = None
+        elif kind == "coordinator_phase_failure_requested":
+            if (active_phase is None
+                    or event.get("token") != active_phase.get("token")
+                    or event.get("phase_id") != active_phase.get("phase_id")
+                    or event.get("protocol_sha256") != active_phase.get("protocol_sha256")
+                    or event.get("amendment_id") != amendment_id
+                    or not isinstance(event.get("terminal_status"), str)
+                    or not event["terminal_status"]
+                    or not isinstance(event.get("reason"), str) or not event["reason"]
+                    or event.get("token") in phase_failure_requests):
+                raise GateError("coordinator terminal request is malformed or out of phase")
+            phase_failure_requests[event["token"]] = event
         elif kind == "coordinator_worker_supervised":
             matching = [prior for prior in prefix if prior.get("event") == "coordinator_phase"
                         and prior.get("token") == event.get("token")]
@@ -895,6 +924,30 @@ def validate_continuation_events(plan: dict, events: list[dict]) -> dict:
                 raise GateError("continuation program has more than one terminal event")
             if not isinstance(event.get("status"), str) or not event["status"]:
                 raise GateError("program terminal event lacks a status")
+            if active_phase is not None or pending is not None:
+                raise GateError("program cannot terminalize before its coordinator phase/invocation closes")
+            closed_phases = [row for row in prefix if row.get("event") == "coordinator_phase"]
+            for closed in closed_phases:
+                if not any(row.get("event") == "coordinator_worker_supervised"
+                           and row.get("token") == closed.get("token") for row in prefix):
+                    raise GateError("program terminal event precedes coordinator parent supervision")
+            terminal_request = next((request for request in phase_failure_requests.values()
+                                     if request.get("terminal_status") == event.get("status")), None)
+            if phase_failure_requests and terminal_request is None:
+                raise GateError("program terminal status differs from its active-phase request")
+            if terminal_request is not None and not any(
+                    row.get("event") == "coordinator_worker_supervised"
+                    and row.get("token") == terminal_request.get("token")
+                    for row in prefix):
+                raise GateError("requested terminal event precedes coordinator parent supervision")
+            requested_phase_terminal = next((row for row in reversed(closed_phases)
+                                             if row.get("terminal_status") is not None), None)
+            if (requested_phase_terminal is not None
+                    and (requested_phase_terminal.get("terminal_status") != event.get("status")
+                         or not any(row.get("event") == "coordinator_worker_supervised"
+                                    and row.get("token") == requested_phase_terminal.get("token")
+                                    for row in prefix))):
+                raise GateError("program terminal event differs from its supervised phase closure")
             terminal_seen = True
         prefix.append(event)
     if pending is not None:
@@ -1387,12 +1440,45 @@ def _replace_process_budget(directory: Path, state: dict) -> None:
 def _append_program_terminal(directory: Path, state: dict, status: str) -> None:
     if state.get("terminal_status") is not None:
         return
+    if state.get("active_coordinator_phase") is not None:
+        raise GateError("program terminalization requires coordinator phase closure")
+    events = _read_process_ledger_events(directory)
+    if _pending_coordinator_supervision(events):
+        raise GateError("program terminalization requires parent supervision of every closed phase")
     state["ledger_head"] = _process_ledger_event(
         directory / "process-events.jsonl",
         {"event": "program_terminal", "status": status, "at_unix_ns": time.time_ns()},
         state["ledger_head"])
     state["event_count"] += 1
     state["terminal_status"] = status
+    _replace_process_budget(directory, state)
+
+
+def _request_program_terminal(directory: Path, state: dict, protocol_sha: str,
+                              status: str, reason: str) -> None:
+    """Defer terminalization until an active phase is closed and parent-supervised."""
+    if state.get("terminal_status") is not None:
+        return
+    active = state.get("active_coordinator_phase")
+    if not isinstance(active, dict):
+        _append_program_terminal(directory, state, status)
+        return
+    plan = read_frozen_program(directory)[1].get("continuation_plan")
+    if not isinstance(plan, dict):
+        raise GateError("active coordinator phase lacks a continuation plan")
+    if any(event.get("event") == "coordinator_phase_failure_requested"
+           and event.get("token") == active.get("token")
+           for event in _read_process_ledger_events(directory)):
+        raise GateError("active coordinator phase already has a terminal request")
+    _append_continuation_event(directory, state, {
+        "event": "coordinator_phase_failure_requested",
+        "protocol_sha256": protocol_sha,
+        "amendment_id": plan["amendment_id"],
+        "phase_id": active["phase_id"],
+        "token": active["token"],
+        "terminal_status": status,
+        "reason": reason,
+    })
     _replace_process_budget(directory, state)
 
 
@@ -1623,6 +1709,8 @@ def record_supervised_coordinator_worker(directory: Path, phase_id: str,
         _append_continuation_event(ledger, state, payload)
         if reason:
             _append_program_terminal(ledger, state, "coordinator_worker_measurement_failed")
+        elif phase_event.get("terminal_status") is not None:
+            _append_program_terminal(ledger, state, phase_event["terminal_status"])
         elif phase_event.get("status") == "failed" and state.get("terminal_status") is None:
             failure_category = phase_event.get("failure_category")
             if phase_id == "primary_preflight" and failure_category in {"stage_failure", "qualification_failure"}:
@@ -1639,6 +1727,8 @@ def record_supervised_coordinator_worker(directory: Path, phase_id: str,
                     "reason": phase_event.get("reason") or "recovery preflight failed",
                 })
                 _append_program_terminal(ledger, state, "recovery_preflight_failed")
+            else:
+                _append_program_terminal(ledger, state, f"{phase_id}_failed")
         elif phase_event.get("status") == "completed" and phase_id in {"primary_preflight", "recovery_preflight"}:
             path = "primary" if phase_id == "primary_preflight" else "recovery"
             prepared = [event for event in scoped if event.get("event") == "qualification_prepared"
@@ -1715,71 +1805,56 @@ def _record_coordinator_admission_failure(directory: Path, requested_phase: str,
         if state.get("terminal_status") is not None:
             return
         scoped = [event for event in events if event.get("protocol_sha256") == protocol_sha]
+        # A phase receipt without its parent-side supervision event is an
+        # interrupted, incomplete transition. Do not append an admission
+        # refusal or fabricate terminal accounting while that receipt awaits
+        # reconciliation by its original supervisor.
+        if _pending_coordinator_supervision(scoped):
+            return
         starts = [event for event in scoped if event.get("event") == "coordinator_phase_started"]
         closes = {event.get("token") for event in scoped if event.get("event") == "coordinator_phase"}
         active = next((event for event in reversed(starts) if event.get("token") not in closes), None)
+        if active is None:
+            try:
+                if continuation_next_action(plan, scoped)["state"] == "terminal_failure":
+                    return
+            except GateError:
+                # A malformed chain remains unchanged and fail-closed.
+                return
         if active is not None:
             owns_active = (isinstance(worker_identity, dict)
                            and worker_identity.get("pid") == active.get("pid")
                            and worker_identity.get("pid_starttime_ticks") == active.get("pid_starttime_ticks")
                            and worker_identity.get("token") == active.get("token"))
-            if not owns_active:
-                _append_continuation_event(ledger, state, {
-                    "event": "coordinator_admission_attempt_refused",
-                    "protocol_sha256": protocol_sha,
-                    "amendment_id": plan["amendment_id"],
-                    "active_phase_token": active["token"],
-                    "requested_phase_id": requested_phase,
-                    "requester_pid": os.getpid(),
-                    "requester_pid_starttime_ticks": _process_starttime_ticks(os.getpid()),
-                    "reason": reason,
-                })
-                _replace_process_budget(ledger, state)
+            if owns_active:
+                # The phase owner cannot create its own parent-side supervision
+                # receipt. Leave reconciliation to record_supervised... in the
+                # launching process; an interrupted worker stays fail-closed.
                 return
-            receipt = {
-                "schema": 1, "protocol_sha256": protocol_sha,
-                "amendment_id": plan["amendment_id"], "phase_id": active["phase_id"],
-                "token": active["token"], "pid": active["pid"],
-                "pid_starttime_ticks": active.get("pid_starttime_ticks"),
-                "status": "failed",
-                "measurement_method": "FRESH_WORKER_RUSAGE_SELF_AND_PROC_VM_HWM_RESIDUAL_WALL",
-                "coordinator_cpu_seconds": None, "coordinator_exclusive_wall_seconds": None,
-                "coordinator_peak_rss_bytes": None, "coordinator_proc_vm_hwm_bytes": None,
-                "coordinator_memory_scope": "single_fresh_worker_process",
-                "memory_measurement_status": "unavailable_after_worker_failure",
-                "failure_category": "coordinator_phase_failure", "reason": reason,
-            }
-            receipt_dir = ledger / "coordinator-phases"
-            receipt_dir.mkdir(exist_ok=True)
-            receipt_path = receipt_dir / f"{active['phase_id']}-{active['token']}.json"
-            write_exclusive(receipt_path, canonical_json(receipt))
             _append_continuation_event(ledger, state, {
-                "event": "coordinator_phase", "protocol_sha256": protocol_sha,
-                "amendment_id": plan["amendment_id"], "phase_id": active["phase_id"],
-                "token": active["token"], "status": "failed",
-                "pid": active["pid"], "pid_starttime_ticks": active.get("pid_starttime_ticks"),
-                "receipt_path": str(receipt_path.resolve()),
-                "receipt_sha256": sha256_file(receipt_path),
-                "coordinator_cpu_seconds": None, "coordinator_exclusive_wall_seconds": None,
-                "coordinator_peak_rss_bytes": None, "coordinator_proc_vm_hwm_bytes": None,
-                "coordinator_memory_scope": "single_fresh_worker_process",
-                "failure_category": "coordinator_phase_failure", "reason": reason,
-            })
-        else:
-            try:
-                action = continuation_next_action(plan, scoped)
-                expected_phase = _phase_id_for_state(plan, action["state"])
-            except GateError:
-                expected_phase = requested_phase
-            _append_continuation_event(ledger, state, {
-                "event": "admission_refused", "protocol_sha256": protocol_sha,
-                "amendment_id": plan["amendment_id"], "phase_id": expected_phase,
+                "event": "coordinator_admission_attempt_refused",
+                "protocol_sha256": protocol_sha,
+                "amendment_id": plan["amendment_id"],
+                "active_phase_token": active["token"],
                 "requested_phase_id": requested_phase,
-                "failure_category": "admission_refused", "reason": reason,
+                "requester_pid": os.getpid(),
+                "requester_pid_starttime_ticks": _process_starttime_ticks(os.getpid()),
+                "reason": reason,
             })
-        terminal = "coordinator_admission_refused" if active is None else "coordinator_worker_failed"
-        _append_program_terminal(ledger, state, terminal)
-        state["active_coordinator_phase"] = None
+            _replace_process_budget(ledger, state)
+            return
+        try:
+            action = continuation_next_action(plan, scoped)
+            expected_phase = _phase_id_for_state(plan, action["state"])
+        except GateError:
+            expected_phase = requested_phase
+        _append_continuation_event(ledger, state, {
+            "event": "admission_refused", "protocol_sha256": protocol_sha,
+            "amendment_id": plan["amendment_id"], "phase_id": expected_phase,
+            "requested_phase_id": requested_phase,
+            "failure_category": "admission_refused", "reason": reason,
+        })
+        _append_program_terminal(ledger, state, "coordinator_admission_refused")
         _replace_process_budget(ledger, state)
 
 
@@ -1987,9 +2062,20 @@ def finish_coordinator_phase(directory: Path, token: str, *, status: str,
             raise GateError("coordinator phase token is missing, stale, or mismatched")
         if (active.get("pid") != os.getpid() or active.get("boot_id") != _kernel_boot_id()
                 or active.get("pid_starttime_ticks") != _process_starttime_ticks(os.getpid())):
-            _append_program_terminal(ledger, state, "coordinator_measurement_scope_changed")
             raise GateError("coordinator phase must finish in its originating process and kernel boot")
         now_ns = time.monotonic_ns()
+        terminal_requests = [event for event in events
+                             if event.get("event") == "coordinator_phase_failure_requested"
+                             and event.get("token") == token]
+        if len(terminal_requests) > 1:
+            raise GateError("coordinator phase has multiple terminal requests")
+        terminal_status = None
+        if terminal_requests:
+            request = terminal_requests[0]
+            status = "failed"
+            failure_category = "coordinator_phase_failure"
+            reason = request["reason"]
+            terminal_status = request["terminal_status"]
         raw_cpu = _self_cpu_seconds() - float(active["start_cpu_seconds"])
         raw_wall = (now_ns - int(active["start_monotonic_ns"])) / 1_000_000_000.0
         failure_category = None if status == "completed" else (failure_category or "stage_failure")
@@ -2060,6 +2146,8 @@ def finish_coordinator_phase(directory: Path, token: str, *, status: str,
         if status == "failed" and failure_category not in {
                 "stage_failure", "qualification_failure", "coordinator_phase_failure"}:
             failure_category = "coordinator_phase_failure"
+        if now_ns >= state["overall_deadline_monotonic_ns"]:
+            terminal_status = terminal_status or "overall_wall_deadline"
         receipt = {"schema": 1, "protocol_sha256": protocol_sha, "amendment_id": plan["amendment_id"],
                    "phase_id": phase, "token": token, "pid": os.getpid(), "status": status,
                    "measurement_method": "FRESH_WORKER_RUSAGE_SELF_AND_PROC_VM_HWM_RESIDUAL_WALL",
@@ -2096,22 +2184,13 @@ def finish_coordinator_phase(directory: Path, token: str, *, status: str,
                        "coordinator_proc_vm_rss_bytes": current_vm_rss,
                        "coordinator_memory_scope": "single_fresh_worker_process",
                        "failure_category": failure_category,
+                       **({"terminal_status": terminal_status} if terminal_status else {}),
                        "evidence_sha256": evidence_sha256, "reason": reason}
         _append_continuation_event(ledger, state, phase_event)
         state["active_coordinator_phase"] = None
         if phase_cpu is not None and phase_wall is not None:
             state["coordinator_cpu_seconds_charged"] = coordinator_cpu_total
             state["coordinator_exclusive_wall_seconds_charged"] = coordinator_wall_total
-        if (status == "failed" and phase == "primary_preflight"
-                and failure_category not in {"stage_failure", "qualification_failure"}):
-            _append_program_terminal(ledger, state, "primary_preflight_phase_failed")
-        elif (status == "failed" and phase == "recovery_preflight"
-              and failure_category not in {"stage_failure", "qualification_failure"}):
-            _append_program_terminal(ledger, state, "recovery_preflight_phase_failed")
-        elif status == "failed" and phase not in {"primary_preflight", "recovery_preflight"}:
-            _append_program_terminal(ledger, state, f"{phase}_failed")
-        if now_ns >= state["overall_deadline_monotonic_ns"]:
-            _append_program_terminal(ledger, state, "overall_wall_deadline")
         _replace_process_budget(ledger, state)
         if status != "completed":
             raise GateError(reason or f"coordinator phase {phase} failed")
@@ -3213,7 +3292,9 @@ def run_program(directory: Path, run_id: str) -> dict:
                 raise GateError("continuation deadline is invalid after kernel boot identity changed")
             elapsed_before = (time.monotonic_ns() - state["overall_start_monotonic_ns"]) / 1_000_000_000.0
             if elapsed_before >= continuation["overall_deadline_seconds"]:
-                _append_program_terminal(ledger_dir, state, "overall_wall_deadline")
+                _request_program_terminal(ledger_dir, state, protocol_sha,
+                                          "overall_wall_deadline",
+                                          "continuation overall hard wall deadline expired")
                 raise GateError("continuation overall hard wall deadline expired")
             action = validate_continuation_events(continuation, protocol_events)
             if action["next_run_id"] != run_id:
@@ -3298,10 +3379,14 @@ def run_program(directory: Path, run_id: str) -> dict:
             elapsed_before = (time.monotonic_ns() - state["overall_start_monotonic_ns"]) / 1_000_000_000.0
             if (not math.isfinite(coordinator_cpu_used) or coordinator_cpu_used < 0
                     or not math.isfinite(coordinator_wall_used) or coordinator_wall_used < 0):
-                _append_program_terminal(ledger_dir, state, "coordinator_measurement_unavailable")
+                _request_program_terminal(ledger_dir, state, protocol_sha,
+                                          "coordinator_measurement_unavailable",
+                                          "continuation CPU/exclusive-wall accounting is unavailable")
                 raise GateError("continuation CPU/exclusive-wall accounting is unavailable")
             if coordinator_cpu_used >= state["max_coordinator_cpu_seconds"]:
-                _append_program_terminal(ledger_dir, state, "coordinator_cpu_budget_exhausted")
+                _request_program_terminal(ledger_dir, state, protocol_sha,
+                                          "coordinator_cpu_budget_exhausted",
+                                          "continuation coordinator CPU allowance is exhausted")
                 raise GateError("continuation coordinator CPU allowance is exhausted")
             coordinator_wall_remaining = state["max_coordinator_exclusive_wall_seconds"] - coordinator_wall_used
             future_ids = [rid for rid in remaining_ids if rid != run_id]
@@ -3312,7 +3397,9 @@ def run_program(directory: Path, run_id: str) -> dict:
                                       - future_worker_reserve - coordinator_wall_remaining)
             effective_max_wall = min(max_wall, available_current_total - BOUNDED_SUPERVISOR_WALL_ALLOWANCE_SECONDS)
             if coordinator_wall_remaining <= 0 or effective_max_wall <= 0:
-                _append_program_terminal(ledger_dir, state, "coordinator_or_wall_budget_exhausted")
+                _request_program_terminal(ledger_dir, state, protocol_sha,
+                                          "coordinator_or_wall_budget_exhausted",
+                                          "continuation has insufficient remaining coordinator/deadline allowance")
                 raise GateError("continuation has insufficient remaining coordinator/deadline allowance")
 
         invocation_id = f"{state['invocations_reserved'] + 1:06d}-{uuid.uuid4().hex}"
@@ -3485,14 +3572,18 @@ def run_program(directory: Path, run_id: str) -> dict:
                      "reason": "RUSAGE_SELF or worker wall span was unavailable"},
                     state["ledger_head"])
                 state["event_count"] += 1
-                _append_program_terminal(ledger_dir, state, "resource_accounting_unavailable")
             if (state["coordinator_cpu_seconds_charged"] > state["max_coordinator_cpu_seconds"]
                     or state["coordinator_exclusive_wall_seconds_charged"] > state["max_coordinator_exclusive_wall_seconds"]):
-                _append_program_terminal(ledger_dir, state, "coordinator_allowance_exhausted")
+                terminal_status = "coordinator_allowance_exhausted"
             elif status in {"resource_accounting_unavailable", "coordinator_limit"}:
-                _append_program_terminal(ledger_dir, state, status)
+                terminal_status = status
             elif time.monotonic_ns() >= state["overall_deadline_monotonic_ns"]:
-                _append_program_terminal(ledger_dir, state, "overall_wall_deadline")
+                terminal_status = "overall_wall_deadline"
+            else:
+                terminal_status = None
+            if terminal_status is not None:
+                _request_program_terminal(ledger_dir, state, protocol_sha, terminal_status,
+                                          f"continuation stopped after run {run_id}: {terminal_status}")
         _replace_process_budget(ledger_dir, state)
         return receipt
 

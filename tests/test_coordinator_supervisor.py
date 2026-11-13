@@ -466,6 +466,54 @@ class CoordinatorWorkerReconciliationTests(unittest.TestCase):
         finally:
             shutil.rmtree(root)
 
+    def test_interrupted_closed_phase_remains_incomplete_on_admission_retry(self):
+        import shutil
+        import tempfile
+        from unittest import mock
+        import research_execution as research
+
+        root = Path(tempfile.mkdtemp())
+        try:
+            ledger = root / "ledger"
+            ledger.mkdir()
+            (ledger / "process-budget.lock").write_bytes(b"")
+            protocol_sha = "a" * 64
+            start = {
+                "event": "coordinator_phase_started", "protocol_sha256": protocol_sha,
+                "amendment_id": "synthetic-amendment", "phase_id": "primary_preflight",
+                "token": "closed-token", "pid": 41, "pid_starttime_ticks": 777,
+            }
+            closed = {
+                **start, "event": "coordinator_phase", "status": "failed",
+                "receipt_sha256": "b" * 64, "coordinator_cpu_seconds": 0.1,
+                "coordinator_exclusive_wall_seconds": 0.2,
+                "failure_category": "coordinator_phase_failure",
+            }
+            events = [start, closed]
+            state = {
+                "ledger_head": "c" * 64, "event_count": 2,
+                "terminal_status": None, "active_coordinator_phase": None,
+            }
+            events_path = ledger / "process-events.jsonl"
+            events_path.write_text("historical events preserved\n")
+            state_path = ledger / "process-budget.json"
+            state_path.write_text(json.dumps(state))
+            config = {"ledger_dir": ledger, "continuation_plan": {
+                "amendment_id": "synthetic-amendment",
+                "coordinator_phase_ids": ["primary_preflight", "recovery_preflight"],
+                "slots": {"primary_preflight": ["p1"], "recovery_preflight": ["r1"],
+                          "campaign": ["c1"], "final_scoring": ["s1"]},
+            }}
+            with (mock.patch.object(research, "read_frozen_program",
+                                    return_value=({}, config, protocol_sha)),
+                  mock.patch.object(research, "_verify_process_ledger", return_value=events)):
+                research._record_coordinator_admission_failure(
+                    root, "primary_preflight", "retry after interrupted parent supervision")
+            self.assertEqual(events_path.read_text(), "historical events preserved\n")
+            self.assertEqual(json.loads(state_path.read_text()), state)
+        finally:
+            shutil.rmtree(root)
+
     def test_missing_phase_receipt_closes_only_supervisor_identified_active_worker(self):
         import shutil
         import tempfile

@@ -35,33 +35,181 @@ def _set_child_limits(limits: dict[str, Any]) -> None:
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 
 
-def _sample_process_group(proc_root: Path, pgid: int, ticks_per_second: int) -> tuple[int, float] | None:
+def _process_stat(proc_root: Path, pid: int) -> list[str] | None:
+    """Read one process stat record, tolerating a process that exited meanwhile."""
+    try:
+        text = (proc_root / str(pid) / "stat").read_text(encoding="ascii")
+    except FileNotFoundError:
+        return None
+    except OSError as error:
+        if not (proc_root / str(pid)).exists():
+            return None
+        raise RuntimeError(f"cannot read process {pid} stat: {error}") from error
+    tail = text[text.rfind(")") + 2 :].split()
+    if len(tail) < 15:
+        raise RuntimeError(f"malformed process {pid} stat")
+    return tail
+
+
+def _children(proc_root: Path, pid: int) -> set[int] | None:
+    """Read task-local child lists rather than scanning unrelated system PIDs."""
+    task_dir = proc_root / str(pid) / "task"
+    try:
+        tasks = list(os.scandir(task_dir))
+    except OSError as error:
+        if not (proc_root / str(pid)).exists():
+            return set()
+        raise RuntimeError(f"cannot enumerate process {pid} tasks: {error}") from error
+    found: set[int] = set()
+    supported = False
+    for task in tasks:
+        if not task.name.isdecimal():
+            continue
+        try:
+            raw = (Path(task.path) / "children").read_text(encoding="ascii")
+        except OSError as error:
+            if not (proc_root / str(pid)).exists():
+                return found
+            if isinstance(error, FileNotFoundError):
+                continue
+            raise RuntimeError(f"cannot read process {pid} child list: {error}") from error
+        try:
+            supported = True
+            found.update(int(value) for value in raw.split())
+        except ValueError as error:
+            raise RuntimeError(f"malformed process {pid} child list") from error
+    return found if supported else None
+
+
+def _proc_parent_map(proc_root: Path) -> dict[int, int]:
+    """Read process ancestry with low-allocation procfs I/O."""
+    parent_by_pid: dict[int, int] = {}
+    try:
+        entries = os.scandir(proc_root)
+    except OSError as error:
+        raise RuntimeError(f"cannot enumerate process table: {error}") from error
+    with entries:
+        for entry in entries:
+            if not entry.name.isdecimal():
+                continue
+            try:
+                fd = os.open(f"{entry.path}/stat", os.O_RDONLY | os.O_CLOEXEC)
+                try:
+                    raw = os.read(fd, 4096)
+                finally:
+                    os.close(fd)
+                tail = raw.rsplit(b")", 1)[1].split()
+                if len(tail) >= 2:
+                    parent_by_pid[int(entry.name)] = int(tail[1])
+            except (OSError, ValueError, IndexError):
+                continue
+    return parent_by_pid
+
+
+def _scan_proc_direct_children(proc_root: Path, parent_pid: int) -> set[int]:
+    """Fallback for procfs implementations without task-local child lists."""
+    return {pid for pid, parent in _proc_parent_map(proc_root).items() if parent == parent_pid}
+
+
+def _scan_proc_descendants(proc_root: Path, root_pid: int) -> set[int]:
+    """Fallback for procfs implementations without task-local child lists."""
+    parent_by_pid = _proc_parent_map(proc_root)
+    descendants: set[int] = set()
+    frontier = {root_pid}
+    while frontier:
+        children = {pid for pid, parent in parent_by_pid.items() if parent in frontier}
+        children -= descendants
+        descendants.update(children)
+        frontier = children
+    return descendants
+
+
+def _process_tree(proc_root: Path, root_pid: int, *, supervisor_pid: int | None = None,
+                  baseline_children: set[int] | None = None) -> set[int]:
+    """Enumerate a supervised process tree using per-process child lists."""
+    pending = [root_pid]
+    if supervisor_pid is not None:
+        direct = _children(proc_root, supervisor_pid)
+        if direct is None:
+            tree = _scan_proc_descendants(proc_root, supervisor_pid)
+            tree.add(root_pid)
+            return tree - (baseline_children or set()) - {supervisor_pid}
+        pending.extend(direct - (baseline_children or set()) - {root_pid})
+    seen: set[int] = set()
+    while pending:
+        pid = pending.pop()
+        if pid in seen:
+            continue
+        seen.add(pid)
+        children = _children(proc_root, pid)
+        if children is None:
+            tree = _scan_proc_descendants(proc_root, supervisor_pid or root_pid) | seen
+            if supervisor_pid is not None:
+                tree -= (baseline_children or set())
+                tree.discard(supervisor_pid)
+            return tree
+        pending.extend(children - seen)
+    return seen
+
+
+def _sample_process_group(proc_root: Path, pgid: int, ticks_per_second: int,
+                          supervisor_pid: int | None = None,
+                          baseline_children: set[int] | None = None,
+                          known_pids: set[int] | None = None) -> tuple[int, float] | None:
+    """Sample the invocation tree; unreadable live members make accounting fail closed."""
     rss_total = 0
     cpu_ticks = 0
     readable = 0
-    for stat_path in proc_root.glob("[0-9]*/stat"):
-        try:
-            tail = stat_path.read_text().rsplit(")", 1)[1].split()
-            if int(tail[2]) != pgid:
-                continue
-            status = stat_path.parent.joinpath("status").read_text()
-            rss = next((int(line.split()[1]) * 1024 for line in status.splitlines()
-                        if line.startswith("VmRSS:")), None)
-            if rss is None:
-                continue
-            # Include reaped child usage accumulated by a still-live parent.
-            cpu_ticks += sum(int(tail[index]) for index in (11, 12, 13, 14))
-            rss_total += rss
-            readable += 1
-        except (FileNotFoundError, ProcessLookupError, PermissionError, ValueError, IndexError, StopIteration):
+    pids = known_pids if known_pids is not None else _process_tree(
+        proc_root, pgid, supervisor_pid=supervisor_pid, baseline_children=baseline_children)
+    for pid in pids:
+        tail = _process_stat(proc_root, pid)
+        if tail is None or int(tail[2]) != pgid:
             continue
+        if tail[0] == "Z":
+            rss = 0
+        else:
+            # Linux stat field 24 is resident pages. Reading it with CPU fields
+            # avoids a second status/statm file lookup on every sample.
+            try:
+                resident_pages = int(tail[21])
+            except (IndexError, ValueError) as error:
+                raise RuntimeError(f"malformed process {pid} resident-page count") from error
+            if resident_pages < 0:
+                raise RuntimeError(f"invalid process {pid} resident-page count")
+            rss = resident_pages * os.sysconf("SC_PAGE_SIZE")
+        # Include child CPU already reaped by a live process-group member.
+        cpu_ticks += sum(int(tail[index]) for index in (11, 12, 13, 14))
+        rss_total += rss
+        readable += 1
     return (rss_total, cpu_ticks / ticks_per_second) if readable else None
 
 
-def _resource_sampler(pid: int, limits: dict[str, Any], stop: threading.Event, result: dict[str, Any]) -> None:
+def _resource_sampler(pid: int, limits: dict[str, Any], stop: threading.Event,
+                      result: dict[str, Any], baseline_children: set[int]) -> None:
     tick_rate = os.sysconf("SC_CLK_TCK")
+    root = Path("/proc")
+    refresh_interval = 0.005
+    last_refresh = 0.0
+    known_pids: set[int] = {pid}
     while not stop.is_set():
-        sample = _sample_process_group(Path("/proc"), pid, tick_rate)
+        try:
+            now = time.monotonic()
+            if now - last_refresh >= refresh_interval:
+                known_pids = _process_tree(root, pid, supervisor_pid=os.getpid(),
+                                           baseline_children=baseline_children)
+                last_refresh = now
+            sample = _sample_process_group(root, pid, tick_rate,
+                                           supervisor_pid=os.getpid(),
+                                           baseline_children=baseline_children,
+                                           known_pids=known_pids)
+        except (OSError, RuntimeError, ValueError) as error:
+            result["resource_measurement_error"] = f"{type(error).__name__}: {error}"
+            try:
+                os.killpg(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            break
         if sample is not None:
             rss, cpu = sample
             result["process_group_rss_available"] = True
@@ -114,15 +262,10 @@ def _enable_child_subreaper() -> None:
 
 
 def _direct_children(parent_pid: int) -> set[int]:
-    children: set[int] = set()
-    for stat_path in Path("/proc").glob("[0-9]*/stat"):
-        try:
-            fields = stat_path.read_text().rsplit(")", 1)[1].split()
-            if int(fields[1]) == parent_pid:
-                children.add(int(stat_path.parent.name))
-        except (OSError, ValueError, IndexError):
-            continue
-    return children
+    children = _children(Path("/proc"), parent_pid)
+    if children is not None:
+        return children
+    return _scan_proc_direct_children(Path("/proc"), parent_pid)
 
 
 def _reap_known_children(pids: set[int]) -> None:
@@ -134,7 +277,8 @@ def _reap_known_children(pids: set[int]) -> None:
 
 
 def _adopted_invocation_descendants(baseline: set[int], leader_pid: int) -> set[int]:
-    descendants = _direct_children(os.getpid()) - baseline - {leader_pid}
+    descendants = _process_tree(Path("/proc"), leader_pid) - {leader_pid}
+    descendants.update(_direct_children(os.getpid()) - baseline - {leader_pid})
     frontier = set(descendants)
     while frontier:
         children: set[int] = set()
@@ -158,21 +302,7 @@ def _live_pids(pids: set[int]) -> set[int]:
 
 
 def _process_descendants(root_pid: int) -> set[int]:
-    parent_by_pid: dict[int, int] = {}
-    for stat_path in Path("/proc").glob("[0-9]*/stat"):
-        try:
-            fields = stat_path.read_text().rsplit(")", 1)[1].split()
-            parent_by_pid[int(stat_path.parent.name)] = int(fields[1])
-        except (OSError, ValueError, IndexError):
-            continue
-    descendants: set[int] = set()
-    frontier = {root_pid}
-    while frontier:
-        children = {pid for pid, parent in parent_by_pid.items() if parent in frontier}
-        children -= descendants
-        descendants.update(children)
-        frontier = children
-    return descendants
+    return _process_tree(Path("/proc"), root_pid)
 
 
 def _wait4_nonblocking(pid: int):
@@ -260,13 +390,16 @@ def _run_bounded_process_locked(
         else:
             proc.stdin.close()
 
-        initial = _sample_process_group(Path("/proc"), proc.pid, os.sysconf("SC_CLK_TCK"))
+        initial = _sample_process_group(Path("/proc"), proc.pid, os.sysconf("SC_CLK_TCK"),
+                                        supervisor_pid=os.getpid(),
+                                        baseline_children=baseline_children)
         if initial is not None:
             sampled["process_group_rss_available"] = True
             sampled["peak_process_group_rss_bytes"] = initial[0]
             sampled["peak_process_group_cpu_seconds"] = initial[1]
         sampler = threading.Thread(
-            target=_resource_sampler, args=(proc.pid, limits, stop_sampling, sampled), daemon=True,
+            target=_resource_sampler,
+            args=(proc.pid, limits, stop_sampling, sampled, baseline_children), daemon=True,
         )
         sampler.start()
 
@@ -454,6 +587,9 @@ def _run_bounded_process_locked(
         status = "timed_out"
     elif output_limit:
         status = "output_limit"
+    elif sampled.get("resource_measurement_error"):
+        status = "resource_accounting_unavailable"
+        launch_error = sampled["resource_measurement_error"]
     elif sampled.get("cpu_limit_reached") or returncode == -signal.SIGXCPU or cpu >= float(limits["max_cpu_seconds"]):
         status = "cpu_limit"
     elif sampled.get("memory_limit_reached"):

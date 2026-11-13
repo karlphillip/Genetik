@@ -21,6 +21,7 @@ PORTABLE = {
     "genetik_discrete_contracts", "genetik_discrete_overlap", "genetik_discrete_quickstart",
     "genetik_discrete_iteration_contracts", "genetik_discrete_iteration_overlap", "genetik_discrete_iteration_quickstart",
     "genetik_discrete_specification_contracts", "genetik_discrete_specification_quickstart",
+    "genetik_discrete_components_contracts", "genetik_discrete_components_quickstart",
     "genetik_discrete_prime_contracts", "genetik_discrete_prime_overlap", "genetik_discrete_prime_cli",
     "genetik_checkpoint_contracts","genetik_checkpoint_overlap","genetik_checkpoint_process","genetik_checkpoint_cli","genetik_checkpoint_quickstart","genetik_formatting_contracts",
     "genetik_checkpoint_v04_compatibility", "genetik_discrete_checkpoint_v04_compatibility",

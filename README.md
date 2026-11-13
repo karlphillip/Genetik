@@ -79,6 +79,10 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   validate a closed integer expression against immutable exact observations and
   report work. See [finite-domain validation limits](docs/DISCRETE_SPECIFICATION_VALIDATION.md);
   a certificate covers only its declared rows.
+- [Reusable exact discrete components](docs/DISCRETE_EXPRESSION_COMPONENTS.md)
+  and [installed C++ quickstart](examples/quickstarts/discrete_components.cpp):
+  retain typed Int64/Bool components in a bounded acyclic graph, then materialize
+  an ordinary checked `DiscreteExpression` when needed.
 - [Selectable regression objectives and AIC/BIC](docs/MATHEMATICAL_OBJECTIVES.md)
   with an [installed C++ quickstart](examples/quickstarts/objectives.cpp): MSE
   remains the default, while MAE, Huber, weighted MSE and post-search Gaussian

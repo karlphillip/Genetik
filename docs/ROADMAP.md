@@ -431,3 +431,13 @@ expressions through the existing regression search path. It performs no
 automatic decomposition and leaves the single-site template and generic GA
 unchanged. The bounded fixed-seed comparison is reported in
 `MULTI_COMPONENT_TEMPLATES.md`; it is not evidence of broad superiority.
+
+## Reusable exact discrete components
+
+The optional `DiscreteExpressionComponents.hpp` header retains immutable typed
+components in a bounded acyclic construction graph and materializes them into
+ordinary `DiscreteExpression` trees for execution/export. It supports reusable
+Int64/Bool substructures, including closed bounded reductions, while preserving
+the existing evaluator and its occurrence-based work. This is a representation
+capability, not a new search algorithm; prior compositional experiments did not
+show improved exact-recovery rates. See `DISCRETE_EXPRESSION_COMPONENTS.md`.

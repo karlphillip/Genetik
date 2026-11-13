@@ -94,9 +94,11 @@ class BoundedProgramExecutionTests(unittest.TestCase):
 
     def test_unused_ledger_accepts_one_hash_chained_software_successor(self):
         import research_execution
-        from research_execution import read_frozen_program
+        from research_execution import read_frozen_program, resolve_active_successor_program
 
         predecessor = self.freeze(destination=self.root / "predecessor")
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            self.assertEqual(resolve_active_successor_program(predecessor), predecessor.resolve())
         ledger_dir = self.ledger / "sample-program"
         original_event_bytes = (ledger_dir / "process-events.jsonl").read_bytes()
         original_events = [json.loads(line) for line in original_event_bytes.splitlines()]
@@ -112,6 +114,7 @@ class BoundedProgramExecutionTests(unittest.TestCase):
 
         with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
             _, _, active_sha = read_frozen_program(destination)
+            self.assertEqual(resolve_active_successor_program(predecessor), destination.resolve())
         self.assertEqual(active_sha, (destination / "PROGRAM.sha256").read_text().split()[0])
         self.assertEqual((ledger_dir / "process-events.jsonl").read_bytes(), original_event_bytes)
         successor_event = json.loads((ledger_dir / "protocol-successor.json").read_text())
@@ -132,6 +135,11 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
             with self.assertRaisesRegex(GateError, "active|different|superseded"):
                 read_frozen_program(predecessor)
+            import shutil
+            copied_anchor = self.root / "copied-predecessor"
+            shutil.copytree(predecessor, copied_anchor)
+            with self.assertRaisesRegex(GateError, "anchor|predecessor"):
+                resolve_active_successor_program(copied_anchor)
         executed = self.command("run-program", "--protocol-dir", destination, "--run-id", "preflight-unit")
         self.assertEqual(executed.returncode, 0, executed.stderr)
         verified = self.command("verify-program", "--protocol-dir", destination)
@@ -145,6 +153,28 @@ class BoundedProgramExecutionTests(unittest.TestCase):
                                 "--destination", self.root / "successor-2")
         self.assertNotEqual(repeated.returncode, 0)
         self.assertFalse((self.root / "successor-2").exists())
+
+    def test_successor_resolver_rejects_altered_activation_binding(self):
+        import research_execution
+        from research_execution import resolve_active_successor_program
+
+        predecessor = self.freeze(destination=self.root / "predecessor")
+        protocol = self.protocol()
+        protocol["protocol_id"] = "program-test-tampered-successor"
+        protocol["source_commit"] = "b" * 40
+        destination = self.root / "successor"
+        result = self.command(
+            "successor-program", "--predecessor-dir", predecessor,
+            "--protocol", self._write_source(protocol), "--destination", destination)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        package_path = destination / "SUCCESSOR.json"
+        package = json.loads(package_path.read_text())
+        package["compatibility_sha256"] = "0" * 64
+        package_path.chmod(0o644)
+        package_path.write_text(json.dumps(package, sort_keys=True))
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            with self.assertRaisesRegex(GateError, "successor|activation|compatibility"):
+                resolve_active_successor_program(predecessor)
 
     def test_successor_state_recovers_after_atomic_record_before_budget_replace(self):
         import research_execution

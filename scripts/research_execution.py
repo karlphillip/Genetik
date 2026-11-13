@@ -2907,6 +2907,52 @@ def read_frozen_program(directory: Path, *, allow_legacy_predecessor: bool = Fal
     return config["protocol"], config, digest
 
 
+def resolve_active_successor_program(directory: Path) -> Path:
+    """Resolve a frozen v7 anchor to its authenticated active successor.
+
+    The anchor remains inactive and cannot be used directly. This explicit
+    resolver is for pinned coordinator inputs that must survive the narrow
+    software-only successor transition. It accepts only the exact predecessor
+    path and SHA recorded in the same lifetime ledger, then validates the
+    active successor package through the ordinary strict reader.
+    """
+    predecessor_dir = directory.resolve()
+    predecessor_protocol, predecessor_sha = _read_frozen_program_unchecked(predecessor_dir)
+    predecessor_config = _validate_bounded_program(
+        predecessor_protocol, allow_legacy_predecessor=True)
+    ledger = predecessor_config["ledger_dir"]
+    events = _read_process_ledger_events(ledger)
+    active_sha = _active_protocol_sha256(events)
+
+    if active_sha == predecessor_sha:
+        # Normal v7 operation remains valid before succession; fail closed if
+        # the state cache or ledger identity disagrees.
+        read_frozen_program(predecessor_dir, allow_legacy_predecessor=True)
+        return predecessor_dir
+
+    successors = [event for event in events
+                  if event.get("event") == "protocol_successor_authorized"]
+    if len(successors) != 1:
+        raise GateError("protocol anchor is inactive and has no unique authenticated successor")
+    successor = successors[0]
+    if (successor.get("predecessor_protocol_sha256") != predecessor_sha
+            or Path(successor.get("predecessor_program_dir", "")).resolve() != predecessor_dir
+            or successor.get("program_id") != predecessor_config["program_id"]
+            or successor.get("successor_protocol_sha256") != active_sha):
+        raise GateError("protocol anchor does not match the ledger-authenticated successor predecessor")
+
+    successor_dir = Path(successor.get("successor_program_dir", "")).resolve()
+    successor_protocol, successor_config, successor_sha = read_frozen_program(successor_dir)
+    if (successor_sha != active_sha
+            or successor_config["ledger_dir"] != ledger
+            or successor_config["program_id"] != predecessor_config["program_id"]
+            or _validate_protocol_successor(
+                predecessor_protocol, successor_protocol, predecessor_config, successor_config)
+            != successor.get("compatibility_sha256")):
+        raise GateError("active protocol successor does not preserve the authenticated predecessor scope")
+    return successor_dir
+
+
 def _authorize_program_run(directory: Path, config: dict, protocol_sha: str, run_id: str) -> None:
     """Authorize a phase before any input artifact is opened or hashed."""
     run = config["run_by_id"][run_id]

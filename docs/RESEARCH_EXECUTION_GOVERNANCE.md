@@ -170,6 +170,16 @@ protocol or ledger. Assessment-role data is identity-bound during freeze and
 preflight, but opened only by the separately admitted scoring phase. Runner
 and verification stages must not receive it.
 
+A bounded-program protocol is write-once. A reviewed software-only correction
+to an unused study must use `successor-program`, which appends one hash-chained
+activation record to the existing lifetime ledger and preserves its counters.
+The operation rejects any changed controls, datasets, run or phase plan,
+acceptance criteria, authorization, or resource ceilings. It also refuses a
+ledger with reserved work, charges, a started deadline, active phase,
+qualification, or terminal state. The old protocol becomes inactive; a partial
+activation is either completed from the immutable record or refused. Never
+re-freeze a new protocol against the same ID to bypass this transition.
+
 Each external process runs under a dedicated Linux supervisor worker. This
 isolates descendant adoption from unrelated caller children. Target and
 supervisor CPU/wall/RSS measurements are recorded separately. Cumulative

@@ -8,6 +8,7 @@ each attempted solver process consumes one atomically reserved query slot.
 from __future__ import annotations
 
 import argparse
+import copy
 from contextlib import ExitStack, contextmanager
 import fcntl
 import hashlib
@@ -425,6 +426,8 @@ def validate_bounded_program_continuation(
     limits: dict,
     program_budget: dict,
     pipeline_descriptor: dict | None,
+    *,
+    allow_legacy_predecessor: bool = False,
 ) -> dict:
     """Validate the narrowly scoped, additive finite-identifiability authorization.
 
@@ -432,11 +435,15 @@ def validate_bounded_program_continuation(
     no process. Historical unknowns remain null and are not folded into the
     prospective counters.
     """
-    required = {"schema", "amendment_id", "authorization_artifact_id", "coordinator_entrypoint_artifact_id",
+    required_v2 = {"schema", "amendment_id", "authorization_artifact_id", "coordinator_entrypoint_artifact_id",
                 "preflight_coordinator_artifact_id", "coordinator_supervisor_artifact_id", "historical_import",
                 "prospective_allowance", "coordinator_allowance", "overall_deadline_seconds",
                 "coordinator_phase_ids", "slots", "interactive_session"}
-    if not isinstance(amendment, dict) or set(amendment) != required or amendment.get("schema") != 2:
+    required_v1 = required_v2 - {"coordinator_supervisor_artifact_id"}
+    legacy = (isinstance(amendment, dict) and allow_legacy_predecessor
+              and amendment.get("schema") == 1 and set(amendment) == required_v1)
+    if not isinstance(amendment, dict) or (not legacy and
+            (set(amendment) != required_v2 or amendment.get("schema") != 2)):
         raise GateError("bounded-program continuation amendment schema is incomplete")
     _safe_program_id(amendment["amendment_id"], "continuation amendment_id")
 
@@ -452,13 +459,18 @@ def validate_bounded_program_continuation(
                                                        "coordinator-entrypoint", "coordinator_entrypoint_artifact_id")
     preflight_coordinator_artifact = require_artifact(amendment["preflight_coordinator_artifact_id"],
                                                       "coordinator-entrypoint", "preflight_coordinator_artifact_id")
-    coordinator_supervisor_artifact = require_artifact(amendment["coordinator_supervisor_artifact_id"],
-                                                       "coordinator-entrypoint", "coordinator_supervisor_artifact_id")
-    if Path(coordinator_entrypoint_artifact["path"]).resolve() != Path(__file__).resolve().with_name("execute_continuation_phase.py"):
+    if (not allow_legacy_predecessor and
+            Path(coordinator_entrypoint_artifact["path"]).resolve() != Path(__file__).resolve().with_name("execute_continuation_phase.py")):
         raise GateError("continuation coordinator entrypoint must pin execute_continuation_phase.py")
-    if Path(preflight_coordinator_artifact["path"]).resolve() != Path(__file__).resolve().with_name("scientific_pipeline_preflight.py"):
+    if (not allow_legacy_predecessor and
+            Path(preflight_coordinator_artifact["path"]).resolve() != Path(__file__).resolve().with_name("scientific_pipeline_preflight.py")):
         raise GateError("preflight coordinator entrypoint must pin scientific_pipeline_preflight.py")
-    if Path(coordinator_supervisor_artifact["path"]).resolve() != Path(__file__).resolve().with_name("coordinator_supervisor.py"):
+    coordinator_supervisor_artifact = None
+    if not legacy:
+        coordinator_supervisor_artifact = require_artifact(amendment["coordinator_supervisor_artifact_id"],
+                                                          "coordinator-entrypoint", "coordinator_supervisor_artifact_id")
+    if (coordinator_supervisor_artifact is not None and not allow_legacy_predecessor and
+            Path(coordinator_supervisor_artifact["path"]).resolve() != Path(__file__).resolve().with_name("coordinator_supervisor.py")):
         raise GateError("coordinator supervisor artifact must pin coordinator_supervisor.py")
     history = validate_continuation_history(amendment["historical_import"])
     source_protocol_artifact = require_artifact(history["source_protocol_artifact_id"], "historical-protocol", "source_protocol_artifact_id")
@@ -579,8 +591,10 @@ def validate_bounded_program_continuation(
                                         "sha256": coordinator_entrypoint_artifact["sha256"]},
             "preflight_coordinator_entrypoint": {"path": preflight_coordinator_artifact["path"],
                                                    "sha256": preflight_coordinator_artifact["sha256"]},
-            "coordinator_supervisor_entrypoint": {"path": coordinator_supervisor_artifact["path"],
-                                                   "sha256": coordinator_supervisor_artifact["sha256"]},
+            "coordinator_supervisor_entrypoint": (
+                {"path": coordinator_supervisor_artifact["path"],
+                 "sha256": coordinator_supervisor_artifact["sha256"]}
+                if coordinator_supervisor_artifact is not None else None),
             "history_artifact_sha256": {
                 "source_protocol": source_protocol_artifact["sha256"],
                 "evidence_manifest": history_manifest_artifact["sha256"],
@@ -912,7 +926,7 @@ def continuation_remaining_run_ids(plan: dict, events: list[dict]) -> list[str]:
             if run_id not in reserved and run_id not in retired]
 
 
-def _validate_bounded_program(protocol: object) -> dict:
+def _validate_bounded_program(protocol: object, *, allow_legacy_predecessor: bool = False) -> dict:
     """Validate the separate pinned-process protocol (not the solver schema)."""
     if not isinstance(protocol, dict) or protocol.get("schema") != 1 or protocol.get("kind") != "bounded_program":
         raise GateError("unsupported bounded-program protocol")
@@ -1136,7 +1150,7 @@ def _validate_bounded_program(protocol: object) -> dict:
             raise GateError("continuation authorization requires descriptor-mode pipeline stages")
         continuation_plan = validate_bounded_program_continuation(
             protocol["continuation_authorization"], runs, artifacts_by_id, limits, budget,
-            pipeline_descriptor)
+            pipeline_descriptor, allow_legacy_predecessor=allow_legacy_predecessor)
         if limits["max_invocations"] != len(runs):
             raise GateError("continuation invocation ceiling must cover the complete immutable run allowlist")
         campaign_outputs = continuation_plan["slots"]["campaign"]
@@ -2185,28 +2199,88 @@ def execute_continuation_phase(directory: Path, phase_id: str) -> dict:
         raise
 
 
-def _verify_process_ledger(directory: Path, state: dict, expected_protocol_sha256: str,
-                           continuation_plan: dict | None = None) -> list[dict]:
-    if state.get("frozen_protocol_sha256") != expected_protocol_sha256:
-        raise GateError("bounded-process ledger is bound to a different frozen protocol")
-    events = []
+def _read_process_ledger_events(directory: Path) -> list[dict]:
+    """Read the append-only event chain, inserting its atomic successor record."""
+    raw_events = [json.loads(line) for line in (directory / "process-events.jsonl").read_bytes().splitlines()]
+    successor_path = directory / "protocol-successor.json"
+    successor = json.loads(successor_path.read_text()) if successor_path.exists() else None
+    if successor is not None:
+        claimed = successor.pop("event_sha256", None)
+        if (successor.get("event") != "protocol_successor_authorized"
+                or claimed != sha256_bytes(compact_json(successor))):
+            raise GateError("protocol-successor record checksum/type is invalid")
+        successor["event_sha256"] = claimed
+        event_index = successor.get("event_index")
+        if type(event_index) is not int or event_index < 1 or event_index > len(raw_events):
+            raise GateError("protocol-successor record has an invalid event position")
+
+    events: list[dict] = []
     previous = "0" * 64
-    for line in (directory / "process-events.jsonl").read_bytes().splitlines():
-        event = json.loads(line)
+    inserted = False
+    for index, raw in enumerate(raw_events):
+        if successor is not None and not inserted and index == successor["event_index"]:
+            if successor.get("previous_hash") != previous:
+                raise GateError("protocol-successor record does not extend the ledger head")
+            events.append(successor)
+            previous = successor["event_sha256"]
+            inserted = True
+        event = dict(raw)
         claimed = event.pop("event_sha256", None)
         if event.get("previous_hash") != previous or claimed != sha256_bytes(compact_json(event)):
             raise GateError("bounded-process ledger hash-chain mismatch")
         event["event_sha256"] = claimed
         previous = claimed
         events.append(event)
-    if len(events) != state.get("event_count") or previous != state.get("ledger_head"):
+    if successor is not None and not inserted:
+        if successor["event_index"] != len(raw_events) or successor.get("previous_hash") != previous:
+            raise GateError("protocol-successor record cannot be placed in the ledger chain")
+        events.append(successor)
+    return events
+
+
+def _active_protocol_sha256(events: list[dict]) -> str:
+    if not events or events[0].get("event") != "created":
+        raise GateError("bounded-process ledger has no creation event")
+    genesis = events[0].get("frozen_protocol_sha256")
+    _require_sha256(genesis, "ledger creation protocol SHA256")
+    successors = [event for event in events if event.get("event") == "protocol_successor_authorized"]
+    if len(successors) > 1:
+        raise GateError("bounded-process ledger permits only one pre-execution protocol successor")
+    if not successors:
+        return genesis
+    successor = successors[0]
+    successor_index = events.index(successor)
+    prefix_names = [event.get("event") for event in events[:successor_index]]
+    allowed_prefixes = (["created"], ["created", "historical_import", "amendment_authorized"])
+    if (successor.get("event_index") != successor_index or prefix_names not in allowed_prefixes
+            or successor.get("predecessor_protocol_sha256") != genesis
+            or successor.get("previous_hash") != events[successor_index - 1].get("event_sha256")
+            or successor.get("program_id") != events[0].get("program_id")):
+        raise GateError("protocol successor is not the authorized pre-execution extension")
+    if any(event.get("event") in {"reserved", "completed", "qualified", "program_started",
+                                  "coordinator_phase_started", "coordinator_phase"}
+           for event in events[:successor_index]):
+        raise GateError("protocol successor cannot follow execution or phase admission")
+    _require_sha256(successor.get("successor_protocol_sha256"), "successor protocol SHA256")
+    return successor["successor_protocol_sha256"]
+
+
+def _verify_process_ledger(directory: Path, state: dict, expected_protocol_sha256: str,
+                           continuation_plan: dict | None = None) -> list[dict]:
+    events = _read_process_ledger_events(directory)
+    if (not events or len(events) != state.get("event_count")
+            or events[-1].get("event_sha256") != state.get("ledger_head")):
         raise GateError("bounded-process ledger state/head mismatch")
+    genesis_sha = events[0].get("frozen_protocol_sha256") if events else None
+    active_sha = _active_protocol_sha256(events)
+    if (active_sha != expected_protocol_sha256
+            or state.get("frozen_protocol_sha256") != active_sha):
+        raise GateError("bounded-process ledger is bound to a different frozen protocol or inactive successor")
     cap_keys = (("max_new_invocations", "max_new_cpu_seconds", "max_new_wall_seconds")
                 if state.get("accounting_scope") == "prospective_continuation_only"
                 else ("max_lifetime_invocations", "max_lifetime_cpu_seconds", "max_lifetime_wall_seconds"))
-    identity = _process_ledger_identity({"budget": {key: state.get(key) for key in cap_keys},
+    identity_args = {"budget": {key: state.get(key) for key in cap_keys},
         "program_id": state.get("program_id"),
-        "frozen_protocol_sha256": state.get("frozen_protocol_sha256"),
         **({"continuation_plan": {
                 "amendment_id": state.get("amendment_id"),
                 "coordinator_allowance": {
@@ -2215,11 +2289,26 @@ def _verify_process_ledger(directory: Path, state: dict, expected_protocol_sha25
                 },
                 "overall_deadline_seconds": state.get("overall_deadline_seconds"),
             }}
-           if state.get("accounting_scope") == "prospective_continuation_only" else {})})
+           if state.get("accounting_scope") == "prospective_continuation_only" else {})}
+    identity = _process_ledger_identity({**identity_args, "frozen_protocol_sha256": active_sha})
+    creation_identity = _process_ledger_identity({**identity_args, "frozen_protocol_sha256": genesis_sha})
     if not events or any(state.get(key) != value for key, value in identity.items()):
         raise GateError("bounded-process ledger identity mismatch")
-    if events[0].get("event") != "created" or any(events[0].get(k) != v for k, v in identity.items()):
+    if events[0].get("event") != "created" or any(events[0].get(k) != v for k, v in creation_identity.items()):
         raise GateError("bounded-process ledger creation event mismatch")
+    successor_events = [event for event in events if event.get("event") == "protocol_successor_authorized"]
+    if successor_events:
+        successor = successor_events[0]
+        auth = next((event for event in events[:3] if event.get("event") == "amendment_authorized"), None)
+        authorization_matches = (
+            successor.get("authorization_sha256") is None and successor.get("allowance") is None
+            if auth is None else
+            successor.get("authorization_sha256") == auth.get("authorization_sha256")
+            and successor.get("allowance") == auth.get("allowance")
+        )
+        if not authorization_matches:
+            raise GateError("protocol successor does not preserve the recorded authorization/contract")
+        _require_sha256(successor.get("compatibility_sha256"), "successor compatibility projection SHA256")
     reserved = [e for e in events if e.get("event") == "reserved"]
     completed = [e for e in events if e.get("event") == "completed"]
     reserved_ids = [e.get("invocation_id") for e in reserved]
@@ -2464,6 +2553,8 @@ def freeze_program_protocol(source: Path, destination: Path) -> str:
     raw = source.read_bytes()
     protocol = json.loads(raw)
     config = _validate_bounded_program(protocol)
+    if (config["ledger_dir"] / "protocol-successor.json").exists():
+        raise GateError("program ledger already has an active successor; use its registered frozen package")
     _initialize_process_ledger(config)
     destination.mkdir(parents=True, exist_ok=False)
     _fsync_directory(destination.parent)
@@ -2475,13 +2566,344 @@ def freeze_program_protocol(source: Path, destination: Path) -> str:
     return digest
 
 
-def read_frozen_program(directory: Path) -> tuple[dict, dict, str]:
+_SUCCESSOR_CODE_ROLES = {"pipeline-executable", "pipeline-dependency", "coordinator-entrypoint"}
+
+
+def _successor_projection(protocol: dict) -> dict:
+    """Remove only source-version and pinned software identity fields."""
+    projection = copy.deepcopy(protocol)
+    projection["source_commit"] = "<source-commit>"
+    projection["protocol_id"] = "<protocol-version>"
+    for artifact in projection.get("artifacts", []):
+        if artifact.get("role") in _SUCCESSOR_CODE_ROLES:
+            artifact["path"] = "<pinned-software-path>"
+            artifact["sha256"] = "<pinned-software-sha256>"
+    continuation = projection.get("continuation_authorization")
+    if isinstance(continuation, dict) and continuation.get("schema") == 2:
+        if continuation.get("coordinator_supervisor_artifact_id") == "source-supervisor":
+            projection["artifacts"] = [item for item in projection.get("artifacts", [])
+                                        if item.get("id") != "source-supervisor"]
+        continuation["schema"] = 1
+        continuation.pop("coordinator_supervisor_artifact_id", None)
+    projection["artifacts"] = sorted(projection.get("artifacts", []), key=lambda item: item.get("id", ""))
+    return projection
+
+
+def _validate_protocol_successor(predecessor: dict, successor: dict,
+                                 predecessor_config: dict, successor_config: dict) -> str:
+    """Require a pre-execution, software-identity-only protocol successor."""
+    if predecessor_config["program_id"] != successor_config["program_id"]:
+        raise GateError("protocol successor must retain the same persistent program identity")
+    if predecessor_config["ledger_dir"] != successor_config["ledger_dir"]:
+        raise GateError("protocol successor must retain the canonical lifetime ledger")
+    if not isinstance(predecessor.get("source_commit"), str) or not isinstance(successor.get("source_commit"), str):
+        raise GateError("protocol successor source commit identity is missing")
+    if predecessor["source_commit"] == successor["source_commit"]:
+        raise GateError("protocol successor must pin the repaired source commit")
+    if predecessor.get("protocol_id") == successor.get("protocol_id"):
+        raise GateError("protocol successor must use a new protocol version identity")
+
+    previous_amendment = predecessor.get("continuation_authorization")
+    next_amendment = successor.get("continuation_authorization")
+    if isinstance(previous_amendment, dict):
+        if (previous_amendment.get("schema") != 1 or not isinstance(next_amendment, dict)
+                or next_amendment.get("schema") != 2
+                or next_amendment.get("coordinator_supervisor_artifact_id") != "source-supervisor"):
+            raise GateError("continuation protocol successor must add the qualified supervisor binding")
+
+    old_artifacts = {item["id"]: item for item in predecessor.get("artifacts", [])}
+    new_artifacts = {item["id"]: item for item in successor.get("artifacts", [])}
+    added = set(new_artifacts) - set(old_artifacts)
+    removed = set(old_artifacts) - set(new_artifacts)
+    if removed or (added and added != {"source-supervisor"}):
+        raise GateError("protocol successor may add only the qualified coordinator supervisor identity")
+    if added:
+        extra = new_artifacts["source-supervisor"]
+        if extra.get("role") != "coordinator-entrypoint":
+            raise GateError("the new supervisor binding must be a coordinator entrypoint")
+
+    if _successor_projection(predecessor) != _successor_projection(successor):
+        raise GateError("protocol successor changes frozen science, data, phase plan, criteria, or resource limits")
+    compatibility = sha256_bytes(canonical_json(_successor_projection(predecessor)))
+    return compatibility
+
+
+def _ensure_unstarted_ledger(state: dict, events: list[dict]) -> None:
+    allowed_events = ["created"]
+    if state.get("accounting_scope") == "prospective_continuation_only":
+        allowed_events.extend(["historical_import", "amendment_authorized"])
+    if [event.get("event") for event in events] != allowed_events:
+        raise GateError("protocol succession is allowed only before any admission or execution event")
+    if (state.get("invocations_reserved") != 0 or state.get("pending") is not None
+            or state.get("qualification_status") != "preflight_pending"
+            or state.get("active_coordinator_phase") is not None
+            or state.get("terminal_status") is not None
+            or state.get("overall_start_monotonic_ns") is not None
+            or state.get("overall_deadline_monotonic_ns") is not None
+            or state.get("cpu_seconds_charged") != 0
+            or state.get("wall_seconds_charged") != 0
+            or state.get("coordinator_cpu_seconds_charged", 0) != 0
+            or state.get("coordinator_exclusive_wall_seconds_charged", 0) != 0):
+        raise GateError("protocol succession requires an unused ledger with no active or reserved phase")
+
+
+def _verify_unstarted_predecessor(state: dict, events: list[dict], config: dict,
+                                  protocol_sha256: str) -> None:
+    """Verify the complete pre-execution ledger prefix before successor recovery."""
+    _ensure_unstarted_ledger(state, events)
+    if (not events or state.get("event_count") != len(events)
+            or state.get("ledger_head") != events[-1].get("event_sha256")):
+        raise GateError("predecessor ledger prefix does not match its state cache")
+    plan = config.get("continuation_plan")
+    identity = _process_ledger_identity({
+        "budget": config["budget"], "program_id": config["program_id"],
+        "frozen_protocol_sha256": protocol_sha256, "continuation_plan": plan,
+    })
+    if any(state.get(key) != value for key, value in identity.items()):
+        raise GateError("predecessor ledger identity differs from its frozen protocol")
+    if events[0].get("event") != "created" or any(events[0].get(key) != value for key, value in identity.items()):
+        raise GateError("predecessor ledger creation identity is invalid")
+    if plan is not None:
+        imports = [event for event in events if event.get("event") == "historical_import"]
+        authorizations = [event for event in events if event.get("event") == "amendment_authorized"]
+        if (len(imports) != 1 or len(authorizations) != 1
+                or imports[0].get("history") != plan["history"]
+                or imports[0].get("history_sha256") != sha256_bytes(canonical_json(plan["history"]))
+                or imports[0].get("source_artifact_sha256") != plan["history_artifact_sha256"]
+                or authorizations[0].get("allowance") != plan["allowance"]
+                or authorizations[0].get("authorization_sha256") != plan["authorization_sha256"]):
+            raise GateError("predecessor authorization/history events do not match the frozen amendment")
+
+
+def _atomic_write_successor_record(path: Path, event: dict) -> None:
+    encoded = canonical_json(event)
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    write_exclusive(temporary, encoded, 0o600)
+    try:
+        os.link(temporary, path)
+        _fsync_directory(path.parent)
+    except FileExistsError:
+        if path.read_bytes() != encoded:
+            raise GateError("an incompatible protocol successor record already exists")
+    finally:
+        temporary.unlink(missing_ok=True)
+        _fsync_directory(path.parent)
+
+
+def _write_successor_package(destination: Path, protocol: dict, digest: str, event: dict) -> None:
+    if destination.exists():
+        try:
+            current, current_sha = _read_frozen_program_unchecked(destination)
+            current_record = json.loads((destination / "SUCCESSOR.json").read_text())
+        except (OSError, json.JSONDecodeError, GateError) as error:
+            raise GateError("existing successor package is incomplete; preserve it and choose a new evidence path") from error
+        if current_sha != digest or current_record != event:
+            raise GateError("successor evidence path already contains a different immutable package")
+        return
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=f".{destination.name}.staging-", dir=destination.parent))
+    try:
+        write_exclusive(staging / "program.json", canonical_json(protocol))
+        write_exclusive(staging / "PROGRAM.sha256", f"{digest}  program.json\n".encode("ascii"))
+        write_exclusive(staging / "SUCCESSOR.json", canonical_json(event))
+        _fsync_directory(staging)
+        os.rename(staging, destination)
+        _fsync_directory(destination.parent)
+    except BaseException:
+        if staging.exists():
+            for item in staging.iterdir():
+                item.unlink()
+            staging.rmdir()
+        raise
+
+
+def _read_frozen_program_unchecked(directory: Path) -> tuple[dict, str]:
     raw = (directory / "program.json").read_bytes()
     digest = sha256_bytes(raw)
     marker = (directory / "PROGRAM.sha256").read_text(encoding="ascii").split()
     if marker != [digest, "program.json"]:
         raise GateError("bounded-program protocol checksum mismatch")
-    config = _validate_bounded_program(json.loads(raw))
+    protocol = json.loads(raw)
+    return protocol, digest
+
+
+def _reconcile_active_protocol(directory: Path, config: dict, digest: str) -> None:
+    ledger = config["ledger_dir"]
+    state_path = ledger / "process-budget.json"
+    successor_path = ledger / "protocol-successor.json"
+    initial_state = json.loads(state_path.read_text())
+    if not successor_path.exists() and initial_state.get("frozen_protocol_sha256") == digest:
+        initial_events = _read_process_ledger_events(ledger)
+        if (_active_protocol_sha256(initial_events) == digest
+                and initial_state.get("event_count") == len(initial_events)
+                and initial_state.get("ledger_head") == initial_events[-1].get("event_sha256")):
+            return
+    if successor_path.exists() and initial_state.get("frozen_protocol_sha256") == digest:
+        initial_events = _read_process_ledger_events(ledger)
+        active_sha = _active_protocol_sha256(initial_events)
+        if (active_sha == digest and initial_state.get("event_count") == len(initial_events)
+                and initial_state.get("ledger_head") == initial_events[-1].get("event_sha256")):
+            successor = next(event for event in initial_events
+                             if event.get("event") == "protocol_successor_authorized")
+            if Path(successor.get("successor_program_dir", "")).resolve() != directory.resolve():
+                raise GateError("frozen protocol is not the active successor registered in the lifetime ledger")
+            if json.loads((directory / "SUCCESSOR.json").read_text()) != successor:
+                raise GateError("successor package record differs from the canonical ledger activation")
+            predecessor_dir = Path(successor.get("predecessor_program_dir", "")).resolve()
+            predecessor_protocol, predecessor_sha = _read_frozen_program_unchecked(predecessor_dir)
+            predecessor_config = _validate_bounded_program(predecessor_protocol, allow_legacy_predecessor=True)
+            if (predecessor_sha != successor.get("predecessor_protocol_sha256")
+                    or sha256_file(directory / "program.json") != digest
+                    or _validate_protocol_successor(predecessor_protocol, config["protocol"],
+                                                    predecessor_config, config)
+                    != successor.get("compatibility_sha256")):
+                raise GateError("protocol successor predecessor/compatibility binding is invalid")
+            return
+    lock_fd = os.open(ledger / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(lock_fd, "r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state_path = ledger / "process-budget.json"
+        if not state_path.is_file():
+            raise GateError("bounded-program lifetime ledger is missing")
+        state = json.loads(state_path.read_text())
+        events = _read_process_ledger_events(ledger)
+        active_sha = _active_protocol_sha256(events)
+        successor = next((event for event in events if event.get("event") == "protocol_successor_authorized"), None)
+        if successor is not None:
+            successor_dir = Path(successor.get("successor_program_dir", "")).resolve()
+            if successor_dir != directory.resolve():
+                raise GateError("frozen protocol is not the active successor registered in the lifetime ledger")
+            package_event = json.loads((directory / "SUCCESSOR.json").read_text())
+            if package_event != successor:
+                raise GateError("successor package record differs from the canonical ledger activation")
+            if sha256_file(directory / "program.json") != successor.get("successor_protocol_sha256"):
+                raise GateError("registered successor protocol file hash changed")
+            predecessor_dir = Path(successor.get("predecessor_program_dir", "")).resolve()
+            predecessor_protocol, predecessor_sha = _read_frozen_program_unchecked(predecessor_dir)
+            if predecessor_sha != successor.get("predecessor_protocol_sha256"):
+                raise GateError("protocol successor predecessor package hash changed")
+            predecessor_config = _validate_bounded_program(
+                predecessor_protocol, allow_legacy_predecessor=True)
+            if _validate_protocol_successor(predecessor_protocol, config["protocol"],
+                                            predecessor_config, config) != successor.get("compatibility_sha256"):
+                raise GateError("protocol successor compatibility proof does not match its frozen packages")
+            state_is_predecessor = (
+                state.get("frozen_protocol_sha256") == successor.get("predecessor_protocol_sha256")
+                and state.get("event_count") == successor.get("event_index")
+                and state.get("ledger_head") == successor.get("previous_hash")
+            )
+            if state_is_predecessor:
+                _verify_unstarted_predecessor(
+                    state, events[:successor["event_index"]], predecessor_config, predecessor_sha)
+                state["frozen_protocol_sha256"] = active_sha
+                state["event_count"] = len(events)
+                state["ledger_head"] = events[-1]["event_sha256"]
+                _replace_process_budget(ledger, state)
+            elif not (state.get("frozen_protocol_sha256") == active_sha
+                      and state.get("event_count") == len(events)
+                      and state.get("ledger_head") == events[-1]["event_sha256"]):
+                raise GateError("successor ledger cache is inconsistent; fail closed")
+        elif state.get("frozen_protocol_sha256") != active_sha:
+            raise GateError("bounded-program lifetime ledger is bound to a different frozen protocol")
+        if active_sha != digest:
+            raise GateError("bounded-process ledger is bound to a different frozen protocol; predecessor is inactive")
+
+
+def successor_program_protocol(predecessor_directory: Path, source: Path,
+                               destination: Path) -> str:
+    """Freeze and atomically register a software-only protocol successor."""
+    predecessor_protocol, predecessor_sha = _read_frozen_program_unchecked(predecessor_directory)
+    predecessor_config = _validate_bounded_program(predecessor_protocol, allow_legacy_predecessor=True)
+    successor_protocol = json.loads(source.read_bytes())
+    successor_config = _validate_bounded_program(successor_protocol)
+    compatibility_sha = _validate_protocol_successor(
+        predecessor_protocol, successor_protocol, predecessor_config, successor_config)
+    if predecessor_config["ledger_dir"] != successor_config["ledger_dir"]:
+        raise GateError("protocol successor may not create or select another ledger")
+    ledger = predecessor_config["ledger_dir"]
+    encoded = canonical_json(successor_protocol)
+    successor_sha = sha256_bytes(encoded)
+    destination = destination.resolve()
+    lock_fd = os.open(ledger / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(lock_fd, "r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state_path = ledger / "process-budget.json"
+        state = json.loads(state_path.read_text())
+        events = _read_process_ledger_events(ledger)
+        successor_path = ledger / "protocol-successor.json"
+        if successor_path.exists():
+            existing = json.loads(successor_path.read_text())
+            if (existing.get("successor_protocol_sha256") != successor_sha
+                    or Path(existing.get("successor_program_dir", "")).resolve() != destination
+                    or existing.get("compatibility_sha256") != compatibility_sha):
+                raise GateError("a different protocol successor is already recorded")
+            package_protocol, package_sha = _read_frozen_program_unchecked(destination)
+            package_record = json.loads((destination / "SUCCESSOR.json").read_text())
+            if package_sha != successor_sha or package_protocol != successor_protocol or package_record != existing:
+                raise GateError("registered successor package is missing or inconsistent")
+            active_sha = _active_protocol_sha256(events)
+            if active_sha != successor_sha:
+                raise GateError("recorded protocol successor does not match the requested protocol")
+            if (state.get("frozen_protocol_sha256") == existing.get("predecessor_protocol_sha256")
+                    and state.get("event_count") == existing.get("event_index")
+                    and state.get("ledger_head") == existing.get("previous_hash")):
+                _verify_unstarted_predecessor(
+                    state, events[:existing["event_index"]], predecessor_config, predecessor_sha)
+                state["frozen_protocol_sha256"] = active_sha
+                state["event_count"] = len(events)
+                state["ledger_head"] = events[-1]["event_sha256"]
+                _replace_process_budget(ledger, state)
+            elif not (state.get("frozen_protocol_sha256") == active_sha
+                      and state.get("event_count") == len(events)
+                      and state.get("ledger_head") == events[-1]["event_sha256"]):
+                raise GateError("successor ledger state is inconsistent; fail closed")
+            _verify_process_ledger(ledger, state, successor_sha, successor_config.get("continuation_plan"))
+            return successor_sha
+
+        if _active_protocol_sha256(events) != predecessor_sha:
+            raise GateError("protocol successor predecessor is not the active ledger identity")
+        _verify_process_ledger(ledger, state, predecessor_sha, predecessor_config.get("continuation_plan"))
+        _ensure_unstarted_ledger(state, events)
+        if state.get("frozen_protocol_sha256") != predecessor_sha:
+            raise GateError("protocol successor predecessor does not match the canonical ledger")
+
+        authorizations = [event for event in events if event.get("event") == "amendment_authorized"]
+        continuation = successor_config.get("continuation_plan")
+        if continuation is not None and len(authorizations) != 1:
+            raise GateError("protocol successor requires the original single authorization event")
+        event_body = {
+            "schema": 1,
+            "event": "protocol_successor_authorized",
+            "program_id": successor_config["program_id"],
+            "predecessor_protocol_sha256": predecessor_sha,
+            "successor_protocol_sha256": successor_sha,
+            "predecessor_program_dir": str(predecessor_directory.resolve()),
+            "successor_program_dir": str(destination),
+            "event_index": len(events),
+            "compatibility_sha256": compatibility_sha,
+            "authorization_sha256": authorizations[0].get("authorization_sha256") if authorizations else None,
+            "allowance": authorizations[0].get("allowance") if authorizations else None,
+        }
+        event = {**event_body, "previous_hash": state["ledger_head"]}
+        event["event_sha256"] = sha256_bytes(compact_json(event))
+        _write_successor_package(destination, successor_protocol, successor_sha, event)
+        _atomic_write_successor_record(successor_path, event)
+        state["frozen_protocol_sha256"] = successor_sha
+        state["event_count"] += 1
+        state["ledger_head"] = event["event_sha256"]
+        _replace_process_budget(ledger, state)
+        verified = _verify_process_ledger(ledger, state, successor_sha, successor_config.get("continuation_plan"))
+        if verified[-1]["event_sha256"] != event["event_sha256"]:
+            raise GateError("successor event was not retained at the active ledger head")
+    return successor_sha
+
+
+def read_frozen_program(directory: Path, *, allow_legacy_predecessor: bool = False,
+                        require_active: bool = True) -> tuple[dict, dict, str]:
+    protocol, digest = _read_frozen_program_unchecked(directory)
+    config = _validate_bounded_program(protocol, allow_legacy_predecessor=allow_legacy_predecessor)
+    if require_active:
+        _reconcile_active_protocol(directory, config, digest)
     return config["protocol"], config, digest
 
 
@@ -5390,6 +5812,11 @@ def main(argv: list[str] | None = None) -> int:
     freeze_program = commands.add_parser("freeze-program", help="freeze a pinned bounded C++/Python process protocol")
     freeze_program.add_argument("--protocol", type=Path, required=True)
     freeze_program.add_argument("--destination", type=Path, required=True)
+    successor_program = commands.add_parser(
+        "successor-program", help="append a software-only successor to an unused bounded-program ledger")
+    successor_program.add_argument("--predecessor-dir", type=Path, required=True)
+    successor_program.add_argument("--protocol", type=Path, required=True)
+    successor_program.add_argument("--destination", type=Path, required=True)
     run_program_parser = commands.add_parser("run-program", help="execute one allowlisted bounded-program invocation")
     run_program_parser.add_argument("--protocol-dir", type=Path, required=True)
     run_program_parser.add_argument("--run-id", required=True)
@@ -5406,6 +5833,9 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if result["status"] == "successful" else 2
         elif args.command == "freeze-program":
             digest = freeze_program_protocol(args.protocol, args.destination)
+            print(digest)
+        elif args.command == "successor-program":
+            digest = successor_program_protocol(args.predecessor_dir, args.protocol, args.destination)
             print(digest)
         elif args.command == "run-program":
             result = run_program(args.protocol_dir, args.run_id)

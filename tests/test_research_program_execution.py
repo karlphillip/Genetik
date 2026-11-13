@@ -92,6 +92,259 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         return dest
 
+    def test_unused_ledger_accepts_one_hash_chained_software_successor(self):
+        import research_execution
+        from research_execution import read_frozen_program
+
+        predecessor = self.freeze(destination=self.root / "predecessor")
+        ledger_dir = self.ledger / "sample-program"
+        original_event_bytes = (ledger_dir / "process-events.jsonl").read_bytes()
+        original_events = [json.loads(line) for line in original_event_bytes.splitlines()]
+        previous_sha = (predecessor / "PROGRAM.sha256").read_text().split()[0]
+        successor_protocol = self.protocol()
+        successor_protocol["protocol_id"] = "program-test-v2"
+        successor_protocol["source_commit"] = "b" * 40
+        source = self._write_source(successor_protocol)
+        destination = self.root / "successor"
+        result = self.command("successor-program", "--predecessor-dir", predecessor,
+                              "--protocol", source, "--destination", destination)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            _, _, active_sha = read_frozen_program(destination)
+        self.assertEqual(active_sha, (destination / "PROGRAM.sha256").read_text().split()[0])
+        self.assertEqual((ledger_dir / "process-events.jsonl").read_bytes(), original_event_bytes)
+        successor_event = json.loads((ledger_dir / "protocol-successor.json").read_text())
+        self.assertEqual(successor_event["event"], "protocol_successor_authorized")
+        self.assertEqual(successor_event["predecessor_protocol_sha256"], previous_sha)
+        self.assertEqual(successor_event["successor_protocol_sha256"], active_sha)
+        self.assertEqual(successor_event["event_index"], 1)
+        self.assertEqual([event["event_sha256"] for event in original_events],
+                         [json.loads(line)["event_sha256"] for line in
+                          (ledger_dir / "process-events.jsonl").read_text().splitlines()])
+        state = json.loads((ledger_dir / "process-budget.json").read_text())
+        self.assertEqual(state["frozen_protocol_sha256"], active_sha)
+        self.assertEqual(state["event_count"], 2)
+        self.assertEqual(state["invocations_reserved"], 0)
+        self.assertEqual(state["cpu_seconds_charged"], 0)
+        self.assertEqual(state["wall_seconds_charged"], 0)
+
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            with self.assertRaisesRegex(GateError, "active|different|superseded"):
+                read_frozen_program(predecessor)
+        executed = self.command("run-program", "--protocol-dir", destination, "--run-id", "preflight-unit")
+        self.assertEqual(executed.returncode, 0, executed.stderr)
+        verified = self.command("verify-program", "--protocol-dir", destination)
+        self.assertEqual(verified.returncode, 0, verified.stderr)
+        self.assertEqual(json.loads(verified.stdout)["status"], "valid")
+        another = json.loads(json.dumps(successor_protocol))
+        another["source_commit"] = "c" * 40
+        another["protocol_id"] = "program-test-v3"
+        repeated = self.command("successor-program", "--predecessor-dir", predecessor,
+                                "--protocol", self._write_source(another),
+                                "--destination", self.root / "successor-2")
+        self.assertNotEqual(repeated.returncode, 0)
+        self.assertFalse((self.root / "successor-2").exists())
+
+    def test_successor_state_recovers_after_atomic_record_before_budget_replace(self):
+        import research_execution
+        from research_execution import read_frozen_program
+
+        predecessor = self.freeze(destination=self.root / "predecessor")
+        protocol = self.protocol()
+        protocol["protocol_id"] = "program-test-after-crash"
+        protocol["source_commit"] = "d" * 40
+        source = self._write_source(protocol)
+        destination = self.root / "successor-after-crash"
+        with (mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()),
+              mock.patch.object(research_execution, "_replace_process_budget",
+                                side_effect=OSError("simulated interruption after successor record"))):
+            with self.assertRaisesRegex(OSError, "simulated interruption"):
+                research_execution.successor_program_protocol(predecessor, source, destination)
+
+        ledger_dir = self.ledger / "sample-program"
+        interrupted_state = json.loads((ledger_dir / "process-budget.json").read_text())
+        self.assertEqual(interrupted_state["frozen_protocol_sha256"],
+                         (predecessor / "PROGRAM.sha256").read_text().split()[0])
+        self.assertEqual(interrupted_state["event_count"], 1)
+        self.assertTrue((ledger_dir / "protocol-successor.json").is_file())
+
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            _, _, active_sha = read_frozen_program(destination)
+        recovered_state = json.loads((ledger_dir / "process-budget.json").read_text())
+        self.assertEqual(recovered_state["frozen_protocol_sha256"], active_sha)
+        self.assertEqual(recovered_state["event_count"], 2)
+        self.assertEqual(recovered_state["invocations_reserved"], 0)
+
+    def test_orphaned_successor_package_is_inert_and_retryable(self):
+        import research_execution
+        from research_execution import read_frozen_program
+
+        predecessor = self.freeze(destination=self.root / "predecessor")
+        protocol = self.protocol()
+        protocol["protocol_id"] = "program-test-unpublished"
+        protocol["source_commit"] = "e" * 40
+        source = self._write_source(protocol)
+        destination = self.root / "unpublished-successor"
+        with (mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()),
+              mock.patch.object(research_execution, "_atomic_write_successor_record",
+                                side_effect=OSError("simulated interruption before activation"))):
+            with self.assertRaisesRegex(OSError, "simulated interruption"):
+                research_execution.successor_program_protocol(predecessor, source, destination)
+
+        ledger_dir = self.ledger / "sample-program"
+        original_state = json.loads((ledger_dir / "process-budget.json").read_text())
+        self.assertEqual(original_state["event_count"], 1)
+        self.assertFalse((ledger_dir / "protocol-successor.json").exists())
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            with self.assertRaises(GateError):
+                read_frozen_program(destination)
+
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            repeated = research_execution.successor_program_protocol(predecessor, source, destination)
+        self.assertEqual(repeated, (destination / "PROGRAM.sha256").read_text().split()[0])
+        self.assertEqual(json.loads((ledger_dir / "process-budget.json").read_text())["event_count"], 2)
+
+    def test_successor_rejects_science_budget_and_allowance_changes(self):
+        import research_execution
+        from research_execution import _validate_protocol_successor
+
+        predecessor = self.protocol()
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            predecessor_config = research_execution._validate_bounded_program(predecessor)
+        for field, mutate in (
+            ("runs", lambda value: value[0].update({"stdin_artifact": None})),
+            ("limits", lambda value: value.update({"max_address_space_bytes": value["max_address_space_bytes"] - 1024})),
+        ):
+            successor = json.loads(json.dumps(predecessor))
+            successor["source_commit"] = "f" * 40
+            successor["protocol_id"] = "program-test-v2"
+            mutate(successor[field])
+            with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+                successor_config = research_execution._validate_bounded_program(successor)
+                with self.assertRaisesRegex(GateError, "changes frozen science"):
+                    _validate_protocol_successor(predecessor, successor, predecessor_config, successor_config)
+
+    def test_successor_refuses_admission_after_any_invocation_reservation(self):
+        import research_execution
+
+        predecessor = self.freeze(destination=self.root / "predecessor")
+        result = self.command("run-program", "--protocol-dir", predecessor, "--run-id", "preflight-unit")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        successor = self.protocol()
+        successor["source_commit"] = "9" * 40
+        successor["protocol_id"] = "program-test-v2"
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            with self.assertRaisesRegex(GateError, "before any admission|unused ledger"):
+                research_execution.successor_program_protocol(
+                    predecessor, self._write_source(successor), self.root / "forbidden-successor")
+        self.assertFalse((self.root / "forbidden-successor").exists())
+
+    def test_successor_hash_chain_preserves_three_historical_event_hashes(self):
+        from research_execution import (_active_protocol_sha256, _process_ledger_identity, _read_process_ledger_events,
+                                        compact_json, sha256_bytes)
+
+        ledger = self.root / "three-event-ledger"
+        ledger.mkdir()
+        old_protocol_sha = "1" * 64
+        new_protocol_sha = "2" * 64
+        allowance = {"invocations": 49, "cpu_seconds": 333.0, "wall_seconds": 426.0}
+        plan = {"amendment_id": "continuation", "coordinator_allowance":
+                {"cpu_seconds": 11.0, "exclusive_wall_seconds": 11.0},
+                "overall_deadline_seconds": 426.0}
+        budget = {"max_new_invocations": 49, "max_new_cpu_seconds": 333.0,
+                  "max_new_wall_seconds": 426.0}
+        identity = _process_ledger_identity({"budget": budget, "program_id": "study",
+            "frozen_protocol_sha256": old_protocol_sha, "continuation_plan": plan})
+        payloads = [
+            {"event": "created", **identity},
+            {"event": "historical_import", "import_id": "retained-v7"},
+            {"event": "amendment_authorized", "authorization_sha256": "3" * 64,
+             "allowance": allowance},
+        ]
+        previous = "0" * 64
+        historical = []
+        for payload in payloads:
+            event = {**payload, "previous_hash": previous}
+            previous = sha256_bytes(compact_json(event))
+            event["event_sha256"] = previous
+            historical.append(event)
+        (ledger / "process-events.jsonl").write_bytes(
+            b"".join(compact_json(event) + b"\n" for event in historical))
+        event = {"schema": 1, "event": "protocol_successor_authorized", "program_id": "study",
+                 "predecessor_protocol_sha256": old_protocol_sha,
+                 "successor_protocol_sha256": new_protocol_sha,
+                 "predecessor_program_dir": str(self.root / "v7"),
+                 "successor_program_dir": str(self.root / "v8"), "event_index": 3,
+                 "compatibility_sha256": "4" * 64, "authorization_sha256": "3" * 64,
+                 "allowance": allowance, "previous_hash": previous}
+        event["event_sha256"] = sha256_bytes(compact_json(event))
+        (ledger / "protocol-successor.json").write_bytes(json.dumps(event, sort_keys=True).encode())
+
+        events = _read_process_ledger_events(ledger)
+        self.assertEqual(len(events), 4)
+        self.assertEqual([item["event_sha256"] for item in events[:3]],
+                         [item["event_sha256"] for item in historical])
+        self.assertEqual(events[3]["event_sha256"], event["event_sha256"])
+        self.assertEqual(_active_protocol_sha256(events), new_protocol_sha)
+
+    def test_successor_allows_only_the_coordinator_supervisor_schema_upgrade(self):
+        from research_execution import _validate_protocol_successor
+
+        predecessor = {
+            "schema": 1, "kind": "bounded_program", "protocol_id": "study-v7",
+            "source_commit": "1" * 40,
+            "program_budget": {"program_id": "study", "max_new_invocations": 49,
+                               "max_new_cpu_seconds": 333, "max_new_wall_seconds": 426},
+            "continuation_authorization": {"schema": 1, "amendment_id": "same-amendment",
+                                            "prospective_allowance": {"invocations": 49}},
+            "artifacts": [
+                {"id": "source-execution", "role": "pipeline-dependency", "path": "/old/execution.py",
+                 "sha256": "2" * 64},
+                {"id": "authorization-amendment", "role": "authorization-amendment",
+                 "path": "/data/authorization.json", "sha256": "3" * 64},
+            ],
+            "controls": ["control-a"], "run_matrix": ["run-a"],
+            "acceptance_criteria": {"exact_recovery": 4}, "limits": {"memory": 512},
+        }
+        successor = json.loads(json.dumps(predecessor))
+        successor["protocol_id"] = "study-v8"
+        successor["source_commit"] = "4" * 40
+        successor["continuation_authorization"]["schema"] = 2
+        successor["continuation_authorization"]["coordinator_supervisor_artifact_id"] = "source-supervisor"
+        successor["artifacts"][0]["path"] = "/new/execution.py"
+        successor["artifacts"][0]["sha256"] = "5" * 64
+        successor["artifacts"].append({"id": "source-supervisor", "role": "coordinator-entrypoint",
+                                        "path": "/new/coordinator_supervisor.py", "sha256": "6" * 64})
+        config = {"program_id": "study", "ledger_dir": self.ledger / "study"}
+        compatibility = _validate_protocol_successor(predecessor, successor, config, config)
+        self.assertEqual(len(compatibility), 64)
+
+        changed_science = json.loads(json.dumps(successor))
+        changed_science["controls"] = ["control-b"]
+        with self.assertRaisesRegex(GateError, "changes frozen science"):
+            _validate_protocol_successor(predecessor, changed_science, config, config)
+
+    def test_successor_refuses_active_phase_and_started_deadline(self):
+        from research_execution import _ensure_unstarted_ledger
+
+        base_state = {"accounting_scope": "prospective_continuation_only",
+            "invocations_reserved": 0, "pending": None,
+            "qualification_status": "preflight_pending", "active_coordinator_phase": None,
+            "terminal_status": None, "overall_start_monotonic_ns": None,
+            "overall_deadline_monotonic_ns": None, "cpu_seconds_charged": 0.0,
+            "wall_seconds_charged": 0.0, "coordinator_cpu_seconds_charged": 0.0,
+            "coordinator_exclusive_wall_seconds_charged": 0.0}
+        prefix = [{"event": "created"}, {"event": "historical_import"},
+                  {"event": "amendment_authorized"}]
+        for update in (
+            {"active_coordinator_phase": {"phase_id": "primary_preflight"}},
+            {"overall_start_monotonic_ns": 17, "overall_deadline_monotonic_ns": 443},
+            {"terminal_status": "coordinator_memory_limit"},
+        ):
+            with self.assertRaisesRegex(GateError, "unused ledger"):
+                _ensure_unstarted_ledger({**base_state, **update}, prefix)
+
     def test_pinned_python_process_streams_binary_stdin_and_both_outputs(self):
         frozen = self.freeze()
         result = self.command("run-program", "--protocol-dir", frozen, "--run-id", "preflight-unit")

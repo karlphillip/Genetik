@@ -71,8 +71,11 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     examples/quickstarts/first_search.cpp \
     tests/expressions.cpp \
     genetik/DiscreteExpressionSpecification.hpp \
+    genetik/DiscreteExpressionComponents.hpp \
     examples/quickstarts/discrete_specification.cpp \
+    examples/quickstarts/discrete_components.cpp \
     tests/discrete_specification.cpp \
+    tests/discrete_expression_components.cpp \
     tests/research_process_fixture.cpp |
     "$format_diff_tool" -p1 -binary "$format_tool")"
 if [[ -n "$format_diff" ]]; then
@@ -103,6 +106,7 @@ fi
     tests/multi_component_templates.cpp \
     tests/automatic_separable_regression.cpp \
     tests/discrete_specification.cpp \
+    tests/discrete_expression_components.cpp \
     tests/research_process_fixture.cpp \
     benchmarks/automatic_separable_comparison.cpp \
     benchmarks/automatic_separable_noise_followup.cpp \

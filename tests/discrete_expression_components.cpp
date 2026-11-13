@@ -56,15 +56,15 @@ void arithmeticAndSharing() {
               materialized.work.componentEdgesExpanded == 6,
           "expanded dependency-edge accounting");
     check(materialized.expansion.materializationWorkUpperBound == 132 &&
-              materialized.work.totalUnits == 20 &&
-              materialized.work.totalWorkUpperBound == 132,
+              materialized.work.totalUnits == 20 && materialized.work.totalWorkUpperBound == 132,
           "materialization work accounting differs from the frozen logical-unit contract");
     check(materialized.work.expressionValidationWorkUpperBound == materialized.expansion.nodes * 16,
           "final expression validation allowance is not reported separately");
 
     const auto directInner = DiscreteExpression::binary(
         DiscreteKind::Add, DiscreteExpression::variable(0, 1), DiscreteExpression::integer(1, 1));
-    const auto direct = DiscreteExpression::binary(DiscreteKind::Multiply, directInner, directInner);
+    const auto direct =
+        DiscreteExpression::binary(DiscreteKind::Multiply, directInner, directInner);
     check(materialized.expression->sameRepresentation(direct), "expanded postfix order changed");
     for (const auto input : {-4, 0, 7})
         sameEvaluation(*materialized.expression, direct, input);
@@ -103,12 +103,14 @@ void arithmeticAndSharing() {
     std::jthread first([&] {
         auto value = readers.materialize(readRoot);
         concurrentExports[0] = value.expression->toString();
-        concurrentResults[0] = value.expression->evaluate(std::array<std::int64_t, 1>{3}).value->integer();
+        concurrentResults[0] =
+            value.expression->evaluate(std::array<std::int64_t, 1>{3}).value->integer();
     });
     std::jthread second([&] {
         auto value = readers.materialize(readRoot);
         concurrentExports[1] = value.expression->toString();
-        concurrentResults[1] = value.expression->evaluate(std::array<std::int64_t, 1>{3}).value->integer();
+        concurrentResults[1] =
+            value.expression->evaluate(std::array<std::int64_t, 1>{3}).value->integer();
     });
     first.join();
     second.join();
@@ -133,17 +135,21 @@ void modularAndConditional() {
     check(result.success(), "conditional component did not materialize");
     const auto nestedModResult = components.materialize(nestedMod);
     check(nestedModResult.success(), "nested modulo component did not materialize");
-    check(nestedModResult.expression->evaluate(std::array<std::int64_t, 1>{-7}).value->integer() == 0,
+    check(nestedModResult.expression->evaluate(std::array<std::int64_t, 1>{-7}).value->integer() ==
+              0,
           "nested modulo did not use Euclidean remainder for a negative operand");
-    check(nestedModResult.expression->evaluate(std::array<std::int64_t, 1>{-8}).value->integer() == 2,
+    check(nestedModResult.expression->evaluate(std::array<std::int64_t, 1>{-8}).value->integer() ==
+              2,
           "nested modulo independent negative result");
 
-    const auto modExpression = DiscreteExpression::binary(
-        DiscreteKind::Modulo, DiscreteExpression::variable(0, 1), DiscreteExpression::integer(5, 1));
-    const auto mixedExpression = DiscreteExpression::binary(
-        DiscreteKind::Add, modExpression, DiscreteExpression::integer(2, 1));
-    const auto invalidModulo = DiscreteExpression::binary(
-        DiscreteKind::Modulo, DiscreteExpression::variable(0, 1), DiscreteExpression::integer(0, 1));
+    const auto modExpression =
+        DiscreteExpression::binary(DiscreteKind::Modulo, DiscreteExpression::variable(0, 1),
+                                   DiscreteExpression::integer(5, 1));
+    const auto mixedExpression = DiscreteExpression::binary(DiscreteKind::Add, modExpression,
+                                                            DiscreteExpression::integer(2, 1));
+    const auto invalidModulo =
+        DiscreteExpression::binary(DiscreteKind::Modulo, DiscreteExpression::variable(0, 1),
+                                   DiscreteExpression::integer(0, 1));
     const auto direct = DiscreteExpression::conditional(
         DiscreteExpression::binary(DiscreteKind::LessThan, DiscreteExpression::variable(0, 1),
                                    DiscreteExpression::integer(0, 1)),
@@ -162,7 +168,8 @@ void modularAndConditional() {
     const auto booleanModel = components.materialize(booleanRoot);
     check(booleanModel.success(), "Bool-valued conditional did not materialize");
     const auto boolAtNegative = booleanModel.expression->evaluate(std::array<std::int64_t, 1>{-3});
-    const auto boolAtNearNegative = booleanModel.expression->evaluate(std::array<std::int64_t, 1>{-1});
+    const auto boolAtNearNegative =
+        booleanModel.expression->evaluate(std::array<std::int64_t, 1>{-1});
     const auto boolAtZero = booleanModel.expression->evaluate(std::array<std::int64_t, 1>{0});
     const auto boolAtPositive = booleanModel.expression->evaluate(std::array<std::int64_t, 1>{1});
     check(boolAtNegative.valid() && boolAtNegative.value->type() == DiscreteType::Bool &&
@@ -184,7 +191,8 @@ void modularAndConditional() {
     const auto lazyModel = lazyComponents.materialize(lazy);
     check(lazyModel.success(), "lazy conditional component did not materialize");
     const auto atZero = lazyModel.expression->evaluate(std::array<std::int64_t, 1>{0});
-    check(atZero.valid() && atZero.value->integer() == 0, "untaken invalid component was evaluated");
+    check(atZero.valid() && atZero.value->integer() == 0,
+          "untaken invalid component was evaluated");
     const auto atNegative = lazyModel.expression->evaluate(std::array<std::int64_t, 1>{-1});
     check(atNegative.status == DiscreteEvaluationStatus::MathematicalInvalid,
           "taken invalid component did not preserve mathematical invalidity");
@@ -197,8 +205,10 @@ void reductionsAndBinderHygiene() {
     const auto twice = components.binary(DiscreteKind::Add, shared, shared);
     const auto result = components.materialize(twice);
     check(result.success(), "closed nested reduction did not materialize");
-    check(result.expansion.binders == 4, "reused nested reductions did not count binders per occurrence");
-    check(result.expression->binders().size() == 4, "reused nested reductions did not get fresh binders");
+    check(result.expansion.binders == 4,
+          "reused nested reductions did not count binders per occurrence");
+    check(result.expression->binders().size() == 4,
+          "reused nested reductions did not get fresh binders");
     for (std::size_t i = 0; i < result.expression->binders().size(); ++i)
         for (std::size_t j = i + 1; j < result.expression->binders().size(); ++j)
             check(result.expression->binders()[i] != result.expression->binders()[j],
@@ -207,13 +217,15 @@ void reductionsAndBinderHygiene() {
     const auto directLeft = nestedSum(1, 0);
     const auto directRight = nestedSum(3, 2);
     const auto direct = DiscreteExpression::binary(DiscreteKind::Add, directLeft, directRight);
-    check(result.expression->sameRepresentation(direct), "alpha-renamed reduction expansion differs");
-    check(parseDiscreteExpression(result.expression->toString(), 1).sameRepresentation(*result.expression),
+    check(result.expression->sameRepresentation(direct),
+          "alpha-renamed reduction expansion differs");
+    check(parseDiscreteExpression(result.expression->toString(), 1)
+              .sameRepresentation(*result.expression),
           "binder-renamed model does not round-trip through the ordinary parser");
     for (const auto input : {-2, 0, 3})
         sameEvaluation(*result.expression, direct, input);
-    for (const auto& [input, expected] : std::array<std::pair<std::int64_t, std::int64_t>, 3>{
-             {{-2, 0}, {0, 24}, {3, 60}}}) {
+    for (const auto& [input, expected] :
+         std::array<std::pair<std::int64_t, std::int64_t>, 3>{{{-2, 0}, {0, 24}, {3, 60}}}) {
         const auto value = result.expression->evaluate(std::array{input});
         check(value.valid() && value.value->integer() == expected,
               "nested sum disagrees with independent closed-form value");
@@ -232,15 +244,19 @@ void reductionsAndBinderHygiene() {
     int directPolls = 0;
     const auto directStopped = cancellable.evaluateWithCancellation(
         std::array<std::int64_t, 1>{4}, {}, [&] { return ++directPolls == 30; });
-    check(stopped.status == directStopped.status && stopped.iterations == directStopped.iterations &&
-              stopped.nodeVisits == directStopped.nodeVisits && stopped.operations == directStopped.operations,
+    check(stopped.status == directStopped.status &&
+              stopped.iterations == directStopped.iterations &&
+              stopped.nodeVisits == directStopped.nodeVisits &&
+              stopped.operations == directStopped.operations,
           "materialized cancellation differs from direct expression");
     DiscreteEvaluationLimits constrained;
     constrained.maxNodeVisits = 4;
-    const auto limited = loopModel.expression->evaluate(std::array<std::int64_t, 1>{4}, constrained);
+    const auto limited =
+        loopModel.expression->evaluate(std::array<std::int64_t, 1>{4}, constrained);
     const auto directLimited = cancellable.evaluate(std::array<std::int64_t, 1>{4}, constrained);
     check(limited.status == DiscreteEvaluationStatus::ResourceExhausted &&
-              limited.status == directLimited.status && limited.nodeVisits == directLimited.nodeVisits &&
+              limited.status == directLimited.status &&
+              limited.nodeVisits == directLimited.nodeVisits &&
               limited.operations == directLimited.operations,
           "materialized evaluation resource exhaustion differs from direct expression");
 }
@@ -252,8 +268,8 @@ void invalidityAndLimits() {
     const auto add = components.binary(DiscreteKind::Add, x, maximum);
     const auto overflow = components.materialize(add);
     check(overflow.success(), "overflow candidate did not materialize");
-    check(overflow.expression->evaluate(std::array{std::numeric_limits<std::int64_t>::max()}).status ==
-              DiscreteEvaluationStatus::MathematicalInvalid,
+    check(overflow.expression->evaluate(std::array{std::numeric_limits<std::int64_t>::max()})
+                  .status == DiscreteEvaluationStatus::MathematicalInvalid,
           "checked overflow semantics changed");
 
     DiscreteExpressionComponents recurrenceComponents(3);
@@ -318,23 +334,26 @@ void invalidityAndLimits() {
 
     const auto exactExpressionBytes = DiscreteExpression::storageBytesPerNode();
     DiscreteComponentLimits exactMaterializationLimits;
-    exactMaterializationLimits.maxMaterializationBytes = exactExpressionBytes + sizeof(DiscreteNode) +
-                                                        3 * sizeof(std::size_t);
+    exactMaterializationLimits.maxMaterializationBytes =
+        exactExpressionBytes + sizeof(DiscreteNode) + 3 * sizeof(std::size_t);
     DiscreteExpressionComponents exactMaterialization(1, exactMaterializationLimits);
-    const auto exactVariable = exactMaterialization.addExpression(DiscreteExpression::variable(0, 1));
+    const auto exactVariable =
+        exactMaterialization.addExpression(DiscreteExpression::variable(0, 1));
     DiscreteExpressionLimits exactExpressionPolicy;
     exactExpressionPolicy.maxStorageBytes = exactExpressionBytes;
     check(exactMaterialization.materialize(exactVariable, exactExpressionPolicy).success(),
           "exact materialization storage boundary was rejected");
     --exactMaterializationLimits.maxMaterializationBytes;
     DiscreteExpressionComponents belowMaterialization(1, exactMaterializationLimits);
-    const auto belowVariable = belowMaterialization.addExpression(DiscreteExpression::variable(0, 1));
+    const auto belowVariable =
+        belowMaterialization.addExpression(DiscreteExpression::variable(0, 1));
     check(belowMaterialization.materialize(belowVariable, exactExpressionPolicy).status ==
               DiscreteComponentMaterializationStatus::ResourceExhausted,
           "one-byte-short materialization storage boundary was accepted");
 
     DiscreteExpressionComponents retainedProbe(1);
-    const auto retainedProbeHandle = retainedProbe.addExpression(DiscreteExpression::variable(0, 1));
+    const auto retainedProbeHandle =
+        retainedProbe.addExpression(DiscreteExpression::variable(0, 1));
     (void)retainedProbeHandle;
     const auto exactRetainedBytes = retainedProbe.storageStats().retainedBytesEstimate;
     DiscreteComponentLimits exactRetained;
@@ -382,7 +401,8 @@ void invalidityAndLimits() {
     exactConstruction.maxConstructionWork = 12;
     DiscreteExpressionComponents exactlyConstructed(1, exactConstruction);
     const auto constructionX = exactlyConstructed.addExpression(DiscreteExpression::variable(0, 1));
-    const auto constructionOne = exactlyConstructed.addExpression(DiscreteExpression::integer(1, 1));
+    const auto constructionOne =
+        exactlyConstructed.addExpression(DiscreteExpression::integer(1, 1));
     (void)exactlyConstructed.binary(DiscreteKind::Add, constructionX, constructionOne);
     check(exactlyConstructed.storageStats().constructionWork == 12,
           "construction work counter does not match its logical-unit contract");

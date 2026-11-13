@@ -93,7 +93,7 @@ class DiscreteComponentHandle {
     std::weak_ptr<const Identity> identity_;
     std::size_t index_;
 
-  public:
+public:
     DiscreteComponentHandle() = delete;
 };
 
@@ -114,10 +114,11 @@ class DiscreteExpressionComponents {
         std::uint64_t maximumIntegerMagnitude = 0;
     };
 
-  public:
+public:
     explicit DiscreteExpressionComponents(std::size_t dimensions,
                                           DiscreteComponentLimits limits = {})
-        : dimensions_(dimensions), limits_(limits), identity_(std::make_shared<const DiscreteComponentHandle::Identity>()) {
+        : dimensions_(dimensions), limits_(limits),
+          identity_(std::make_shared<const DiscreteComponentHandle::Identity>()) {
         if (!limits_.maxComponents || !limits_.maxExpandedNodes || !limits_.maxExpandedDepth ||
             !limits_.maxRetainedBytes || !limits_.maxMaterializationBytes ||
             dimensions_ > limits_.maxVariables)
@@ -153,24 +154,25 @@ class DiscreteExpressionComponents {
         component.expansion.binders = expression.binders().size();
         component.expansion.iterationDepth = expression.iterationDepth();
         component.expansion.componentOccurrences = 1;
-        component.retainedBytesEstimate =
-            boundedAdd(sizeof(Component),
-                       boundedMultiply(expression.nodeCount(), DiscreteExpression::storageBytesPerNode(),
-                                       "component storage estimate overflow"),
-                       "component storage estimate overflow");
+        component.retainedBytesEstimate = boundedAdd(
+            sizeof(Component),
+            boundedMultiply(expression.nodeCount(), DiscreteExpression::storageBytesPerNode(),
+                            "component storage estimate overflow"),
+            "component storage estimate overflow");
         checkAdmission(component);
         const auto copyWork = boundedAdd(
-            boundedAdd(boundedMultiply(expression.nodeCount(), 2,
-                                       "component construction work overflow"),
-                       expression.binders().size(), "component construction work overflow"),
+            boundedAdd(
+                boundedMultiply(expression.nodeCount(), 2, "component construction work overflow"),
+                expression.binders().size(), "component construction work overflow"),
             1, "component construction work overflow");
-        checkConstructionWork(boundedAdd(expression.nodeCount(), copyWork,
-                                         "component construction work overflow"));
+        checkConstructionWork(
+            boundedAdd(expression.nodeCount(), copyWork, "component construction work overflow"));
         for (const auto& node : expression.nodes()) {
             ++constructionWork_;
             if (node.kind() == DiscreteKind::Integer)
-                component.maximumIntegerMagnitude = std::max(
-                    component.maximumIntegerMagnitude, genetik_discrete_detail::magnitude(node.integer()));
+                component.maximumIntegerMagnitude =
+                    std::max(component.maximumIntegerMagnitude,
+                             genetik_discrete_detail::magnitude(node.integer()));
             if (node.kind() == DiscreteKind::Iterator) {
                 ++component.expansion.binderReferences;
                 ++component.expansion.iteratorReferences;
@@ -178,13 +180,14 @@ class DiscreteExpressionComponents {
                 ++component.expansion.binderReferences;
             }
         }
-        component.expansion.binderLookupComparisonsUpperBound = boundedMultiply(
-            component.expansion.binderReferences, component.expansion.binders,
-            "component binder comparison bound overflow");
+        component.expansion.binderLookupComparisonsUpperBound =
+            boundedMultiply(component.expansion.binderReferences, component.expansion.binders,
+                            "component binder comparison bound overflow");
         computeMaterializationWorkBound(component.expansion);
         checkAdmission(component);
         checkExpansionAdmission(component.expansion);
-        constructionWork_ = boundedAdd(constructionWork_, copyWork, "component work counter overflow");
+        constructionWork_ =
+            boundedAdd(constructionWork_, copyWork, "component work counter overflow");
         component.expression = expression;
         publish(std::move(component));
         return handle(components_.size() - 1);
@@ -221,8 +224,9 @@ class DiscreteExpressionComponents {
         return components_.at(index(component)).expansion;
     }
 
-    DiscreteComponentMaterialization materialize(
-        DiscreteComponentHandle root, DiscreteExpressionLimits expressionLimits = {}) const {
+    DiscreteComponentMaterialization
+    materialize(DiscreteComponentHandle root,
+                DiscreteExpressionLimits expressionLimits = {}) const {
         DiscreteComponentMaterialization result;
         const auto rootIndex = index(root);
         const auto& rootComponent = components_[rootIndex];
@@ -232,24 +236,25 @@ class DiscreteExpressionComponents {
         // zero-constant policy must accept a variable-only materialization.
         genetik_discrete_detail::validateLimits(expressionLimits);
         if (dimensions_ > expressionLimits.maxVariables)
-            throw std::invalid_argument("component materialization schema exceeds expression variables");
+            throw std::invalid_argument(
+                "component materialization schema exceeds expression variables");
         const auto& expansion = rootComponent.expansion;
         std::size_t expressionBytes = 0;
         std::size_t requiredBytes = 0;
         try {
-            expressionBytes = boundedMultiply(expansion.nodes,
-                                              DiscreteExpression::storageBytesPerNode(),
-                                              "component expression storage overflow");
-            requiredBytes = boundedAdd(
-                expressionBytes,
-                boundedMultiply(expansion.nodes, sizeof(DiscreteNode),
-                                "component output staging estimate overflow"),
-                "component materialization storage overflow");
-            requiredBytes = boundedAdd(
-                requiredBytes,
-                boundedMultiply(expansion.depth, sizeof(std::size_t) * 3,
-                                "component traversal stack estimate overflow"),
-                "component materialization storage overflow");
+            expressionBytes =
+                boundedMultiply(expansion.nodes, DiscreteExpression::storageBytesPerNode(),
+                                "component expression storage overflow");
+            requiredBytes =
+                boundedAdd(expressionBytes,
+                           boundedMultiply(expansion.nodes, sizeof(DiscreteNode),
+                                           "component output staging estimate overflow"),
+                           "component materialization storage overflow");
+            requiredBytes =
+                boundedAdd(requiredBytes,
+                           boundedMultiply(expansion.depth, sizeof(std::size_t) * 3,
+                                           "component traversal stack estimate overflow"),
+                           "component materialization storage overflow");
             requiredBytes = boundedAdd(
                 requiredBytes,
                 boundedMultiply(expansion.binders, sizeof(std::pair<std::size_t, std::size_t>),
@@ -260,11 +265,13 @@ class DiscreteExpressionComponents {
             result.diagnostic = error.what();
             return result;
         }
-        if (expansion.nodes > limits_.maxExpandedNodes || expansion.depth > limits_.maxExpandedDepth ||
+        if (expansion.nodes > limits_.maxExpandedNodes ||
+            expansion.depth > limits_.maxExpandedDepth ||
             expansion.constants > limits_.maxExpandedConstants ||
             expansion.binders > limits_.maxExpandedBinders ||
             expansion.iterationDepth > expressionLimits.maxIterationDepth ||
-            expansion.nodes > expressionLimits.maxNodes || expansion.depth > expressionLimits.maxDepth ||
+            expansion.nodes > expressionLimits.maxNodes ||
+            expansion.depth > expressionLimits.maxDepth ||
             expansion.constants > expressionLimits.maxConstants ||
             expansion.binders > expressionLimits.maxBinders ||
             rootComponent.maximumIntegerMagnitude > expressionLimits.maxConstantMagnitude ||
@@ -309,7 +316,8 @@ class DiscreteExpressionComponents {
                 for (const auto& node : expression.nodes()) {
                     if (node.kind() == DiscreteKind::Iterator || discreteIteration(node.kind())) {
                         auto mapping = remapping.end();
-                        for (auto candidate = remapping.begin(); candidate != remapping.end(); ++candidate) {
+                        for (auto candidate = remapping.begin(); candidate != remapping.end();
+                             ++candidate) {
                             ++result.work.binderLookupComparisons;
                             if (candidate->first == node.binder()) {
                                 mapping = candidate;
@@ -319,9 +327,10 @@ class DiscreteExpressionComponents {
                         if (mapping == remapping.end())
                             throw std::logic_error("component binder map is inconsistent");
                         ++result.work.binderLookups;
-                        nodes.push_back(node.kind() == DiscreteKind::Iterator
-                                            ? DiscreteNode::iterator(mapping->second)
-                                            : DiscreteNode::iteration(node.kind(), mapping->second));
+                        nodes.push_back(
+                            node.kind() == DiscreteKind::Iterator
+                                ? DiscreteNode::iterator(mapping->second)
+                                : DiscreteNode::iteration(node.kind(), mapping->second));
                     } else {
                         nodes.push_back(node);
                     }
@@ -355,17 +364,19 @@ class DiscreteExpressionComponents {
             boundedAdd(result.work.nodesEmitted, result.work.componentOccurrencesExpanded,
                        "component work counter overflow"),
             result.work.componentEdgesExpanded, "component work counter overflow");
-        result.work.totalUnits = boundedAdd(
-            result.work.totalUnits, result.work.binderMappings, "component work counter overflow");
-        result.work.totalUnits = boundedAdd(
-            result.work.totalUnits, result.work.binderLookupComparisons,
-            "component work counter overflow");
-        result.work.expressionValidationWorkUpperBound = expansion.expressionValidationWorkUpperBound;
-        result.work.totalWorkUpperBound = boundedAdd(
-            result.work.totalUnits, result.work.expressionValidationWorkUpperBound,
-            "component total work bound overflow");
+        result.work.totalUnits = boundedAdd(result.work.totalUnits, result.work.binderMappings,
+                                            "component work counter overflow");
+        result.work.totalUnits =
+            boundedAdd(result.work.totalUnits, result.work.binderLookupComparisons,
+                       "component work counter overflow");
+        result.work.expressionValidationWorkUpperBound =
+            expansion.expressionValidationWorkUpperBound;
+        result.work.totalWorkUpperBound =
+            boundedAdd(result.work.totalUnits, result.work.expressionValidationWorkUpperBound,
+                       "component total work bound overflow");
         if (result.work.totalWorkUpperBound > expansion.materializationWorkUpperBound)
-            throw std::logic_error("component materialization work exceeded its admitted upper bound");
+            throw std::logic_error(
+                "component materialization work exceeded its admitted upper bound");
         if (result.work.totalWorkUpperBound > limits_.maxMaterializationWork) {
             result.status = DiscreteComponentMaterializationStatus::ResourceExhausted;
             result.diagnostic = "component materialization work exhausted";
@@ -376,8 +387,7 @@ class DiscreteExpressionComponents {
         return result;
     }
 
-    std::string toString(DiscreteComponentHandle root,
-                         std::size_t maxBytes = 1024 * 1024) const {
+    std::string toString(DiscreteComponentHandle root, std::size_t maxBytes = 1024 * 1024) const {
         const auto rootIndex = index(root);
         std::string output = "components-v1[";
         const auto append = [&](std::string_view text) {
@@ -412,7 +422,7 @@ class DiscreteExpressionComponents {
         return output;
     }
 
-  private:
+private:
     static std::size_t boundedAdd(std::size_t left, std::size_t right, const char* error) {
         if (right > std::numeric_limits<std::size_t>::max() - left)
             throw std::length_error(error);
@@ -454,8 +464,8 @@ class DiscreteExpressionComponents {
         for (std::size_t j = 0; j < arity; ++j)
             childIndices[j] = index(children[j]);
         checkConstructionWork(constructionCost);
-        constructionWork_ = boundedAdd(constructionWork_, arity,
-                                       "component construction work counter overflow");
+        constructionWork_ =
+            boundedAdd(constructionWork_, arity, "component construction work counter overflow");
         Component component;
         component.kind = kind;
         component.arity = arity;
@@ -475,45 +485,46 @@ class DiscreteExpressionComponents {
             inputTypes[j] = source.type;
             component.maximumIntegerMagnitude =
                 std::max(component.maximumIntegerMagnitude, source.maximumIntegerMagnitude);
-            component.expansion.nodes = boundedAdd(component.expansion.nodes, source.expansion.nodes,
-                                                   "component expanded-node count overflow");
-            component.expansion.depth = std::max(
-                component.expansion.depth,
-                boundedAdd(source.expansion.depth, 1, "component depth overflow"));
-            component.expansion.constants = boundedAdd(component.expansion.constants,
-                                                       source.expansion.constants,
-                                                       "component constant count overflow");
-            component.expansion.binders = boundedAdd(component.expansion.binders,
-                                                     source.expansion.binders,
-                                                     "component binder count overflow");
+            component.expansion.nodes =
+                boundedAdd(component.expansion.nodes, source.expansion.nodes,
+                           "component expanded-node count overflow");
+            component.expansion.depth =
+                std::max(component.expansion.depth,
+                         boundedAdd(source.expansion.depth, 1, "component depth overflow"));
+            component.expansion.constants =
+                boundedAdd(component.expansion.constants, source.expansion.constants,
+                           "component constant count overflow");
+            component.expansion.binders =
+                boundedAdd(component.expansion.binders, source.expansion.binders,
+                           "component binder count overflow");
             component.expansion.iterationDepth =
                 std::max(component.expansion.iterationDepth, source.expansion.iterationDepth);
-            component.expansion.expandedEdges = boundedAdd(
-                component.expansion.expandedEdges, source.expansion.expandedEdges,
-                "component expanded-edge count overflow");
-            component.expansion.binderReferences = boundedAdd(
-                component.expansion.binderReferences, source.expansion.binderReferences,
-                "component binder reference count overflow");
+            component.expansion.expandedEdges =
+                boundedAdd(component.expansion.expandedEdges, source.expansion.expandedEdges,
+                           "component expanded-edge count overflow");
+            component.expansion.binderReferences =
+                boundedAdd(component.expansion.binderReferences, source.expansion.binderReferences,
+                           "component binder reference count overflow");
             component.expansion.iteratorReferences = boundedAdd(
                 component.expansion.iteratorReferences, source.expansion.iteratorReferences,
                 "component iterator reference count overflow");
-            component.expansion.binderLookupComparisonsUpperBound = boundedAdd(
-                component.expansion.binderLookupComparisonsUpperBound,
-                source.expansion.binderLookupComparisonsUpperBound,
-                "component binder comparison bound overflow");
+            component.expansion.binderLookupComparisonsUpperBound =
+                boundedAdd(component.expansion.binderLookupComparisonsUpperBound,
+                           source.expansion.binderLookupComparisonsUpperBound,
+                           "component binder comparison bound overflow");
             component.expansion.componentOccurrences = boundedAdd(
                 component.expansion.componentOccurrences, source.expansion.componentOccurrences,
                 "component occurrence count overflow");
         }
-        constructionWork_ = boundedAdd(constructionWork_, 1,
-                                       "component construction work counter overflow");
+        constructionWork_ =
+            boundedAdd(constructionWork_, 1, "component construction work counter overflow");
         component.type = resultType(kind, std::span<const DiscreteType>(inputTypes.data(), arity));
         component.retainedBytesEstimate = sizeof(Component);
         computeMaterializationWorkBound(component.expansion);
         checkAdmission(component);
         checkExpansionAdmission(component.expansion);
-        constructionWork_ = boundedAdd(constructionWork_, 1,
-                                       "component construction work counter overflow");
+        constructionWork_ =
+            boundedAdd(constructionWork_, 1, "component construction work counter overflow");
         publish(std::move(component));
         return handle(components_.size() - 1);
     }
@@ -547,7 +558,8 @@ class DiscreteExpressionComponents {
     }
 
     void checkExpansionAdmission(const DiscreteComponentExpansionStats& expansion) const {
-        if (expansion.nodes > limits_.maxExpandedNodes || expansion.depth > limits_.maxExpandedDepth ||
+        if (expansion.nodes > limits_.maxExpandedNodes ||
+            expansion.depth > limits_.maxExpandedDepth ||
             expansion.constants > limits_.maxExpandedConstants ||
             expansion.binders > limits_.maxExpandedBinders ||
             expansion.materializationWorkUpperBound > limits_.maxMaterializationWork)
@@ -569,18 +581,17 @@ class DiscreteExpressionComponents {
         // performs a scope walk with at most one node and one edge event per
         // postfix token. Binder declaration and iterator-scope searches are
         // quadratic/linear respectively, so charge their conservative bounds too.
-        auto validation = boundedMultiply(expansion.nodes, 16,
-                                         "component validation work overflow");
+        auto validation =
+            boundedMultiply(expansion.nodes, 16, "component validation work overflow");
         validation = boundedAdd(
             validation,
             boundedMultiply(boundedMultiply(expansion.binders, expansion.binders,
                                             "component binder validation bound overflow"),
                             2, "component binder validation bound overflow"),
             "component validation work overflow");
-        validation = boundedAdd(
-            validation,
-            boundedMultiply(expansion.iteratorReferences, expansion.binders,
-                            "component scope lookup bound overflow"),
+        validation = boundedAdd(validation,
+                                boundedMultiply(expansion.iteratorReferences, expansion.binders,
+                                                "component scope lookup bound overflow"),
                                 "component validation work overflow");
         expansion.expressionValidationWorkUpperBound = validation;
 
@@ -589,12 +600,12 @@ class DiscreteExpressionComponents {
                                   "component materialization work overflow");
         materializer = boundedAdd(materializer, expansion.expandedEdges,
                                   "component materialization work overflow");
-        materializer = boundedAdd(materializer, expansion.binders,
-                                  "component materialization work overflow");
+        materializer =
+            boundedAdd(materializer, expansion.binders, "component materialization work overflow");
         materializer = boundedAdd(materializer, expansion.binderLookupComparisonsUpperBound,
                                   "component materialization work overflow");
-        expansion.materializationWorkUpperBound = boundedAdd(
-            materializer, validation, "component total work bound overflow");
+        expansion.materializationWorkUpperBound =
+            boundedAdd(materializer, validation, "component total work bound overflow");
     }
 
     std::size_t dimensions_;

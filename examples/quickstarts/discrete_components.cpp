@@ -28,15 +28,15 @@ int main() {
                   << " materialization work=" << model.work.totalUnits << '\n';
         std::cout << "Ordinary expression: " << model.expression->toString() << '\n';
 
-        const std::array<std::pair<std::int64_t, std::int64_t>, 4> cases{{
-            {-3, 8}, {-1, 6}, {0, 0}, {7, 2}}};
+        const std::array<std::pair<std::int64_t, std::int64_t>, 4> cases{
+            {{-3, 8}, {-1, 6}, {0, 0}, {7, 2}}};
         for (const auto& [input, expected] : cases) {
             const auto result = model.expression->evaluate(std::array{input});
             if (!result.valid() || result.value->integer() != expected)
                 throw std::runtime_error("model disagrees with the independent expected value");
             std::cout << "x=" << input << " result=" << result.value->integer()
-                      << " visits=" << result.nodeVisits
-                      << " operations=" << result.operations << '\n';
+                      << " visits=" << result.nodeVisits << " operations=" << result.operations
+                      << '\n';
         }
 
         // This representation shares structure while being built. Materializing

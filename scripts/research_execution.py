@@ -433,10 +433,10 @@ def validate_bounded_program_continuation(
     prospective counters.
     """
     required = {"schema", "amendment_id", "authorization_artifact_id", "coordinator_entrypoint_artifact_id",
-                "preflight_coordinator_artifact_id", "historical_import",
+                "preflight_coordinator_artifact_id", "coordinator_supervisor_artifact_id", "historical_import",
                 "prospective_allowance", "coordinator_allowance", "overall_deadline_seconds",
                 "coordinator_phase_ids", "slots", "interactive_session"}
-    if not isinstance(amendment, dict) or set(amendment) != required or amendment.get("schema") != 1:
+    if not isinstance(amendment, dict) or set(amendment) != required or amendment.get("schema") != 2:
         raise GateError("bounded-program continuation amendment schema is incomplete")
     _safe_program_id(amendment["amendment_id"], "continuation amendment_id")
 
@@ -452,10 +452,14 @@ def validate_bounded_program_continuation(
                                                        "coordinator-entrypoint", "coordinator_entrypoint_artifact_id")
     preflight_coordinator_artifact = require_artifact(amendment["preflight_coordinator_artifact_id"],
                                                       "coordinator-entrypoint", "preflight_coordinator_artifact_id")
+    coordinator_supervisor_artifact = require_artifact(amendment["coordinator_supervisor_artifact_id"],
+                                                       "coordinator-entrypoint", "coordinator_supervisor_artifact_id")
     if Path(coordinator_entrypoint_artifact["path"]).resolve() != Path(__file__).resolve().with_name("execute_continuation_phase.py"):
         raise GateError("continuation coordinator entrypoint must pin execute_continuation_phase.py")
     if Path(preflight_coordinator_artifact["path"]).resolve() != Path(__file__).resolve().with_name("scientific_pipeline_preflight.py"):
         raise GateError("preflight coordinator entrypoint must pin scientific_pipeline_preflight.py")
+    if Path(coordinator_supervisor_artifact["path"]).resolve() != Path(__file__).resolve().with_name("coordinator_supervisor.py"):
+        raise GateError("coordinator supervisor artifact must pin coordinator_supervisor.py")
     history = validate_continuation_history(amendment["historical_import"])
     source_protocol_artifact = require_artifact(history["source_protocol_artifact_id"], "historical-protocol", "source_protocol_artifact_id")
     history_manifest_artifact = require_artifact(history["evidence_manifest_artifact_id"], "historical-evidence-manifest", "evidence_manifest_artifact_id")
@@ -575,6 +579,8 @@ def validate_bounded_program_continuation(
                                         "sha256": coordinator_entrypoint_artifact["sha256"]},
             "preflight_coordinator_entrypoint": {"path": preflight_coordinator_artifact["path"],
                                                    "sha256": preflight_coordinator_artifact["sha256"]},
+            "coordinator_supervisor_entrypoint": {"path": coordinator_supervisor_artifact["path"],
+                                                   "sha256": coordinator_supervisor_artifact["sha256"]},
             "history_artifact_sha256": {
                 "source_protocol": source_protocol_artifact["sha256"],
                 "evidence_manifest": history_manifest_artifact["sha256"],
@@ -584,6 +590,8 @@ def validate_bounded_program_continuation(
 
 def continuation_next_action(plan: dict, events: list[dict]) -> dict:
     """Pure state transition used by run admission; no files or processes touched."""
+    if any(event.get("event") in {"admission_refused", "program_terminal"} for event in events):
+        return {"state": "terminal_failure", "next_run_id": None, "retire_run_ids": []}
     slots = plan["slots"]
     reserved = {event.get("run_id") for event in events if event.get("event") == "reserved"}
     completed = {event.get("run_id"): event for event in events if event.get("event") == "completed"}
@@ -670,8 +678,12 @@ def validate_continuation_events(plan: dict, events: list[dict]) -> dict:
     active_phase: dict | None = None
     seen_phases: set[str] = set()
     closed_phase_status: dict[str, str] = {}
+    closed_phase_category: dict[str, str | None] = {}
+    terminal_seen = False
     for event in events:
         kind = event.get("event")
+        if terminal_seen and kind != "program_terminal":
+            raise GateError("continuation ledger contains events after terminal refusal/failure")
         if kind == "coordinator_phase_started":
             if active_phase is not None:
                 raise GateError("coordinator phases may not overlap")
@@ -687,6 +699,8 @@ def validate_continuation_events(plan: dict, events: list[dict]) -> dict:
                     or event.get("protocol_sha256") != program_protocol_sha
                     or not isinstance(event.get("token"), str)
                     or type(event.get("pid")) is not int
+                    or type(event.get("pid_starttime_ticks")) is not int
+                    or event.get("pid_starttime_ticks") <= 0
                     or type(event.get("start_monotonic_ns")) is not int
                     or not isinstance(event.get("start_cpu_seconds"), (int, float))
                     or not math.isfinite(float(event["start_cpu_seconds"]))):
@@ -736,27 +750,124 @@ def validate_continuation_events(plan: dict, events: list[dict]) -> dict:
                 raise GateError("coordinator phase receipt lacks immutable evidence identity")
             _require_sha256(event["receipt_sha256"], "coordinator_phase.receipt_sha256")
             closed_phase_status[event["phase_id"]] = event["status"]
+            category = event.get("failure_category")
+            if event["status"] == "completed" and category is not None:
+                raise GateError("successful coordinator phase has a failure category")
+            if event["status"] == "failed" and category not in {
+                    "stage_failure", "qualification_failure", "coordinator_phase_failure"}:
+                raise GateError("failed coordinator phase lacks a valid failure category")
+            closed_phase_category[event["phase_id"]] = category
             active_phase = None
+        elif kind == "coordinator_worker_supervised":
+            matching = [prior for prior in prefix if prior.get("event") == "coordinator_phase"
+                        and prior.get("token") == event.get("token")]
+            if len(matching) != 1:
+                raise GateError("supervisor measurement does not bind exactly one closed phase receipt")
+            phase_event = matching[0]
+            if (event.get("phase_id") != phase_event.get("phase_id")
+                    or event.get("amendment_id") != amendment_id
+                    or event.get("status") not in {"verified", "failed"}
+                    or not isinstance(event.get("script_path"), str)
+                    or not isinstance(event.get("script_sha256"), str)):
+                raise GateError("coordinator supervisor measurement identity is malformed")
+            _require_sha256(event["script_sha256"], "coordinator_worker_supervised.script_sha256")
+            if event.get("status") == "verified":
+                for key in ("pid", "pid_starttime_ticks", "worker_self_peak_rss_bytes",
+                            "worker_self_vm_hwm_bytes", "wait4_ru_maxrss_including_waited_children_bytes"):
+                    if type(event.get(key)) is not int or event[key] <= 0:
+                        raise GateError(f"coordinator supervisor measurement lacks {key}")
+                if (event["pid"] != phase_event.get("pid")
+                        or event["worker_self_peak_rss_bytes"] != phase_event.get("coordinator_peak_rss_bytes")
+                        or event["worker_self_vm_hwm_bytes"] != phase_event.get("coordinator_proc_vm_hwm_bytes")
+                        or event.get("worker_self_ru_maxrss_diagnostic_bytes") != phase_event.get("coordinator_rusage_self_ru_maxrss_diagnostic_bytes")
+                        or event.get("worker_self_vm_rss_bytes") != phase_event.get("coordinator_proc_vm_rss_bytes")):
+                    raise GateError("supervisor and coordinator worker self-memory measurements disagree")
+                for key in ("supervisor_vm_hwm_bytes", "supervisor_vm_rss_bytes",
+                            "supervisor_memory_limit_bytes"):
+                    if type(event.get(key)) is not int or event[key] <= 0:
+                        raise GateError(f"coordinator supervisor measurement lacks {key}")
+                diagnostic = event.get("supervisor_ru_maxrss_diagnostic_bytes")
+                if diagnostic is not None and (type(diagnostic) is not int or diagnostic <= 0):
+                    raise GateError("coordinator supervisor ru_maxrss diagnostic is malformed")
+                if (event["supervisor_memory_limit_bytes"] != CONTINUATION_MEMORY_BYTES
+                        or event["supervisor_vm_hwm_bytes"] > CONTINUATION_MEMORY_BYTES
+                        or event["supervisor_vm_rss_bytes"] > CONTINUATION_MEMORY_BYTES):
+                    raise GateError("coordinator supervisor process memory cap/measurements are invalid")
+                for key in ("supervisor_cpu_seconds", "supervisor_exclusive_wall_seconds"):
+                    value = event.get(key)
+                    if (isinstance(value, bool) or not isinstance(value, (int, float))
+                            or not math.isfinite(value) or value < 0):
+                        raise GateError(f"coordinator supervisor lacks valid {key}")
+            else:
+                if event.get("failure_category") != "coordinator_phase_failure" or not event.get("reason"):
+                    raise GateError("failed supervisor measurement lacks terminal failure detail")
+        elif kind == "admission_refused":
+            if active_phase is not None or pending is not None:
+                raise GateError("admission refusal cannot be recorded inside an open coordinator phase")
+            action = continuation_next_action(plan, prefix)
+            if (event.get("phase_id") != _phase_id_for_state(plan, action["state"])
+                    or event.get("amendment_id") != amendment_id
+                    or event.get("failure_category") != "admission_refused"
+                    or not isinstance(event.get("reason"), str) or not event["reason"]):
+                raise GateError("coordinator admission refusal is malformed or out of phase")
+            terminal_seen = True
+        elif kind == "coordinator_admission_attempt_refused":
+            requester_pid = event.get("requester_pid")
+            requester_start = event.get("requester_pid_starttime_ticks")
+            if (active_phase is None
+                    or event.get("active_phase_token") != active_phase.get("token")
+                    or event.get("amendment_id") != amendment_id
+                    or event.get("protocol_sha256") != active_phase.get("protocol_sha256")
+                    or event.get("requested_phase_id") not in plan.get("coordinator_phase_ids", [])
+                    or type(requester_pid) is not int or requester_pid <= 0
+                    or type(requester_start) is not int or requester_start <= 0
+                    or not isinstance(event.get("reason"), str) or not event["reason"]):
+                raise GateError("concurrent coordinator admission refusal is malformed or owns the active phase")
         elif kind == "preflight_rejected":
             action = continuation_next_action(plan, prefix)
             if (action["state"] not in {"primary_qualification_required", "primary_rejection_required"}
-                    or closed_phase_status.get("primary_preflight") != "failed"):
+                    or closed_phase_status.get("primary_preflight") != "failed"
+                    or closed_phase_category.get("primary_preflight") not in {"stage_failure", "qualification_failure"}
+                    or not any(event.get("event") == "coordinator_worker_supervised"
+                               and event.get("phase_id") == "primary_preflight"
+                               and event.get("status") == "verified" for event in prefix)):
                 raise GateError("primary preflight rejection was recorded outside its qualification boundary")
             if event.get("amendment_id") != amendment_id or not event.get("reason"):
                 raise GateError("primary rejection lacks amendment identity or reason")
+            if event.get("failure_category") != closed_phase_category.get("primary_preflight"):
+                raise GateError("primary rejection category differs from immutable failed phase receipt")
         elif kind == "recovery_rejected":
             action = continuation_next_action(plan, prefix)
             if (action["state"] not in {"recovery_qualification_required", "recovery_rejection_required"}
-                    or closed_phase_status.get("recovery_preflight") != "failed"):
+                    or closed_phase_status.get("recovery_preflight") != "failed"
+                    or not any(event.get("event") == "coordinator_worker_supervised"
+                               and event.get("phase_id") == "recovery_preflight"
+                               and event.get("status") == "verified" for event in prefix)):
                 raise GateError("recovery rejection was recorded outside its qualification boundary")
-            if event.get("amendment_id") != amendment_id or not event.get("reason"):
+            if (event.get("amendment_id") != amendment_id or not event.get("reason")
+                    or event.get("failure_category") not in {
+                        "stage_failure", "qualification_failure", "coordinator_phase_failure"}):
                 raise GateError("recovery rejection lacks amendment identity or reason")
+            if event.get("failure_category") != closed_phase_category.get("recovery_preflight"):
+                raise GateError("recovery rejection category differs from immutable failed phase receipt")
         elif kind == "qualified":
             action = continuation_next_action(plan, prefix)
             path = event.get("qualification_path")
             expected = "primary_qualification_required" if path == "primary" else "recovery_qualification_required"
+            phase_id = "primary_preflight" if path == "primary" else "recovery_preflight"
+            phase_event = next((row for row in reversed(prefix)
+                                if row.get("event") == "coordinator_phase" and row.get("phase_id") == phase_id), None)
+            prepared = [row for row in prefix if row.get("event") == "qualification_prepared"
+                        and row.get("qualification_path") == path]
             if (action["state"] != expected or event.get("amendment_id") != amendment_id
-                    or closed_phase_status.get("primary_preflight" if path == "primary" else "recovery_preflight") != "completed"):
+                    or closed_phase_status.get(phase_id) != "completed"
+                    or phase_event is None
+                    or not any(row.get("event") == "coordinator_worker_supervised"
+                               and row.get("token") == phase_event.get("token")
+                               and row.get("status") == "verified" for row in prefix)
+                    or len(prepared) != 1
+                    or event.get("preflight_evidence_sha256") != prepared[0].get("evidence_sha256")
+                    or event.get("coordinator_phase_receipt_sha256") != phase_event.get("receipt_sha256")):
                 raise GateError("continuation qualification is inconsistent with its selected branch")
         elif kind == "recovery_retired":
             action = continuation_next_action(plan, prefix)
@@ -765,6 +876,12 @@ def validate_continuation_events(plan: dict, events: list[dict]) -> dict:
             if (event.get("amendment_id") != amendment_id or event.get("charged_cpu_seconds") != 0
                     or event.get("charged_wall_seconds") != 0 or "invocation_id" in event):
                 raise GateError("recovery retirement must be an immutable zero-charge non-invocation event")
+        elif kind == "program_terminal":
+            if any(previous.get("event") == "program_terminal" for previous in prefix):
+                raise GateError("continuation program has more than one terminal event")
+            if not isinstance(event.get("status"), str) or not event["status"]:
+                raise GateError("program terminal event lacks a status")
+            terminal_seen = True
         prefix.append(event)
     if pending is not None:
         raise GateError("continuation has an unresolved invocation")
@@ -1145,6 +1262,68 @@ def _self_peak_rss_bytes() -> int:
     return int(usage.ru_maxrss * 1024)
 
 
+def _proc_self_vm_hwm_bytes() -> int:
+    """Read this live process's Linux VmHWM in bytes, independently of wait4."""
+    try:
+        for line in Path("/proc/self/status").read_text(encoding="ascii").splitlines():
+            if line.startswith("VmHWM:"):
+                fields = line.split()
+                if len(fields) != 3 or fields[2] != "kB":
+                    break
+                value = int(fields[1]) * 1024
+                if value > 0:
+                    return value
+                break
+    except (OSError, ValueError):
+        pass
+    raise GateError("coordinator /proc VmHWM measurement unavailable")
+
+
+def _proc_self_vm_rss_bytes() -> int:
+    """Read this live process's current Linux VmRSS in bytes."""
+    try:
+        for line in Path("/proc/self/status").read_text(encoding="ascii").splitlines():
+            if line.startswith("VmRSS:"):
+                fields = line.split()
+                if len(fields) != 3 or fields[2] != "kB":
+                    break
+                value = int(fields[1]) * 1024
+                if value > 0:
+                    return value
+                break
+    except (OSError, ValueError):
+        pass
+    raise GateError("coordinator /proc VmRSS measurement unavailable")
+
+
+def _coordinator_memory_measurements() -> tuple[int | None, int, int]:
+    """Return inherited-prone RUSAGE diagnostic, authoritative VmHWM, and current VmRSS."""
+    try:
+        usage_peak = _self_peak_rss_bytes()
+    except GateError:
+        usage_peak = None
+    proc_peak = _proc_self_vm_hwm_bytes()
+    proc_current = _proc_self_vm_rss_bytes()
+    return usage_peak, proc_peak, proc_current
+
+
+def _require_coordinator_vm_hwm_within_limit(vm_hwm_bytes: int) -> None:
+    """Apply the resident-peak policy to post-exec VmHWM, never inherited ru_maxrss."""
+    if type(vm_hwm_bytes) is not int or vm_hwm_bytes <= 0:
+        raise GateError("coordinator /proc VmHWM measurement unavailable")
+    if vm_hwm_bytes > CONTINUATION_MEMORY_BYTES:
+        raise GateError("coordinator has exceeded its 512 MiB observed VmHWM cap")
+
+
+def _process_starttime_ticks(pid: int) -> int:
+    try:
+        text = Path(f"/proc/{pid}/stat").read_text(encoding="ascii")
+        fields_after_comm = text[text.rfind(")") + 2:].split()
+        return int(fields_after_comm[19])
+    except (OSError, ValueError, IndexError) as error:
+        raise GateError("coordinator PID starttime measurement unavailable") from error
+
+
 def _enforce_coordinator_address_space(limit_bytes: int) -> None:
     if not hasattr(resource, "RLIMIT_AS"):
         raise GateError("coordinator address-space enforcement is unavailable")
@@ -1210,6 +1389,276 @@ def _append_continuation_event(directory: Path, state: dict, payload: dict) -> d
     return {**payload, "previous_hash": "", "event_sha256": event_hash}
 
 
+def _pending_coordinator_supervision(events: list[dict]) -> list[str]:
+    closed = {event.get("token") for event in events if event.get("event") == "coordinator_phase"}
+    supervised = {event.get("token") for event in events if event.get("event") == "coordinator_worker_supervised"}
+    return sorted(token for token in closed - supervised if isinstance(token, str))
+
+
+def record_supervised_coordinator_worker(directory: Path, phase_id: str,
+                                        measurement: dict | None,
+                                        script_path: Path) -> dict:
+    """Bind parent wait4/proc measurements to the worker's immutable phase receipt."""
+    _, config, protocol_sha = read_frozen_program(directory)
+    plan = config.get("continuation_plan")
+    if not isinstance(plan, dict):
+        raise GateError("coordinator worker measurement requires an amended protocol")
+    ledger = config["ledger_dir"]
+    lock_fd = os.open(ledger / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(lock_fd, "r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state = json.loads((ledger / "process-budget.json").read_text())
+        events = _verify_process_ledger(ledger, state, protocol_sha, plan)
+        scoped = [event for event in events if event.get("protocol_sha256") == protocol_sha]
+        phase_events = [event for event in scoped if event.get("event") == "coordinator_phase"
+                        and event.get("phase_id") == phase_id]
+        if not phase_events:
+            if state.get("terminal_status") is not None:
+                return {"status": "terminal_failure", "terminal_status": state["terminal_status"]}
+            active = state.get("active_coordinator_phase")
+            if isinstance(active, dict):
+                requester_pid = (measurement.get("pid") if isinstance(measurement, dict)
+                                 else os.getpid())
+                requester_start = (measurement.get("starttime_ticks") if isinstance(measurement, dict)
+                                   else _process_starttime_ticks(os.getpid()))
+                owns_process = (isinstance(measurement, dict)
+                                and requester_pid == active.get("pid")
+                                and requester_start == active.get("pid_starttime_ticks")
+                                and phase_id == active.get("phase_id"))
+                if owns_process:
+                    entrypoint = (plan.get("preflight_coordinator_entrypoint")
+                                  if phase_id.endswith("preflight") else plan.get("coordinator_entrypoint"))
+                    actual_path = script_path.resolve()
+                    actual_sha = sha256_file(actual_path)
+                    if (not isinstance(entrypoint, dict)
+                            or Path(entrypoint.get("path", "")).resolve() != actual_path
+                            or entrypoint.get("sha256") != actual_sha):
+                        _append_program_terminal(ledger, state, "coordinator_worker_identity_mismatch")
+                        _replace_process_budget(ledger, state)
+                        raise GateError("failed coordinator worker does not match the frozen entrypoint")
+                    failure = "coordinator worker exited without an immutable phase receipt"
+                    receipt = {
+                        "schema": 1, "protocol_sha256": protocol_sha,
+                        "amendment_id": plan["amendment_id"], "phase_id": active["phase_id"],
+                        "token": active["token"], "pid": active["pid"],
+                        "pid_starttime_ticks": active.get("pid_starttime_ticks"), "status": "failed",
+                        "measurement_method": "FRESH_WORKER_RUSAGE_SELF_AND_PROC_VM_HWM_RESIDUAL_WALL",
+                        "coordinator_cpu_seconds": None, "coordinator_exclusive_wall_seconds": None,
+                        "coordinator_peak_rss_bytes": None, "coordinator_proc_vm_hwm_bytes": None,
+                        "coordinator_rusage_self_ru_maxrss_diagnostic_bytes": None,
+                        "coordinator_proc_vm_rss_bytes": None,
+                        "coordinator_memory_scope": "single_fresh_worker_process",
+                        "memory_measurement_status": "unavailable",
+                        "failure_category": "coordinator_phase_failure", "reason": failure,
+                    }
+                    receipt_dir = ledger / "coordinator-phases"
+                    receipt_dir.mkdir(exist_ok=True)
+                    receipt_path = receipt_dir / f"{active['phase_id']}-{active['token']}.json"
+                    write_exclusive(receipt_path, canonical_json(receipt))
+                    _append_continuation_event(ledger, state, {
+                        "event": "coordinator_phase", "protocol_sha256": protocol_sha,
+                        "amendment_id": plan["amendment_id"], "phase_id": active["phase_id"],
+                        "token": active["token"], "status": "failed", "pid": active["pid"],
+                        "pid_starttime_ticks": active.get("pid_starttime_ticks"),
+                        "receipt_path": str(receipt_path.resolve()),
+                        "receipt_sha256": sha256_file(receipt_path),
+                        "coordinator_cpu_seconds": None, "coordinator_exclusive_wall_seconds": None,
+                        "coordinator_peak_rss_bytes": None, "coordinator_proc_vm_hwm_bytes": None,
+                        "coordinator_rusage_self_ru_maxrss_diagnostic_bytes": None,
+                        "coordinator_proc_vm_rss_bytes": None,
+                        "coordinator_memory_scope": "single_fresh_worker_process",
+                        "failure_category": "coordinator_phase_failure", "reason": failure,
+                    })
+                    entry_event = {
+                        "event": "coordinator_worker_supervised", "protocol_sha256": protocol_sha,
+                        "amendment_id": plan["amendment_id"], "phase_id": active["phase_id"],
+                        "token": active["token"], "script_path": str(actual_path),
+                        "script_sha256": actual_sha, "pid": requester_pid,
+                        "pid_starttime_ticks": requester_start, "status": "failed",
+                        "failure_category": "coordinator_phase_failure", "reason": failure,
+                    }
+                    _append_continuation_event(ledger, state, entry_event)
+                    state["active_coordinator_phase"] = None
+                    _append_program_terminal(ledger, state, "coordinator_worker_failed_without_phase_receipt")
+                    _replace_process_budget(ledger, state)
+                    return {"status": "terminal_failure", "failure_category": "coordinator_phase_failure"}
+                else:
+                    _append_continuation_event(ledger, state, {
+                        "event": "coordinator_admission_attempt_refused",
+                        "protocol_sha256": protocol_sha,
+                        "amendment_id": plan["amendment_id"],
+                        "active_phase_token": active["token"],
+                        "requested_phase_id": phase_id,
+                        "requester_pid": requester_pid,
+                        "requester_pid_starttime_ticks": requester_start,
+                        "reason": "supervised request has no exact ownership of the active coordinator phase",
+                    })
+                    _replace_process_budget(ledger, state)
+                    return {"status": "admission_attempt_refused", "active_phase_token": active["token"]}
+            try:
+                action = continuation_next_action(plan, scoped)
+                expected_phase = _phase_id_for_state(plan, action["state"])
+            except GateError:
+                expected_phase = phase_id
+            _append_continuation_event(ledger, state, {
+                "event": "admission_refused", "protocol_sha256": protocol_sha,
+                "amendment_id": plan["amendment_id"], "phase_id": expected_phase,
+                "requested_phase_id": phase_id, "failure_category": "admission_refused",
+                "reason": "coordinator worker exited without an immutable phase receipt",
+            })
+            _append_program_terminal(ledger, state, "coordinator_admission_refused")
+            state["active_coordinator_phase"] = None
+            _replace_process_budget(ledger, state)
+            return {"status": "terminal_failure", "failure_category": "coordinator_phase_failure"}
+        phase_event = phase_events[-1]
+        if any(event.get("event") == "coordinator_worker_supervised"
+               and event.get("token") == phase_event.get("token") for event in scoped):
+            raise GateError("coordinator worker measurement is already recorded")
+        receipt_path = Path(phase_event["receipt_path"])
+        receipt = json.loads(receipt_path.read_text())
+        entrypoint = (plan.get("preflight_coordinator_entrypoint") if phase_id.endswith("preflight")
+                      else plan.get("coordinator_entrypoint"))
+        actual_path = script_path.resolve()
+        actual_sha = sha256_file(actual_path)
+        if (not isinstance(entrypoint, dict) or Path(entrypoint.get("path", "")).resolve() != actual_path
+                or entrypoint.get("sha256") != actual_sha):
+            _append_program_terminal(ledger, state, "coordinator_worker_identity_mismatch")
+            _replace_process_budget(ledger, state)
+            raise GateError("supervised coordinator source path/hash differs from frozen entrypoint")
+        reason = None
+        if not isinstance(measurement, dict):
+            reason = "supervisor measurement unavailable"
+        else:
+            pid = measurement.get("pid")
+            start_ticks = measurement.get("starttime_ticks")
+            worker_rss = receipt.get("coordinator_peak_rss_bytes")
+            worker_hwm = receipt.get("coordinator_proc_vm_hwm_bytes")
+            sampled_hwm = measurement.get("worker_proc_vm_hwm_sampled_bytes")
+            waited_rss = measurement.get("wait4_ru_maxrss_including_waited_children_bytes")
+            if (pid != receipt.get("pid") or pid != measurement.get("pid")
+                    or start_ticks != receipt.get("coordinator_pid_starttime_ticks")
+                    or start_ticks != measurement.get("starttime_ticks")):
+                reason = "coordinator worker PID/starttime identity mismatch"
+            elif (type(worker_rss) is not int or type(worker_hwm) is not int
+                  or worker_rss <= 0 or worker_hwm <= 0 or worker_rss != worker_hwm):
+                reason = "worker self RSS/VmHWM receipt is unavailable or inconsistent"
+            elif sampled_hwm is not None and sampled_hwm > worker_hwm + max(1024 * 1024, int(os.sysconf("SC_PAGE_SIZE"))):
+                reason = "supervisor observed worker VmHWM above worker receipt"
+            elif type(waited_rss) is not int or waited_rss <= 0:
+                reason = "wait4 waited-process RSS observation is unavailable"
+            elif worker_rss > CONTINUATION_MEMORY_BYTES:
+                reason = "coordinator worker RSS cap exceeded"
+            elif (measurement.get("address_space_limit_bytes") != CONTINUATION_MEMORY_BYTES
+                  or type(measurement.get("supervisor_ru_maxrss_diagnostic_bytes")) is not int
+                  or type(measurement.get("supervisor_vm_hwm_bytes")) is not int
+                  or type(measurement.get("supervisor_vm_rss_bytes")) is not int
+                  or measurement["supervisor_ru_maxrss_diagnostic_bytes"] <= 0
+                  or measurement["supervisor_vm_hwm_bytes"] <= 0
+                  or measurement["supervisor_vm_rss_bytes"] <= 0
+                  or measurement["supervisor_vm_hwm_bytes"] > CONTINUATION_MEMORY_BYTES
+                  or measurement["supervisor_vm_rss_bytes"] > CONTINUATION_MEMORY_BYTES):
+                reason = "coordinator supervisor memory limit/measurement unavailable or exceeded"
+            elif (isinstance(measurement.get("supervisor_cpu_seconds"), bool)
+                  or not isinstance(measurement.get("supervisor_cpu_seconds"), (int, float))
+                  or not math.isfinite(measurement["supervisor_cpu_seconds"])
+                  or measurement["supervisor_cpu_seconds"] < 0
+                  or isinstance(measurement.get("supervisor_exclusive_wall_seconds"), bool)
+                  or not isinstance(measurement.get("supervisor_exclusive_wall_seconds"), (int, float))
+                  or not math.isfinite(measurement["supervisor_exclusive_wall_seconds"])
+                  or measurement["supervisor_exclusive_wall_seconds"] < 0):
+                reason = "coordinator supervisor CPU/wall measurement unavailable"
+            elif measurement.get("timed_out") or measurement.get("output_limit_exceeded"):
+                reason = "coordinator supervisor wall/output limit reached"
+            elif measurement.get("returncode") != 0 and phase_event.get("status") == "completed":
+                reason = "worker reported successful phase but process returned failure"
+        payload = {
+            "event": "coordinator_worker_supervised", "protocol_sha256": protocol_sha,
+            "amendment_id": plan["amendment_id"], "phase_id": phase_id,
+            "token": phase_event["token"], "script_path": str(actual_path),
+            "script_sha256": actual_sha,
+            "pid": measurement.get("pid") if isinstance(measurement, dict) else None,
+            "pid_starttime_ticks": measurement.get("starttime_ticks") if isinstance(measurement, dict) else None,
+            "worker_self_peak_rss_bytes": receipt.get("coordinator_peak_rss_bytes"),
+            "worker_self_vm_hwm_bytes": receipt.get("coordinator_proc_vm_hwm_bytes"),
+            "worker_self_ru_maxrss_diagnostic_bytes": receipt.get("coordinator_rusage_self_ru_maxrss_diagnostic_bytes"),
+            "worker_self_vm_rss_bytes": receipt.get("coordinator_proc_vm_rss_bytes"),
+            "supervisor_sampled_vm_hwm_bytes": measurement.get("worker_proc_vm_hwm_sampled_bytes") if isinstance(measurement, dict) else None,
+            "wait4_ru_maxrss_including_waited_children_bytes": measurement.get("wait4_ru_maxrss_including_waited_children_bytes") if isinstance(measurement, dict) else None,
+            "wait4_cpu_seconds_including_waited_children": measurement.get("cpu_seconds") if isinstance(measurement, dict) else None,
+            "supervisor_cpu_seconds": measurement.get("supervisor_cpu_seconds") if isinstance(measurement, dict) else None,
+            "supervisor_exclusive_wall_seconds": measurement.get("supervisor_exclusive_wall_seconds") if isinstance(measurement, dict) else None,
+            "supervisor_ru_maxrss_diagnostic_bytes": measurement.get("supervisor_ru_maxrss_diagnostic_bytes") if isinstance(measurement, dict) else None,
+            "supervisor_vm_hwm_bytes": measurement.get("supervisor_vm_hwm_bytes") if isinstance(measurement, dict) else None,
+            "supervisor_vm_rss_bytes": measurement.get("supervisor_vm_rss_bytes") if isinstance(measurement, dict) else None,
+            "supervisor_memory_limit_bytes": measurement.get("address_space_limit_bytes") if isinstance(measurement, dict) else None,
+            "status": "failed" if reason else "verified",
+            "failure_category": "coordinator_phase_failure" if reason else None,
+            "reason": reason,
+        }
+        if not reason and isinstance(measurement, dict):
+            projected_cpu = state["coordinator_cpu_seconds_charged"] + float(measurement["supervisor_cpu_seconds"])
+            projected_wall = state["coordinator_exclusive_wall_seconds_charged"] + float(measurement["supervisor_exclusive_wall_seconds"])
+            state["coordinator_cpu_seconds_charged"] = projected_cpu
+            state["coordinator_exclusive_wall_seconds_charged"] = projected_wall
+            if (projected_cpu > state["max_coordinator_cpu_seconds"]
+                    or projected_wall > state["max_coordinator_exclusive_wall_seconds"]):
+                reason = "coordinator supervisor overhead allowance exceeded"
+                payload["status"] = "failed"
+                payload["failure_category"] = "coordinator_phase_failure"
+                payload["reason"] = reason
+        _append_continuation_event(ledger, state, payload)
+        if reason:
+            _append_program_terminal(ledger, state, "coordinator_worker_measurement_failed")
+        elif phase_event.get("status") == "failed" and state.get("terminal_status") is None:
+            failure_category = phase_event.get("failure_category")
+            if phase_id == "primary_preflight" and failure_category in {"stage_failure", "qualification_failure"}:
+                _append_continuation_event(ledger, state, {
+                    "event": "preflight_rejected", "protocol_sha256": protocol_sha,
+                    "amendment_id": plan["amendment_id"], "failure_category": failure_category,
+                    "reason": phase_event.get("reason") or "primary preflight failed",
+                })
+            elif phase_id == "recovery_preflight":
+                _append_continuation_event(ledger, state, {
+                    "event": "recovery_rejected", "protocol_sha256": protocol_sha,
+                    "amendment_id": plan["amendment_id"],
+                    "failure_category": failure_category or "coordinator_phase_failure",
+                    "reason": phase_event.get("reason") or "recovery preflight failed",
+                })
+                _append_program_terminal(ledger, state, "recovery_preflight_failed")
+        elif phase_event.get("status") == "completed" and phase_id in {"primary_preflight", "recovery_preflight"}:
+            path = "primary" if phase_id == "primary_preflight" else "recovery"
+            prepared = [event for event in scoped if event.get("event") == "qualification_prepared"
+                        and event.get("qualification_path") == path
+                        and event.get("amendment_id") == plan["amendment_id"]]
+            phase_evidence_sha = receipt.get("evidence_sha256")
+            prepared_evidence_sha = prepared[0].get("evidence_sha256") if len(prepared) == 1 else None
+            if (len(prepared) != 1 or not isinstance(phase_evidence_sha, str)
+                    or not isinstance(prepared_evidence_sha, str)):
+                _append_program_terminal(ledger, state, "qualification_evidence_invalid_after_supervision")
+                _replace_process_budget(ledger, state)
+                raise GateError("worker qualification evidence was not bound to its supervised phase receipt")
+            _append_continuation_event(ledger, state, {
+                "event": "qualified", "protocol_sha256": protocol_sha,
+                "amendment_id": plan["amendment_id"], "qualification_path": path,
+                "preflight_evidence_sha256": prepared_evidence_sha,
+                "coordinator_phase_receipt_sha256": phase_event["receipt_sha256"],
+                "coordinator_phase_input_evidence_sha256": phase_evidence_sha,
+            })
+            state["qualification_status"] = "qualified"
+            if path == "primary":
+                for run_id in plan["slots"]["recovery_preflight"]:
+                    _append_continuation_event(ledger, state, {
+                        "event": "recovery_retired", "protocol_sha256": protocol_sha,
+                        "amendment_id": plan["amendment_id"], "run_id": run_id,
+                        "charged_cpu_seconds": 0, "charged_wall_seconds": 0,
+                        "reason": "primary_preflight_qualified_after_supervision",
+                    })
+        _replace_process_budget(ledger, state)
+        if reason:
+            raise GateError(reason)
+        return payload
+
+
 def _ensure_continuation_started(directory: Path, state: dict, plan: dict, protocol_sha: str,
                                 *, start_monotonic_ns: int | None = None) -> None:
     if state.get("overall_start_monotonic_ns") is not None:
@@ -1235,17 +1684,118 @@ def _phase_id_for_state(plan: dict, state_name: str) -> str:
         raise GateError(f"no coordinator phase may begin while continuation is {state_name}") from error
 
 
+def _record_coordinator_admission_failure(directory: Path, requested_phase: str,
+                                         reason: str,
+                                         worker_identity: dict | None = None) -> None:
+    """Persist any failed phase admission/worker start as terminal, never recovery."""
+    _, config, protocol_sha = read_frozen_program(directory)
+    plan = config.get("continuation_plan")
+    if not isinstance(plan, dict):
+        return
+    ledger = config["ledger_dir"]
+    lock_fd = os.open(ledger / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(lock_fd, "r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state = json.loads((ledger / "process-budget.json").read_text())
+        events = _verify_process_ledger(ledger, state, protocol_sha, plan)
+        if state.get("terminal_status") is not None:
+            return
+        scoped = [event for event in events if event.get("protocol_sha256") == protocol_sha]
+        starts = [event for event in scoped if event.get("event") == "coordinator_phase_started"]
+        closes = {event.get("token") for event in scoped if event.get("event") == "coordinator_phase"}
+        active = next((event for event in reversed(starts) if event.get("token") not in closes), None)
+        if active is not None:
+            owns_active = (isinstance(worker_identity, dict)
+                           and worker_identity.get("pid") == active.get("pid")
+                           and worker_identity.get("pid_starttime_ticks") == active.get("pid_starttime_ticks")
+                           and worker_identity.get("token") == active.get("token"))
+            if not owns_active:
+                _append_continuation_event(ledger, state, {
+                    "event": "coordinator_admission_attempt_refused",
+                    "protocol_sha256": protocol_sha,
+                    "amendment_id": plan["amendment_id"],
+                    "active_phase_token": active["token"],
+                    "requested_phase_id": requested_phase,
+                    "requester_pid": os.getpid(),
+                    "requester_pid_starttime_ticks": _process_starttime_ticks(os.getpid()),
+                    "reason": reason,
+                })
+                _replace_process_budget(ledger, state)
+                return
+            receipt = {
+                "schema": 1, "protocol_sha256": protocol_sha,
+                "amendment_id": plan["amendment_id"], "phase_id": active["phase_id"],
+                "token": active["token"], "pid": active["pid"],
+                "pid_starttime_ticks": active.get("pid_starttime_ticks"),
+                "status": "failed",
+                "measurement_method": "FRESH_WORKER_RUSAGE_SELF_AND_PROC_VM_HWM_RESIDUAL_WALL",
+                "coordinator_cpu_seconds": None, "coordinator_exclusive_wall_seconds": None,
+                "coordinator_peak_rss_bytes": None, "coordinator_proc_vm_hwm_bytes": None,
+                "coordinator_memory_scope": "single_fresh_worker_process",
+                "memory_measurement_status": "unavailable_after_worker_failure",
+                "failure_category": "coordinator_phase_failure", "reason": reason,
+            }
+            receipt_dir = ledger / "coordinator-phases"
+            receipt_dir.mkdir(exist_ok=True)
+            receipt_path = receipt_dir / f"{active['phase_id']}-{active['token']}.json"
+            write_exclusive(receipt_path, canonical_json(receipt))
+            _append_continuation_event(ledger, state, {
+                "event": "coordinator_phase", "protocol_sha256": protocol_sha,
+                "amendment_id": plan["amendment_id"], "phase_id": active["phase_id"],
+                "token": active["token"], "status": "failed",
+                "pid": active["pid"], "pid_starttime_ticks": active.get("pid_starttime_ticks"),
+                "receipt_path": str(receipt_path.resolve()),
+                "receipt_sha256": sha256_file(receipt_path),
+                "coordinator_cpu_seconds": None, "coordinator_exclusive_wall_seconds": None,
+                "coordinator_peak_rss_bytes": None, "coordinator_proc_vm_hwm_bytes": None,
+                "coordinator_memory_scope": "single_fresh_worker_process",
+                "failure_category": "coordinator_phase_failure", "reason": reason,
+            })
+        else:
+            try:
+                action = continuation_next_action(plan, scoped)
+                expected_phase = _phase_id_for_state(plan, action["state"])
+            except GateError:
+                expected_phase = requested_phase
+            _append_continuation_event(ledger, state, {
+                "event": "admission_refused", "protocol_sha256": protocol_sha,
+                "amendment_id": plan["amendment_id"], "phase_id": expected_phase,
+                "requested_phase_id": requested_phase,
+                "failure_category": "admission_refused", "reason": reason,
+            })
+        terminal = "coordinator_admission_refused" if active is None else "coordinator_worker_failed"
+        _append_program_terminal(ledger, state, terminal)
+        state["active_coordinator_phase"] = None
+        _replace_process_budget(ledger, state)
+
+
 def begin_coordinator_phase(directory: Path, phase_id: str) -> dict:
+    """Admit a phase or immutably terminalize an admission refusal."""
+    try:
+        return _begin_coordinator_phase(directory, phase_id)
+    except BaseException as error:
+        try:
+            _record_coordinator_admission_failure(
+                directory, phase_id, f"{type(error).__name__}: {error}")
+        except BaseException as record_error:
+            raise GateError(f"coordinator admission failed ({error}); refusal accounting failed ({record_error})") from error
+        raise
+
+
+def _begin_coordinator_phase(directory: Path, phase_id: str) -> dict:
     """Open a measured coordinator phase; callers must finish it exactly once."""
     phase_cpu_start = _self_cpu_seconds()
     phase_mono_start = time.monotonic_ns()
+    if (_COORDINATOR_ENTRY_BASELINE is not None
+            and _COORDINATOR_ENTRY_BASELINE[0] == os.getpid()):
+        _, phase_cpu_start, phase_mono_start = _COORDINATOR_ENTRY_BASELINE
     _, config, protocol_sha = read_frozen_program(directory)
     plan = config.get("continuation_plan")
     if plan is None or phase_id not in plan["coordinator_phase_ids"]:
         raise GateError("coordinator phase is not declared by this continuation")
     _enforce_coordinator_address_space(CONTINUATION_MEMORY_BYTES)
-    if _self_peak_rss_bytes() > CONTINUATION_MEMORY_BYTES:
-        raise GateError("coordinator has already exceeded its 512 MiB memory qualification cap")
+    start_ru_maxrss, start_vm_hwm, start_vm_rss = _coordinator_memory_measurements()
+    _require_coordinator_vm_hwm_within_limit(start_vm_hwm)
     ledger = config["ledger_dir"]
     lock_fd = os.open(ledger / "process-budget.lock", os.O_CREAT | os.O_RDWR, 0o600)
     with os.fdopen(lock_fd, "r+b") as lock:
@@ -1254,6 +1804,8 @@ def begin_coordinator_phase(directory: Path, phase_id: str) -> dict:
         state = json.loads(state_path.read_text())
         events = _verify_process_ledger(ledger, state, protocol_sha, plan)
         pevents = [event for event in events if event.get("protocol_sha256") == protocol_sha]
+        if _pending_coordinator_supervision(pevents):
+            raise GateError("prior coordinator worker is awaiting parent resource measurement")
         if state.get("terminal_status") is not None or state.get("active_coordinator_phase") is not None:
             raise GateError("continuation is terminal or already has an open coordinator phase")
         action = validate_continuation_events(plan, pevents)
@@ -1267,14 +1819,20 @@ def begin_coordinator_phase(directory: Path, phase_id: str) -> dict:
             _append_program_terminal(ledger, state, "overall_wall_deadline")
             raise GateError("continuation overall hard wall deadline expired")
         token = uuid.uuid4().hex
+        start_ru_maxrss, start_vm_hwm, start_vm_rss = _coordinator_memory_measurements()
+        _require_coordinator_vm_hwm_within_limit(start_vm_hwm)
         start = {"event": "coordinator_phase_started", "protocol_sha256": protocol_sha,
                  "amendment_id": plan["amendment_id"], "phase_id": phase_id,
                  "token": token, "pid": os.getpid(), "boot_id": _kernel_boot_id(),
                  "start_monotonic_ns": now_ns, "start_cpu_seconds": phase_cpu_start,
-                 "start_peak_rss_bytes": _self_peak_rss_bytes()}
+                 "pid_starttime_ticks": _process_starttime_ticks(os.getpid()),
+                 "start_rusage_self_ru_maxrss_diagnostic_bytes": start_ru_maxrss,
+                 "start_vm_hwm_bytes": start_vm_hwm, "start_vm_rss_bytes": start_vm_rss,
+                 "memory_measurement_scope": "fresh_coordinator_worker_process"}
         _append_continuation_event(ledger, state, start)
         state["active_coordinator_phase"] = {
             "token": token, "phase_id": phase_id, "pid": os.getpid(),
+            "pid_starttime_ticks": start["pid_starttime_ticks"],
             "start_monotonic_ns": now_ns, "start_cpu_seconds": start["start_cpu_seconds"],
             "boot_id": start["boot_id"],
         }
@@ -1353,6 +1911,17 @@ def coordinator_phase_guard(directory: Path, token: str):
         signal.signal(signal.SIGALRM, old_real_handler)
         signal.signal(signal.SIGPROF, old_profile_handler)
         _ACTIVE_COORDINATOR_GUARD = None
+_COORDINATOR_ENTRY_BASELINE: tuple[int, float, int] | None = None
+
+
+def register_coordinator_entry_baseline(cpu_seconds: float, monotonic_ns: int) -> None:
+    """Include fresh-worker script startup/import work in its phase accounting."""
+    global _COORDINATOR_ENTRY_BASELINE
+    if (isinstance(cpu_seconds, bool) or not isinstance(cpu_seconds, (int, float))
+            or not math.isfinite(cpu_seconds) or cpu_seconds < 0
+            or type(monotonic_ns) is not int or monotonic_ns <= 0):
+        raise GateError("coordinator entry baseline is invalid")
+    _COORDINATOR_ENTRY_BASELINE = (os.getpid(), float(cpu_seconds), monotonic_ns)
 
 
 @contextmanager
@@ -1381,7 +1950,8 @@ def _pause_coordinator_exclusive_wall_timer():
 
 
 def finish_coordinator_phase(directory: Path, token: str, *, status: str,
-                            evidence_sha256: str | None = None, reason: str | None = None) -> dict:
+                            evidence_sha256: str | None = None, reason: str | None = None,
+                            failure_category: str | None = None) -> dict:
     """Close a phase and charge only residual coordinator CPU/wall, once."""
     if status not in {"completed", "failed"}:
         raise GateError("coordinator phase status must be completed or failed")
@@ -1401,12 +1971,14 @@ def finish_coordinator_phase(directory: Path, token: str, *, status: str,
         active = state.get("active_coordinator_phase")
         if not isinstance(active, dict) or active.get("token") != token:
             raise GateError("coordinator phase token is missing, stale, or mismatched")
-        if active.get("pid") != os.getpid() or active.get("boot_id") != _kernel_boot_id():
+        if (active.get("pid") != os.getpid() or active.get("boot_id") != _kernel_boot_id()
+                or active.get("pid_starttime_ticks") != _process_starttime_ticks(os.getpid())):
             _append_program_terminal(ledger, state, "coordinator_measurement_scope_changed")
             raise GateError("coordinator phase must finish in its originating process and kernel boot")
         now_ns = time.monotonic_ns()
         raw_cpu = _self_cpu_seconds() - float(active["start_cpu_seconds"])
         raw_wall = (now_ns - int(active["start_monotonic_ns"])) / 1_000_000_000.0
+        failure_category = None if status == "completed" else (failure_category or "stage_failure")
         phase = active["phase_id"]
         phase_runs = {"primary_preflight": set(plan["slots"]["primary_preflight"]),
                       "recovery_preflight": set(plan["slots"]["recovery_preflight"]),
@@ -1429,9 +2001,17 @@ def finish_coordinator_phase(directory: Path, token: str, *, status: str,
                              for value in (raw_cpu, raw_wall, phase_cpu, phase_wall))
         phase_cpu = max(0.0, phase_cpu) if measurement_ok else None
         phase_wall = max(0.0, phase_wall) if measurement_ok else None
-        peak_rss = _self_peak_rss_bytes()
-        if peak_rss > CONTINUATION_MEMORY_BYTES:
-            status, reason = "failed", "coordinator address-space peak exceeded 512 MiB"
+        try:
+            ru_maxrss_diagnostic, peak_vm_hwm, current_vm_rss = _coordinator_memory_measurements()
+            peak_rss = peak_vm_hwm
+            memory_measurement_ok = True
+        except GateError as error:
+            ru_maxrss_diagnostic = peak_rss = peak_vm_hwm = current_vm_rss = None
+            memory_measurement_ok = False
+            status, reason = "failed", str(error)
+        if memory_measurement_ok and peak_vm_hwm > CONTINUATION_MEMORY_BYTES:
+            status, reason = "failed", "coordinator worker observed VmHWM exceeded 512 MiB"
+            failure_category = "coordinator_phase_failure"
         if phase in {"primary_preflight", "recovery_preflight"}:
             expected_runs = (plan["slots"]["primary_preflight"] if phase == "primary_preflight"
                              else plan["slots"]["recovery_preflight"])
@@ -1439,22 +2019,36 @@ def finish_coordinator_phase(directory: Path, token: str, *, status: str,
                            and event.get("protocol_sha256") == protocol_sha
                            and event.get("qualification_path") == ("primary" if phase == "primary_preflight" else "recovery")
                            for event in events)
-            if status == "completed" and (run_ids != set(expected_runs) or not prepared):
+            if status == "completed" and run_ids != set(expected_runs):
+                status, reason = "failed", "preflight stage set was incomplete"
+                failure_category = "stage_failure"
+            elif status == "completed" and any(event.get("status") != "completed" for event in completed):
+                status, reason = "failed", "preflight stage failed"
+                failure_category = "stage_failure"
+            elif status == "completed" and not prepared:
                 status, reason = "failed", "preflight outputs did not satisfy the frozen qualification contract"
+                failure_category = "qualification_failure"
         if phase == "campaign_orchestration" and status == "completed" and run_ids != phase_runs:
             status, reason = "failed", "campaign stage outputs are incomplete"
+            failure_category = "stage_failure"
         if phase == "final_scoring_orchestration" and status == "completed" and run_ids != phase_runs:
             status, reason = "failed", "final scoring stage outputs are incomplete"
-        if not measurement_ok or phase_cpu is None or phase_wall is None:
+            failure_category = "stage_failure"
+        if not measurement_ok or phase_cpu is None or phase_wall is None or not memory_measurement_ok:
             status, reason = "failed", "coordinator phase resource measurement unavailable"
+            failure_category = "coordinator_phase_failure"
         coordinator_cpu_total = float(state["coordinator_cpu_seconds_charged"]) + (phase_cpu or 0.0)
         coordinator_wall_total = float(state["coordinator_exclusive_wall_seconds_charged"]) + (phase_wall or 0.0)
         if (coordinator_cpu_total > state["max_coordinator_cpu_seconds"]
                 or coordinator_wall_total > state["max_coordinator_exclusive_wall_seconds"]):
             status, reason = "failed", "coordinator phase allowance exceeded"
+            failure_category = "coordinator_phase_failure"
+        if status == "failed" and failure_category not in {
+                "stage_failure", "qualification_failure", "coordinator_phase_failure"}:
+            failure_category = "coordinator_phase_failure"
         receipt = {"schema": 1, "protocol_sha256": protocol_sha, "amendment_id": plan["amendment_id"],
                    "phase_id": phase, "token": token, "pid": os.getpid(), "status": status,
-                   "measurement_method": "RUSAGE_SELF_RESIDUAL_AND_EXCLUSIVE_WALL_RESIDUAL",
+                   "measurement_method": "FRESH_WORKER_RUSAGE_SELF_AND_PROC_VM_HWM_RESIDUAL_WALL",
                    "raw_cpu_seconds": raw_cpu if measurement_ok else None,
                    "worker_cpu_already_charged": prior_run_cpu,
                    "coordinator_cpu_seconds": phase_cpu, "raw_wall_seconds": raw_wall if measurement_ok else None,
@@ -1462,6 +2056,13 @@ def finish_coordinator_phase(directory: Path, token: str, *, status: str,
                    "per_run_coordinator_wall_already_charged": prior_run_wall,
                    "coordinator_exclusive_wall_seconds": phase_wall,
                    "coordinator_peak_rss_bytes": peak_rss,
+                   "coordinator_proc_vm_hwm_bytes": peak_vm_hwm,
+                   "coordinator_rusage_self_ru_maxrss_diagnostic_bytes": ru_maxrss_diagnostic,
+                   "coordinator_proc_vm_rss_bytes": current_vm_rss,
+                   "coordinator_memory_scope": "single_fresh_worker_process",
+                   "coordinator_pid_starttime_ticks": active.get("pid_starttime_ticks"),
+                   "memory_measurement_status": "measured" if memory_measurement_ok else "unavailable",
+                   "failure_category": failure_category,
                    "completed_run_ids": sorted(run_ids), "evidence_sha256": evidence_sha256,
                    "reason": reason, "measured_at_monotonic_ns": now_ns}
         receipt_dir = ledger / "coordinator-phases"
@@ -1470,46 +2071,30 @@ def finish_coordinator_phase(directory: Path, token: str, *, status: str,
         write_exclusive(receipt_path, canonical_json(receipt))
         phase_event = {"event": "coordinator_phase", "protocol_sha256": protocol_sha,
                        "amendment_id": plan["amendment_id"], "phase_id": phase, "token": token,
+                       "pid": os.getpid(), "pid_starttime_ticks": active.get("pid_starttime_ticks"),
                        "status": status, "receipt_path": str(receipt_path.resolve()),
                        "receipt_sha256": sha256_file(receipt_path),
                        "coordinator_cpu_seconds": phase_cpu,
                        "coordinator_exclusive_wall_seconds": phase_wall,
                        "coordinator_peak_rss_bytes": peak_rss,
+                       "coordinator_proc_vm_hwm_bytes": peak_vm_hwm,
+                       "coordinator_rusage_self_ru_maxrss_diagnostic_bytes": ru_maxrss_diagnostic,
+                       "coordinator_proc_vm_rss_bytes": current_vm_rss,
+                       "coordinator_memory_scope": "single_fresh_worker_process",
+                       "failure_category": failure_category,
                        "evidence_sha256": evidence_sha256, "reason": reason}
         _append_continuation_event(ledger, state, phase_event)
         state["active_coordinator_phase"] = None
         if phase_cpu is not None and phase_wall is not None:
             state["coordinator_cpu_seconds_charged"] = coordinator_cpu_total
             state["coordinator_exclusive_wall_seconds_charged"] = coordinator_wall_total
-        if status == "completed" and phase in {"primary_preflight", "recovery_preflight"}:
-            path = "primary" if phase == "primary_preflight" else "recovery"
-            _append_continuation_event(ledger, state, {
-                "event": "qualified", "protocol_sha256": protocol_sha,
-                "amendment_id": plan["amendment_id"], "qualification_path": path,
-                "preflight_evidence_sha256": evidence_sha256,
-            })
-            state["qualification_status"] = "qualified"
-            if path == "primary":
-                for run_id in plan["slots"]["recovery_preflight"]:
-                    _append_continuation_event(ledger, state, {
-                        "event": "recovery_retired", "protocol_sha256": protocol_sha,
-                        "amendment_id": plan["amendment_id"], "run_id": run_id,
-                        "charged_cpu_seconds": 0, "charged_wall_seconds": 0,
-                        "reason": "primary_preflight_qualified",
-                    })
-        elif status == "failed" and phase == "primary_preflight":
-            _append_continuation_event(ledger, state, {"event": "preflight_rejected",
-                "protocol_sha256": protocol_sha, "amendment_id": plan["amendment_id"],
-                "reason": reason or "primary preflight failed"})
-            if reason in {"coordinator phase resource measurement unavailable",
-                          "coordinator phase allowance exceeded"} or now_ns >= state["overall_deadline_monotonic_ns"]:
-                _append_program_terminal(ledger, state, reason or "overall_wall_deadline")
-        elif status == "failed" and phase == "recovery_preflight":
-            _append_continuation_event(ledger, state, {"event": "recovery_rejected",
-                "protocol_sha256": protocol_sha, "amendment_id": plan["amendment_id"],
-                "reason": reason or "recovery preflight failed"})
-            _append_program_terminal(ledger, state, "recovery_preflight_failed")
-        elif status == "failed":
+        if (status == "failed" and phase == "primary_preflight"
+                and failure_category not in {"stage_failure", "qualification_failure"}):
+            _append_program_terminal(ledger, state, "primary_preflight_phase_failed")
+        elif (status == "failed" and phase == "recovery_preflight"
+              and failure_category not in {"stage_failure", "qualification_failure"}):
+            _append_program_terminal(ledger, state, "recovery_preflight_phase_failed")
+        elif status == "failed" and phase not in {"primary_preflight", "recovery_preflight"}:
             _append_program_terminal(ledger, state, f"{phase}_failed")
         if now_ns >= state["overall_deadline_monotonic_ns"]:
             _append_program_terminal(ledger, state, "overall_wall_deadline")
@@ -1582,7 +2167,15 @@ def execute_continuation_phase(directory: Path, phase_id: str) -> dict:
                                                  evidence_sha256=evidence)
         return {"status": "completed", "phase_id": phase_id,
                 "completed_stage_count": len(receipts), "evidence_sha256": evidence,
-                "coordinator_receipt_sha256": sha256_bytes(canonical_json(phase_receipt))}
+                "coordinator_receipt_sha256": sha256_bytes(canonical_json(phase_receipt)),
+                "coordinator_phase": {
+                    "token": phase_receipt["token"], "phase_id": phase_receipt["phase_id"],
+                    "pid": phase_receipt["pid"],
+                    "pid_starttime_ticks": phase_receipt["coordinator_pid_starttime_ticks"],
+                    "worker_self_peak_rss_bytes": phase_receipt["coordinator_peak_rss_bytes"],
+                    "worker_self_vm_hwm_bytes": phase_receipt["coordinator_proc_vm_hwm_bytes"],
+                    "status": phase_receipt["status"],
+                }}
     except BaseException as error:
         try:
             finish_coordinator_phase(directory, token["token"], status="failed",
@@ -1715,15 +2308,61 @@ def _verify_process_ledger(directory: Path, state: dict, expected_protocol_sha25
             receipt = json.loads(receipt_path.read_text())
             if (receipt.get("token") != receipt_event.get("token")
                     or receipt.get("phase_id") != receipt_event.get("phase_id")
-                    or receipt.get("status") != receipt_event.get("status")
-                    or receipt.get("measurement_method") != "RUSAGE_SELF_RESIDUAL_AND_EXCLUSIVE_WALL_RESIDUAL"):
+                    or receipt.get("status") != receipt_event.get("status")):
                 raise GateError("coordinator phase receipt identity/method mismatch")
-            _require_receipt_measurements(receipt, receipt_event,
-                ("coordinator_peak_rss_bytes",) if cpu_value is None else
-                ("coordinator_cpu_seconds", "coordinator_exclusive_wall_seconds", "coordinator_peak_rss_bytes"))
+            method = receipt.get("measurement_method")
+            if method == "RUSAGE_SELF_RESIDUAL_AND_EXCLUSIVE_WALL_RESIDUAL":
+                _require_receipt_measurements(receipt, receipt_event,
+                    ("coordinator_peak_rss_bytes",) if cpu_value is None else
+                    ("coordinator_cpu_seconds", "coordinator_exclusive_wall_seconds", "coordinator_peak_rss_bytes"))
+            elif method == "FRESH_WORKER_RUSAGE_SELF_AND_PROC_VM_HWM_RESIDUAL_WALL":
+                if receipt.get("coordinator_memory_scope") != "single_fresh_worker_process":
+                    raise GateError("coordinator worker memory scope is not explicit")
+                if cpu_value is None:
+                    if (receipt_event.get("status") != "failed" or state.get("terminal_status") is None
+                            or receipt.get("memory_measurement_status") != "unavailable"
+                            or receipt.get("coordinator_peak_rss_bytes") is not None
+                            or receipt_event.get("coordinator_peak_rss_bytes") is not None):
+                        raise GateError("coordinator worker memory failure is not explicitly terminal")
+                else:
+                    _require_receipt_measurements(receipt, receipt_event,
+                        ("coordinator_cpu_seconds", "coordinator_exclusive_wall_seconds",
+                         "coordinator_peak_rss_bytes", "coordinator_proc_vm_hwm_bytes"))
+                    vm_hwm = receipt.get("coordinator_proc_vm_hwm_bytes")
+                    vm_rss = receipt.get("coordinator_proc_vm_rss_bytes")
+                    ru_diagnostic = receipt.get("coordinator_rusage_self_ru_maxrss_diagnostic_bytes")
+                    if (type(vm_hwm) is not int or vm_hwm <= 0
+                            or vm_hwm > CONTINUATION_MEMORY_BYTES
+                            or receipt.get("coordinator_peak_rss_bytes") != vm_hwm
+                            or type(vm_rss) is not int or vm_rss <= 0
+                            or vm_rss > CONTINUATION_MEMORY_BYTES
+                            or (ru_diagnostic is not None
+                                and (type(ru_diagnostic) is not int or ru_diagnostic <= 0))
+                            or receipt_event.get("coordinator_proc_vm_hwm_bytes") != vm_hwm
+                            or receipt_event.get("coordinator_proc_vm_rss_bytes") != vm_rss):
+                        raise GateError("fresh-worker VmHWM/VmRSS cap data is invalid")
+                    if (receipt.get("memory_measurement_status") != "measured"
+                            or type(receipt.get("coordinator_pid_starttime_ticks")) is not int
+                            or receipt.get("coordinator_pid_starttime_ticks") <= 0):
+                        raise GateError("coordinator worker memory identity/measurement is incomplete")
+            else:
+                raise GateError("coordinator phase receipt has an unknown measurement method")
             if cpu_value is not None and wall_value is not None:
                 coord_cpu += float(cpu_value)
                 coord_wall += float(wall_value)
+        supervised_events = [event for event in events
+                             if event.get("event") == "coordinator_worker_supervised"
+                             and event.get("protocol_sha256") == expected_protocol_sha256]
+        supervised_tokens = [event.get("token") for event in supervised_events]
+        if len(set(supervised_tokens)) != len(supervised_tokens):
+            raise GateError("duplicate coordinator supervisor measurement token")
+        for event in supervised_events:
+            if event.get("status") != "verified":
+                if state.get("terminal_status") is None:
+                    raise GateError("failed coordinator supervisor measurement is not terminal")
+                continue
+            coord_cpu += float(event["supervisor_cpu_seconds"])
+            coord_wall += float(event["supervisor_exclusive_wall_seconds"])
         if (not math.isclose(coord_cpu, state.get("coordinator_cpu_seconds_charged", -1), rel_tol=1e-12, abs_tol=1e-9)
                 or not math.isclose(coord_wall, state.get("coordinator_exclusive_wall_seconds_charged", -1), rel_tol=1e-12, abs_tol=1e-9)):
             raise GateError("coordinator resource counters disagree with immutable receipt events")
@@ -1755,7 +2394,8 @@ def _verify_process_ledger(directory: Path, state: dict, expected_protocol_sha25
         if active_starts:
             start_event = active_starts[0]
             expected_active = {key: start_event.get(key) for key in
-                               ("token", "phase_id", "pid", "start_monotonic_ns", "start_cpu_seconds", "boot_id")}
+                               ("token", "phase_id", "pid", "pid_starttime_ticks",
+                                "start_monotonic_ns", "start_cpu_seconds", "boot_id")}
         if state.get("active_coordinator_phase") != expected_active:
             raise GateError("active coordinator phase state disagrees with immutable ledger")
         terminal_events = [event for event in events if event.get("event") == "program_terminal"]
@@ -1857,6 +2497,8 @@ def _authorize_program_run(directory: Path, config: dict, protocol_sha: str, run
         protocol_events = [e for e in events if e.get("protocol_sha256") == protocol_sha]
         continuation = config.get("continuation_plan")
         if continuation is not None:
+            if _pending_coordinator_supervision(protocol_events):
+                raise GateError("coordinator phase awaits its supervised-worker resource receipt")
             action = validate_continuation_events(continuation, protocol_events)
             if action["next_run_id"] != run_id:
                 raise GateError(f"continuation phase gate refuses run; required state is {action['state']}")
@@ -2432,6 +3074,7 @@ def verify_program(directory: Path) -> dict:
         config.get("pipeline_descriptor") is None or protocol_qualified)
     if config.get("continuation_plan") is not None:
         valid = valid and state.get("terminal_status") is None and state.get("active_coordinator_phase") is None
+        valid = valid and not _pending_coordinator_supervision(events)
     return {"status": "valid" if valid else "incomplete",
             "protocol_sha256": protocol_sha, "invocations_reserved": state["invocations_reserved"],
             "cpu_seconds_charged": state["cpu_seconds_charged"],

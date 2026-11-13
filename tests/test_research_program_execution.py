@@ -626,13 +626,30 @@ class ContinuationLifecycleContractTests(unittest.TestCase):
     def start_phase(self, phase, token):
         self.events.append({"event": "coordinator_phase_started", "protocol_sha256": "a" * 64,
             "amendment_id": self.plan["amendment_id"], "phase_id": phase, "token": token,
-            "pid": 100, "boot_id": "boot", "start_monotonic_ns": 1000, "start_cpu_seconds": 1.0})
+            "pid": 100, "pid_starttime_ticks": 1000,
+            "boot_id": "boot", "start_monotonic_ns": 1000, "start_cpu_seconds": 1.0})
 
-    def finish_phase(self, phase, token, status):
+    def finish_phase(self, phase, token, status, category=None):
         self.events.append({"event": "coordinator_phase", "protocol_sha256": "a" * 64,
             "amendment_id": self.plan["amendment_id"], "phase_id": phase, "token": token,
+            "pid": 100, "pid_starttime_ticks": 1000,
             "status": status, "receipt_sha256": "b" * 64,
+            "failure_category": None if status == "completed" else (category or "stage_failure"),
+            "coordinator_peak_rss_bytes": 4096, "coordinator_proc_vm_hwm_bytes": 4096,
             "coordinator_cpu_seconds": 0.1, "coordinator_exclusive_wall_seconds": 0.2})
+
+    def supervise_phase(self, phase, token):
+        self.events.append({"event": "coordinator_worker_supervised", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "phase_id": phase, "token": token,
+            "script_path": "/pinned/coordinator.py", "script_sha256": "d" * 64,
+            "pid": 100, "pid_starttime_ticks": 1000,
+            "worker_self_peak_rss_bytes": 4096, "worker_self_vm_hwm_bytes": 4096,
+            "wait4_ru_maxrss_including_waited_children_bytes": 8192,
+            "supervisor_ru_maxrss_diagnostic_bytes": 8192,
+            "supervisor_vm_hwm_bytes": 4096, "supervisor_vm_rss_bytes": 2048,
+            "supervisor_memory_limit_bytes": 512 * 1024 * 1024,
+            "supervisor_cpu_seconds": 0.01, "supervisor_exclusive_wall_seconds": 0.02,
+            "status": "verified", "failure_category": None, "reason": None})
 
     def run_slots(self, ids, *, status="completed"):
         for run_id in ids:
@@ -649,8 +666,10 @@ class ContinuationLifecycleContractTests(unittest.TestCase):
             "amendment_id": self.plan["amendment_id"], "qualification_path": "primary",
             "evidence_sha256": "c" * 64})
         self.finish_phase("primary_preflight", "primary-token", "completed")
+        self.supervise_phase("primary_preflight", "primary-token")
         self.events.append({"event": "qualified", "protocol_sha256": "a" * 64,
-            "amendment_id": self.plan["amendment_id"], "qualification_path": "primary"})
+            "amendment_id": self.plan["amendment_id"], "qualification_path": "primary",
+            "preflight_evidence_sha256": "c" * 64, "coordinator_phase_receipt_sha256": "b" * 64})
         for run_id in self.plan["slots"]["recovery_preflight"]:
             self.events.append({"event": "recovery_retired", "run_id": run_id,
                 "amendment_id": self.plan["amendment_id"], "charged_cpu_seconds": 0,
@@ -668,16 +687,70 @@ class ContinuationLifecycleContractTests(unittest.TestCase):
         self.start_phase("primary_preflight", "primary-token")
         self.run_slots(["p1"], status="failed")
         self.finish_phase("primary_preflight", "primary-token", "failed")
+        self.supervise_phase("primary_preflight", "primary-token")
         self.events.append({"event": "preflight_rejected", "protocol_sha256": "a" * 64,
-            "amendment_id": self.plan["amendment_id"], "reason": "synthetic failure"})
+            "amendment_id": self.plan["amendment_id"], "failure_category": "stage_failure",
+            "reason": "synthetic failure"})
         self.assertEqual(continuation_next_action(self.plan, self.events)["state"], "recovery")
         self.assertEqual(continuation_next_action(self.plan, self.events)["next_run_id"], "r1")
         self.start_phase("recovery_preflight", "recovery-token")
         self.run_slots(self.plan["slots"]["recovery_preflight"], status="failed")
         self.finish_phase("recovery_preflight", "recovery-token", "failed")
+        self.supervise_phase("recovery_preflight", "recovery-token")
         self.events.append({"event": "recovery_rejected", "protocol_sha256": "a" * 64,
-            "amendment_id": self.plan["amendment_id"], "reason": "recovery failed"})
+            "amendment_id": self.plan["amendment_id"], "failure_category": "stage_failure",
+            "reason": "recovery failed"})
         self.assertEqual(continuation_next_action(self.plan, self.events)["state"], "terminal_failure")
+
+    def test_admission_refusal_is_terminal_and_never_enters_recovery(self):
+        self.events.append({"event": "admission_refused", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"], "phase_id": "primary_preflight",
+            "requested_phase_id": "primary_preflight", "failure_category": "admission_refused",
+            "reason": "deadline expired before phase launch"})
+        self.events.append({"event": "program_terminal", "status": "coordinator_admission_refused"})
+        state = validate_continuation_events(self.plan, self.events)
+        self.assertEqual(state["state"], "terminal_failure")
+
+    def test_concurrent_admission_refusal_does_not_close_active_phase(self):
+        self.start_phase("primary_preflight", "primary-token")
+        self.events.append({"event": "coordinator_admission_attempt_refused",
+            "protocol_sha256": "a" * 64, "amendment_id": self.plan["amendment_id"],
+            "active_phase_token": "primary-token", "requested_phase_id": "primary_preflight",
+            "requester_pid": 200, "requester_pid_starttime_ticks": 2000,
+            "reason": "another coordinator phase is active"})
+        action = validate_continuation_events(self.plan, self.events)
+        self.assertEqual(action["state"], "primary_preflight")
+        self.assertEqual(action["next_run_id"], "p1")
+        self.finish_phase("primary_preflight", "primary-token", "completed")
+        self.supervise_phase("primary_preflight", "primary-token")
+        self.assertEqual(validate_continuation_events(self.plan, self.events)["state"],
+                         "primary_preflight")
+
+    def test_concurrent_admission_refusal_requires_current_active_token(self):
+        self.start_phase("primary_preflight", "primary-token")
+        self.events.append({"event": "coordinator_admission_attempt_refused",
+            "protocol_sha256": "a" * 64, "amendment_id": self.plan["amendment_id"],
+            "active_phase_token": "different-token", "requested_phase_id": "primary_preflight",
+            "requester_pid": 200, "requester_pid_starttime_ticks": 2000,
+            "reason": "forged contender"})
+        with self.assertRaisesRegex(GateError, "malformed"):
+            validate_continuation_events(self.plan, self.events)
+
+    def test_coordinator_resource_failure_cannot_be_relabelled_as_recovery_eligible(self):
+        self.start_phase("primary_preflight", "primary-token")
+        self.run_slots(["p1"], status="failed")
+        self.finish_phase("primary_preflight", "primary-token", "failed", "coordinator_phase_failure")
+        self.supervise_phase("primary_preflight", "primary-token")
+        self.events.append({"event": "preflight_rejected", "protocol_sha256": "a" * 64,
+            "amendment_id": self.plan["amendment_id"],
+            "failure_category": "coordinator_phase_failure", "reason": "RSS unavailable"})
+        with self.assertRaisesRegex(GateError, "qualification boundary"):
+            validate_continuation_events(self.plan, self.events)
+
+    def test_recovery_phase_cannot_start_before_primary_failure_authorizes_it(self):
+        self.start_phase("recovery_preflight", "recovery-token")
+        with self.assertRaises(GateError):
+            validate_continuation_events(self.plan, self.events)
 
     def test_campaign_cannot_begin_until_every_recovery_slot_is_retired(self):
         self.start_phase("primary_preflight", "primary-token")
@@ -686,8 +759,10 @@ class ContinuationLifecycleContractTests(unittest.TestCase):
             "amendment_id": self.plan["amendment_id"], "qualification_path": "primary",
             "evidence_sha256": "c" * 64})
         self.finish_phase("primary_preflight", "primary-token", "completed")
+        self.supervise_phase("primary_preflight", "primary-token")
         self.events.append({"event": "qualified", "protocol_sha256": "a" * 64,
-            "amendment_id": self.plan["amendment_id"], "qualification_path": "primary"})
+            "amendment_id": self.plan["amendment_id"], "qualification_path": "primary",
+            "preflight_evidence_sha256": "c" * 64, "coordinator_phase_receipt_sha256": "b" * 64})
         self.events.append({"event": "recovery_retired", "run_id": "r1",
             "amendment_id": self.plan["amendment_id"], "charged_cpu_seconds": 0,
             "charged_wall_seconds": 0})
@@ -785,6 +860,8 @@ class ContinuationLifecycleContractTests(unittest.TestCase):
                              return_value={"state": "primary_preflight"}),
                   mock.patch("research_execution._enforce_coordinator_address_space"),
                   mock.patch("research_execution._self_peak_rss_bytes", return_value=1024),
+                  mock.patch("research_execution._coordinator_memory_measurements", return_value=(1024, 1024, 512)),
+                  mock.patch("research_execution._process_starttime_ticks", return_value=12345),
                   mock.patch("research_execution._kernel_boot_id", return_value="test-boot")):
                 begin_coordinator_phase(frozen_dir, "primary_preflight")
             rows = [json.loads(line) for line in (ledger / "process-events.jsonl").read_text().splitlines()]

@@ -21,6 +21,10 @@ _WORKER_ENTRY_CPU_SECONDS = time.process_time()
 _WORKER_ENTRY_MONOTONIC_NS = time.monotonic_ns()
 
 
+class PreflightError(RuntimeError):
+    pass
+
+
 def _consume_worker_nonce() -> bool:
     """Validate the one-shot supervisor pipe before project imports."""
     import hmac
@@ -59,6 +63,21 @@ def _verify_supervisor_source(pin: object) -> None:
         raise RuntimeError("coordinator supervisor path differs from frozen pin")
     if hashlib.sha256(helper.read_bytes()).hexdigest() != pin["sha256"]:
         raise RuntimeError("coordinator supervisor hash differs from frozen pin")
+
+
+def _resolve_execution_program_directory(protocol: dict[str, object]) -> Path:
+    """Resolve the immutable protocol anchor to its ledger-authenticated program.
+
+    A software-only successor may update the executable identity while keeping
+    the original scientific protocol as its immutable anchor. Resolution is
+    deliberately explicit: direct reads of an inactive predecessor continue
+    to fail in ``read_frozen_program``.
+    """
+    configured = protocol.get("execution_program_dir")
+    if not isinstance(configured, str) or not configured:
+        raise PreflightError("descriptor pipeline lacks its frozen execution-program anchor")
+    from research_execution import resolve_active_successor_program
+    return resolve_active_successor_program(Path(configured))
 
 
 if __name__ == "__main__" and os.environ.get(_COORDINATOR_WORKER_MARKER):
@@ -103,7 +122,11 @@ def _supervise_continuation_cli(argv: list[str]) -> int | None:
     protocol = json.loads(args.protocol.read_bytes())
     if protocol.get("pipeline_descriptor") is None:
         return None
-    execution_dir = Path(protocol.get("execution_program_dir", "")).resolve()
+    try:
+        execution_dir = _resolve_execution_program_directory(protocol)
+    except Exception as error:
+        print(f"scientific-pipeline-preflight: refused: {error}", file=sys.stderr)
+        return 2
     if not execution_dir.is_dir():
         return None
     from research_execution import (CONTINUATION_MEMORY_BYTES, GateError,
@@ -199,10 +222,6 @@ from research_pipeline import (
     PipelineDescriptorError, expand_argv, pipeline_identity as build_pipeline_identity,
     validate_descriptor as validate_pipeline_descriptor,
 )
-
-
-class PreflightError(RuntimeError):
-    pass
 
 
 SAFE_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
@@ -831,7 +850,7 @@ def _run_preflight_impl(protocol_path: Path, spec_path: Path, receipt_path: Path
         configured_dir = protocol.get("execution_program_dir")
         if not isinstance(configured_dir, str):
             raise PreflightError("descriptor pipeline requires its frozen bounded-program directory")
-        execution_program_dir = Path(configured_dir).resolve()
+        execution_program_dir = _resolve_execution_program_directory(protocol)
         from research_execution import read_frozen_program
         try:
             _, execution_config, _ = read_frozen_program(execution_program_dir)
@@ -1229,7 +1248,7 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
     protocol = json.loads(protocol_path.read_bytes())
     if protocol.get("pipeline_descriptor") is None:
         return _run_preflight_impl(protocol_path, spec_path, receipt_path)
-    execution_program_dir = Path(protocol.get("execution_program_dir", "")).resolve()
+    execution_program_dir = _resolve_execution_program_directory(protocol)
     from research_execution import (begin_coordinator_phase, coordinator_phase_guard,
                                     finish_coordinator_phase,
                                     read_frozen_program, register_coordinator_entry_baseline)
@@ -1318,7 +1337,7 @@ def verify_admission(protocol: dict[str, Any]) -> dict[str, Any]:
     execution_program_dir = None
     execution_config = None
     if protocol.get("pipeline_descriptor") is not None:
-        execution_program_dir = Path(protocol.get("execution_program_dir", "")).resolve()
+        execution_program_dir = _resolve_execution_program_directory(protocol)
         from research_execution import read_frozen_program, verify_program
         try:
             _, execution_config, _ = read_frozen_program(execution_program_dir)

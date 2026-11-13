@@ -7,12 +7,14 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PREFLIGHT = ROOT / "scripts" / "scientific_pipeline_preflight.py"
 HARNESS = ROOT / "scripts" / "research_execution.py"
 sys.path.insert(0, str(ROOT / "scripts"))
+import scientific_pipeline_preflight as preflight_module
 
 
 def sha(data):
@@ -97,6 +99,33 @@ else:
 
 
 class ScientificPipelinePreflightTests(unittest.TestCase):
+    def test_early_supervisor_reports_missing_anchor_as_preflight_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            protocol_path = Path(directory) / "protocol.json"
+            protocol_path.write_text(json.dumps({"pipeline_descriptor": {}}))
+            result = subprocess.run(
+                [sys.executable, str(PREFLIGHT), "--protocol", str(protocol_path)],
+                capture_output=True, text=True, timeout=10)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("descriptor pipeline lacks its frozen execution-program anchor", result.stderr)
+        self.assertNotIn("NameError", result.stderr)
+
+    def test_execution_program_anchor_uses_authenticated_successor_resolver(self):
+        anchor = Path("/immutable/scientific-anchor")
+        active = Path("/ledger/active-successor")
+        with mock.patch(
+                "research_execution.resolve_active_successor_program",
+                return_value=active) as resolver:
+            self.assertEqual(
+                preflight_module._resolve_execution_program_directory(
+                    {"execution_program_dir": str(anchor)}),
+                active,
+            )
+        resolver.assert_called_once_with(anchor)
+        with self.assertRaises(preflight_module.PreflightError):
+            preflight_module._resolve_execution_program_directory({})
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
@@ -601,6 +630,7 @@ pathlib.Path(a.report_output).write_text(json.dumps(report,sort_keys=True))
         process_protocol["artifacts"].append({"id": "preflight-spec", "path": str(self.spec_path),
             "sha256": sha(self.spec_path.read_bytes()), "role": "preflight-spec"})
         source = self.root / "bounded-program.json"; source.write_text(json.dumps(process_protocol, sort_keys=True))
+        self.process_protocol_path = source
         env = os.environ.copy(); env["GENETIK_RESEARCH_PROCESS_LEDGER_ROOT"] = str(self.process_ledger)
         result = subprocess.run([sys.executable, str(HARNESS), "freeze-program", "--protocol", str(source),
                                  "--destination", str(self.execution_dir)], env=env, capture_output=True, text=True, timeout=20)
@@ -658,7 +688,55 @@ pathlib.Path(a.report_output).write_text(json.dumps(report,sort_keys=True))
             "spec_path": str(self.spec_path), "spec_sha256": sha(self.spec_path.read_bytes()),
             "receipt_path": str(self.receipt_path), "receipt_sha256": sha(self.receipt_path.read_bytes()),
             "protocol_binding_sha256": receipt["protocol_binding_sha256"]}
-        self.assertEqual(module.verify_admission(self.protocol)["spec_path"], self.spec_path.resolve())
+        import research_execution
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.process_ledger.resolve()):
+            self.assertEqual(module.verify_admission(self.protocol)["spec_path"], self.spec_path.resolve())
+
+    def test_descriptor_preflight_resolves_unchanged_anchor_to_registered_successor(self):
+        import research_execution
+
+        self.write_inputs()
+        successor_protocol = json.loads(self.process_protocol_path.read_text())
+        successor_protocol["protocol_id"] = "descriptor-test-v2"
+        successor_protocol["source_commit"] = "b" * 40
+        successor_source = self.root / "bounded-program-successor.json"
+        successor_source.write_text(json.dumps(successor_protocol, sort_keys=True))
+        successor_dir = self.root / "frozen-program-successor"
+        env = os.environ.copy()
+        env["GENETIK_RESEARCH_PROCESS_LEDGER_ROOT"] = str(self.process_ledger)
+        result = subprocess.run([
+            sys.executable, str(HARNESS), "successor-program",
+            "--predecessor-dir", str(self.execution_dir),
+            "--protocol", str(successor_source), "--destination", str(successor_dir),
+        ], env=env, capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        # The scientific protocol remains byte-for-byte anchored to v1. The
+        # actual preflight and admission must consistently use the registered
+        # v2 package while preserving the descriptor and synthetic artifacts.
+        self.assertEqual(self.protocol["execution_program_dir"], str(self.execution_dir))
+        module = self.load_module()
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.process_ledger.resolve()):
+            resolved = module._resolve_execution_program_directory(self.protocol)
+            self.assertEqual(resolved, successor_dir.resolve())
+            result = self.invoke()
+            self.assertEqual(result.returncode, 0, result.stderr)
+            receipt = json.loads(self.receipt_path.read_text())
+            self.assertEqual(receipt["status"], "passed")
+            for file, role in ((self.spec_path, "admission_preflight_spec"),
+                               (self.receipt_path, "admission_preflight_receipt")):
+                self.protocol["frozen_artifacts"].append({
+                    "id": role, "role": role, "path": str(file), "sha256": sha(file.read_bytes())})
+            self.protocol["admission_preflight"] = {
+                "preflight_id": receipt["preflight_id"],
+                "spec_path": str(self.spec_path), "spec_sha256": sha(self.spec_path.read_bytes()),
+                "receipt_path": str(self.receipt_path), "receipt_sha256": sha(self.receipt_path.read_bytes()),
+                "protocol_binding_sha256": receipt["protocol_binding_sha256"],
+            }
+            admission = module.verify_admission(self.protocol)
+            self.assertEqual(admission["receipt_path"], self.receipt_path.resolve())
+        self.assertEqual(json.loads((successor_dir / "runs/preflight-runner/receipt.json").read_text())[
+            "protocol_sha256"], (successor_dir / "PROGRAM.sha256").read_text().split()[0])
 
     def test_synthetic_pipeline_runs_complete_campaign_verification_scoring_and_aggregation(self):
         self.write_inputs()

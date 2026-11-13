@@ -103,6 +103,51 @@ def current_process_peak_rss_bytes() -> tuple[int, int, int]:
     return usage_peak, vm_hwm, vm_rss
 
 
+def attach_supervisor_accounting(measurement: dict, *, cpu_seconds: float,
+                                 exclusive_wall_seconds: float,
+                                 address_space_limit_bytes: int) -> dict:
+    """Attach parent costs, leaving failed measurements explicitly unavailable.
+
+    This helper must not discard a completed worker receipt just because a
+    supervisor-side diagnostic failed after the worker was reaped. Missing
+    values cause the ledger verifier to terminalize qualification.
+    """
+    measurement.update({
+        "supervisor_cpu_seconds": cpu_seconds,
+        "supervisor_exclusive_wall_seconds": exclusive_wall_seconds,
+        "supervisor_ru_maxrss_diagnostic_bytes": None,
+        "supervisor_vm_hwm_bytes": None,
+        "supervisor_vm_rss_bytes": None,
+        "address_space_limit_bytes": address_space_limit_bytes,
+    })
+    try:
+        ru_diagnostic, vm_hwm, vm_rss = current_process_peak_rss_bytes()
+    except BaseException as error:
+        # Unknown stays unknown. record_supervised_coordinator_worker will
+        # mark this receipt failed and terminal; it will not admit recovery.
+        measurement["supervisor_measurement_error"] = type(error).__name__
+    else:
+        measurement.update({
+            "supervisor_ru_maxrss_diagnostic_bytes": ru_diagnostic,
+            "supervisor_vm_hwm_bytes": vm_hwm,
+            "supervisor_vm_rss_bytes": vm_rss,
+        })
+    return measurement
+
+
+def account_supervisor_exception(error: BaseException, *, cpu_seconds: float,
+                                 exclusive_wall_seconds: float,
+                                 address_space_limit_bytes: int) -> dict | None:
+    """Preserve worker measurements attached before an unexpected re-raise."""
+    measurement = getattr(error, "coordinator_measurement", None)
+    if not isinstance(measurement, dict):
+        return None
+    return attach_supervisor_accounting(
+        dict(measurement), cpu_seconds=cpu_seconds,
+        exclusive_wall_seconds=exclusive_wall_seconds,
+        address_space_limit_bytes=address_space_limit_bytes)
+
+
 def consume_worker_handshake() -> bool:
     """Consume the inherited one-shot nonce pipe supplied to a supervised worker."""
     raw_fd = os.environ.get("GENETIK_COORDINATOR_WORKER_FD")

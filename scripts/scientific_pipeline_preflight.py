@@ -123,8 +123,8 @@ def _supervise_continuation_cli(argv: list[str]) -> int | None:
         _verify_supervisor_source(plan.get("coordinator_supervisor_entrypoint"))
         sys.path.insert(0, str(_SCRIPT_PATH.parent))
         from coordinator_supervisor import (COORDINATOR_MEMORY_LIMIT_BYTES,
-                                            CoordinatorSupervisorError,
-                                            current_process_peak_rss_bytes,
+                                            account_supervisor_exception,
+                                            attach_supervisor_accounting,
                                             limit_current_process, supervise)
         limit_current_process(COORDINATOR_MEMORY_LIMIT_BYTES)
         state = json.loads((ledger / "process-budget.json").read_text())
@@ -144,39 +144,29 @@ def _supervise_continuation_cli(argv: list[str]) -> int | None:
             wall_limit_seconds=remaining, output_limit_bytes=8 * 1024 * 1024, env=env,
             worker_handshake=True,
         )
-    except (CoordinatorSupervisorError, OSError, subprocess.SubprocessError) as error:
-        failed_measurement = getattr(error, "coordinator_measurement", None)
-        if isinstance(failed_measurement, dict):
-            failed_measurement = dict(failed_measurement)
-            failed_measurement["supervisor_cpu_seconds"] = time.process_time() - supervisor_started_cpu
-            failed_measurement["supervisor_exclusive_wall_seconds"] = max(
-                0.0, time.monotonic() - supervisor_started_mono
-                - failed_measurement.get("wall_seconds", 0.0))
-            try:
-                ru_diag, vm_hwm, vm_rss = current_process_peak_rss_bytes()
-                failed_measurement.update({
-                    "supervisor_ru_maxrss_diagnostic_bytes": ru_diag,
-                    "supervisor_vm_hwm_bytes": vm_hwm,
-                    "supervisor_vm_rss_bytes": vm_rss,
-                    "address_space_limit_bytes": COORDINATOR_MEMORY_LIMIT_BYTES,
-                })
-            except CoordinatorSupervisorError:
-                pass
+    except BaseException as error:
+        raw_measurement = getattr(error, "coordinator_measurement", None)
+        worker_wall = raw_measurement.get("wall_seconds", 0.0) if isinstance(raw_measurement, dict) else 0.0
+        failed_measurement = account_supervisor_exception(
+            error, cpu_seconds=time.process_time() - supervisor_started_cpu,
+            exclusive_wall_seconds=max(
+                0.0, time.monotonic() - supervisor_started_mono - worker_wall),
+            address_space_limit_bytes=COORDINATOR_MEMORY_LIMIT_BYTES,
+        )
         record_supervised_coordinator_worker(execution_dir, phase_id,
                                              failed_measurement, _SCRIPT_PATH)
         raise
-    supervisor_cpu = time.process_time() - supervisor_started_cpu
-    supervisor_wall = max(0.0, time.monotonic() - supervisor_started_mono - measurement["wall_seconds"])
-    supervisor_ru_diagnostic, supervisor_vm_hwm, supervisor_vm_rss = current_process_peak_rss_bytes()
-    measurement.update({
-        "supervisor_cpu_seconds": supervisor_cpu,
-        "supervisor_exclusive_wall_seconds": supervisor_wall,
-        "supervisor_ru_maxrss_diagnostic_bytes": supervisor_ru_diagnostic,
-        "supervisor_vm_hwm_bytes": supervisor_vm_hwm,
-        "supervisor_vm_rss_bytes": supervisor_vm_rss,
-        "address_space_limit_bytes": COORDINATOR_MEMORY_LIMIT_BYTES,
-    })
-    record_supervised_coordinator_worker(execution_dir, phase_id, measurement, _SCRIPT_PATH)
+    measurement = dict(measurement)
+    attach_supervisor_accounting(
+        measurement,
+        cpu_seconds=time.process_time() - supervisor_started_cpu,
+        exclusive_wall_seconds=max(
+            0.0, time.monotonic() - supervisor_started_mono - measurement["wall_seconds"]),
+        address_space_limit_bytes=COORDINATOR_MEMORY_LIMIT_BYTES,
+    )
+    receipt = record_supervised_coordinator_worker(execution_dir, phase_id, measurement, _SCRIPT_PATH)
+    if receipt.get("status") != "verified":
+        return 3
     sys.stdout.buffer.write(measurement["stdout"])
     sys.stderr.buffer.write(measurement["stderr"])
     if measurement["timed_out"] or measurement["output_limit_exceeded"]:

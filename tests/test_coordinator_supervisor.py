@@ -66,6 +66,40 @@ class CoordinatorSupervisorTests(unittest.TestCase):
         with self.assertRaisesRegex(supervisor.CoordinatorSupervisorError, "unavailable"):
             supervisor.rss_bytes_from_wait4(Usage())
 
+    def test_post_exit_supervisor_measurement_failure_stays_unknown(self):
+        result = {"pid": 123, "starttime_ticks": 456, "returncode": 0,
+                  "cpu_seconds": 0.01, "wall_seconds": 0.02}
+        with mock.patch.object(supervisor, "current_process_peak_rss_bytes",
+                               side_effect=AssertionError("synthetic post-exit failure")):
+            accounted = supervisor.attach_supervisor_accounting(
+                result, cpu_seconds=0.03, exclusive_wall_seconds=0.01,
+                address_space_limit_bytes=supervisor.COORDINATOR_MEMORY_LIMIT_BYTES)
+        self.assertEqual(accounted["pid"], 123)
+        self.assertEqual(accounted["returncode"], 0)
+        self.assertEqual(accounted["supervisor_cpu_seconds"], 0.03)
+        self.assertIsNone(accounted["supervisor_ru_maxrss_diagnostic_bytes"])
+        self.assertIsNone(accounted["supervisor_vm_hwm_bytes"])
+        self.assertIsNone(accounted["supervisor_vm_rss_bytes"])
+        self.assertEqual(accounted["supervisor_measurement_error"], "AssertionError")
+
+    def test_unexpected_supervisor_exception_preserves_child_receipt_data(self):
+        error = AssertionError("synthetic internal failure")
+        error.coordinator_measurement = {
+            "pid": 123, "starttime_ticks": 456, "wall_seconds": 0.02,
+            "cpu_seconds": 0.01, "returncode": -9,
+            "wait4_ru_maxrss_including_waited_children_bytes": 4096,
+        }
+        with mock.patch.object(supervisor, "current_process_peak_rss_bytes",
+                               side_effect=supervisor.CoordinatorSupervisorError("gone")):
+            accounted = supervisor.account_supervisor_exception(
+                error, cpu_seconds=0.03, exclusive_wall_seconds=0.01,
+                address_space_limit_bytes=supervisor.COORDINATOR_MEMORY_LIMIT_BYTES)
+        self.assertEqual(accounted["pid"], 123)
+        self.assertEqual(accounted["starttime_ticks"], 456)
+        self.assertEqual(accounted["returncode"], -9)
+        self.assertIsNone(accounted["supervisor_vm_hwm_bytes"])
+        self.assertEqual(accounted["supervisor_measurement_error"], "CoordinatorSupervisorError")
+
     def test_exec_worker_rusage_can_inherit_launcher_high_water(self):
         worker = """import os,resource
 from pathlib import Path

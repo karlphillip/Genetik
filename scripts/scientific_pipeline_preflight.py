@@ -9,20 +9,188 @@ preflight specification and materialized as synthetic files.
 
 from __future__ import annotations
 
+import os
+import sys
+from pathlib import Path
+import time
+
+_COORDINATOR_WORKER_MARKER = "GENETIK_COORDINATOR_WORKER_TOKEN"
+_COORDINATOR_MEMORY_LIMIT_BYTES = 512 * 1024 * 1024
+_SCRIPT_PATH = Path(__file__).resolve()
+_WORKER_ENTRY_CPU_SECONDS = time.process_time()
+_WORKER_ENTRY_MONOTONIC_NS = time.monotonic_ns()
+
+
+def _consume_worker_nonce() -> bool:
+    """Validate the one-shot supervisor pipe before project imports."""
+    import hmac
+    import select
+    raw_fd = os.environ.get("GENETIK_COORDINATOR_WORKER_FD")
+    expected_hex = os.environ.get("GENETIK_COORDINATOR_WORKER_NONCE")
+    if not raw_fd or not raw_fd.isdecimal() or not expected_hex or len(expected_hex) != 64:
+        return False
+    fd = int(raw_fd)
+    try:
+        os.set_blocking(fd, False)
+        payload = bytearray()
+        deadline = time.monotonic() + 2.0
+        while len(payload) <= 32 and time.monotonic() < deadline:
+            ready, _, _ = select.select([fd], [], [], max(0.0, deadline - time.monotonic()))
+            if not ready:
+                break
+            block = os.read(fd, 33 - len(payload))
+            if not block:
+                break
+            payload.extend(block)
+        os.close(fd)
+        return len(payload) == 32 and hmac.compare_digest(
+            bytes(payload), bytes.fromhex(expected_hex))
+    except (OSError, ValueError):
+        return False
+
+
+def _verify_supervisor_source(pin: object) -> None:
+    """Bind the helper through this pinned coordinator entrypoint."""
+    import hashlib
+    if not isinstance(pin, dict) or set(pin) != {"path", "sha256"}:
+        raise RuntimeError("frozen protocol lacks coordinator supervisor source pin")
+    helper = _SCRIPT_PATH.with_name("coordinator_supervisor.py").resolve()
+    if Path(pin["path"]).resolve() != helper:
+        raise RuntimeError("coordinator supervisor path differs from frozen pin")
+    if hashlib.sha256(helper.read_bytes()).hexdigest() != pin["sha256"]:
+        raise RuntimeError("coordinator supervisor hash differs from frozen pin")
+
+
+if __name__ == "__main__" and os.environ.get(_COORDINATOR_WORKER_MARKER):
+    # The supervisor installs this before exec. Reapply it before importing
+    # coordinator or research modules so marker spoofing cannot bypass the
+    # worker's address-space boundary.
+    import resource
+    _, hard = resource.getrlimit(resource.RLIMIT_AS)
+    cap = (min(_COORDINATOR_MEMORY_LIMIT_BYTES, hard)
+           if hard != resource.RLIM_INFINITY else _COORDINATOR_MEMORY_LIMIT_BYTES)
+    resource.setrlimit(resource.RLIMIT_AS, (cap, cap))
+    if resource.getrlimit(resource.RLIMIT_AS) != (cap, cap):
+        raise SystemExit("coordinator worker could not enforce address-space limit")
+    if not _consume_worker_nonce():
+        raise SystemExit("coordinator worker requires a verified inherited nonce")
+
+
+def _supervise_continuation_cli(argv: list[str]) -> int | None:
+    """Re-exec continuation preflight under an address-space limit before imports."""
+    supervisor_started_mono = time.monotonic()
+    supervisor_started_cpu = time.process_time()
+    import resource
+    launcher_limit_error = None
+    try:
+        _, hard = resource.getrlimit(resource.RLIMIT_AS)
+        cap = (min(_COORDINATOR_MEMORY_LIMIT_BYTES, hard)
+               if hard != resource.RLIM_INFINITY else _COORDINATOR_MEMORY_LIMIT_BYTES)
+        resource.setrlimit(resource.RLIMIT_AS, (cap, cap))
+        if resource.getrlimit(resource.RLIMIT_AS) != (cap, cap):
+            raise RuntimeError("coordinator launcher could not enforce address-space limit")
+    except (OSError, ValueError, RuntimeError) as error:
+        launcher_limit_error = error
+    import argparse
+    import json
+    import subprocess
+
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--protocol", type=Path)
+    args, _ = parser.parse_known_args(argv)
+    if args.protocol is None or not args.protocol.is_file():
+        return None
+    protocol = json.loads(args.protocol.read_bytes())
+    if protocol.get("pipeline_descriptor") is None:
+        return None
+    execution_dir = Path(protocol.get("execution_program_dir", "")).resolve()
+    if not execution_dir.is_dir():
+        return None
+    from research_execution import (CONTINUATION_MEMORY_BYTES, GateError,
+                                    read_frozen_program, record_supervised_coordinator_worker)
+    _, config, _ = read_frozen_program(execution_dir)
+    plan = config.get("continuation_plan")
+    if not isinstance(plan, dict):
+        return None
+    ledger = config["ledger_dir"]
+    phase_id = "primary_preflight"
+    try:
+        if launcher_limit_error is not None:
+            raise GateError(f"coordinator launcher limit admission failed: {launcher_limit_error}")
+        prior = [json.loads(line) for line in (ledger / "process-events.jsonl").read_text().splitlines()]
+        phase_id = ("recovery_preflight" if any(event.get("event") == "preflight_rejected"
+                                                for event in prior) else "primary_preflight")
+        _verify_supervisor_source(plan.get("coordinator_supervisor_entrypoint"))
+        sys.path.insert(0, str(_SCRIPT_PATH.parent))
+        from coordinator_supervisor import (COORDINATOR_MEMORY_LIMIT_BYTES,
+                                            account_supervisor_exception,
+                                            attach_supervisor_accounting,
+                                            limit_current_process, supervise)
+        limit_current_process(COORDINATOR_MEMORY_LIMIT_BYTES)
+        state = json.loads((ledger / "process-budget.json").read_text())
+        remaining = (plan["overall_deadline_seconds"] if state.get("overall_deadline_monotonic_ns") is None
+                     else (state["overall_deadline_monotonic_ns"] - time.monotonic_ns()) / 1_000_000_000)
+        if remaining <= 0:
+            raise GateError("continuation wall allowance is exhausted before preflight worker launch")
+    except BaseException:
+        record_supervised_coordinator_worker(execution_dir, phase_id, None, _SCRIPT_PATH)
+        raise
+    env = os.environ.copy()
+    env[_COORDINATOR_WORKER_MARKER] = os.urandom(24).hex()
+    try:
+        measurement = supervise(
+            [sys.executable, str(_SCRIPT_PATH), *argv],
+            memory_limit_bytes=CONTINUATION_MEMORY_BYTES,
+            wall_limit_seconds=remaining, output_limit_bytes=8 * 1024 * 1024, env=env,
+            worker_handshake=True,
+        )
+    except BaseException as error:
+        raw_measurement = getattr(error, "coordinator_measurement", None)
+        worker_wall = raw_measurement.get("wall_seconds", 0.0) if isinstance(raw_measurement, dict) else 0.0
+        failed_measurement = account_supervisor_exception(
+            error, cpu_seconds=time.process_time() - supervisor_started_cpu,
+            exclusive_wall_seconds=max(
+                0.0, time.monotonic() - supervisor_started_mono - worker_wall),
+            address_space_limit_bytes=COORDINATOR_MEMORY_LIMIT_BYTES,
+        )
+        record_supervised_coordinator_worker(execution_dir, phase_id,
+                                             failed_measurement, _SCRIPT_PATH)
+        raise
+    measurement = dict(measurement)
+    attach_supervisor_accounting(
+        measurement,
+        cpu_seconds=time.process_time() - supervisor_started_cpu,
+        exclusive_wall_seconds=max(
+            0.0, time.monotonic() - supervisor_started_mono - measurement["wall_seconds"]),
+        address_space_limit_bytes=COORDINATOR_MEMORY_LIMIT_BYTES,
+    )
+    receipt = record_supervised_coordinator_worker(execution_dir, phase_id, measurement, _SCRIPT_PATH)
+    if receipt.get("status") != "verified":
+        return 3
+    sys.stdout.buffer.write(measurement["stdout"])
+    sys.stderr.buffer.write(measurement["stderr"])
+    if measurement["timed_out"] or measurement["output_limit_exceeded"]:
+        return 3
+    return measurement["returncode"] if measurement["returncode"] >= 0 else 3
+
+
+if __name__ == "__main__" and not os.environ.get(_COORDINATOR_WORKER_MARKER):
+    _code = _supervise_continuation_cli(sys.argv[1:])
+    if _code is not None:
+        raise SystemExit(_code)
+
+
 import argparse
 import base64
 import hashlib
 import json
 import math
-import os
-from pathlib import Path
 import re
 import resource
 import selectors
 import signal
 import shutil
 import subprocess
-import sys
 import time
 from typing import Any
 
@@ -1064,7 +1232,9 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
     execution_program_dir = Path(protocol.get("execution_program_dir", "")).resolve()
     from research_execution import (begin_coordinator_phase, coordinator_phase_guard,
                                     finish_coordinator_phase,
-                                    read_frozen_program)
+                                    read_frozen_program, register_coordinator_entry_baseline)
+    register_coordinator_entry_baseline(_WORKER_ENTRY_CPU_SECONDS,
+                                        _WORKER_ENTRY_MONOTONIC_NS)
     try:
         _, execution_config, _ = read_frozen_program(execution_program_dir)
     except Exception as error:
@@ -1087,13 +1257,42 @@ def run_preflight(protocol_path: Path, spec_path: Path, receipt_path: Path) -> d
     try:
         with coordinator_phase_guard(execution_program_dir, token["token"]):
             receipt = _run_preflight_impl(protocol_path, spec_path, receipt_path)
-        finish_coordinator_phase(execution_program_dir, token["token"], status="completed",
-                                 evidence_sha256=file_sha(receipt_path))
+        phase_receipt = finish_coordinator_phase(execution_program_dir, token["token"], status="completed",
+                                                 evidence_sha256=file_sha(receipt_path))
+        receipt["_coordinator_phase"] = {
+            "token": phase_receipt["token"], "phase_id": phase_receipt["phase_id"],
+            "pid": phase_receipt["pid"],
+            "pid_starttime_ticks": phase_receipt["coordinator_pid_starttime_ticks"],
+            "worker_self_peak_rss_bytes": phase_receipt["coordinator_peak_rss_bytes"],
+            "worker_self_vm_hwm_bytes": phase_receipt["coordinator_proc_vm_hwm_bytes"],
+            "status": phase_receipt["status"],
+        }
         return receipt
     except BaseException as error:
+        failure_category = "coordinator_phase_failure"
+        try:
+            _, execution_config, protocol_sha = read_frozen_program(execution_program_dir)
+            events = [json.loads(line) for line in
+                      (execution_config["ledger_dir"] / "process-events.jsonl").read_text().splitlines()]
+            scoped = [event for event in events if event.get("protocol_sha256") == protocol_sha]
+            expected_ids = set(continuation["slots"][phase_id])
+            stage_events = [event for event in scoped if event.get("event") == "completed"
+                            and event.get("run_id") in expected_ids]
+            statuses = {event.get("run_id"): event.get("status") for event in stage_events}
+            hard_statuses = {"timed_out", "resource_exhausted", "resource_accounting_unavailable",
+                             "coordinator_limit", "orphaned_process_group"}
+            if any(status in hard_statuses for status in statuses.values()):
+                failure_category = "coordinator_phase_failure"
+            elif set(statuses) != expected_ids or any(status != "completed" for status in statuses.values()):
+                failure_category = "stage_failure"
+            else:
+                failure_category = "qualification_failure"
+        except Exception:
+            failure_category = "coordinator_phase_failure"
         try:
             finish_coordinator_phase(execution_program_dir, token["token"], status="failed",
-                                     reason=f"{type(error).__name__}: {error}")
+                                     reason=f"{type(error).__name__}: {error}",
+                                     failure_category=failure_category)
         except BaseException as accounting_error:
             raise PreflightError(
                 f"preflight failed ({type(error).__name__}: {error}); phase accounting also failed "
@@ -1288,7 +1487,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         result = run_preflight(args.protocol, args.spec, args.receipt)
-        print(json.dumps({"status": result["status"], "preflight_id": result["preflight_id"], "receipt_sha256": file_sha(args.receipt)}, sort_keys=True))
+        print(json.dumps({"status": result["status"], "preflight_id": result["preflight_id"],
+                          "receipt_sha256": file_sha(args.receipt),
+                          "coordinator_phase": result.get("_coordinator_phase")}, sort_keys=True))
         return 0
     except (PreflightError, OSError, ValueError, json.JSONDecodeError) as error:
         print(f"scientific-pipeline-preflight: refused: {error}", file=sys.stderr)

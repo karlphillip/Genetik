@@ -71,6 +71,9 @@ struct DiscreteConditionalGrammarWork {
     std::size_t poolEvaluationWork = 0;
     std::size_t estimatedPeakBytes = 0;
     DiscreteConditionalCompositionWork composition;
+    std::size_t predicateCandidatesBeforeReduction = 0;
+    std::size_t branchCandidatesBeforeReduction = 0;
+    std::size_t trainingTraceEvaluations = 0;
 };
 
 enum class DiscreteConditionalGrammarStatus {
@@ -136,6 +139,24 @@ struct PoolKey {
     }
 };
 
+struct BehaviorSignature {
+    bool boolean = false;
+    std::vector<std::uint64_t> values;
+    std::vector<std::uint8_t> valid;
+
+    bool operator==(const BehaviorSignature&) const = default;
+
+    bool operator<(const BehaviorSignature& other) const noexcept {
+        return std::tie(boolean, valid, values) <
+               std::tie(other.boolean, other.valid, other.values);
+    }
+};
+
+inline bool componentFitsConditionalDepth(std::size_t expressionDepth,
+                                          std::size_t maximumConditionalDepth) noexcept {
+    return maximumConditionalDepth > 1 && expressionDepth < maximumConditionalDepth;
+}
+
 class Enumerator {
 public:
     Enumerator(const DiscreteConditionalGrammar& grammar,
@@ -167,7 +188,10 @@ public:
     const std::vector<DiscreteExpression>& enumerate(DiscreteType type, std::size_t nodes,
                                                      bool predicate,
                                                      std::size_t booleanNestingRemaining) {
-        const PoolKey key{predicate, type, nodes, booleanNestingRemaining};
+        // Nesting allowance affects only Boolean productions. Integer grammar
+        // pools are identical under every remaining Boolean depth.
+        const PoolKey key{predicate, type, nodes,
+                          type == DiscreteType::Bool ? booleanNestingRemaining : 0};
         if (const auto found = pools_.find(key); found != pools_.end())
             return found->second;
         constexpr std::size_t mapEntryBytes = 128;
@@ -358,18 +382,89 @@ public:
     std::vector<DiscreteExpression> all(DiscreteType type, std::size_t maximumNodes,
                                         bool predicate) {
         std::vector<DiscreteExpression> output;
+        // Finish memoized construction before collecting roots. Moving roots
+        // preserves their node storage and avoids a deep copy of every tree.
         for (std::size_t nodes = 1; nodes <= maximumNodes; ++nodes) {
             if (cancelled() || exhausted_)
                 break;
             const auto& sizePool =
                 enumerate(type, nodes, predicate, predicate ? grammar_.maximumBooleanNesting : 0);
-            for (const auto& expression : sizePool) {
-                if (cancelled())
+            const auto remainingPoolSlots = limits_.maximumPoolExpressions -
+                                            std::min(generated_, limits_.maximumPoolExpressions);
+            if (sizePool.size() >
+                remainingPoolSlots - std::min(pendingRootExpressions_, remainingPoolSlots)) {
+                exhausted_ = true;
+                break;
+            }
+            pendingRootExpressions_ += sizePool.size();
+        }
+        if (cancelled() || exhausted_)
+            return output;
+        std::size_t total = 0;
+        for (std::size_t nodes = 1; nodes <= maximumNodes; ++nodes) {
+            const PoolKey key{predicate, type, nodes,
+                              type == DiscreteType::Bool ? grammar_.maximumBooleanNesting : 0};
+            const auto found = pools_.find(key);
+            if (found != pools_.end()) {
+                if (!addWithin(total, found->second.size(),
+                               std::numeric_limits<std::size_t>::max())) {
+                    exhausted_ = true;
                     return output;
-                if (!append(output, expression))
-                    return output;
+                }
+                total += found->second.size();
             }
         }
+        const auto collected = total;
+        if (collected > std::numeric_limits<std::size_t>::max() / sizeof(DiscreteExpression)) {
+            exhausted_ = true;
+            return output;
+        }
+        const auto transferBytes = collected * sizeof(DiscreteExpression);
+        if (!addWithin(currentBytes_, transferBytes, limits_.maximumEstimatedBytes)) {
+            exhausted_ = true;
+            return output;
+        }
+        peakBytes_ = std::max(peakBytes_, currentBytes_ + transferBytes);
+        output.reserve(collected);
+        for (std::size_t nodes = 1; nodes <= maximumNodes; ++nodes) {
+            if (cancelled())
+                return output;
+            const PoolKey key{predicate, type, nodes,
+                              type == DiscreteType::Bool ? grammar_.maximumBooleanNesting : 0};
+            const auto found = pools_.find(key);
+            if (found == pools_.end())
+                continue;
+            for (auto& expression : found->second) {
+                if (generated_ == limits_.maximumPoolExpressions) {
+                    exhausted_ = true;
+                    break;
+                }
+                output.push_back(std::move(expression));
+                ++generated_;
+                --pendingRootExpressions_;
+            }
+            if (exhausted_)
+                break;
+        }
+        pools_.clear();
+        std::size_t outputBytes = 0;
+        for (const auto& expression : output) {
+            std::size_t bytes = 0;
+            if (!expressionStorageEstimate(expression.nodeCount(), limits_.maximumEstimatedBytes,
+                                           bytes) ||
+                !addWithin(outputBytes, bytes, limits_.maximumEstimatedBytes)) {
+                exhausted_ = true;
+                return {};
+            }
+            outputBytes += bytes;
+        }
+        if (!addWithin(heldBytes_, outputBytes, limits_.maximumEstimatedBytes)) {
+            exhausted_ = true;
+            return {};
+        }
+        heldBytes_ += outputBytes;
+        currentBytes_ = heldBytes_;
+        peakBytes_ = std::max(peakBytes_, currentBytes_);
         return output;
     }
 
@@ -403,7 +498,8 @@ private:
     bool append(std::vector<DiscreteExpression>& into, DiscreteExpression&& expression) {
         if (cancelled())
             return false;
-        if (generated_ == limits_.maximumPoolExpressions) {
+        if (generated_ >= limits_.maximumPoolExpressions ||
+            pendingRootExpressions_ >= limits_.maximumPoolExpressions - generated_) {
             exhausted_ = true;
             return false;
         }
@@ -413,24 +509,17 @@ private:
             exhausted_ = true;
             return false;
         }
-        // Account both the memoized size pools and the final output pool copies.
-        constexpr std::size_t multiplier = 2;
-        if (bytes > limits_.maximumEstimatedBytes / multiplier ||
-            !addWithin(currentBytes_, bytes * multiplier, limits_.maximumEstimatedBytes)) {
+        // The expression is constructed as a transient, then retained once.
+        // Transient peak storage was admitted by admitTransient().
+        if (!addWithin(currentBytes_, bytes, limits_.maximumEstimatedBytes)) {
             exhausted_ = true;
             return false;
         }
-        currentBytes_ += bytes * multiplier;
+        currentBytes_ += bytes;
         peakBytes_ = std::max(peakBytes_, currentBytes_);
         into.push_back(std::move(expression));
         ++generated_;
         return true;
-    }
-
-    bool append(std::vector<DiscreteExpression>& into, const DiscreteExpression& expression) {
-        if (!admitTransient(expression.nodeCount()))
-            return false;
-        return append(into, DiscreteExpression(expression));
     }
 
 private:
@@ -439,7 +528,8 @@ private:
     std::size_t dimensions_;
     const std::atomic<bool>* cancellation_;
     std::map<PoolKey, std::vector<DiscreteExpression>> pools_;
-    std::size_t attempts_ = 0, generated_ = 0, invalid_ = 0, currentBytes_ = 0, peakBytes_ = 0;
+    std::size_t attempts_ = 0, generated_ = 0, invalid_ = 0, currentBytes_ = 0, heldBytes_ = 0,
+                pendingRootExpressions_ = 0, peakBytes_ = 0;
     bool exhausted_ = false;
 };
 
@@ -568,14 +658,16 @@ inline bool addWork(std::size_t& work, std::size_t amount, std::size_t cap) noex
     return true;
 }
 
-inline std::string behaviorKey(const DiscreteExpression& expression,
-                               const DiscreteSpecification& specification,
-                               const DiscreteEvaluationLimits& limits, std::size_t& work,
-                               std::size_t workCap, const std::atomic<bool>* cancellation,
-                               bool& valid, bool& exhausted) {
-    std::string key;
-    key.reserve(specification.observations().size() * 24 + 1);
-    key.push_back(expression.type() == DiscreteType::Bool ? 'b' : 'i');
+inline BehaviorSignature behaviorKey(const DiscreteExpression& expression,
+                                     const DiscreteSpecification& specification,
+                                     const DiscreteEvaluationLimits& limits, std::size_t& work,
+                                     std::size_t workCap, const std::atomic<bool>* cancellation,
+                                     bool& valid, bool& exhausted,
+                                     std::size_t* traceEvaluations = nullptr) {
+    BehaviorSignature key;
+    key.boolean = expression.type() == DiscreteType::Bool;
+    key.values.reserve(specification.observations().size());
+    key.valid.reserve(specification.observations().size());
     valid = true;
     for (const auto& row : specification.observations()) {
         if (cancellation && cancellation->load(std::memory_order_relaxed)) {
@@ -586,6 +678,8 @@ inline std::string behaviorKey(const DiscreteExpression& expression,
             exhausted = true;
             return {};
         }
+        if (traceEvaluations)
+            ++*traceEvaluations;
         auto perRowLimits = limits;
         const auto remaining = workCap - work;
         const auto visits = remaining / 2;
@@ -613,16 +707,15 @@ inline std::string behaviorKey(const DiscreteExpression& expression,
             valid = false;
             // Preserve partial validity: a branch may overflow on rows where a
             // lazy conditional never selects it.
-            key.push_back('!');
+            key.valid.push_back(0);
+            key.values.push_back(0);
             continue;
         }
+        key.valid.push_back(1);
         if (evaluated.value->type() == DiscreteType::Bool) {
-            key.push_back(evaluated.value->boolean() ? 'B' : 'b');
+            key.values.push_back(evaluated.value->boolean() ? 1 : 0);
         } else {
-            const auto value = evaluated.value->integer();
-            key.push_back('I');
-            key.append(std::to_string(value));
-            key.push_back(';');
+            key.values.push_back(static_cast<std::uint64_t>(evaluated.value->integer()));
         }
     }
     return key;
@@ -690,6 +783,8 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
     Enumerator enumerator(grammar, limits, specification.dimensions(), cancellation);
     auto predicates = enumerator.all(DiscreteType::Bool, grammar.maximumPredicateNodes, true);
     auto branches = enumerator.all(DiscreteType::Int64, grammar.maximumBranchNodes, false);
+    result.work.predicateCandidatesBeforeReduction = predicates.size();
+    result.work.branchCandidatesBeforeReduction = branches.size();
     result.work.constructionAttempts = enumerator.attempts();
     result.work.generatedExpressions = enumerator.generated();
     result.work.invalidExpressions = enumerator.invalid();
@@ -706,9 +801,11 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
         return result;
     }
 
-    // Collapse only expressions with identical behavior on training rows. The
-    // first expression is the shortest and stable grammar-order representative;
-    // replacing another member cannot change any finite-training conditional.
+    bool depthExcluded = false;
+    // Collapse expressions with identical typed behavior on training rows. Keep
+    // the first shortest representative that can fit below the selector's outer
+    // conditional node. If a shorter expression is too deep, a larger shallower
+    // expression with the same trace remains eligible instead.
     const auto reduce = [&](std::vector<DiscreteExpression>& candidates) -> bool {
         std::size_t reductionBytes = 0;
         for (const auto& candidate : candidates) {
@@ -716,13 +813,13 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
             if (!expressionStorageEstimate(candidate.nodeCount(), limits.maximumEstimatedBytes,
                                            nodeBytes))
                 return false;
-            constexpr auto perRowSignatureBytes = std::size_t{24};
+            constexpr auto perRowSignatureBytes = sizeof(std::uint64_t) + sizeof(std::uint8_t);
             if (specification.observations().size() >
                 (limits.maximumEstimatedBytes -
-                 std::min(limits.maximumEstimatedBytes, sizeof(std::string) + 64)) /
+                 std::min(limits.maximumEstimatedBytes, sizeof(BehaviorSignature) + 128)) /
                     perRowSignatureBytes)
                 return false;
-            const auto signatureBytes = sizeof(std::string) + 64 +
+            const auto signatureBytes = sizeof(BehaviorSignature) + 128 +
                                         specification.observations().size() * perRowSignatureBytes;
             if (!addWithin(reductionBytes, nodeBytes, limits.maximumEstimatedBytes))
                 return false;
@@ -735,14 +832,19 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
                        limits.maximumEstimatedBytes))
             return false;
         result.work.estimatedPeakBytes += reductionBytes;
-        std::set<std::string> seen;
+        std::set<BehaviorSignature> seen;
         std::vector<DiscreteExpression> representatives;
         representatives.reserve(candidates.size());
         for (const auto& candidate : candidates) {
+            if (!componentFitsConditionalDepth(candidate.depth(), limits.maximumConditionalDepth)) {
+                depthExcluded = true;
+                continue;
+            }
             bool valid = false, exhausted = false;
-            auto key = behaviorKey(candidate, specification, limits.evaluation,
-                                   result.work.poolEvaluationWork, limits.maximumEvaluationWork,
-                                   cancellation, valid, exhausted);
+            auto key =
+                behaviorKey(candidate, specification, limits.evaluation,
+                            result.work.poolEvaluationWork, limits.maximumEvaluationWork,
+                            cancellation, valid, exhausted, &result.work.trainingTraceEvaluations);
             if (exhausted)
                 return false;
             if (!valid)
@@ -770,8 +872,11 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
     result.work.predicatePoolSize = predicates.size();
     result.work.branchPoolSize = branches.size();
     if (predicates.empty() || branches.empty()) {
-        result.status = DiscreteConditionalGrammarStatus::Invalid;
-        result.diagnostic = "declared grammar generated no valid predicate or branch candidates";
+        result.status = depthExcluded ? DiscreteConditionalGrammarStatus::ResourceExhausted
+                                      : DiscreteConditionalGrammarStatus::Invalid;
+        result.diagnostic =
+            depthExcluded ? "conditional depth bound excludes all generated components"
+                          : "declared grammar generated no valid predicate or branch candidates";
         return result;
     }
 

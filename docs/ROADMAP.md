@@ -467,3 +467,12 @@ the default remains atomic predicates. Matched controls recover composed
 modular/comparison conjunctions and independent-condition disjunctions where
 atomic predicates fail within the same bounds. See
 `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
+
+## Boolean predicate pool optimization
+
+Root moves, typed finite-training signatures, and shared integer cache entries reduce
+estimated logical peak bytes by about 56% on both frozen controls without changing
+trace or selector work. Timing stayed within measurement noise. The next mathematical
+development priority is bottom-up trace construction from typed child traces, with
+explicit proof and accounting for checked Int64 arithmetic, invalid rows, and lazy
+conditional branches before attempting to reduce repeated evaluation work.

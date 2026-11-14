@@ -461,5 +461,9 @@ combinations, cumulative evaluation work, logical memory estimate, and
 cancellation are bounded. Qualification demonstrates arithmetic and modular
 piecewise constructions on training observations with separate held-out
 assessment. This is deterministic bounded synthesis, not a claim of universal
-equivalence or improved stochastic search. See
+equivalence or improved stochastic search. Boolean conjunction, disjunction,
+and negation may be enabled as bounded lazy-`IfThenElse` predicate compositions;
+the default remains atomic predicates. Matched controls recover composed
+modular/comparison conjunctions and independent-condition disjunctions where
+atomic predicates fail within the same bounds. See
 `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.

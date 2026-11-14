@@ -1,5 +1,6 @@
 #include <DiscreteConditionalGrammarSynthesis.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <array>
 #include <cstdlib>
@@ -20,6 +21,16 @@ DiscreteSpecification specification(const std::vector<std::int64_t>& values, aut
     for (const auto x : values)
         rows.push_back({{x}, DiscreteValue::integer(function(x))});
     return {1, std::move(rows)};
+}
+
+DiscreteSpecification twoInputSpecification(const std::vector<std::int64_t>& first,
+                                            const std::vector<std::int64_t>& second,
+                                            auto function) {
+    std::vector<DiscreteSpecificationObservation> rows;
+    for (const auto x : first)
+        for (const auto y : second)
+            rows.push_back({{x, y}, DiscreteValue::integer(function(x, y))});
+    return {2, std::move(rows)};
 }
 
 DiscreteConditionalGrammar grammar(std::vector<DiscreteKind> operators,
@@ -278,6 +289,213 @@ void invalidArithmeticAndLazyBranches() {
               result.status == DiscreteConditionalGrammarStatus::Partial,
           "invalid candidate arithmetic remains distinct from synthesis failure");
 }
+
+DiscreteConditionalGrammar
+composedPredicateGrammar(std::size_t nesting, std::vector<std::int64_t> constants,
+                         std::vector<bool> booleans, bool conjunction = false,
+                         bool disjunction = false, bool negation = false) {
+    DiscreteConditionalGrammar declared;
+    declared.variables = {0, 1};
+    declared.branchConstants = {0, 1};
+    declared.predicateConstants = std::move(constants);
+    declared.booleanConstants = std::move(booleans);
+    declared.branchOperators.clear();
+    declared.predicateOperators = {DiscreteKind::Modulo, DiscreteKind::Equal,
+                                   DiscreteKind::LessThan};
+    declared.maximumPredicateNodes = 10;
+    declared.maximumPredicateIntegerNodes = 3;
+    declared.maximumBranchNodes = 1;
+    declared.maximumExpressionDepth = 4;
+    declared.maximumBooleanNesting = nesting;
+    declared.allowBooleanAnd = conjunction;
+    declared.allowBooleanOr = disjunction;
+    declared.allowBooleanNot = negation;
+    declared.expressionLimits.maxNodes = 16;
+    declared.expressionLimits.maxDepth = 8;
+    return declared;
+}
+
+DiscreteConditionalGrammarResult synthesizeComposed(const DiscreteSpecification& training,
+                                                    const DiscreteConditionalGrammar& grammar) {
+    DiscreteConditionalGrammarLimits limits;
+    limits.maximumPoolExpressions = 200000;
+    limits.maximumConstructionAttempts = 1000000;
+    limits.maximumCandidateCombinations = 1000000;
+    limits.maximumConditionalNodes = 16;
+    limits.maximumConditionalDepth = 8;
+    limits.maximumEvaluationWork = 50000000;
+    limits.maximumEstimatedBytes = 256 * 1024 * 1024;
+    return synthesizeDiscreteConditionalFromGrammar(training, grammar, limits);
+}
+
+void composedPredicateRecovery() {
+    const auto conjunctionTraining = twoInputSpecification({-6, -3, -1, 0, 1, 3, 6}, {-2, -1, 1, 2},
+                                                           [](std::int64_t x, std::int64_t y) {
+                                                               auto residue = x % 3;
+                                                               if (residue < 0)
+                                                                   residue += 3;
+                                                               return residue == 0 && y < 0 ? 1 : 0;
+                                                           });
+    auto conjunctionGrammar = composedPredicateGrammar(1, {0, 3}, {false}, true);
+    const auto conjunction = synthesizeComposed(conjunctionTraining, conjunctionGrammar);
+    if (conjunction.status != DiscreteConditionalGrammarStatus::ExactTraining)
+        std::cerr << "conjunction: status=" << static_cast<int>(conjunction.status)
+                  << " matches=" << conjunction.matchingRows << '/' << conjunction.totalRows
+                  << " diagnostic=" << conjunction.diagnostic
+                  << " predicates=" << conjunction.work.predicatePoolSize
+                  << " attempts=" << conjunction.work.constructionAttempts
+                  << " generated=" << conjunction.work.generatedExpressions
+                  << " bytes=" << conjunction.work.estimatedPeakBytes
+                  << " combinations=" << conjunction.work.composition.combinations << '\n';
+    check(conjunction.status == DiscreteConditionalGrammarStatus::ExactTraining &&
+              conjunction.expression,
+          "composed modular and comparison predicate exactly recovers the training grid");
+    check(conjunction.work.predicatePoolSize > 0 && conjunction.work.composition.combinations > 0 &&
+              conjunction.work.poolEvaluationWork <= 50000000,
+          "Boolean enumeration and selector share the declared cumulative work budget");
+    check(std::count_if(
+              conjunction.expression->nodes().begin(), conjunction.expression->nodes().end(),
+              [](const auto& node) { return node.kind() == DiscreteKind::IfThenElse; }) >= 2,
+          "selected conjunction contains a composed Boolean predicate beneath the outer selector");
+    check(conjunction.work.invalidExpressions > 0,
+          "invalid modular candidates remain accounted during Boolean predicate enumeration");
+
+    // A matched grammar with the same integer productions, constants, node/depth
+    // bounds and output branches but no Boolean composition must not fit the grid.
+    auto atomic = conjunctionGrammar;
+    atomic.maximumBooleanNesting = 0;
+    const auto atomicResult = synthesizeComposed(conjunctionTraining, atomic);
+    check(atomicResult.status == DiscreteConditionalGrammarStatus::Partial &&
+              atomicResult.matchingRows < atomicResult.totalRows,
+          "atomic-predicate baseline cannot recover the conjunction within matched bounds");
+
+    const auto disjunctionTraining = twoInputSpecification(
+        {-2, -1, 0, 1, 2}, {-3, -2, -1, 0, 1, 2, 3}, [](std::int64_t x, std::int64_t y) {
+            auto residue = y % 2;
+            if (residue < 0)
+                residue += 2;
+            return x < 0 || residue == 0 ? 1 : 0;
+        });
+    auto disjunctionGrammar = composedPredicateGrammar(1, {0, 2}, {true}, false, true);
+    const auto disjunction = synthesizeComposed(disjunctionTraining, disjunctionGrammar);
+    check(disjunction.status == DiscreteConditionalGrammarStatus::ExactTraining &&
+              disjunction.expression,
+          "composed independent arithmetic conditions recover the disjunction training grid");
+    check(std::count_if(
+              disjunction.expression->nodes().begin(), disjunction.expression->nodes().end(),
+              [](const auto& node) { return node.kind() == DiscreteKind::IfThenElse; }) >= 2,
+          "selected disjunction contains a composed Boolean predicate beneath the outer selector");
+    auto disjunctionAtomicGrammar = disjunctionGrammar;
+    disjunctionAtomicGrammar.maximumBooleanNesting = 0;
+    const auto disjunctionAtomic =
+        synthesizeComposed(disjunctionTraining, disjunctionAtomicGrammar);
+    check(disjunctionAtomic.status == DiscreteConditionalGrammarStatus::Partial &&
+              disjunctionAtomic.matchingRows < disjunctionAtomic.totalRows,
+          "atomic-predicate baseline cannot recover the disjunction within matched bounds");
+
+    // These observations were not supplied to either constructor invocation.
+    for (const auto [x, y] : std::array<std::array<std::int64_t, 2>, 8>{{{{-9, -4}},
+                                                                         {{-4, 5}},
+                                                                         {{-1, 3}},
+                                                                         {{0, -5}},
+                                                                         {{3, -2}},
+                                                                         {{6, 7}},
+                                                                         {{8, 0}},
+                                                                         {{12, -1}}}}) {
+        auto residue3 = x % 3;
+        if (residue3 < 0)
+            residue3 += 3;
+        auto residue2 = y % 2;
+        if (residue2 < 0)
+            residue2 += 2;
+        const auto firstValue = conjunction.expression->evaluate(std::array<std::int64_t, 2>{x, y});
+        const auto secondValue =
+            disjunction.expression->evaluate(std::array<std::int64_t, 2>{x, y});
+        check(firstValue.valid() && firstValue.value->integer() == (residue3 == 0 && y < 0 ? 1 : 0),
+              "conjunction agrees on held-out negative and modulo-boundary observations");
+        check(secondValue.valid() &&
+                  secondValue.value->integer() == (x < 0 || residue2 == 0 ? 1 : 0),
+              "disjunction agrees on held-out independent arithmetic observations");
+    }
+
+    const auto repeated = synthesizeComposed(disjunctionTraining, disjunctionGrammar);
+    check(repeated.expression && disjunction.expression &&
+              repeated.expression->toString() == disjunction.expression->toString() &&
+              repeated.work.constructionAttempts == disjunction.work.constructionAttempts,
+          "Boolean grammar construction and equal-score tie breaking are deterministic");
+    auto invalidNesting = disjunctionGrammar;
+    invalidNesting.maximumBooleanNesting = 17;
+    check(synthesizeComposed(disjunctionTraining, invalidNesting).status ==
+              DiscreteConditionalGrammarStatus::Invalid,
+          "Boolean nesting has a hard grammar bound");
+}
+
+void booleanNotProduction() {
+    auto declared = grammar({DiscreteKind::LessThan}, {0}, 6);
+    declared.variables = {0};
+    declared.booleanConstants = {false, true};
+    declared.predicateOperators = {DiscreteKind::LessThan};
+    declared.maximumPredicateNodes = 6;
+    declared.maximumPredicateIntegerNodes = 3;
+    declared.maximumBooleanNesting = 1;
+    declared.allowBooleanNot = true;
+    declared.maximumExpressionDepth = 4;
+    declared.expressionLimits.maxNodes = 8;
+    declared.expressionLimits.maxDepth = 8;
+    DiscreteConditionalGrammarLimits limits;
+    limits.maximumPoolExpressions = 10000;
+    limits.maximumConstructionAttempts = 10000;
+    limits.maximumEstimatedBytes = 16 * 1024 * 1024;
+    genetik_conditional_grammar_detail::Enumerator enumerator(declared, limits, 1, nullptr);
+    const auto predicates = enumerator.all(DiscreteType::Bool, 6, true);
+    const auto found =
+        std::find_if(predicates.begin(), predicates.end(), [](const auto& expression) {
+            return expression.toString() == "if((x0 < 0), false, true)";
+        });
+    check(found != predicates.end() && !enumerator.exhausted(),
+          "declared grammar automatically enumerates NOT through lazy IfThenElse");
+    const auto negative = found->evaluate(std::array<std::int64_t, 1>{-1});
+    const auto nonnegative = found->evaluate(std::array<std::int64_t, 1>{1});
+    check(negative.valid() && !negative.value->boolean() && nonnegative.valid() &&
+              nonnegative.value->boolean(),
+          "generated NOT production has the expected Boolean semantics");
+
+    const auto x = DiscreteExpression::variable(0, 1);
+    const auto zero = DiscreteExpression::integer(0, 1);
+    const auto negativeCondition = DiscreteExpression::binary(DiscreteKind::LessThan, x, zero);
+    const auto zeroRemainder = DiscreteExpression::binary(DiscreteKind::Modulo, x, zero);
+    const auto invalidPredicate =
+        DiscreteExpression::binary(DiscreteKind::Equal, zeroRemainder, zero);
+    const auto lazyPredicate = DiscreteExpression::conditional(
+        negativeCondition, DiscreteExpression::boolean(true, 1), invalidPredicate);
+    const auto skipped = lazyPredicate.evaluate(std::array<std::int64_t, 1>{-1});
+    const auto selected = lazyPredicate.evaluate(std::array<std::int64_t, 1>{1});
+    check(skipped.valid() && skipped.value->boolean() &&
+              selected.status == DiscreteEvaluationStatus::MathematicalInvalid,
+          "Boolean IfThenElse short-circuits an unselected invalid predicate branch");
+}
+
+void invalidTraceDistinction() {
+    const std::vector<DiscreteSpecificationObservation> rows{{{0}, DiscreteValue::integer(0)},
+                                                             {{1}, DiscreteValue::integer(1)}};
+    const DiscreteSpecification training(1, rows);
+    const auto validFalse = DiscreteExpression::boolean(false, 1);
+    const auto x = DiscreteExpression::variable(0, 1);
+    const auto zero = DiscreteExpression::integer(0, 1);
+    const auto invalidRemainder = DiscreteExpression::binary(DiscreteKind::Modulo, x, zero);
+    const auto invalidBoolean =
+        DiscreteExpression::binary(DiscreteKind::Equal, invalidRemainder, zero);
+    std::size_t work = 0;
+    bool valid = false, exhausted = false;
+    const auto validKey = genetik_conditional_grammar_detail::behaviorKey(
+        validFalse, training, {}, work, 1000, nullptr, valid, exhausted);
+    check(valid && !exhausted, "valid Boolean candidate produces a valid training trace");
+    const auto invalidKey = genetik_conditional_grammar_detail::behaviorKey(
+        invalidBoolean, training, {}, work, 1000, nullptr, valid, exhausted);
+    check(!valid && !exhausted && validKey != invalidKey &&
+              invalidKey.find('!') != std::string::npos,
+          "finite training-behavior reduction keeps invalid rows distinct from false values");
+}
 } // namespace
 
 int main() {
@@ -287,6 +505,9 @@ int main() {
         negativeAndResourceControls();
         lazyOverflowRecovery();
         invalidArithmeticAndLazyBranches();
+        composedPredicateRecovery();
+        booleanNotProduction();
+        invalidTraceDistinction();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return EXIT_FAILURE;

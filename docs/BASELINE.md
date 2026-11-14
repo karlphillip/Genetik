@@ -1167,6 +1167,26 @@ or evaluation-speed claim. The generic GA, defaults, RNG, checkpoints, and
 existing discrete expression semantics are unchanged. See
 `DISCRETE_EXPRESSION_COMPONENTS.md`.
 
+## Bounded conditional composition (optional capability)
+
+`DiscreteConditionalComposition.hpp` deterministically selects a lazy
+`if(predicate, trueBranch, falseBranch)` from caller-supplied typed expression
+pools against an exact finite Int64 specification. Combination, complete-tree
+size/depth, evaluator work, and logical memory estimates are bounded; exact
+finite agreement, partial fit, invalid candidates, resource exhaustion, and
+cancellation are distinct outcomes. Existing expression semantics, generic
+GA, defaults, RNG, checkpoints, and APIs are unchanged. Arithmetic and modular
+piecewise controls exercise actual construction/evaluation; no stochastic
+performance claim is made. See `BOUNDED_CONDITIONAL_COMPOSITION.md`.
+
+## Component-aware pilot disposition
+
+The component-aware pilot is closed as **NO-GO** because its production
+pipeline and aggregate memory enforcement could not be qualified. The research
+branch and uncommitted preflight changes remain preserved and unmerged. The
+pilot is not authorized to restart or extend. No research-execution
+infrastructure was modified. See `COMPONENT_AWARE_PILOT_CLOSEOUT.md`.
+
 ## Engineering Foundation
 
 The Engineering Foundation milestone adds repository C++ formatting and focused

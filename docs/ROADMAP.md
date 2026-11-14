@@ -441,3 +441,13 @@ Int64/Bool substructures, including closed bounded reductions, while preserving
 the existing evaluator and its occurrence-based work. This is a representation
 capability, not a new search algorithm; prior compositional experiments did not
 show improved exact-recovery rates. See `DISCRETE_EXPRESSION_COMPONENTS.md`.
+
+## Bounded conditional composition (optional capability)
+
+The additive `DiscreteConditionalComposition.hpp` capability composes an
+explicit finite set of declared Boolean predicates and available Int64 branch
+components against a finite exact specification. It provides deterministic
+candidate ordering and explicit candidate, structure, evaluator-work, memory
+estimate, and cancellation bounds without changing the generic GA or its
+defaults. Exact finite training agreement is not a universal equivalence claim.
+See `BOUNDED_CONDITIONAL_COMPOSITION.md`.

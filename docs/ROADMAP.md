@@ -451,3 +451,15 @@ candidate ordering and explicit candidate, structure, evaluator-work, memory
 estimate, and cancellation bounds without changing the generic GA or its
 defaults. Exact finite training agreement is not a universal equivalence claim.
 See `BOUNDED_CONDITIONAL_COMPOSITION.md`.
+
+## Bounded conditional grammar synthesis (optional capability)
+
+`DiscreteConditionalGrammarSynthesis.hpp` deterministically enumerates typed
+predicate and branch pools from a declared finite grammar, then reuses the
+conditional selector above. Expression size/depth, pool construction, candidate
+combinations, cumulative evaluation work, logical memory estimate, and
+cancellation are bounded. Qualification demonstrates arithmetic and modular
+piecewise constructions on training observations with separate held-out
+assessment. This is deterministic bounded synthesis, not a claim of universal
+equivalence or improved stochastic search. See
+`BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.

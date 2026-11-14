@@ -1179,6 +1179,16 @@ GA, defaults, RNG, checkpoints, and APIs are unchanged. Arithmetic and modular
 piecewise controls exercise actual construction/evaluation; no stochastic
 performance claim is made. See `BOUNDED_CONDITIONAL_COMPOSITION.md`.
 
+`DiscreteConditionalGrammarSynthesis.hpp` adds deterministic bounded typed
+grammar enumeration for predicate and branch pools and feeds them into that
+selector. The grammar is explicit and training-only; no target expressions or
+held-out points enter construction. Size/depth, generated pool, construction
+attempt, candidate combination, cumulative evaluation work, logical memory
+estimate, and cancellation limits are enforced. Qualification recovers two
+independently specified arithmetic/modular piecewise controls with separate
+held-out checks. Finite agreement is not general mathematical equivalence. See
+`BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
+
 ## Component-aware pilot disposition
 
 The component-aware pilot is closed as **NO-GO** because its production

@@ -1186,7 +1186,12 @@ held-out points enter construction. Size/depth, generated pool, construction
 attempt, candidate combination, cumulative evaluation work, logical memory
 estimate, and cancellation limits are enforced. Qualification recovers two
 independently specified arithmetic/modular piecewise controls with separate
-held-out checks. Finite agreement is not general mathematical equivalence. See
+held-out checks. Boolean composition is opt-in and reuses lazy `IfThenElse`
+semantics to express AND, OR, and NOT without adding public operator IDs. On
+matched bounds, the composed grammar exactly recovers a modular/comparison
+conjunction and an independent-condition disjunction; atomic-predicate controls
+do not. The measured logical-memory estimates were about 187 MB and 191 MB under
+256 MiB caps. Finite agreement is not general mathematical equivalence. See
 `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
 
 ## Component-aware pilot disposition

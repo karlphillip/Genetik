@@ -238,8 +238,8 @@ void negativeAndResourceControls() {
 
 void lazyOverflowRecovery() {
     const auto maximum = std::numeric_limits<std::int64_t>::max();
-    const auto training = specification(
-        {0, 1, maximum}, [maximum](std::int64_t x) { return x < 2 ? x + 1 : maximum; });
+    const auto training =
+        specification({0, 1, maximum}, [](std::int64_t x) { return x < 2 ? x + 1 : maximum; });
     auto declared = grammar({DiscreteKind::Add, DiscreteKind::LessThan}, {0, 1, 2, maximum}, 3);
     declared.branchOperators = {DiscreteKind::Add};
     declared.predicateOperators = {DiscreteKind::LessThan};

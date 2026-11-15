@@ -178,7 +178,7 @@ frozenMultiRegionGrammar(std::size_t dimensions, std::vector<std::int64_t> predi
 }
 
 DiscreteConditionalGrammarResult runMultiRegion(const DiscreteSpecification& training,
-                                                DiscreteConditionalGrammar grammar) {
+                                                const DiscreteConditionalGrammar& grammar) {
     DiscreteConditionalGrammarLimits limits;
     limits.maximumPoolExpressions = 100000;
     limits.maximumConstructionAttempts = 500000;

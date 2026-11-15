@@ -473,10 +473,16 @@ conditionals inside generated output branches; zero keeps the established single
 selector default. Two frozen three-region families recover exactly, including a
 guarded `INT64_MIN` overflow case, while matched one-selector controls remain
 partial. A multivariate pair-of-moduli control exhausts the one-million selector
-tuple bound before candidate evaluation. The next priority is partition-directed
-candidate composition that avoids the full branch-pool Cartesian product while
-preserving best-partial selection and lazy invalidity; do not increase fixed search
-budgets to hide this limit. See `MULTIREGION_CONDITIONAL_PROTOCOL.md`.
+tuple bound before candidate evaluation under the historical selector. A separate
+opt-in partition-directed selector now recovers that fixed multivariate training
+table and its held-out rows using 153 structural-class joins, while the historical
+one-million tuple-cap result remains unchanged. The new mode preserves exhaustive
+score/node/index selection when it completes and has a separate one-million join
+budget with fully charged partition/index work. It does not establish universal
+equivalence or broad family recovery. The next priority is independent multivariate
+controls that distinguish finite-sample ambiguity from structural synthesis limits;
+keep the current operators and nesting bound fixed. See
+`MULTIREGION_CONDITIONAL_PROTOCOL.md`.
 
 ## Boolean predicate pool optimization
 

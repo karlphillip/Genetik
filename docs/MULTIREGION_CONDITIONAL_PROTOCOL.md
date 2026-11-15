@@ -54,3 +54,46 @@ Under the fixed limits above, A exactly matches 8/8 training rows. It generates 
 D exactly matches 5/5 training rows. It generates 2,136 expressions in 1,071 attempts, retains 7 predicates and 118 branches, evaluates 97,468 tuples, charges 5,456,493 work units, estimates a 4,763,106-byte peak, and takes 199 ms. Its matched baseline is `Partial`, 3/5, selecting `if((x0 == INT64_MIN), 7, -1)`; the nested selection is `if((x0 == INT64_MIN), 7, if((x0 < 0), neg(x0), -1))`. Candidate reduction also observes the invalid `neg(x0)` training behavior at `INT64_MIN`; lazy evaluation keeps it unselected in the complete expression.
 
 B's one-selector baseline is `Partial`, 7/8, selecting `if((0 == (x0 % 2)), 10, 20)`. The nested pool has 34 predicates and 516 branches, so all possible tuples number 9,052,704; the fixed one-million cap returns `ResourceExhausted` before selector evaluation. C's matched one-selector baseline is partial; the nested guarded-modulo search exhausts the aggregate 20-million work bound during trace reduction. Held-out checks are performed only for selected exact A and D expressions; no candidate is selected for B or C.
+
+## Separate partition-directed follow-up
+
+The historical B result above is unchanged and remains a one-million Cartesian
+tuple-cap exhaustion. A separate opt-in selector contract keeps the same grammar,
+training and held-out rows, pool/attempt/node/depth/work/memory limits, and adds an
+independent maximum of 1,000,000 structural-class joins. It does not reinterpret
+`maximumCandidateCombinations`.
+
+For each valid predicate, the selector scores each branch on only its selected
+training rows and rejects a branch only when it is mathematically invalid on one
+of those rows. It indexes the highest regional score, then earliest original
+branch index, for each exact `(node count, depth)` class and region. Every pair of
+classes is joined under the complete node/depth limits. This reduction is sound
+for the existing score and tie order: candidates in one exact structural class
+pair have identical structural feasibility, and regional validity and score are
+additive across the predicate's disjoint true/false partitions. Empty regions
+are vacuously valid. The final selected expression is reevaluated with the
+production checked evaluator, including combined evaluator limits and lazy
+branch semantics. This is finite-table selection only, not universal equivalence.
+The directed path's cumulative work charges actual trace handling, row scans,
+index comparisons, joins, construction, and final-winner evaluation; it does not
+simulate evaluator calls for Cartesian tuples it did not materialize. Thus a
+resource stop can differ from exhaustive tuple traversal, while mathematical
+selection and score are preserved whenever the directed search completes. This
+operational difference is isolated behind the opt-in mode and its separate join
+budget; the historical selector and tuple-cap status are unchanged.
+
+On B the directed mode reaches exact training recovery using 153 joins rather
+than 9,052,704 Cartesian tuples, avoiding 9,052,551 tuples. It scans 140,624
+partition rows and performs 72,108 scalar structural-index comparisons. The run
+charges 672,965 cumulative work units, estimates 31,968,320 B peak logical memory,
+and takes 21.6 ms median over three Release constructor runs. The full focused
+test process observed 55,572 KiB peak RSS; this process-level measurement is not
+attributed to B alone and is recorded in `BASELINE.md`.
+The selected expression is
+`if((x1 == (x0 % 2)), 30, if((0 == (x0 % 2)), 10, 20))` and is independently
+checked against all six held-out rows. Small exhaustive and ambiguous partial
+controls require identical selected expression, score and status; duplicate-row
+results match exhaustive validation. Separate guarded-modulo, invalid-predicate,
+cancellation, evaluator-quota and work-limit controls check lazy masking and
+stop-status distinctions. The opt-in mode does not
+change the historical B outcome or existing selector defaults.

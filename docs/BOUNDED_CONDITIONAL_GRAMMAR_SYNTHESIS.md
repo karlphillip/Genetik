@@ -264,6 +264,27 @@ controls preserve distinct resource and stop statuses. Deterministic C++ tests
 are the qualification basis; no scientific campaign or target-specific
 constraints were used.
 
+## Partition-directed conditional composition
+
+`enablePartitionDirectedComposition` is a separate opt-in selector path. It indexes
+branch candidates by exact node count and depth, scores each branch only on rows
+selected by the current predicate, and joins the best regional representative for
+each feasible structural-class pair. This preserves the exhaustive selector's
+training score, node-count preference, and original tuple tie-break whenever the
+directed search completes. Branch invalidity is evaluated only on its selected
+partition, so lazy unselected failures remain valid. `maximumPartitionDirectedJoins`
+is an independent hard cap; the historical `maximumCandidateCombinations` retains
+its original Cartesian-tuple meaning and its original B-control exhaustion result.
+
+The opt-in work budget charges traces, partition scans, class indexing and joins,
+candidate construction, and final-winner evaluation. It does not emulate evaluator
+calls for Cartesian tuples that were never materialized, so resource stop statuses
+can differ from exhaustive tuple traversal. The result is rechecked using the
+production evaluator and its combined limits. On the frozen multivariate modular
+control, 153 class joins recover the training and held-out table under fixed limits;
+the separate protocol records full work, memory, runtime, RSS, and partial/ambiguous
+oracle comparisons. This finite-table outcome is not a universal-equivalence claim.
+
 ## Architectural basis
 
 `DiscreteVariation::generate` is a randomized, GA-coupled generator;

@@ -1242,6 +1242,25 @@ work cap during trace reduction. See `MULTIREGION_CONDITIONAL_PROTOCOL.md`. The 
 mathematical priority is partition-directed composition to reduce candidate
 Cartesian products without weakening partial-score or invalidity semantics.
 
+The separately opted-in partition-directed follow-up leaves the historical B
+protocol outcome intact while recovering its same frozen training table and six
+held-out rows. It uses 153 exact `(node count, depth)` partition joins instead of
+9,052,704 Cartesian tuples (9,052,551 avoided), scanning 140,624 branch/predicate
+partition rows and performing 72,108 scalar structural-key comparisons. Total
+charged work is 672,965 units, including four materialized candidate expressions,
+39 construction work units, and eight final evaluator row checks
+(143 evaluator work units). Estimated peak logical memory is 31,968,320 B, and
+the Release constructor time is 21.6 ms median over three runs. The full focused
+deterministic C++ process had 55,572 KiB observed peak RSS; this process-level
+RSS is not a per-control allocation measurement. The selected
+expression is `if((x1 == (x0 % 2)), 30, if((0 == (x0 % 2)), 10, 20))`; it matches
+the independent held-out table but is not asserted universally equivalent to its
+generator. The one-selector baseline remains partial at 7/8, and the original
+nested selector still returns its recorded `ResourceExhausted` result under the
+one-million Cartesian cap. Small exact, lazy-invalid, ambiguous-partial, duplicate-
+row, cancellation, and work-exhaustion controls compare selection with exhaustive
+composition. Full details are in `MULTIREGION_CONDITIONAL_PROTOCOL.md`.
+
 ## Component-aware pilot disposition
 
 The component-aware pilot is closed as **NO-GO** because its production

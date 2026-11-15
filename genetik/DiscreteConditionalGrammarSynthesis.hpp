@@ -53,6 +53,11 @@ struct DiscreteConditionalGrammar {
     // Optional pruning from finite training behavior; defaults off to preserve
     // the original selector traversal.
     bool enableSpecificationGuidedPruning = false;
+    // Separate opt-in selector mode that joins exact (node-count, depth) branch
+    // classes against each predicate's true/false training partitions. The
+    // historical Cartesian combination limit remains unchanged and is not used
+    // as this mode's join budget.
+    bool enablePartitionDirectedComposition = false;
 };
 
 struct DiscreteConditionalGrammarLimits {
@@ -64,6 +69,8 @@ struct DiscreteConditionalGrammarLimits {
     std::size_t maximumEvaluationWork = 10000000;
     std::size_t maximumEstimatedBytes = 64 * 1024 * 1024;
     DiscreteEvaluationLimits evaluation{};
+    // Separate opt-in budget; does not redefine maximumCandidateCombinations.
+    std::size_t maximumPartitionDirectedJoins = 1000000;
 };
 
 struct DiscreteConditionalGrammarWork {
@@ -601,6 +608,7 @@ inline bool validGrammar(const DiscreteSpecification& specification,
         !limits.maximumConstructionAttempts || !limits.maximumCandidateCombinations ||
         !limits.maximumConditionalNodes || !limits.maximumConditionalDepth ||
         !limits.maximumEvaluationWork || !limits.maximumEstimatedBytes ||
+        (grammar.enablePartitionDirectedComposition && !limits.maximumPartitionDirectedJoins) ||
         !grammar.maximumPredicateNodes || !grammar.maximumBranchNodes ||
         !grammar.maximumExpressionDepth ||
         (grammar.maximumPredicateIntegerNodes &&
@@ -1178,6 +1186,7 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
                                   cancellation);
     bool depthExcluded = false;
     std::vector<BehaviorSignature> branchTrainingTraces;
+    std::vector<BehaviorSignature> predicateTrainingTraces;
     // Collapse expressions with identical typed behavior on training rows. Keep
     // the first shortest representative that can fit below the selector's outer
     // conditional node. If a shorter expression is too deep, a larger shallower
@@ -1204,7 +1213,7 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
             if (!addWithin(reductionBytes, signatureBytes, limits.maximumEstimatedBytes))
                 return false;
             reductionBytes += signatureBytes;
-            if (retainedTraces && grammar.enableSpecificationGuidedPruning) {
+            if (retainedTraces) {
                 if (!addWithin(reductionBytes, signatureBytes, limits.maximumEstimatedBytes))
                     return false;
                 reductionBytes += signatureBytes;
@@ -1238,7 +1247,8 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
                 ++result.work.equivalentExpressions;
                 continue;
             }
-            if (retainedTraces && grammar.enableSpecificationGuidedPruning) {
+            if (retainedTraces && (grammar.enableSpecificationGuidedPruning ||
+                                   grammar.enablePartitionDirectedComposition)) {
                 if (specification.observations().size() >
                     std::numeric_limits<std::size_t>::max() / 2)
                     return false;
@@ -1255,9 +1265,12 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
         candidates = std::move(representatives);
         return true;
     };
-    if (!reduce(predicates) ||
-        !reduce(branches,
-                grammar.enableSpecificationGuidedPruning ? &branchTrainingTraces : nullptr)) {
+    if (!reduce(predicates,
+                grammar.enablePartitionDirectedComposition ? &predicateTrainingTraces : nullptr) ||
+        !reduce(branches, (grammar.enableSpecificationGuidedPruning ||
+                           grammar.enablePartitionDirectedComposition)
+                              ? &branchTrainingTraces
+                              : nullptr)) {
         result.status = cancellation && cancellation->load(std::memory_order_relaxed)
                             ? DiscreteConditionalGrammarStatus::Cancelled
                             : DiscreteConditionalGrammarStatus::ResourceExhausted;
@@ -1301,9 +1314,20 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
     compositionLimits.maxEstimatedBytes = limits.maximumEstimatedBytes - usedMemory;
     compositionLimits.evaluation = limits.evaluation;
     auto selected =
-        genetik_conditional_composition_detail::composeDiscreteConditionalWithBranchTraces(
-            specification, predicates, branches, compositionLimits, cancellation,
-            branchTrainingTraces, grammar.enableSpecificationGuidedPruning);
+        grammar.enablePartitionDirectedComposition
+            ? genetik_conditional_composition_detail::composeDiscreteConditionalPartitionDirected(
+                  specification, predicates, branches, predicateTrainingTraces,
+                  branchTrainingTraces,
+                  [&] {
+                      auto partitionLimits = compositionLimits;
+                      partitionLimits.maxPartitionDirectedJoins =
+                          limits.maximumPartitionDirectedJoins;
+                      return partitionLimits;
+                  }(),
+                  cancellation)
+            : genetik_conditional_composition_detail::composeDiscreteConditionalWithBranchTraces(
+                  specification, predicates, branches, compositionLimits, cancellation,
+                  branchTrainingTraces, grammar.enableSpecificationGuidedPruning);
     result.work.composition = selected.work;
     result.work.evaluatorNodeVisits = selected.work.nodeVisits;
     result.work.evaluatorOperations = selected.work.operations;

@@ -353,6 +353,15 @@ void composedPredicateRecovery() {
     check(conjunction.work.predicatePoolSize > 0 && conjunction.work.composition.combinations > 0 &&
               conjunction.work.poolEvaluationWork <= 50000000,
           "Boolean enumeration and selector share the declared cumulative work budget");
+    check(conjunction.work.predicateCandidatesBeforeReduction == 19810 &&
+              conjunction.work.branchCandidatesBeforeReduction == 4 &&
+              conjunction.work.trainingTraceEvaluations == 554792 &&
+              conjunction.work.generatedExpressions == 40449 &&
+              conjunction.work.constructionAttempts == 20625 &&
+              conjunction.work.composition.combinations == 4448 &&
+              conjunction.work.poolEvaluationWork == 5208156 &&
+              conjunction.work.estimatedPeakBytes == 81760942,
+          "conjunction trace profile remains reproducible");
     check(std::count_if(
               conjunction.expression->nodes().begin(), conjunction.expression->nodes().end(),
               [](const auto& node) { return node.kind() == DiscreteKind::IfThenElse; }) >= 2,
@@ -385,6 +394,15 @@ void composedPredicateRecovery() {
               disjunction.expression->nodes().begin(), disjunction.expression->nodes().end(),
               [](const auto& node) { return node.kind() == DiscreteKind::IfThenElse; }) >= 2,
           "selected disjunction contains a composed Boolean predicate beneath the outer selector");
+    check(disjunction.work.predicateCandidatesBeforeReduction == 19810 &&
+              disjunction.work.branchCandidatesBeforeReduction == 4 &&
+              disjunction.work.trainingTraceEvaluations == 693490 &&
+              disjunction.work.generatedExpressions == 40449 &&
+              disjunction.work.constructionAttempts == 20625 &&
+              disjunction.work.composition.combinations == 10688 &&
+              disjunction.work.poolEvaluationWork == 8415650 &&
+              disjunction.work.estimatedPeakBytes == 83549146,
+          "disjunction trace profile remains reproducible");
     auto disjunctionAtomicGrammar = disjunctionGrammar;
     disjunctionAtomicGrammar.maximumBooleanNesting = 0;
     const auto disjunctionAtomic =
@@ -490,11 +508,20 @@ void invalidTraceDistinction() {
     const auto validKey = genetik_conditional_grammar_detail::behaviorKey(
         validFalse, training, {}, work, 1000, nullptr, valid, exhausted);
     check(valid && !exhausted, "valid Boolean candidate produces a valid training trace");
+    const auto integerZero = DiscreteExpression::integer(0, 1);
+    const auto integerZeroKey = genetik_conditional_grammar_detail::behaviorKey(
+        integerZero, training, {}, work, 1000, nullptr, valid, exhausted);
+    check(valid && !exhausted && validKey != integerZeroKey,
+          "typed trace signatures keep Boolean false distinct from integer zero");
     const auto invalidKey = genetik_conditional_grammar_detail::behaviorKey(
         invalidBoolean, training, {}, work, 1000, nullptr, valid, exhausted);
     check(!valid && !exhausted && validKey != invalidKey &&
-              invalidKey.find('!') != std::string::npos,
+              invalidKey.valid == std::vector<std::uint8_t>({0, 0}),
           "finite training-behavior reduction keeps invalid rows distinct from false values");
+
+    check(!genetik_conditional_grammar_detail::componentFitsConditionalDepth(6, 6) &&
+              genetik_conditional_grammar_detail::componentFitsConditionalDepth(5, 6),
+          "a smaller too-deep trace representative yields to a larger feasible one");
 }
 } // namespace
 

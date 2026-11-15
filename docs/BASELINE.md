@@ -1194,6 +1194,16 @@ do not. The measured logical-memory estimates were about 187 MB and 191 MB under
 256 MiB caps. Finite agreement is not general mathematical equivalence. See
 `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
 
+The follow-up root-move and typed-signature optimization reduces estimated peak
+logical bytes by about 56% on both fixed controls. It shares integer pools across
+Boolean-depth cache states and keeps the shortest trace representative that fits the
+selector depth bound.
+Exact recoveries, retained pools, trace evaluations, selector combinations, and
+cumulative evaluation work are unchanged. Observed RSS fell from 319,108 KiB to
+27,716 KiB for the full contract executable; aggregate allocator traffic was not
+instrumented. Wall time stayed within measurement noise. This is a memory result,
+not a compute-speed claim; see `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
+
 ## Component-aware pilot disposition
 
 The component-aware pilot is closed as **NO-GO** because its production

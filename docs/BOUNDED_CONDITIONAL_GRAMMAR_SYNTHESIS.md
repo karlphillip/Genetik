@@ -28,11 +28,15 @@ accepted by the selector.
 Enumeration order is expression node count, then declared operator order, child-size
 partition order, and declared terminal order. No commutative rewriting or algebraic
 canonicalization occurs. When enabled, the additional Boolean templates follow the
-declared productions in AND, OR, NOT order. Training-behavior reduction preserves per-row mathematical
-invalidity markers: a branch that overflows on an unselected row remains eligible for
-the lazy conditional. Equal training traces retain only the shortest earliest
-representative because substituting it cannot alter any conditional's training
-behavior or improve the node-count tie break.
+declared productions in AND, OR, NOT order. Training-behavior reduction preserves
+per-row mathematical invalidity markers: a branch that overflows on an unselected
+row remains eligible for the lazy conditional. Reduction retains the shortest
+grammar-order representative whose component depth fits beneath the selector's outer
+conditional. If a shorter trace-equivalent expression is too deep, a larger shallower
+candidate can remain eligible. This preserves candidate feasibility while keeping
+the established shortest-representative choice among candidates that can be selected.
+Integer memo pools share cache entries across Boolean nesting allowances because that
+allowance does not affect integer productions.
 
 `DiscreteConditionalGrammarLimits` bounds retained/generated expression instances,
 construction attempts, predicate/branch combinations, specification schema scans,
@@ -92,6 +96,53 @@ mathematical equivalence.
 An independent architectural review found no blocking issue and specifically asked
 for direct NOT-production coverage; the contract enumerates and checks the generated
 `if(x0 < 0, false, true)` predicate in addition to the end-to-end AND/OR recoveries.
+
+## Memory optimization profile
+
+The two fixed controls were profiled in one deterministic C++ contract executable
+using GCC 13.3 Release on the same host. The baseline is PR #41 at `6cccf1d`; after
+uses this optimization. Training and held-out observations, grammar declarations, and
+all limits are unchanged. “Generated” is the public work counter: before it included
+copies used to collect memoized size pools; after it counts logical output entries
+while roots are moved out of the memo. “Trace evaluations” counts candidate-row
+evaluations during behavior reduction.
+
+| Control | Metric | PR #41 baseline | After |
+| --- | --- | ---: | ---: |
+| `x mod 3 = 0 AND y < 0` | Generated expressions | 40,469 | 40,449 |
+| | Construction attempts | 20,641 | 20,625 |
+| | Pre-reduction predicate + branch candidates | 19,810 + 4 | 19,810 + 4 |
+| | Retained predicate + branch pools | 278 + 4 | 278 + 4 |
+| | Candidate combinations | 4,448 | 4,448 |
+| | Training trace evaluations | 554,792 | 554,792 |
+| | Cumulative evaluation work | 5,208,156 | 5,208,156 |
+| | Estimated peak logical bytes | 186,747,366 | 81,760,942 |
+| `x < 0 OR y mod 2 = 0` | Generated expressions | 40,469 | 40,449 |
+| | Construction attempts | 20,641 | 20,625 |
+| | Pre-reduction predicate + branch candidates | 19,810 + 4 | 19,810 + 4 |
+| | Retained predicate + branch pools | 668 + 4 | 668 + 4 |
+| | Candidate combinations | 10,688 | 10,688 |
+| | Training trace evaluations | 693,490 | 693,490 |
+| | Cumulative evaluation work | 8,415,650 | 8,415,650 |
+| | Estimated peak logical bytes | 190,616,040 | 83,549,146 |
+
+Estimated peak bytes fell by 56.2% and 56.2%. The generator preserves the generated
+expression counter and cap, accounts retained expressions once plus transient
+construction separately, moves roots rather than deep-copying their node storage,
+uses compact typed signatures instead of formatted integer strings, and shares
+integer pools across Boolean nesting states. These
+changes do not reduce trace evaluation work or selector combinations. Observed peak
+RSS fell from 319,108 KiB to 27,716 KiB for the complete contract executable;
+aggregate allocation volume was not instrumented. Total executable wall time was
+0.717 s before and 0.713 s after (about 0.5%, within run-to-run noise), so no
+computational speedup is claimed. Training and held-out matches and selected rules
+were unchanged.
+
+The trace reducer records validity separately from typed values, so an invalid row
+cannot collapse into a valid Boolean false or an integer value. Negative controls
+check that distinction, depth-feasibility retention, and lazy skipping of an
+invalid unselected arm. The logical estimate remains a conservative storage estimate,
+not RSS or allocator traffic.
 
 ## Architectural basis
 

@@ -144,6 +144,46 @@ check that distinction, depth-feasibility retention, and lazy skipping of an
 invalid unselected arm. The logical estimate remains a conservative storage estimate,
 not RSS or allocator traffic.
 
+## Bottom-up training-trace cache profile
+
+The cache optimization was measured on the same GCC 13.3 Release host and fixed
+controls, with grammar, observations, and limits unchanged. It constructs typed
+per-row traces from exact child traces and the existing checked arithmetic kernel.
+Construction, node visits, operator work, lookups, reuse, and root signature row
+copies are charged. `std::set<BehaviorSignature>` ordering comparisons remain
+uncharged, as in the baseline; their work is bounded by existing candidate and
+retained-pool limits.
+
+| Control | Metric | PR #42 baseline | Cached traces |
+| --- | --- | ---: | ---: |
+| Conjunction | Charged evaluation work | 5,208,156 | 2,858,764 |
+| | Generated / construction attempts | 40,449 / 20,625 | 40,449 / 20,625 |
+| | Retained predicate + branch pools | 278 + 4 | 278 + 4 |
+| | Candidate combinations | 4,448 | 4,448 |
+| | Root training trace rows | 554,792 | 554,792 |
+| | Cache node visits / operations | — | 555,268 / 407,772 |
+| | Cache lookups / construction work / reuse hits | — | 191,721 / 575,099 / 171,890 |
+| | Direct evaluator visits / operations | — | 402,684 / 170,560 |
+| | Estimated peak logical bytes | 81,760,942 | 107,382,602 |
+| Disjunction | Charged evaluation work | 8,415,650 | 4,776,342 |
+| | Generated / construction attempts | 40,449 / 20,625 | 40,449 / 20,625 |
+| | Retained predicate + branch pools | 668 + 4 | 668 + 4 |
+| | Candidate combinations | 10,688 | 10,688 |
+| | Root training trace rows | 693,490 | 693,490 |
+| | Cache node visits / operations | — | 694,085 / 501,235 |
+| | Cache lookups / construction work / reuse hits | — | 191,721 / 713,916 / 171,890 |
+| | Direct evaluator visits / operations | — | 1,379,881 / 600,579 |
+| | Estimated peak logical bytes | 83,549,146 | 113,751,767 |
+
+Charged work fell by 45.1% and 43.3%. Estimated logical memory rose by 31.3% and
+36.1%, within the existing 256 MiB cap. These are conservative storage estimates,
+not allocator measurements or RSS. Across five runs of the same two-control executable,
+median measured synthesis time fell from 0.430 s to 0.305 s. Peak process RSS measured
+from `/proc/<pid>/status` rose from 28,432 KiB to 54,188 KiB. Thus the work reduction
+also produced a runtime improvement on this host, at a memory cost. Invalidity remains
+per row, and lazy conditionals use only the selected branch's value and work. The same
+rules and exact training and held-out outcomes were recovered.
+
 ## Architectural basis
 
 `DiscreteVariation::generate` is a randomized, GA-coupled generator;

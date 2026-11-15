@@ -359,8 +359,18 @@ void composedPredicateRecovery() {
               conjunction.work.generatedExpressions == 40449 &&
               conjunction.work.constructionAttempts == 20625 &&
               conjunction.work.composition.combinations == 4448 &&
-              conjunction.work.poolEvaluationWork == 5208156 &&
-              conjunction.work.estimatedPeakBytes == 81760942,
+              conjunction.work.poolEvaluationWork == 2858764 &&
+              conjunction.work.cachedTraceNodeVisits == 555268 &&
+              conjunction.work.cachedTraceOperations == 407772 &&
+              conjunction.work.cachedTraceArithmeticComparisonOperations == 8576 &&
+              conjunction.work.cachedTraceConditionalOperations == 399196 &&
+              conjunction.work.signatureRowTouches == 554792 &&
+              conjunction.work.cacheLookups == 191721 &&
+              conjunction.work.cacheConstructionWork == 575099 &&
+              conjunction.work.cachedTraceReuses == 171890 &&
+              conjunction.work.evaluatorNodeVisits == 402684 &&
+              conjunction.work.evaluatorOperations == 170560 &&
+              conjunction.work.estimatedPeakBytes == 107382602,
           "conjunction trace profile remains reproducible");
     check(std::count_if(
               conjunction.expression->nodes().begin(), conjunction.expression->nodes().end(),
@@ -400,8 +410,18 @@ void composedPredicateRecovery() {
               disjunction.work.generatedExpressions == 40449 &&
               disjunction.work.constructionAttempts == 20625 &&
               disjunction.work.composition.combinations == 10688 &&
-              disjunction.work.poolEvaluationWork == 8415650 &&
-              disjunction.work.estimatedPeakBytes == 83549146,
+              disjunction.work.poolEvaluationWork == 4776342 &&
+              disjunction.work.cachedTraceNodeVisits == 694085 &&
+              disjunction.work.cachedTraceOperations == 501235 &&
+              disjunction.work.cachedTraceArithmeticComparisonOperations == 10064 &&
+              disjunction.work.cachedTraceConditionalOperations == 491171 &&
+              disjunction.work.signatureRowTouches == 693490 &&
+              disjunction.work.cacheLookups == 191721 &&
+              disjunction.work.cacheConstructionWork == 713916 &&
+              disjunction.work.cachedTraceReuses == 171890 &&
+              disjunction.work.evaluatorNodeVisits == 1379881 &&
+              disjunction.work.evaluatorOperations == 600579 &&
+              disjunction.work.estimatedPeakBytes == 113751767,
           "disjunction trace profile remains reproducible");
     auto disjunctionAtomicGrammar = disjunctionGrammar;
     disjunctionAtomicGrammar.maximumBooleanNesting = 0;
@@ -523,6 +543,198 @@ void invalidTraceDistinction() {
               genetik_conditional_grammar_detail::componentFitsConditionalDepth(5, 6),
           "a smaller too-deep trace representative yields to a larger feasible one");
 }
+
+void compositionalTraceDifferential() {
+    const auto minimum = std::numeric_limits<std::int64_t>::min();
+    const auto maximum = std::numeric_limits<std::int64_t>::max();
+    const std::vector<std::int64_t> inputs{minimum, minimum + 1, -7, -4, -3, -2,          -1,     0,
+                                           1,       2,           3,  4,  7,  maximum - 1, maximum};
+    std::vector<DiscreteSpecificationObservation> rows;
+    for (const auto input : inputs)
+        rows.push_back({{input}, DiscreteValue::integer(0)});
+    const DiscreteSpecification training(1, std::move(rows));
+    const auto x = DiscreteExpression::variable(0, 1);
+    const auto zero = DiscreteExpression::integer(0, 1);
+    const auto one = DiscreteExpression::integer(1, 1);
+    const auto two = DiscreteExpression::integer(2, 1);
+    const auto three = DiscreteExpression::integer(3, 1);
+    const auto intMax = DiscreteExpression::integer(maximum, 1);
+    const auto intMin = DiscreteExpression::integer(minimum, 1);
+    const auto negative = DiscreteExpression::binary(DiscreteKind::LessThan, x, zero);
+    const auto invalidModulo = DiscreteExpression::binary(DiscreteKind::Modulo, x, zero);
+    const auto invalidComparison =
+        DiscreteExpression::binary(DiscreteKind::Equal, invalidModulo, zero);
+    const auto skippedInvalid = DiscreteExpression::conditional(
+        negative, DiscreteExpression::boolean(true, 1), invalidComparison);
+    const auto selectedInvalid = DiscreteExpression::conditional(
+        negative, invalidComparison, DiscreteExpression::boolean(false, 1));
+    const auto invalidCondition =
+        DiscreteExpression::conditional(invalidComparison, DiscreteExpression::boolean(true, 1),
+                                        DiscreteExpression::boolean(false, 1));
+    const auto notNegative = DiscreteExpression::conditional(
+        negative, DiscreteExpression::boolean(false, 1), DiscreteExpression::boolean(true, 1));
+    const auto conjunction = DiscreteExpression::conditional(negative, notNegative,
+                                                             DiscreteExpression::boolean(false, 1));
+    const auto nested = DiscreteExpression::conditional(
+        conjunction, DiscreteExpression::boolean(true, 1), skippedInvalid);
+    const std::vector<DiscreteExpression> expressions{
+        x,
+        DiscreteExpression::binary(DiscreteKind::Add, x, one),
+        DiscreteExpression::binary(DiscreteKind::Subtract, x, one),
+        DiscreteExpression::binary(DiscreteKind::Multiply, x, two),
+        DiscreteExpression::unary(DiscreteKind::Negate, x),
+        DiscreteExpression::binary(DiscreteKind::Modulo, x, three),
+        invalidModulo,
+        DiscreteExpression::binary(DiscreteKind::Add, x, intMax),
+        DiscreteExpression::binary(DiscreteKind::Subtract, x, intMin),
+        DiscreteExpression::binary(DiscreteKind::Equal, x, zero),
+        DiscreteExpression::binary(DiscreteKind::NotEqual, x, zero),
+        DiscreteExpression::binary(DiscreteKind::LessThan, x, zero),
+        DiscreteExpression::binary(DiscreteKind::LessEqual, x, zero),
+        DiscreteExpression::binary(DiscreteKind::GreaterThan, x, zero),
+        DiscreteExpression::binary(DiscreteKind::GreaterEqual, x, zero),
+        skippedInvalid,
+        selectedInvalid,
+        invalidCondition,
+        notNegative,
+        conjunction,
+        nested,
+    };
+    for (const auto& expression : expressions) {
+        std::size_t charged = training.observations().size();
+        std::size_t peakBytes = 0;
+        DiscreteConditionalGrammarWork counters;
+        genetik_conditional_grammar_detail::TrainingTraceCache cache(
+            training, 10000000, 32 * 1024 * 1024, charged, counters, peakBytes, {}, nullptr);
+        genetik_conditional_grammar_detail::BehaviorSignature trace;
+        bool valid = false;
+        check(cache.signature(expression, trace, valid) ==
+                  genetik_conditional_grammar_detail::TrainingTraceCache::Status::Ready,
+              "compositional trace construction completes within test bounds");
+        check(trace.boolean == (expression.type() == DiscreteType::Bool) &&
+                  valid == std::all_of(trace.valid.begin(), trace.valid.end(),
+                                       [](std::uint8_t value) { return value != 0; }),
+              "cached trace preserves its result type and aggregate validity");
+        for (std::size_t row = 0; row < training.observations().size(); ++row) {
+            const auto evaluated = expression.evaluate(training.observations()[row].inputs);
+            check(trace.valid[row] == (evaluated.valid() ? 1 : 0),
+                  "cached trace validity matches the reference evaluator row by row");
+            const auto expected =
+                evaluated.valid() ? (evaluated.value->type() == DiscreteType::Bool
+                                         ? (evaluated.value->boolean() ? 1ULL : 0ULL)
+                                         : static_cast<std::uint64_t>(evaluated.value->integer()))
+                                  : 0ULL;
+            check(trace.values[row] == expected,
+                  "cached trace values match checked evaluator results row by row");
+        }
+    }
+
+    std::size_t charged = training.observations().size();
+    std::size_t peakBytes = 0;
+    DiscreteConditionalGrammarWork counters;
+    DiscreteEvaluationLimits limits;
+    limits.maxOperations = 0;
+    genetik_conditional_grammar_detail::TrainingTraceCache operationLimited(
+        training, 100000, 32 * 1024 * 1024, charged, counters, peakBytes, limits, nullptr);
+    genetik_conditional_grammar_detail::BehaviorSignature ignored;
+    bool valid = false;
+    check(operationLimited.signature(expressions[1], ignored, valid) ==
+              genetik_conditional_grammar_detail::TrainingTraceCache::Status::ResourceExhausted,
+          "cached evaluation preserves per-expression operation exhaustion");
+
+    limits = {};
+    limits.maxNodeVisits = 1;
+    charged = training.observations().size();
+    peakBytes = 0;
+    counters = {};
+    genetik_conditional_grammar_detail::TrainingTraceCache visitLimited(
+        training, 100000, 32 * 1024 * 1024, charged, counters, peakBytes, limits, nullptr);
+    check(visitLimited.signature(expressions[1], ignored, valid) ==
+              genetik_conditional_grammar_detail::TrainingTraceCache::Status::ResourceExhausted,
+          "cached evaluation preserves per-expression node-visit exhaustion");
+
+    limits = {};
+    limits.maxWorkspaceBytes = DiscreteExpression::evaluationFrameBytes();
+    charged = training.observations().size();
+    peakBytes = 0;
+    counters = {};
+    genetik_conditional_grammar_detail::TrainingTraceCache workspaceLimited(
+        training, 100000, 32 * 1024 * 1024, charged, counters, peakBytes, limits, nullptr);
+    check(workspaceLimited.signature(expressions[1], ignored, valid) ==
+              genetik_conditional_grammar_detail::TrainingTraceCache::Status::ResourceExhausted,
+          "cached evaluation preserves evaluator frame-workspace exhaustion");
+
+    limits = {};
+    limits.maxOperations = 2;
+    const DiscreteSpecification negativeOnly(1, {{{-1}, DiscreteValue::integer(0)}});
+    charged = negativeOnly.observations().size();
+    peakBytes = 0;
+    counters = {};
+    genetik_conditional_grammar_detail::TrainingTraceCache lazyWithinLimit(
+        negativeOnly, 100000, 32 * 1024 * 1024, charged, counters, peakBytes, limits, nullptr);
+    check(lazyWithinLimit.signature(skippedInvalid, ignored, valid) ==
+              genetik_conditional_grammar_detail::TrainingTraceCache::Status::Ready,
+          "cached per-expression limits count only the selected lazy conditional branch");
+
+    const auto expensiveRight = DiscreteExpression::binary(
+        DiscreteKind::Multiply, DiscreteExpression::binary(DiscreteKind::Add, x, one),
+        DiscreteExpression::binary(DiscreteKind::Add, x, two));
+    const auto invalidLeft =
+        DiscreteExpression::binary(DiscreteKind::Add, invalidModulo, expensiveRight);
+    limits = {};
+    limits.maxNodeVisits = 4;
+    limits.maxOperations = 1;
+    charged = training.observations().size();
+    peakBytes = 0;
+    counters = {};
+    genetik_conditional_grammar_detail::TrainingTraceCache strictShortCircuit(
+        training, 1000000, 32 * 1024 * 1024, charged, counters, peakBytes, limits, nullptr);
+    check(strictShortCircuit.signature(invalidLeft, ignored, valid) ==
+                  genetik_conditional_grammar_detail::TrainingTraceCache::Status::Ready &&
+              !valid,
+          "cached strict operation skips its right subtree after an invalid left operand");
+
+    limits = {};
+    limits.maxAggregateIterations = 1000000001;
+    charged = training.observations().size();
+    peakBytes = 0;
+    counters = {};
+    genetik_conditional_grammar_detail::TrainingTraceCache invalidLimits(
+        training, 100000, 32 * 1024 * 1024, charged, counters, peakBytes, limits, nullptr);
+    bool cacheRejectedLimits = false;
+    try {
+        invalidLimits.signature(expressions[0], ignored, valid);
+    } catch (const std::invalid_argument&) {
+        cacheRejectedLimits = true;
+    }
+    bool evaluatorRejectedLimits = false;
+    try {
+        (void)expressions[0].evaluate(training.observations()[0].inputs, limits);
+    } catch (const std::invalid_argument&) {
+        evaluatorRejectedLimits = true;
+    }
+    check(cacheRejectedLimits && evaluatorRejectedLimits,
+          "cached and reference evaluation reject the same malformed iteration quotas");
+
+    charged = training.observations().size();
+    peakBytes = 0;
+    counters = {};
+    genetik_conditional_grammar_detail::TrainingTraceCache workLimited(
+        training, 1, 32 * 1024 * 1024, charged, counters, peakBytes, {}, nullptr);
+    check(workLimited.signature(expressions[0], ignored, valid) ==
+              genetik_conditional_grammar_detail::TrainingTraceCache::Status::ResourceExhausted,
+          "aggregate cache-work exhaustion is distinct from cancellation and invalidity");
+
+    std::atomic<bool> stop{true};
+    charged = training.observations().size();
+    peakBytes = 0;
+    counters = {};
+    genetik_conditional_grammar_detail::TrainingTraceCache cancelled(
+        training, 100000, 32 * 1024 * 1024, charged, counters, peakBytes, {}, &stop);
+    check(cancelled.signature(expressions[0], ignored, valid) ==
+              genetik_conditional_grammar_detail::TrainingTraceCache::Status::Cancelled,
+          "cache cancellation is distinct from mathematical invalidity");
+}
 } // namespace
 
 int main() {
@@ -535,6 +747,7 @@ int main() {
         composedPredicateRecovery();
         booleanNotProduction();
         invalidTraceDistinction();
+        compositionalTraceDifferential();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return EXIT_FAILURE;

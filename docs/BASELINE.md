@@ -1204,6 +1204,15 @@ cumulative evaluation work are unchanged. Observed RSS fell from 319,108 KiB to
 instrumented. Wall time stayed within measurement noise. This is a memory result,
 not a compute-speed claim; see `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
 
+The follow-up bottom-up training-trace cache holds the same fixed cases and limits.
+Charged work falls from 5,208,156 to 2,858,764 for conjunction (45.1%) and from
+8,415,650 to 4,776,342 for disjunction (43.3%). Estimated peak logical bytes rise
+from 81,760,942 to 107,382,602 and from 83,549,146 to 113,751,767, both within
+the 256 MiB cap. Five-run median synthesis time for the two-control executable is
+0.430 s before and 0.305 s after; observed peak RSS is 28,432 KiB and 54,188 KiB.
+See `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md` for per-counter accounting, test
+coverage, and the finite-training semantics boundary.
+
 ## Component-aware pilot disposition
 
 The component-aware pilot is closed as **NO-GO** because its production

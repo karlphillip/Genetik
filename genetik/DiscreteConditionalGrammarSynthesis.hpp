@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -74,6 +75,18 @@ struct DiscreteConditionalGrammarWork {
     std::size_t predicateCandidatesBeforeReduction = 0;
     std::size_t branchCandidatesBeforeReduction = 0;
     std::size_t trainingTraceEvaluations = 0;
+    // Compositional trace accounting. Cached values are finite-training
+    // observations only; these counters do not imply universal equivalence.
+    std::size_t cachedTraceNodeVisits = 0;
+    std::size_t cachedTraceOperations = 0;
+    std::size_t cachedTraceArithmeticComparisonOperations = 0;
+    std::size_t cachedTraceConditionalOperations = 0;
+    std::size_t signatureRowTouches = 0;
+    std::size_t cacheLookups = 0;
+    std::size_t cacheConstructionWork = 0;
+    std::size_t cachedTraceReuses = 0;
+    std::size_t evaluatorNodeVisits = 0;
+    std::size_t evaluatorOperations = 0;
 };
 
 enum class DiscreteConditionalGrammarStatus {
@@ -720,6 +733,317 @@ inline BehaviorSignature behaviorKey(const DiscreteExpression& expression,
     }
     return key;
 }
+
+// Memoized compositional semantics for the fixed, ordered training rows. The
+// key is a typed syntax-tree node whose child IDs identify exact subtrees.
+// Cache state is local to one synthesis call/specification.
+class TrainingTraceCache {
+    struct NodeKey {
+        DiscreteKind kind{};
+        DiscreteType type{};
+        std::uint64_t atom = 0;
+        std::array<std::size_t, 3> children{};
+        std::uint8_t arity = 0;
+        bool operator<(const NodeKey& other) const noexcept {
+            return std::tie(kind, type, atom, arity, children) <
+                   std::tie(other.kind, other.type, other.atom, other.arity, other.children);
+        }
+    };
+    struct Entry {
+        BehaviorSignature signature;
+        std::vector<std::size_t> evaluationNodeVisits;
+        std::vector<std::size_t> evaluationOperations;
+        std::vector<std::size_t> evaluationFrameDepth;
+    };
+
+public:
+    enum class Status { Ready, ResourceExhausted, Cancelled };
+
+    TrainingTraceCache(const DiscreteSpecification& specification, std::size_t maximumWork,
+                       std::size_t maximumBytes, std::size_t& aggregateWork,
+                       DiscreteConditionalGrammarWork& counters, std::size_t& peakBytes,
+                       DiscreteEvaluationLimits evaluationLimits,
+                       const std::atomic<bool>* cancellation)
+        : specification_(specification), maximumWork_(maximumWork), maximumBytes_(maximumBytes),
+          aggregateWork_(aggregateWork), counters_(counters), peakBytes_(peakBytes),
+          evaluationLimits_(evaluationLimits), cancellation_(cancellation), baseBytes_(peakBytes) {}
+
+    void setBaseEstimate(std::size_t bytes) noexcept {
+        baseBytes_ = bytes;
+        if (retainedBytes_ <= std::numeric_limits<std::size_t>::max() - baseBytes_)
+            peakBytes_ = std::max(peakBytes_, baseBytes_ + retainedBytes_);
+    }
+
+    Status signature(const DiscreteExpression& expression, BehaviorSignature& output, bool& valid) {
+        DiscreteExpression::validateEvaluationLimits(evaluationLimits_);
+        std::size_t idsBytes = 0;
+        if (expression.nodeCount() > std::numeric_limits<std::size_t>::max() / sizeof(std::size_t))
+            return Status::ResourceExhausted;
+        idsBytes = expression.nodeCount() * sizeof(std::size_t);
+        if (baseBytes_ > maximumBytes_ || retainedBytes_ > maximumBytes_ - baseBytes_ ||
+            idsBytes > maximumBytes_ - baseBytes_ - retainedBytes_)
+            return Status::ResourceExhausted;
+        peakBytes_ = std::max(peakBytes_, baseBytes_ + retainedBytes_ + idsBytes);
+        std::vector<std::size_t> ids(expression.nodeCount());
+        const auto nodes = expression.nodes();
+        for (std::size_t i = 0; i < nodes.size(); ++i) {
+            if (isCancelled())
+                return Status::Cancelled;
+            const auto& node = nodes[i];
+            NodeKey key;
+            key.kind = node.kind();
+            key.type = expression.subtreeType(i);
+            key.arity = static_cast<std::uint8_t>(discreteArity(node.kind()));
+            if (node.kind() == DiscreteKind::Variable)
+                key.atom = static_cast<std::uint64_t>(node.variable());
+            else if (node.kind() == DiscreteKind::Integer)
+                key.atom = static_cast<std::uint64_t>(node.integer());
+            else if (node.kind() == DiscreteKind::Boolean)
+                key.atom = node.boolean() ? 1 : 0;
+            for (std::size_t j = 0; j < key.arity; ++j)
+                key.children[j] = ids[expression.children(i)[j]];
+            if (!charge(counters_.cacheLookups, 1))
+                return Status::ResourceExhausted;
+            const auto found = index_.find(key);
+            if (found != index_.end()) {
+                ++counters_.cachedTraceReuses;
+                ids[i] = found->second;
+                continue;
+            }
+            if (!insert(key, key.type, node, expression, i, ids, idsBytes, ids[i]))
+                return isCancelled() ? Status::Cancelled : Status::ResourceExhausted;
+        }
+        if (ids.back() >= entries_.size())
+            return Status::ResourceExhausted;
+        const auto& root = entries_[ids.back()];
+        output.boolean = root.signature.boolean;
+        output.values.clear();
+        output.valid.clear();
+        output.values.reserve(root.signature.values.size());
+        output.valid.reserve(root.signature.valid.size());
+        valid = true;
+        for (std::size_t row = 0; row < root.evaluationNodeVisits.size(); ++row) {
+            if (isCancelled())
+                return Status::Cancelled;
+            if (!charge(counters_.signatureRowTouches, 1))
+                return Status::ResourceExhausted;
+            if (counters_.trainingTraceEvaluations == std::numeric_limits<std::size_t>::max())
+                return Status::ResourceExhausted;
+            ++counters_.trainingTraceEvaluations;
+            if (root.evaluationNodeVisits[row] > evaluationLimits_.maxNodeVisits ||
+                root.evaluationOperations[row] > evaluationLimits_.maxOperations ||
+                root.evaluationFrameDepth[row] > evaluationLimits_.maxWorkspaceBytes /
+                                                     DiscreteExpression::evaluationFrameBytes())
+                return Status::ResourceExhausted;
+            const auto rowValid = root.signature.valid[row];
+            valid = valid && rowValid != 0;
+            output.valid.push_back(rowValid);
+            output.values.push_back(root.signature.values[row]);
+        }
+        return Status::Ready;
+    }
+
+    std::size_t retainedBytes() const noexcept {
+        return retainedBytes_;
+    }
+
+private:
+    bool isCancelled() const noexcept {
+        return cancellation_ && cancellation_->load(std::memory_order_relaxed);
+    }
+    bool charge(std::size_t& counter, std::size_t amount) {
+        if (!addWork(aggregateWork_, amount, maximumWork_))
+            return false;
+        counter += amount;
+        return true;
+    }
+    bool reserveBytes(std::size_t amount, std::size_t scratchBytes) {
+        if (baseBytes_ > maximumBytes_ || retainedBytes_ > maximumBytes_ - baseBytes_ ||
+            scratchBytes > maximumBytes_ - baseBytes_ - retainedBytes_ ||
+            amount > maximumBytes_ - baseBytes_ - retainedBytes_ - scratchBytes)
+            return false;
+        retainedBytes_ += amount;
+        peakBytes_ = std::max(peakBytes_, baseBytes_ + retainedBytes_ + scratchBytes);
+        return true;
+    }
+    static bool safeAdd(std::size_t& value, std::size_t amount) noexcept {
+        if (amount > std::numeric_limits<std::size_t>::max() - value)
+            return false;
+        value += amount;
+        return true;
+    }
+    bool chargeOperation(bool mathematical) {
+        if (!charge(counters_.cachedTraceOperations, 1))
+            return false;
+        if (mathematical)
+            ++counters_.cachedTraceArithmeticComparisonOperations;
+        else
+            ++counters_.cachedTraceConditionalOperations;
+        return true;
+    }
+    bool insert(const NodeKey& key, DiscreteType type, const DiscreteNode& node,
+                const DiscreteExpression& expression, std::size_t nodeIndex,
+                const std::vector<std::size_t>& ids, std::size_t scratchBytes, std::size_t& id) {
+        constexpr std::size_t entryOverhead = sizeof(NodeKey) + sizeof(Entry) + 192;
+        const auto rows = specification_.observations().size();
+        constexpr auto rowBytes =
+            sizeof(std::uint64_t) + sizeof(std::uint8_t) + 3 * sizeof(std::size_t);
+        if (rows > (std::numeric_limits<std::size_t>::max() - entryOverhead) / rowBytes)
+            return false;
+        const auto bytes = entryOverhead + rows * rowBytes;
+        if (!reserveBytes(bytes, scratchBytes) || !charge(counters_.cacheConstructionWork, 1))
+            return false;
+
+        Entry entry;
+        entry.signature.boolean = type == DiscreteType::Bool;
+        entry.signature.values.reserve(rows);
+        entry.signature.valid.reserve(rows);
+        entry.evaluationNodeVisits.reserve(rows);
+        entry.evaluationOperations.reserve(rows);
+        entry.evaluationFrameDepth.reserve(rows);
+        const auto arity = key.arity;
+        for (const auto& row : specification_.observations()) {
+            if (isCancelled())
+                return false;
+            if (!charge(counters_.cacheConstructionWork, 1) ||
+                !charge(counters_.cachedTraceNodeVisits, 1))
+                return false;
+            bool rowValid = true;
+            std::uint64_t value = 0;
+            std::size_t virtualVisits = 1, virtualOperations = 0;
+            std::size_t frameDepth = 1;
+            const auto child = [&](std::size_t j) -> std::pair<bool, std::uint64_t> {
+                const auto childId = ids[expression.children(nodeIndex)[j]];
+                const auto& signature = entries_[childId].signature;
+                const auto rowIndex = entry.signature.values.size();
+                return {signature.valid[rowIndex] != 0, signature.values[rowIndex]};
+            };
+            const auto childVisits = [&](std::size_t j) {
+                const auto childId = ids[expression.children(nodeIndex)[j]];
+                return entries_[childId].evaluationNodeVisits[entry.signature.values.size()];
+            };
+            const auto childOperations = [&](std::size_t j) {
+                const auto childId = ids[expression.children(nodeIndex)[j]];
+                return entries_[childId].evaluationOperations[entry.signature.values.size()];
+            };
+            const auto childFrameDepth = [&](std::size_t j) {
+                const auto childId = ids[expression.children(nodeIndex)[j]];
+                return entries_[childId].evaluationFrameDepth[entry.signature.values.size()];
+            };
+            if (!arity) {
+                if (node.kind() == DiscreteKind::Variable)
+                    value = static_cast<std::uint64_t>(row.inputs[node.variable()]);
+                else if (node.kind() == DiscreteKind::Integer)
+                    value = static_cast<std::uint64_t>(node.integer());
+                else if (node.kind() == DiscreteKind::Boolean)
+                    value = node.boolean() ? 1 : 0;
+                else
+                    return false;
+            } else if (node.kind() == DiscreteKind::IfThenElse) {
+                const auto condition = child(0);
+                virtualVisits += childVisits(0);
+                virtualOperations += childOperations(0);
+                frameDepth = 1 + childFrameDepth(0);
+                if (!condition.first)
+                    rowValid = false;
+                else {
+                    const auto selectedChild = condition.second ? 1 : 2;
+                    const auto selected = child(selectedChild);
+                    virtualVisits += childVisits(selectedChild);
+                    frameDepth = std::max(frameDepth, 1 + childFrameDepth(selectedChild));
+                    if (!safeAdd(virtualOperations, childOperations(selectedChild)) ||
+                        !safeAdd(virtualOperations, 1))
+                        return false;
+                    rowValid = selected.first;
+                    value = selected.second;
+                    if (!chargeOperation(false))
+                        return false;
+                }
+            } else {
+                const auto left = child(0);
+                virtualVisits += childVisits(0);
+                virtualOperations += childOperations(0);
+                frameDepth = 1 + childFrameDepth(0);
+                if (!left.first) {
+                    entry.signature.valid.push_back(0);
+                    entry.signature.values.push_back(0);
+                    entry.evaluationNodeVisits.push_back(virtualVisits);
+                    entry.evaluationOperations.push_back(virtualOperations);
+                    entry.evaluationFrameDepth.push_back(frameDepth);
+                    continue;
+                }
+                const auto right = arity > 1 ? child(1) : std::pair<bool, std::uint64_t>{true, 0};
+                if (arity > 1) {
+                    virtualVisits += childVisits(1);
+                    virtualOperations += childOperations(1);
+                    frameDepth = std::max(frameDepth, 1 + childFrameDepth(1));
+                }
+                rowValid = left.first && right.first;
+                if (rowValid) {
+                    if (!safeAdd(virtualOperations, 1) || !chargeOperation(true))
+                        return false;
+                    const auto a = std::bit_cast<std::int64_t>(left.second);
+                    const auto b = std::bit_cast<std::int64_t>(right.second);
+                    if (integerOutputOperator(node.kind())) {
+                        std::int64_t answer = 0;
+                        if (!genetik_discrete_detail::arithmetic(node.kind(), a, b, answer))
+                            rowValid = false;
+                        else
+                            value = static_cast<std::uint64_t>(answer);
+                    } else {
+                        bool answer = false;
+                        switch (node.kind()) {
+                        case DiscreteKind::Equal:
+                            answer = a == b;
+                            break;
+                        case DiscreteKind::NotEqual:
+                            answer = a != b;
+                            break;
+                        case DiscreteKind::LessThan:
+                            answer = a < b;
+                            break;
+                        case DiscreteKind::LessEqual:
+                            answer = a <= b;
+                            break;
+                        case DiscreteKind::GreaterThan:
+                            answer = a > b;
+                            break;
+                        case DiscreteKind::GreaterEqual:
+                            answer = a >= b;
+                            break;
+                        default:
+                            return false;
+                        }
+                        value = answer ? 1 : 0;
+                    }
+                }
+            }
+            entry.signature.valid.push_back(rowValid ? 1 : 0);
+            entry.signature.values.push_back(rowValid ? value : 0);
+            entry.evaluationNodeVisits.push_back(virtualVisits);
+            entry.evaluationOperations.push_back(virtualOperations);
+            entry.evaluationFrameDepth.push_back(frameDepth);
+        }
+        const auto newId = entries_.size();
+        entries_.push_back(std::move(entry));
+        index_.emplace(key, newId);
+        id = newId;
+        return true;
+    }
+
+    const DiscreteSpecification& specification_;
+    std::size_t maximumWork_;
+    std::size_t maximumBytes_;
+    std::size_t& aggregateWork_;
+    DiscreteConditionalGrammarWork& counters_;
+    std::size_t& peakBytes_;
+    DiscreteEvaluationLimits evaluationLimits_;
+    const std::atomic<bool>* cancellation_;
+    std::map<NodeKey, std::size_t> index_;
+    std::vector<Entry> entries_;
+    std::size_t retainedBytes_ = 0;
+    std::size_t baseBytes_ = 0;
+};
 } // namespace genetik_conditional_grammar_detail
 
 inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar(
@@ -801,6 +1125,11 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
         return result;
     }
 
+    std::size_t nonCachePeakBytes = result.work.estimatedPeakBytes;
+    TrainingTraceCache traceCache(specification, limits.maximumEvaluationWork,
+                                  limits.maximumEstimatedBytes, result.work.poolEvaluationWork,
+                                  result.work, result.work.estimatedPeakBytes, limits.evaluation,
+                                  cancellation);
     bool depthExcluded = false;
     // Collapse expressions with identical typed behavior on training rows. Keep
     // the first shortest representative that can fit below the selector's outer
@@ -828,10 +1157,14 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
                 return false;
             reductionBytes += signatureBytes;
         }
-        if (!addWithin(result.work.estimatedPeakBytes, reductionBytes,
-                       limits.maximumEstimatedBytes))
+        if (!addWithin(nonCachePeakBytes, reductionBytes, limits.maximumEstimatedBytes))
             return false;
-        result.work.estimatedPeakBytes += reductionBytes;
+        nonCachePeakBytes += reductionBytes;
+        traceCache.setBaseEstimate(nonCachePeakBytes);
+        if (traceCache.retainedBytes() > limits.maximumEstimatedBytes - nonCachePeakBytes)
+            return false;
+        result.work.estimatedPeakBytes = std::max(result.work.estimatedPeakBytes,
+                                                  nonCachePeakBytes + traceCache.retainedBytes());
         std::set<BehaviorSignature> seen;
         std::vector<DiscreteExpression> representatives;
         representatives.reserve(candidates.size());
@@ -840,12 +1173,10 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
                 depthExcluded = true;
                 continue;
             }
-            bool valid = false, exhausted = false;
-            auto key =
-                behaviorKey(candidate, specification, limits.evaluation,
-                            result.work.poolEvaluationWork, limits.maximumEvaluationWork,
-                            cancellation, valid, exhausted, &result.work.trainingTraceEvaluations);
-            if (exhausted)
+            bool valid = false;
+            BehaviorSignature key;
+            const auto traceStatus = traceCache.signature(candidate, key, valid);
+            if (traceStatus != TrainingTraceCache::Status::Ready)
                 return false;
             if (!valid)
                 ++result.work.invalidExpressions;
@@ -904,6 +1235,8 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
     auto selected = composeDiscreteConditional(specification, predicates, branches,
                                                compositionLimits, cancellation);
     result.work.composition = selected.work;
+    result.work.evaluatorNodeVisits = selected.work.nodeVisits;
+    result.work.evaluatorOperations = selected.work.operations;
     std::size_t selectorWork = 0;
     const bool selectorWorkValid =
         addWork(selectorWork, selected.work.nodeVisits, limits.maximumEvaluationWork) &&

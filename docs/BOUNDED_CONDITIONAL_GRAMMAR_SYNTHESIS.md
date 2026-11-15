@@ -184,6 +184,57 @@ also produced a runtime improvement on this host, at a memory cost. Invalidity r
 per row, and lazy conditionals use only the selected branch's value and work. The same
 rules and exact training and held-out outcomes were recovered.
 
+## Finite-specification branch-pair pruning
+
+The optional `enableSpecificationGuidedPruning` grammar flag derives branch
+validity and match masks only from the supplied training observations. For a
+branch pair, its optimistic match bound is the number of rows where either arm
+is valid and matches. A pair is infeasible if both arms are invalid on any row.
+Once a fully valid incumbent exists, the selector skips a structurally feasible
+tuple only when this bound is strictly below the incumbent's match count. Equal
+bounds remain evaluated so node-count and lexicographic tuple tie-breaking are
+unchanged. Invalid unselected arms remain eligible whenever the other arm can
+be selected. Survivors are checked with the existing evaluator. Pruning is
+bypassed when the per-expression quotas or remaining aggregate budget cannot
+admit a conservative full candidate evaluation, and candidate peak memory is
+admitted before pruning.
+Training behavior is finite-domain evidence and does not claim universal
+equivalence.
+
+The theoretical combination preflight cap is unchanged. Mask construction,
+branch-pair row scans, pair checks, tuple bound comparisons, and retained trace
+copies are charged to the same cumulative evaluation-work budget. Mask storage,
+pair tables, and trace copies are included in the conservative logical peak
+estimate. Cancellation and work exhaustion during preprocessing terminate with
+their distinct statuses. This opt-in changes which tuples consume evaluator
+work; the default path remains unchanged.
+
+On the PR #43 Release controls (same grammar, rows, held-out observations, and
+limits), selected expressions, scores, statuses, and held-out matches were
+identical to the unoptimized selector. The exact-training controls retain their
+established expressions, and their matched atomic-predicate baselines still
+fail to recover the composed rules.
+
+| Control | Baseline work | Pruned work | Reduction | Candidate tuples pruned | Evaluated tuples retained | Estimated logical peak |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Conjunction | 2,858,764 | 2,372,906 | 17.0% | 3,840 / 4,448 | 608 | 107,385,522 B |
+| Disjunction | 4,776,342 | 3,110,215 | 34.9% | 9,082 / 10,688 | 1,606 | 113,754,995 B |
+
+The conjunction improvement is below the 20% engineering target; both controls
+show net savings after all new work is charged. Five-run median constructor time
+was measured separately: conjunction 134.9 ms to 98.6 ms, disjunction 161.6 ms
+to 114.9 ms. The focused paired-test process peaked at 56,140 KiB RSS; this
+process-level RSS includes both baseline and pruned runs and is not a per-mode
+allocation measurement. Logical estimates are conservative storage accounting,
+not actual allocation totals or RSS.
+
+Direct composition controls compare complete selected expressions and outcomes
+on negative modulo, arithmetic branches, ambiguous and partial tables, masked
+invalid branches, and fully invalid branch pairs. Tight work and cancellation
+controls preserve distinct resource and stop statuses. Deterministic C++ tests
+are the qualification basis; no scientific campaign or target-specific
+constraints were used.
+
 ## Architectural basis
 
 `DiscreteVariation::generate` is a randomized, GA-coupled generator;

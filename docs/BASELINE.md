@@ -1213,6 +1213,17 @@ the 256 MiB cap. Five-run median synthesis time for the two-control executable i
 See `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md` for per-counter accounting, test
 coverage, and the finite-training semantics boundary.
 
+The optional finite-training branch-pair pruning follow-up preserves both
+selected expressions and held-out outcomes. It removes 3,840 of 4,448 conjunction
+tuples and 9,082 of 10,688 disjunction tuples. Fully charged work is 2,372,906
+(17.0% below baseline) and 3,110,215 (34.9% below baseline); the conjunction
+result is below the 20% target. Estimated logical peaks are 107,385,522 B and
+113,754,995 B. Five-run median constructor times were 134.9 ms to 98.6 ms and
+161.6 ms to 114.9 ms. The optional selector charges mask construction, pair
+bounds, tuple decisions, and retained trace copies; its default remains off.
+Details and qualifications are recorded in
+`BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
+
 ## Component-aware pilot disposition
 
 The component-aware pilot is closed as **NO-GO** because its production

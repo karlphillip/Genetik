@@ -1224,6 +1224,24 @@ bounds, tuple decisions, and retained trace copies; its default remains off.
 Details and qualifications are recorded in
 `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
 
+The optional nested-conditional grammar adds `maximumConditionalNesting` (default
+zero) inside generated Int64 branches. With frozen grammar and limits, it recovers
+`if(x<0,10,if(0<x mod 3,30,20))` on eight training points (4,516 expressions,
+2,318 construction attempts, 232,713 selector tuples, 15,959,975 charged work
+units, 9,633,710 B estimated peak logical memory, 560 ms). Its one-selector
+baseline is partial at 6/8 rows. It also recovers
+`if(x==INT64_MIN,7,if(x<0,-x,-1))` on five points (2,136 expressions,
+1,071 attempts, 97,468 tuples, 5,456,493 work units, 4,763,106 B, 199 ms), versus
+3/5 for its one-selector baseline. Both separately match held-out observations.
+The guarded rule proves that an overflowing
+negation at `INT64_MIN` can remain in an unselected lazy branch. A multivariate rule
+combining independent modular conditions is not recovered: its 34 predicates and
+516 branch candidates imply 9,052,704 tuples, above the frozen one-million selector
+cap. A wider guarded modulo grammar also exhausted the fixed 20-million aggregate
+work cap during trace reduction. See `MULTIREGION_CONDITIONAL_PROTOCOL.md`. The next
+mathematical priority is partition-directed composition to reduce candidate
+Cartesian products without weakening partial-score or invalidity semantics.
+
 ## Component-aware pilot disposition
 
 The component-aware pilot is closed as **NO-GO** because its production

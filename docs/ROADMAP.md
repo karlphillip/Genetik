@@ -468,6 +468,16 @@ modular/comparison conjunctions and independent-condition disjunctions where
 atomic predicates fail within the same bounds. See
 `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
 
+`maximumConditionalNesting` is an additional opt-in grammar bound for Int64
+conditionals inside generated output branches; zero keeps the established single
+selector default. Two frozen three-region families recover exactly, including a
+guarded `INT64_MIN` overflow case, while matched one-selector controls remain
+partial. A multivariate pair-of-moduli control exhausts the one-million selector
+tuple bound before candidate evaluation. The next priority is partition-directed
+candidate composition that avoids the full branch-pool Cartesian product while
+preserving best-partial selection and lazy invalidity; do not increase fixed search
+budgets to hide this limit. See `MULTIREGION_CONDITIONAL_PROTOCOL.md`.
+
 ## Boolean predicate pool optimization
 
 Root moves, typed finite-training signatures, and shared integer cache entries reduce

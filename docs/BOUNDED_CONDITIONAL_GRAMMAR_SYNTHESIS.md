@@ -19,8 +19,13 @@ opts into bounded Boolean composition using the existing lazy `IfThenElse` node:
 OR, or NOT operator identities were added. `maximumPredicateIntegerNodes` optionally
 caps each integer operand tree of a comparison; zero inherits the overall predicate
 node limit. Boolean nesting is capped at 16, while expanded predicate nodes and depth
-remain bounded by the existing grammar limits. Nested integer conditionals,
-first-search, and iteration/binder productions remain excluded. Generated expressions
+remain bounded by the existing grammar limits. `maximumConditionalNesting` defaults
+to zero, preserving the single output-selector grammar. A positive value opts into
+bounded Int64 `IfThenElse` productions inside generated output branches. Those nodes
+reuse the declared predicate pool, checked lazy evaluator, deterministic node-size and
+grammar ordering, and shared construction, pool, candidate, evaluation-work, and
+logical-memory limits. No new operator identity is added. First-search and
+iteration/binder productions remain excluded. Generated expressions
 contain only declared input variables and literals, so they are closed under the
 existing lexical-scope validator; caller components with outer bindings are not
 accepted by the selector.
@@ -89,6 +94,30 @@ cheap.
 The same contracts cover lazy Boolean short-circuiting with an invalid unselected
 predicate branch, invalid modular candidates, negative inputs, modulo boundaries,
 stable tie-breaking, malformed Boolean nesting, cancellation and resource exhaustion.
+
+## Nested conditional qualification
+
+Historical S17 recurrence synthesis deliberately restricted candidates to one root
+conditional and reported no qualifying conditional recovery after its corrected
+gate. S18's constraint-guided recurrence synthesis reduced compositions by matching
+components against observed recurrence constraints, but remained research-only and
+does not provide this finite-table function synthesizer with bounded nested Int64
+branches. The current extension reuses the production typed expression pool and
+selector; it does not revive either research runner or add their execution framework.
+
+The frozen multi-region controls, rules, training and held-out values, grammars, and
+resource-failure records are documented in
+[MULTIREGION_CONDITIONAL_PROTOCOL.md](MULTIREGION_CONDITIONAL_PROTOCOL.md). Under
+identical one-selector versus nested grammar bounds, deterministic C++ qualification
+recovers the sign/modular three-region family and a guarded `INT64_MIN` overflow family
+exactly on training and held-out rows. The atomic baselines remain partial. A separate
+multivariate rule combining independent modular predicates is included, but under the
+frozen one-million selector-tuple cap its 34-predicate, 516-branch pool implies
+9,052,704 combinations and returns `ResourceExhausted` before selection. Another
+guarded modulo grammar exhausts the frozen aggregate-work allowance during pool trace
+reduction. These results identify a useful narrow extension and a significant
+combinatorial limit; they do not establish broad synthesis efficiency or equivalence
+beyond the finite observations.
 Training-trace reduction keeps a validity marker at each invalid row. Equal finite
 training behavior remains only a finite-data reduction and is not treated as universal
 mathematical equivalence.

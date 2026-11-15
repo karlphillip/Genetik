@@ -47,6 +47,9 @@ struct DiscreteConditionalGrammar {
     bool allowBooleanAnd = false;
     bool allowBooleanOr = false;
     bool allowBooleanNot = false;
+    // Zero preserves the single output-selector grammar. Positive values allow
+    // bounded Int64 IfThenElse productions inside generated output branches.
+    std::size_t maximumConditionalNesting = 0;
     // Optional pruning from finite training behavior; defaults off to preserve
     // the original selector traversal.
     bool enableSpecificationGuidedPruning = false;
@@ -149,9 +152,12 @@ struct PoolKey {
     DiscreteType type;
     std::size_t nodes;
     std::size_t booleanNestingRemaining;
+    std::size_t conditionalNestingRemaining;
     bool operator<(const PoolKey& other) const noexcept {
-        return std::tie(predicate, type, nodes, booleanNestingRemaining) <
-               std::tie(other.predicate, other.type, other.nodes, other.booleanNestingRemaining);
+        return std::tie(predicate, type, nodes, booleanNestingRemaining,
+                        conditionalNestingRemaining) <
+               std::tie(other.predicate, other.type, other.nodes, other.booleanNestingRemaining,
+                        other.conditionalNestingRemaining);
     }
 };
 
@@ -192,11 +198,13 @@ public:
 
     const std::vector<DiscreteExpression>& enumerate(DiscreteType type, std::size_t nodes,
                                                      bool predicate,
-                                                     std::size_t booleanNestingRemaining) {
-        // Nesting allowance affects only Boolean productions. Integer grammar
-        // pools are identical under every remaining Boolean depth.
-        const PoolKey key{predicate, type, nodes,
-                          type == DiscreteType::Bool ? booleanNestingRemaining : 0};
+                                                     std::size_t booleanNestingRemaining,
+                                                     std::size_t conditionalNestingRemaining) {
+        // Boolean and output-conditional nesting are independent grammar
+        // dimensions. Integer predicate operands remain shared across both.
+        const PoolKey key{
+            predicate, type, nodes, type == DiscreteType::Bool ? booleanNestingRemaining : 0,
+            !predicate && type == DiscreteType::Int64 ? conditionalNestingRemaining : 0};
         if (const auto found = pools_.find(key); found != pools_.end())
             return found->second;
         constexpr std::size_t mapEntryBytes = 128;
@@ -255,8 +263,9 @@ public:
             if (!operandCount || operandCount > 2 || (!integerOutputOperator(kind) && !returnsBool))
                 continue;
             if (operandCount == 1) {
-                for (const auto& child : enumerate(DiscreteType::Int64, nodes - 1, predicate,
-                                                   booleanNestingRemaining)) {
+                for (const auto& child :
+                     enumerate(DiscreteType::Int64, nodes - 1, predicate, booleanNestingRemaining,
+                               conditionalNestingRemaining)) {
                     if (cancelled() || exhausted_)
                         return result;
                     if (!attempt())
@@ -289,9 +298,11 @@ public:
                     (leftNodes > operandLimit || rightNodes > operandLimit))
                     continue;
                 const auto& leftPool =
-                    enumerate(leftType, leftNodes, predicate, booleanNestingRemaining);
+                    enumerate(leftType, leftNodes, predicate, booleanNestingRemaining,
+                              conditionalNestingRemaining);
                 const auto& rightPool =
-                    enumerate(rightType, rightNodes, predicate, booleanNestingRemaining);
+                    enumerate(rightType, rightNodes, predicate, booleanNestingRemaining,
+                              conditionalNestingRemaining);
                 for (const auto& left : leftPool) {
                     for (const auto& right : rightPool) {
                         if (cancelled() || exhausted_)
@@ -322,7 +333,7 @@ public:
         if (predicate && type == DiscreteType::Bool && booleanNestingRemaining > 0 &&
             (grammar_.allowBooleanAnd || grammar_.allowBooleanOr || grammar_.allowBooleanNot)) {
             const auto& constants =
-                enumerate(DiscreteType::Bool, 1, true, booleanNestingRemaining - 1);
+                enumerate(DiscreteType::Bool, 1, true, booleanNestingRemaining - 1, 0);
             const auto findConstant = [&](bool value) -> const DiscreteExpression* {
                 const auto found = std::find_if(
                     constants.begin(), constants.end(), [value](const auto& expression) {
@@ -357,9 +368,9 @@ public:
                 if (!valueNodes)
                     continue;
                 const auto& conditions = enumerate(DiscreteType::Bool, conditionNodes, true,
-                                                   booleanNestingRemaining - 1);
+                                                   booleanNestingRemaining - 1, 0);
                 const auto& values =
-                    enumerate(DiscreteType::Bool, valueNodes, true, booleanNestingRemaining - 1);
+                    enumerate(DiscreteType::Bool, valueNodes, true, booleanNestingRemaining - 1, 0);
                 for (const auto& condition : conditions) {
                     for (const auto& value : values) {
                         // Declared connective order is AND, then OR.
@@ -381,6 +392,44 @@ public:
                 }
             }
         }
+        // Output branches may opt into bounded nested Int64 conditionals.
+        // Conditions use the existing declared predicate grammar; both arms
+        // consume one level of conditional nesting and all node/work limits
+        // remain shared with ordinary branch enumeration.
+        if (!predicate && type == DiscreteType::Int64 && conditionalNestingRemaining > 0) {
+            for (std::size_t conditionNodes = 1; conditionNodes + 3 <= nodes; ++conditionNodes) {
+                for (std::size_t yesNodes = 1; yesNodes + conditionNodes + 2 <= nodes; ++yesNodes) {
+                    const auto noNodes = nodes - conditionNodes - yesNodes - 1;
+                    if (!noNodes)
+                        continue;
+                    const auto& conditions = enumerate(DiscreteType::Bool, conditionNodes, true,
+                                                       grammar_.maximumBooleanNesting, 0);
+                    const auto& yesValues = enumerate(DiscreteType::Int64, yesNodes, false, 0,
+                                                      conditionalNestingRemaining - 1);
+                    const auto& noValues = enumerate(DiscreteType::Int64, noNodes, false, 0,
+                                                     conditionalNestingRemaining - 1);
+                    for (const auto& condition : conditions)
+                        for (const auto& yes : yesValues)
+                            for (const auto& no : noValues) {
+                                if (cancelled() || exhausted_)
+                                    return result;
+                                if (!attempt() || !admitTransient(nodes))
+                                    return result;
+                                try {
+                                    auto expression = DiscreteExpression::conditional(
+                                        condition, yes, no, grammar_.expressionLimits);
+                                    if (expression.depth() <= grammar_.maximumExpressionDepth &&
+                                        !append(result, std::move(expression)))
+                                        return result;
+                                } catch (const std::length_error&) {
+                                    ++invalid_;
+                                } catch (const std::invalid_argument&) {
+                                    ++invalid_;
+                                }
+                            }
+                }
+            }
+        }
         return result;
     }
 
@@ -392,8 +441,9 @@ public:
         for (std::size_t nodes = 1; nodes <= maximumNodes; ++nodes) {
             if (cancelled() || exhausted_)
                 break;
-            const auto& sizePool =
-                enumerate(type, nodes, predicate, predicate ? grammar_.maximumBooleanNesting : 0);
+            const auto& sizePool = enumerate(
+                type, nodes, predicate, predicate ? grammar_.maximumBooleanNesting : 0,
+                !predicate && type == DiscreteType::Int64 ? grammar_.maximumConditionalNesting : 0);
             const auto remainingPoolSlots = limits_.maximumPoolExpressions -
                                             std::min(generated_, limits_.maximumPoolExpressions);
             if (sizePool.size() >
@@ -407,8 +457,10 @@ public:
             return output;
         std::size_t total = 0;
         for (std::size_t nodes = 1; nodes <= maximumNodes; ++nodes) {
-            const PoolKey key{predicate, type, nodes,
-                              type == DiscreteType::Bool ? grammar_.maximumBooleanNesting : 0};
+            const PoolKey key{
+                predicate, type, nodes,
+                type == DiscreteType::Bool ? grammar_.maximumBooleanNesting : 0,
+                !predicate && type == DiscreteType::Int64 ? grammar_.maximumConditionalNesting : 0};
             const auto found = pools_.find(key);
             if (found != pools_.end()) {
                 if (!addWithin(total, found->second.size(),
@@ -434,8 +486,10 @@ public:
         for (std::size_t nodes = 1; nodes <= maximumNodes; ++nodes) {
             if (cancelled())
                 return output;
-            const PoolKey key{predicate, type, nodes,
-                              type == DiscreteType::Bool ? grammar_.maximumBooleanNesting : 0};
+            const PoolKey key{
+                predicate, type, nodes,
+                type == DiscreteType::Bool ? grammar_.maximumBooleanNesting : 0,
+                !predicate && type == DiscreteType::Int64 ? grammar_.maximumConditionalNesting : 0};
             const auto found = pools_.find(key);
             if (found == pools_.end())
                 continue;
@@ -551,7 +605,7 @@ inline bool validGrammar(const DiscreteSpecification& specification,
         !grammar.maximumExpressionDepth ||
         (grammar.maximumPredicateIntegerNodes &&
          grammar.maximumPredicateIntegerNodes > grammar.maximumPredicateNodes) ||
-        grammar.maximumBooleanNesting > 16 ||
+        grammar.maximumBooleanNesting > 16 || grammar.maximumConditionalNesting > 8 ||
         specification.dimensions() > grammar.expressionLimits.maxVariables ||
         std::max(grammar.maximumPredicateNodes, grammar.maximumBranchNodes) >
             grammar.expressionLimits.maxNodes ||

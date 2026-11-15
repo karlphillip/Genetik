@@ -156,6 +156,222 @@ void arithmeticPiecewiseRecovery() {
           "typed pools are generated automatically from the grammar");
 }
 
+DiscreteConditionalGrammar
+frozenMultiRegionGrammar(std::size_t dimensions, std::vector<std::int64_t> predicateConstants,
+                         std::vector<std::int64_t> branchConstants,
+                         std::vector<DiscreteKind> predicates, std::vector<DiscreteKind> branches,
+                         std::size_t predicateNodes, std::size_t branchNodes = 8) {
+    DiscreteConditionalGrammar value;
+    value.variables =
+        dimensions == 1 ? std::vector<std::size_t>{0} : std::vector<std::size_t>{0, 1};
+    value.predicateConstants = std::move(predicateConstants);
+    value.branchConstants = std::move(branchConstants);
+    value.predicateOperators = std::move(predicates);
+    value.branchOperators = std::move(branches);
+    value.maximumPredicateNodes = predicateNodes;
+    value.maximumBranchNodes = branchNodes;
+    value.maximumExpressionDepth = 8;
+    value.maximumConditionalNesting = 1;
+    value.expressionLimits.maxNodes = 8;
+    value.expressionLimits.maxDepth = 8;
+    return value;
+}
+
+DiscreteConditionalGrammarResult runMultiRegion(const DiscreteSpecification& training,
+                                                const DiscreteConditionalGrammar& grammar) {
+    DiscreteConditionalGrammarLimits limits;
+    limits.maximumPoolExpressions = 100000;
+    limits.maximumConstructionAttempts = 500000;
+    limits.maximumCandidateCombinations = 1000000;
+    limits.maximumConditionalNodes = 32;
+    limits.maximumConditionalDepth = 10;
+    limits.maximumEvaluationWork = 20000000;
+    limits.maximumEstimatedBytes = 128 * 1024 * 1024;
+    return synthesizeDiscreteConditionalFromGrammar(training, grammar, limits);
+}
+
+std::int64_t euclideanModulo(std::int64_t x, std::int64_t modulus) {
+    auto value = x % modulus;
+    return value < 0 ? value + modulus : value;
+}
+
+void multiRegionGrammarRecovery() {
+    // The three specifications and exact finite domains are frozen in
+    // docs/MULTIREGION_CONDITIONAL_PROTOCOL.md. Only their generated tables
+    // and grammar declarations are passed to synthesis.
+    std::vector<DiscreteSpecificationObservation> aRows;
+    for (const auto x : {-6, -2, -1, 0, 1, 3, 4, 6}) {
+        const auto y = x < 0 ? 10 : euclideanModulo(x, 3) == 0 ? 20 : 30;
+        aRows.push_back({{x}, DiscreteValue::integer(y)});
+    }
+    const DiscreteSpecification familyA(1, std::move(aRows));
+    auto grammarA = frozenMultiRegionGrammar(
+        1, {0, 3}, {10, 20, 30},
+        {DiscreteKind::LessThan, DiscreteKind::Modulo, DiscreteKind::Equal}, {}, 5);
+    auto oneSelectorA = grammarA;
+    oneSelectorA.maximumConditionalNesting = 0;
+    const auto baselineA = runMultiRegion(familyA, oneSelectorA);
+    check(baselineA.status == DiscreteConditionalGrammarStatus::Partial &&
+              baselineA.matchingRows < familyA.observations().size() && baselineA.expression,
+          "matched one-selector baseline cannot fit three constant output regions");
+    const auto repeatedBaselineA = runMultiRegion(familyA, oneSelectorA);
+    check(repeatedBaselineA.matchingRows == baselineA.matchingRows &&
+              repeatedBaselineA.expression &&
+              repeatedBaselineA.expression->toString() == baselineA.expression->toString(),
+          "single-selector baseline score and selection are deterministic");
+    const auto aStarted = std::chrono::steady_clock::now();
+    const auto recoveredA = runMultiRegion(familyA, grammarA);
+    const auto aMilliseconds =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - aStarted)
+            .count();
+    check(recoveredA.status == DiscreteConditionalGrammarStatus::ExactTraining &&
+              recoveredA.matchingRows == familyA.observations().size() &&
+              recoveredA.expression.has_value(),
+          "nested grammar recovers sign/modular three-region training table");
+    for (const auto x : {-9, -4, -3, 2, 5, 7, 9}) {
+        const auto expected = x < 0 ? 10 : euclideanModulo(x, 3) == 0 ? 20 : 30;
+        const auto value = recoveredA.expression->evaluate(std::array<std::int64_t, 1>{x});
+        check(value.valid() && value.value->integer() == expected,
+              "sign/modular selected expression matches held-out observation");
+    }
+    check(runMultiRegion(familyA, grammarA).expression->toString() ==
+              recoveredA.expression->toString(),
+          "sign/modular nested recovery tie-breaking is deterministic");
+    std::cout << "multiregion A generated=" << recoveredA.work.generatedExpressions
+              << " attempts=" << recoveredA.work.constructionAttempts
+              << " predicates=" << recoveredA.work.predicatePoolSize
+              << " branches=" << recoveredA.work.branchPoolSize
+              << " tuples=" << recoveredA.work.composition.combinations
+              << " work=" << recoveredA.work.poolEvaluationWork
+              << " bytes=" << recoveredA.work.estimatedPeakBytes << " runtime_ms=" << aMilliseconds
+              << " expression=" << recoveredA.expression->toString()
+              << " baseline_score=" << baselineA.matchingRows << "/" << baselineA.totalRows
+              << " baseline_expression=" << baselineA.expression->toString() << "\n";
+
+    std::vector<DiscreteSpecificationObservation> bRows;
+    for (const auto& [x, y] : std::array<std::pair<std::int64_t, std::int64_t>, 8>{
+             {{-2, -3}, {-2, 1}, {-1, -3}, {-1, 1}, {0, 2}, {1, 3}, {2, 4}, {3, 6}}}) {
+        const auto output = euclideanModulo(x, 2) == 0 ? 10 : euclideanModulo(y, 3) == 0 ? 20 : 30;
+        bRows.push_back({{x, y}, DiscreteValue::integer(output)});
+    }
+    const DiscreteSpecification familyB(2, std::move(bRows));
+    auto grammarB = frozenMultiRegionGrammar(2, {0, 2, 3}, {10, 20, 30},
+                                             {DiscreteKind::Modulo, DiscreteKind::Equal}, {}, 5);
+    const auto baselineB = runMultiRegion(familyB, [&] {
+        auto g = grammarB;
+        g.maximumConditionalNesting = 0;
+        return g;
+    }());
+    check(baselineB.status == DiscreteConditionalGrammarStatus::Partial,
+          "matched multivariate one-selector baseline cannot fit three constant regions");
+    const auto recoveredB = runMultiRegion(familyB, grammarB);
+    check(recoveredB.status == DiscreteConditionalGrammarStatus::ResourceExhausted &&
+              recoveredB.work.branchPoolSize == 516 &&
+              recoveredB.work.composition.combinations == 0,
+          "multivariate modular composition preserves its frozen tuple-cap exhaustion result");
+    std::cout << "multiregion B exhausted generated=" << recoveredB.work.generatedExpressions
+              << " attempts=" << recoveredB.work.constructionAttempts
+              << " predicates=" << recoveredB.work.predicatePoolSize
+              << " branches=" << recoveredB.work.branchPoolSize
+              << " tuples=" << recoveredB.work.composition.combinations
+              << " work=" << recoveredB.work.poolEvaluationWork
+              << " bytes=" << recoveredB.work.estimatedPeakBytes
+              << " baseline_score=" << baselineB.matchingRows << "/" << baselineB.totalRows
+              << " baseline_expression="
+              << (baselineB.expression ? baselineB.expression->toString() : "none") << "\n";
+    std::vector<DiscreteSpecificationObservation> cRows;
+    for (const auto x : {-3, -1, 0, 1, 2}) {
+        const auto output = x == 0 ? 7 : x < 0 ? euclideanModulo(x, -x) : -1;
+        cRows.push_back({{x}, DiscreteValue::integer(output)});
+    }
+    const DiscreteSpecification familyC(1, std::move(cRows));
+    auto grammarC =
+        frozenMultiRegionGrammar(1, {0}, {7, 0, -1}, {DiscreteKind::Equal, DiscreteKind::LessThan},
+                                 {DiscreteKind::Modulo, DiscreteKind::Negate}, 3);
+    auto oneSelectorC = grammarC;
+    oneSelectorC.maximumConditionalNesting = 0;
+    check(runMultiRegion(familyC, oneSelectorC).status == DiscreteConditionalGrammarStatus::Partial,
+          "guarded control requires more than one output selector");
+    const auto recoveredC = runMultiRegion(familyC, grammarC);
+    check(recoveredC.status == DiscreteConditionalGrammarStatus::ResourceExhausted &&
+              recoveredC.work.generatedExpressions == 82774 &&
+              recoveredC.work.constructionAttempts == 41532,
+          "expansive guarded modulo grammar retains its frozen aggregate-work exhaustion");
+
+    constexpr auto lo = std::numeric_limits<std::int64_t>::min();
+    std::vector<DiscreteSpecificationObservation> dRows;
+    for (const auto x : std::array<std::int64_t, 5>{lo, -3, -1, 0, 2})
+        dRows.push_back({{x}, DiscreteValue::integer(x == lo ? 7 : x < 0 ? -x : -1)});
+    const DiscreteSpecification familyD(1, std::move(dRows));
+    auto grammarD =
+        frozenMultiRegionGrammar(1, {lo, 0}, {7, -1}, {DiscreteKind::Equal, DiscreteKind::LessThan},
+                                 {DiscreteKind::Negate}, 3, 7);
+    grammarD.expressionLimits.maxConstantMagnitude = std::uint64_t{1} << 63;
+    auto baselineDGrammar = grammarD;
+    baselineDGrammar.maximumConditionalNesting = 0;
+    const auto baselineD = runMultiRegion(familyD, baselineDGrammar);
+    check(baselineD.status == DiscreteConditionalGrammarStatus::Partial,
+          "matched single-selector guarded overflow baseline is partial");
+    check(baselineD.expression.has_value(),
+          "matched guarded baseline returns its best partial candidate");
+    const auto dStarted = std::chrono::steady_clock::now();
+    const auto recoveredD = runMultiRegion(familyD, grammarD);
+    const auto dMilliseconds =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - dStarted)
+            .count();
+    if (recoveredD.status != DiscreteConditionalGrammarStatus::ExactTraining)
+        std::cerr << "guarded overflow status=" << static_cast<int>(recoveredD.status)
+                  << " matches=" << recoveredD.matchingRows << "/" << recoveredD.totalRows
+                  << " diagnostic=" << recoveredD.diagnostic
+                  << " generated=" << recoveredD.work.generatedExpressions
+                  << " attempts=" << recoveredD.work.constructionAttempts
+                  << " predicates=" << recoveredD.work.predicatePoolSize
+                  << " branches=" << recoveredD.work.branchPoolSize
+                  << " combinations=" << recoveredD.work.composition.combinations << "\n";
+    check(recoveredD.status == DiscreteConditionalGrammarStatus::ExactTraining &&
+              recoveredD.expression && recoveredD.work.invalidExpressions > 0,
+          "nested grammar recovers guarded invalid-unselected overflow branch");
+    const auto repeatedD = runMultiRegion(familyD, grammarD);
+    check(repeatedD.status == recoveredD.status && repeatedD.expression &&
+              repeatedD.expression->toString() == recoveredD.expression->toString(),
+          "guarded nested recovery tie-breaking is deterministic");
+    std::atomic<bool> stopNested{true};
+    DiscreteConditionalGrammarLimits nestedLimits;
+    nestedLimits.maximumPoolExpressions = 100000;
+    nestedLimits.maximumConstructionAttempts = 500000;
+    nestedLimits.maximumCandidateCombinations = 1000000;
+    nestedLimits.maximumEvaluationWork = 20000000;
+    nestedLimits.maximumEstimatedBytes = 128 * 1024 * 1024;
+    const auto cancelled =
+        synthesizeDiscreteConditionalFromGrammar(familyD, grammarD, nestedLimits, &stopNested);
+    check(cancelled.status == DiscreteConditionalGrammarStatus::Cancelled,
+          "opt-in nested grammar preserves cancellation status");
+    nestedLimits.maximumConstructionAttempts = 1;
+    const auto exhausted =
+        synthesizeDiscreteConditionalFromGrammar(familyD, grammarD, nestedLimits);
+    check(exhausted.status == DiscreteConditionalGrammarStatus::ResourceExhausted,
+          "opt-in nested grammar preserves construction-attempt exhaustion");
+    for (const auto x : std::array<std::int64_t, 5>{lo + 1, -8, -2, 1, 9}) {
+        const auto expected = x == lo ? 7 : x < 0 ? -x : -1;
+        const auto value = recoveredD.expression->evaluate(std::array<std::int64_t, 1>{x});
+        check(value.valid() && value.value->integer() == expected,
+              "guarded overflow rule matches held-out values");
+    }
+    check(recoveredA.expression->outerBindings().empty() &&
+              recoveredD.expression->outerBindings().empty(),
+          "automatically composed conditionals remain lexically closed");
+    std::cout << "multiregion D generated=" << recoveredD.work.generatedExpressions
+              << " attempts=" << recoveredD.work.constructionAttempts
+              << " predicates=" << recoveredD.work.predicatePoolSize
+              << " branches=" << recoveredD.work.branchPoolSize
+              << " tuples=" << recoveredD.work.composition.combinations
+              << " work=" << recoveredD.work.poolEvaluationWork
+              << " bytes=" << recoveredD.work.estimatedPeakBytes << " runtime_ms=" << dMilliseconds
+              << " expression=" << recoveredD.expression->toString()
+              << " baseline_score=" << baselineD.matchingRows << "/" << baselineD.totalRows
+              << " baseline_expression=" << baselineD.expression->toString() << "\n";
+}
+
 void negativeAndResourceControls() {
     const auto training = specification({-3, -2, -1, 0, 1, 2, 3},
                                         [](std::int64_t x) { return x % 2 == 0 ? x + 1 : x - 1; });
@@ -167,6 +383,12 @@ void negativeAndResourceControls() {
     check(partial.status == DiscreteConditionalGrammarStatus::Partial &&
               partial.matchingRows < partial.totalRows,
           "missing modular production yields a distinct partial result");
+
+    auto excessiveNesting = incompleteTyped;
+    excessiveNesting.maximumConditionalNesting = 9;
+    const auto invalidBound = synthesize(training, excessiveNesting);
+    check(invalidBound.status == DiscreteConditionalGrammarStatus::Invalid,
+          "nested conditional grammar rejects nesting beyond its fixed cap");
 
     auto tiny = DiscreteConditionalGrammarLimits{};
     tiny.maximumConstructionAttempts = 1;
@@ -870,6 +1092,7 @@ int main(int argc, char** argv) {
         }
         modularPiecewiseRecovery();
         arithmeticPiecewiseRecovery();
+        multiRegionGrammarRecovery();
         negativeAndResourceControls();
         lazyOverflowRecovery();
         invalidArithmeticAndLazyBranches();

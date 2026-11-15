@@ -226,12 +226,11 @@ void partitionDirectedMatchesExhaustiveSmallPool() {
         for (const auto& row : specification.observations()) {
             const auto evaluated = expression.evaluate(row.inputs);
             output.valid.push_back(evaluated.valid() ? 1 : 0);
-            output.values.push_back(evaluated.valid()
-                                        ? (output.boolean
-                                               ? (evaluated.value->boolean() ? 1U : 0U)
-                                               : static_cast<std::uint64_t>(
-                                                     evaluated.value->integer()))
-                                        : 0);
+            output.values.push_back(
+                evaluated.valid()
+                    ? (output.boolean ? (evaluated.value->boolean() ? 1U : 0U)
+                                      : static_cast<std::uint64_t>(evaluated.value->integer()))
+                    : 0);
         }
         return output;
     };
@@ -250,8 +249,8 @@ void partitionDirectedMatchesExhaustiveSmallPool() {
         genetik_conditional_composition_detail::composeDiscreteConditionalPartitionDirected(
             training, predicates, branches, predicateTraces, branchTraces, limits);
     if (partitioned.status != exhaustive.status ||
-        partitioned.matchingRows != exhaustive.matchingRows ||
-        !partitioned.expression || !exhaustive.expression ||
+        partitioned.matchingRows != exhaustive.matchingRows || !partitioned.expression ||
+        !exhaustive.expression ||
         partitioned.expression->toString() != exhaustive.expression->toString())
         std::cerr << "small exhaustive=" << static_cast<int>(exhaustive.status) << "/"
                   << exhaustive.matchingRows << "/"
@@ -326,8 +325,7 @@ void partitionDirectedMatchesExhaustiveSmallPool() {
         composeDiscreteConditional(training, predicates, branches, evaluatorLimited);
     const auto partitionedEvaluatorLimited =
         genetik_conditional_composition_detail::composeDiscreteConditionalPartitionDirected(
-            training, predicates, branches, predicateTraces, branchTraces,
-            evaluatorLimited);
+            training, predicates, branches, predicateTraces, branchTraces, evaluatorLimited);
     check(exhaustiveEvaluatorLimited.status ==
                   DiscreteConditionalCompositionStatus::ResourceExhausted &&
               partitionedEvaluatorLimited.status ==
@@ -336,7 +334,7 @@ void partitionDirectedMatchesExhaustiveSmallPool() {
 
     const DiscreteSpecification ambiguous(1, {{{0}, DiscreteValue::integer(3)}});
     const std::vector<DiscreteExpression> constantPredicates{DiscreteExpression::boolean(true, 1),
-                                                            DiscreteExpression::boolean(false, 1)};
+                                                             DiscreteExpression::boolean(false, 1)};
     const std::vector<DiscreteExpression> partialBranches{DiscreteExpression::integer(1, 1),
                                                           DiscreteExpression::integer(2, 1)};
     predicateTraces.clear();
@@ -359,11 +357,10 @@ void partitionDirectedMatchesExhaustiveSmallPool() {
               ambiguousPartitioned.expression->toString() ==
                   ambiguousExhaustive.expression->toString(),
           "ambiguous partial specifications preserve exhaustive selection and empty partitions");
-    for (const auto expected : {std::array<std::int64_t, 2>{3, 3},
-                                std::array<std::int64_t, 2>{3, 4}}) {
-        const DiscreteSpecification duplicates(
-            1, {{{0}, DiscreteValue::integer(expected[0])},
-                {{0}, DiscreteValue::integer(expected[1])}});
+    for (const auto expected :
+         {std::array<std::int64_t, 2>{3, 3}, std::array<std::int64_t, 2>{3, 4}}) {
+        const DiscreteSpecification duplicates(1, {{{0}, DiscreteValue::integer(expected[0])},
+                                                   {{0}, DiscreteValue::integer(expected[1])}});
         predicateTraces.clear();
         branchTraces.clear();
         for (const auto& expression : constantPredicates)
@@ -473,9 +470,9 @@ void multiRegionGrammarRecovery() {
               << (baselineB.expression ? baselineB.expression->toString() : "none") << "\n";
     const auto bStarted = std::chrono::steady_clock::now();
     const auto directedB = runPartitionDirected(familyB, grammarB);
-    const auto bMilliseconds = std::chrono::duration<double, std::milli>(
-                                   std::chrono::steady_clock::now() - bStarted)
-                                   .count();
+    const auto bMilliseconds =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - bStarted)
+            .count();
     check(directedB.status == DiscreteConditionalGrammarStatus::ExactTraining &&
               directedB.expression && directedB.matchingRows == familyB.observations().size() &&
               directedB.expression->toString() ==
@@ -496,9 +493,9 @@ void multiRegionGrammarRecovery() {
           "partition-directed search avoids Cartesian materialization within separate limits");
     for (const auto& [x, y] : std::array<std::pair<std::int64_t, std::int64_t>, 6>{
              {{-4, 5}, {-3, -6}, {-1, 0}, {0, 1}, {1, -3}, {4, 2}}}) {
-        const auto expected = euclideanModulo(x, 2) == 0 ? 10
-                             : euclideanModulo(y, 3) == 0 ? 20
-                                                          : 30;
+        const auto expected = euclideanModulo(x, 2) == 0   ? 10
+                              : euclideanModulo(y, 3) == 0 ? 20
+                                                           : 30;
         const auto value = directedB.expression->evaluate(std::array<std::int64_t, 2>{x, y});
         check(value.valid() && value.value->integer() == expected,
               "partition-directed multivariate rule matches held-out rows");
@@ -510,15 +507,14 @@ void multiRegionGrammarRecovery() {
               << " branches=" << directedB.work.branchPoolSize
               << " avoided=" << directedB.work.composition.cartesianCombinationsAvoided
               << " partition_rows=" << directedB.work.composition.partitionRowsScanned
-              << " index_comparisons="
-              << directedB.work.composition.partitionIndexComparisons
+              << " index_comparisons=" << directedB.work.composition.partitionIndexComparisons
               << " candidate_expressions="
               << directedB.work.composition.candidateExpressionsConstructed
               << " candidate_construction_work="
               << directedB.work.composition.candidateConstructionWork
               << " evaluator_rows=" << directedB.work.composition.evaluatedRows
-              << " evaluator_work=" << directedB.work.composition.nodeVisits +
-                                               directedB.work.composition.operations
+              << " evaluator_work="
+              << directedB.work.composition.nodeVisits + directedB.work.composition.operations
               << " work=" << directedB.work.poolEvaluationWork
               << " logical_bytes=" << directedB.work.estimatedPeakBytes
               << " runtime_ms=" << bMilliseconds

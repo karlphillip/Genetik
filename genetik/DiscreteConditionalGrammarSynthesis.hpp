@@ -608,8 +608,7 @@ inline bool validGrammar(const DiscreteSpecification& specification,
         !limits.maximumConstructionAttempts || !limits.maximumCandidateCombinations ||
         !limits.maximumConditionalNodes || !limits.maximumConditionalDepth ||
         !limits.maximumEvaluationWork || !limits.maximumEstimatedBytes ||
-        (grammar.enablePartitionDirectedComposition &&
-         !limits.maximumPartitionDirectedJoins) ||
+        (grammar.enablePartitionDirectedComposition && !limits.maximumPartitionDirectedJoins) ||
         !grammar.maximumPredicateNodes || !grammar.maximumBranchNodes ||
         !grammar.maximumExpressionDepth ||
         (grammar.maximumPredicateIntegerNodes &&
@@ -1266,9 +1265,8 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
         candidates = std::move(representatives);
         return true;
     };
-    if (!reduce(predicates, grammar.enablePartitionDirectedComposition
-                                ? &predicateTrainingTraces
-                                : nullptr) ||
+    if (!reduce(predicates,
+                grammar.enablePartitionDirectedComposition ? &predicateTrainingTraces : nullptr) ||
         !reduce(branches, (grammar.enableSpecificationGuidedPruning ||
                            grammar.enablePartitionDirectedComposition)
                               ? &branchTrainingTraces
@@ -1315,21 +1313,21 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
         limits.maximumEvaluationWork - result.work.poolEvaluationWork;
     compositionLimits.maxEstimatedBytes = limits.maximumEstimatedBytes - usedMemory;
     compositionLimits.evaluation = limits.evaluation;
-    auto selected = grammar.enablePartitionDirectedComposition
-                        ? genetik_conditional_composition_detail::
-                              composeDiscreteConditionalPartitionDirected(
-                                  specification, predicates, branches, predicateTrainingTraces,
-                                  branchTrainingTraces, [&] {
-                                      auto partitionLimits = compositionLimits;
-                                      partitionLimits.maxPartitionDirectedJoins =
-                                          limits.maximumPartitionDirectedJoins;
-                                      return partitionLimits;
-                                  }(), cancellation)
-                        : genetik_conditional_composition_detail::
-                              composeDiscreteConditionalWithBranchTraces(
-                                  specification, predicates, branches, compositionLimits,
-                                  cancellation, branchTrainingTraces,
-                                  grammar.enableSpecificationGuidedPruning);
+    auto selected =
+        grammar.enablePartitionDirectedComposition
+            ? genetik_conditional_composition_detail::composeDiscreteConditionalPartitionDirected(
+                  specification, predicates, branches, predicateTrainingTraces,
+                  branchTrainingTraces,
+                  [&] {
+                      auto partitionLimits = compositionLimits;
+                      partitionLimits.maxPartitionDirectedJoins =
+                          limits.maximumPartitionDirectedJoins;
+                      return partitionLimits;
+                  }(),
+                  cancellation)
+            : genetik_conditional_composition_detail::composeDiscreteConditionalWithBranchTraces(
+                  specification, predicates, branches, compositionLimits, cancellation,
+                  branchTrainingTraces, grammar.enableSpecificationGuidedPruning);
     result.work.composition = selected.work;
     result.work.evaluatorNodeVisits = selected.work.nodeVisits;
     result.work.evaluatorOperations = selected.work.operations;

@@ -4,10 +4,12 @@
 #include <atomic>
 #include <array>
 #include <cstdlib>
+#include <chrono>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace {
@@ -328,6 +330,39 @@ DiscreteConditionalGrammarResult synthesizeComposed(const DiscreteSpecification&
     return synthesizeDiscreteConditionalFromGrammar(training, grammar, limits);
 }
 
+void specificationPruningSanitizerControls() {
+    const auto conjunctionTraining = twoInputSpecification({-6, -3, -1, 0, 1, 3, 6}, {-2, -1, 1, 2},
+                                                           [](std::int64_t x, std::int64_t y) {
+                                                               auto residue = x % 3;
+                                                               if (residue < 0)
+                                                                   residue += 3;
+                                                               return residue == 0 && y < 0 ? 1 : 0;
+                                                           });
+    auto conjunctionGrammar = composedPredicateGrammar(1, {0, 3}, {false}, true);
+    conjunctionGrammar.enableSpecificationGuidedPruning = true;
+    const auto conjunction = synthesizeComposed(conjunctionTraining, conjunctionGrammar);
+    check(conjunction.status == DiscreteConditionalGrammarStatus::ExactTraining &&
+              conjunction.expression &&
+              conjunction.expression->toString() ==
+                  "if(if((x1 < 0), (0 == (x0 % 3)), false), 1, 0)",
+          "ASan conjunction pruning preserves the qualified exact rule");
+
+    const auto disjunctionTraining = twoInputSpecification(
+        {-2, -1, 0, 1, 2}, {-3, -2, -1, 0, 1, 2, 3}, [](std::int64_t x, std::int64_t y) {
+            auto residue = y % 2;
+            if (residue < 0)
+                residue += 2;
+            return x < 0 || residue == 0 ? 1 : 0;
+        });
+    auto disjunctionGrammar = composedPredicateGrammar(1, {0, 2}, {true}, false, true);
+    disjunctionGrammar.enableSpecificationGuidedPruning = true;
+    const auto disjunction = synthesizeComposed(disjunctionTraining, disjunctionGrammar);
+    check(disjunction.status == DiscreteConditionalGrammarStatus::ExactTraining &&
+              disjunction.expression &&
+              disjunction.expression->toString() == "if(if((x0 < 0), true, (0 == (x1 % 2))), 1, 0)",
+          "ASan disjunction pruning preserves the qualified exact rule");
+}
+
 void composedPredicateRecovery() {
     const auto conjunctionTraining = twoInputSpecification({-6, -3, -1, 0, 1, 3, 6}, {-2, -1, 1, 2},
                                                            [](std::int64_t x, std::int64_t y) {
@@ -337,7 +372,11 @@ void composedPredicateRecovery() {
                                                                return residue == 0 && y < 0 ? 1 : 0;
                                                            });
     auto conjunctionGrammar = composedPredicateGrammar(1, {0, 3}, {false}, true);
+    const auto conjunctionStart = std::chrono::steady_clock::now();
     const auto conjunction = synthesizeComposed(conjunctionTraining, conjunctionGrammar);
+    const auto conjunctionMilliseconds = std::chrono::duration<double, std::milli>(
+                                             std::chrono::steady_clock::now() - conjunctionStart)
+                                             .count();
     if (conjunction.status != DiscreteConditionalGrammarStatus::ExactTraining)
         std::cerr << "conjunction: status=" << static_cast<int>(conjunction.status)
                   << " matches=" << conjunction.matchingRows << '/' << conjunction.totalRows
@@ -370,8 +409,43 @@ void composedPredicateRecovery() {
               conjunction.work.cachedTraceReuses == 171890 &&
               conjunction.work.evaluatorNodeVisits == 402684 &&
               conjunction.work.evaluatorOperations == 170560 &&
-              conjunction.work.estimatedPeakBytes == 107382602,
+              conjunction.work.estimatedPeakBytes == 107382634,
           "conjunction trace profile remains reproducible");
+    auto prunedConjunctionGrammar = conjunctionGrammar;
+    prunedConjunctionGrammar.enableSpecificationGuidedPruning = true;
+    const auto prunedConjunctionStart = std::chrono::steady_clock::now();
+    const auto prunedConjunction =
+        synthesizeComposed(conjunctionTraining, prunedConjunctionGrammar);
+    const auto prunedConjunctionMilliseconds =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() -
+                                                  prunedConjunctionStart)
+            .count();
+    check(prunedConjunction.status == conjunction.status &&
+              prunedConjunction.matchingRows == conjunction.matchingRows &&
+              prunedConjunction.expression && conjunction.expression &&
+              prunedConjunction.expression->toString() == conjunction.expression->toString() &&
+              prunedConjunction.work.composition.prunedCombinations > 0 &&
+              prunedConjunction.work.poolEvaluationWork == 2372906 &&
+              prunedConjunction.work.composition.pruningWork == 5584 &&
+              prunedConjunction.work.composition.prunedCombinations == 3840 &&
+              prunedConjunction.work.composition.evaluatedCombinations == 608 &&
+              prunedConjunction.work.composition.prunedCombinations +
+                      prunedConjunction.work.composition.evaluatedCombinations ==
+                  prunedConjunction.work.composition.combinations &&
+              prunedConjunction.work.estimatedPeakBytes == 107385522 &&
+              prunedConjunction.work.poolEvaluationWork < conjunction.work.poolEvaluationWork,
+          "specification pruning preserves the conjunction winner and removes dominated "
+          "combinations");
+    std::cout << "pruning conjunction baseline=" << conjunction.work.poolEvaluationWork
+              << " pruned=" << prunedConjunction.work.composition.prunedCombinations
+              << " evaluated=" << prunedConjunction.work.composition.evaluatedCombinations
+              << " work=" << prunedConjunction.work.poolEvaluationWork
+              << " prune_work=" << prunedConjunction.work.composition.pruningWork << " evaluator="
+              << (prunedConjunction.work.composition.nodeVisits +
+                  prunedConjunction.work.composition.operations)
+              << " baseline_ms=" << conjunctionMilliseconds
+              << " pruned_ms=" << prunedConjunctionMilliseconds
+              << " bytes=" << prunedConjunction.work.estimatedPeakBytes << '\n';
     check(std::count_if(
               conjunction.expression->nodes().begin(), conjunction.expression->nodes().end(),
               [](const auto& node) { return node.kind() == DiscreteKind::IfThenElse; }) >= 2,
@@ -396,7 +470,11 @@ void composedPredicateRecovery() {
             return x < 0 || residue == 0 ? 1 : 0;
         });
     auto disjunctionGrammar = composedPredicateGrammar(1, {0, 2}, {true}, false, true);
+    const auto disjunctionStart = std::chrono::steady_clock::now();
     const auto disjunction = synthesizeComposed(disjunctionTraining, disjunctionGrammar);
+    const auto disjunctionMilliseconds = std::chrono::duration<double, std::milli>(
+                                             std::chrono::steady_clock::now() - disjunctionStart)
+                                             .count();
     check(disjunction.status == DiscreteConditionalGrammarStatus::ExactTraining &&
               disjunction.expression,
           "composed independent arithmetic conditions recover the disjunction training grid");
@@ -421,8 +499,43 @@ void composedPredicateRecovery() {
               disjunction.work.cachedTraceReuses == 171890 &&
               disjunction.work.evaluatorNodeVisits == 1379881 &&
               disjunction.work.evaluatorOperations == 600579 &&
-              disjunction.work.estimatedPeakBytes == 113751767,
+              disjunction.work.estimatedPeakBytes == 113751799,
           "disjunction trace profile remains reproducible");
+    auto prunedDisjunctionGrammar = disjunctionGrammar;
+    prunedDisjunctionGrammar.enableSpecificationGuidedPruning = true;
+    const auto prunedDisjunctionStart = std::chrono::steady_clock::now();
+    const auto prunedDisjunction =
+        synthesizeComposed(disjunctionTraining, prunedDisjunctionGrammar);
+    const auto prunedDisjunctionMilliseconds =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() -
+                                                  prunedDisjunctionStart)
+            .count();
+    check(prunedDisjunction.status == disjunction.status &&
+              prunedDisjunction.matchingRows == disjunction.matchingRows &&
+              prunedDisjunction.expression && disjunction.expression &&
+              prunedDisjunction.expression->toString() == disjunction.expression->toString() &&
+              prunedDisjunction.work.composition.prunedCombinations > 0 &&
+              prunedDisjunction.work.poolEvaluationWork == 3110215 &&
+              prunedDisjunction.work.composition.pruningWork == 12104 &&
+              prunedDisjunction.work.composition.prunedCombinations == 9082 &&
+              prunedDisjunction.work.composition.evaluatedCombinations == 1606 &&
+              prunedDisjunction.work.composition.prunedCombinations +
+                      prunedDisjunction.work.composition.evaluatedCombinations ==
+                  prunedDisjunction.work.composition.combinations &&
+              prunedDisjunction.work.estimatedPeakBytes == 113754995 &&
+              prunedDisjunction.work.poolEvaluationWork < disjunction.work.poolEvaluationWork,
+          "specification pruning preserves the disjunction winner and removes dominated "
+          "combinations");
+    std::cout << "pruning disjunction baseline=" << disjunction.work.poolEvaluationWork
+              << " pruned=" << prunedDisjunction.work.composition.prunedCombinations
+              << " evaluated=" << prunedDisjunction.work.composition.evaluatedCombinations
+              << " work=" << prunedDisjunction.work.poolEvaluationWork
+              << " prune_work=" << prunedDisjunction.work.composition.pruningWork << " evaluator="
+              << (prunedDisjunction.work.composition.nodeVisits +
+                  prunedDisjunction.work.composition.operations)
+              << " baseline_ms=" << disjunctionMilliseconds
+              << " pruned_ms=" << prunedDisjunctionMilliseconds
+              << " bytes=" << prunedDisjunction.work.estimatedPeakBytes << '\n';
     auto disjunctionAtomicGrammar = disjunctionGrammar;
     disjunctionAtomicGrammar.maximumBooleanNesting = 0;
     const auto disjunctionAtomic =
@@ -449,11 +562,19 @@ void composedPredicateRecovery() {
         const auto firstValue = conjunction.expression->evaluate(std::array<std::int64_t, 2>{x, y});
         const auto secondValue =
             disjunction.expression->evaluate(std::array<std::int64_t, 2>{x, y});
+        const auto firstPruned =
+            prunedConjunction.expression->evaluate(std::array<std::int64_t, 2>{x, y});
+        const auto secondPruned =
+            prunedDisjunction.expression->evaluate(std::array<std::int64_t, 2>{x, y});
         check(firstValue.valid() && firstValue.value->integer() == (residue3 == 0 && y < 0 ? 1 : 0),
               "conjunction agrees on held-out negative and modulo-boundary observations");
         check(secondValue.valid() &&
                   secondValue.value->integer() == (x < 0 || residue2 == 0 ? 1 : 0),
               "disjunction agrees on held-out independent arithmetic observations");
+        check(firstPruned.valid() && firstPruned.value->integer() == firstValue.value->integer() &&
+                  secondPruned.valid() &&
+                  secondPruned.value->integer() == secondValue.value->integer(),
+              "pruned selections preserve both held-out recovery outcomes");
     }
 
     const auto repeated = synthesizeComposed(disjunctionTraining, disjunctionGrammar);
@@ -737,8 +858,16 @@ void compositionalTraceDifferential() {
 }
 } // namespace
 
-int main() {
+int main(int argc, char** argv) {
     try {
+        if (argc == 2 && std::string_view(argv[1]) == "--composed-pruning") {
+            composedPredicateRecovery();
+            return EXIT_SUCCESS;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--pruned-only") {
+            specificationPruningSanitizerControls();
+            return EXIT_SUCCESS;
+        }
         modularPiecewiseRecovery();
         arithmeticPiecewiseRecovery();
         negativeAndResourceControls();

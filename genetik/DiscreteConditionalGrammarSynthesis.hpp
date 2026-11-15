@@ -47,6 +47,9 @@ struct DiscreteConditionalGrammar {
     bool allowBooleanAnd = false;
     bool allowBooleanOr = false;
     bool allowBooleanNot = false;
+    // Optional pruning from finite training behavior; defaults off to preserve
+    // the original selector traversal.
+    bool enableSpecificationGuidedPruning = false;
 };
 
 struct DiscreteConditionalGrammarLimits {
@@ -152,18 +155,7 @@ struct PoolKey {
     }
 };
 
-struct BehaviorSignature {
-    bool boolean = false;
-    std::vector<std::uint64_t> values;
-    std::vector<std::uint8_t> valid;
-
-    bool operator==(const BehaviorSignature&) const = default;
-
-    bool operator<(const BehaviorSignature& other) const noexcept {
-        return std::tie(boolean, valid, values) <
-               std::tie(other.boolean, other.valid, other.values);
-    }
-};
+using BehaviorSignature = genetik_conditional_composition_detail::TrainingTrace;
 
 inline bool componentFitsConditionalDepth(std::size_t expressionDepth,
                                           std::size_t maximumConditionalDepth) noexcept {
@@ -1131,11 +1123,13 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
                                   result.work, result.work.estimatedPeakBytes, limits.evaluation,
                                   cancellation);
     bool depthExcluded = false;
+    std::vector<BehaviorSignature> branchTrainingTraces;
     // Collapse expressions with identical typed behavior on training rows. Keep
     // the first shortest representative that can fit below the selector's outer
     // conditional node. If a shorter expression is too deep, a larger shallower
     // expression with the same trace remains eligible instead.
-    const auto reduce = [&](std::vector<DiscreteExpression>& candidates) -> bool {
+    const auto reduce = [&](std::vector<DiscreteExpression>& candidates,
+                            std::vector<BehaviorSignature>* retainedTraces = nullptr) -> bool {
         std::size_t reductionBytes = 0;
         for (const auto& candidate : candidates) {
             std::size_t nodeBytes = 0;
@@ -1156,6 +1150,11 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
             if (!addWithin(reductionBytes, signatureBytes, limits.maximumEstimatedBytes))
                 return false;
             reductionBytes += signatureBytes;
+            if (retainedTraces && grammar.enableSpecificationGuidedPruning) {
+                if (!addWithin(reductionBytes, signatureBytes, limits.maximumEstimatedBytes))
+                    return false;
+                reductionBytes += signatureBytes;
+            }
         }
         if (!addWithin(nonCachePeakBytes, reductionBytes, limits.maximumEstimatedBytes))
             return false;
@@ -1180,16 +1179,31 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
                 return false;
             if (!valid)
                 ++result.work.invalidExpressions;
-            if (!seen.insert(std::move(key)).second) {
+            const auto [position, inserted] = seen.insert(std::move(key));
+            if (!inserted) {
                 ++result.work.equivalentExpressions;
                 continue;
+            }
+            if (retainedTraces && grammar.enableSpecificationGuidedPruning) {
+                if (specification.observations().size() >
+                    std::numeric_limits<std::size_t>::max() / 2)
+                    return false;
+                const auto rowCopies = specification.observations().size() * 2;
+                if (!addWork(result.work.poolEvaluationWork, rowCopies,
+                             limits.maximumEvaluationWork) ||
+                    !addWork(result.work.signatureRowTouches, rowCopies,
+                             limits.maximumEvaluationWork))
+                    return false;
+                retainedTraces->push_back(*position);
             }
             representatives.push_back(candidate);
         }
         candidates = std::move(representatives);
         return true;
     };
-    if (!reduce(predicates) || !reduce(branches)) {
+    if (!reduce(predicates) ||
+        !reduce(branches,
+                grammar.enableSpecificationGuidedPruning ? &branchTrainingTraces : nullptr)) {
         result.status = cancellation && cancellation->load(std::memory_order_relaxed)
                             ? DiscreteConditionalGrammarStatus::Cancelled
                             : DiscreteConditionalGrammarStatus::ResourceExhausted;
@@ -1232,8 +1246,10 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
         limits.maximumEvaluationWork - result.work.poolEvaluationWork;
     compositionLimits.maxEstimatedBytes = limits.maximumEstimatedBytes - usedMemory;
     compositionLimits.evaluation = limits.evaluation;
-    auto selected = composeDiscreteConditional(specification, predicates, branches,
-                                               compositionLimits, cancellation);
+    auto selected =
+        genetik_conditional_composition_detail::composeDiscreteConditionalWithBranchTraces(
+            specification, predicates, branches, compositionLimits, cancellation,
+            branchTrainingTraces, grammar.enableSpecificationGuidedPruning);
     result.work.composition = selected.work;
     result.work.evaluatorNodeVisits = selected.work.nodeVisits;
     result.work.evaluatorOperations = selected.work.operations;
@@ -1241,7 +1257,9 @@ inline DiscreteConditionalGrammarResult synthesizeDiscreteConditionalFromGrammar
     const bool selectorWorkValid =
         addWork(selectorWork, selected.work.nodeVisits, limits.maximumEvaluationWork) &&
         addWork(selectorWork, selected.work.operations, limits.maximumEvaluationWork) &&
-        addWork(selectorWork, selected.work.specificationComparisons, limits.maximumEvaluationWork);
+        addWork(selectorWork, selected.work.specificationComparisons,
+                limits.maximumEvaluationWork) &&
+        addWork(selectorWork, selected.work.pruningWork, limits.maximumEvaluationWork);
     if (!selectorWorkValid ||
         !addWork(result.work.poolEvaluationWork, selectorWork, limits.maximumEvaluationWork)) {
         result.status = DiscreteConditionalGrammarStatus::ResourceExhausted;

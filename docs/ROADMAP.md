@@ -471,8 +471,11 @@ atomic predicates fail within the same bounds. See
 ## Boolean predicate pool optimization
 
 Root moves, typed finite-training signatures, and shared integer cache entries reduce
-estimated logical peak bytes by about 56% on both frozen controls without changing
-trace or selector work. Timing stayed within measurement noise. The next mathematical
-development priority is bottom-up trace construction from typed child traces, with
-explicit proof and accounting for checked Int64 arithmetic, invalid rows, and lazy
-conditional branches before attempting to reduce repeated evaluation work.
+estimated logical peak bytes by about 56% on both frozen controls. A bottom-up typed
+training-trace cache then reduces charged work by 45.1% and 43.3% on those controls,
+at the cost of 31.3% and 36.1% more estimated logical memory. Differential tests
+cover checked Int64 operations, invalid rows, lazy conditionals, cancellation, and
+resource limits. Runtime is measured separately. The next mathematical priority is
+to improve exact recovery within the existing grammar by reducing the search space
+through sound specification constraints, with matched controls and explicit cost
+accounting. See `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.

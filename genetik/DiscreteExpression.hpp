@@ -123,12 +123,27 @@ inline void limit(std::size_t n,std::size_t cap,const char* message){if(n>cap)th
 inline void validateLimits(const DiscreteExpressionLimits& l) {
     if(!l.maxNodes||!l.maxDepth||!l.maxStorageBytes||l.maxConstantMagnitude>(std::uint64_t{1}<<63)||l.maxIterationDepth>128||l.maxBinders>4096)throw std::invalid_argument("invalid discrete expression limits");
 }
-}
+} // namespace genetik_discrete_detail
 class DiscreteExpression {
-    struct Metadata {DiscreteType type;std::size_t depth,start;std::array<std::size_t,3> children{};std::size_t iterationDepth=0;};
+    struct Metadata {
+        DiscreteType type;
+        std::size_t depth, start;
+        std::array<std::size_t, 3> children{};
+        std::size_t iterationDepth = 0;
+    };
+    struct EvaluationFrame {
+        std::size_t index, stage;
+        DiscreteValue left = DiscreteValue::integer(0);
+        std::int64_t cursor = 0, upper = 0, accumulator = 0;
+    };
+
 public:
-    DiscreteExpression(std::span<const DiscreteNode> nodes,std::size_t dimensions,DiscreteExpressionLimits limits={},std::span<const std::size_t> outerBindings={}) :dimensions_(dimensions),limits_(limits) {
-        using namespace genetik_discrete_detail;validateLimits(limits);
+    DiscreteExpression(std::span<const DiscreteNode> nodes, std::size_t dimensions,
+                       DiscreteExpressionLimits limits = {},
+                       std::span<const std::size_t> outerBindings = {})
+        : dimensions_(dimensions), limits_(limits) {
+        using namespace genetik_discrete_detail;
+        validateLimits(limits);
         if(nodes.empty())throw std::invalid_argument("empty discrete expression");
         limit(nodes.size(),limits.maxNodes,"discrete node limit");limit(dimensions,limits.maxVariables,"discrete input limit");
         const auto bytes=storageBytesPerNode();
@@ -205,12 +220,38 @@ public:
     std::vector<std::size_t> scopeAt(std::size_t target) const {
         if(target>=nodeCount())throw std::out_of_range("scope root outside expression");
         auto scope=outer_;std::size_t root=nodeCount()-1;
-        while(root!=target){bool found=false;for(std::size_t j=0;j<discreteArity(nodes_[root].kind());++j){const auto child=metadata_[root].children[j];if(target>=metadata_[child].start&&target<=child){if(discreteIteration(nodes_[root].kind())&&j==2)scope.push_back(nodes_[root].binder());root=child;found=true;break;}}if(!found)throw std::logic_error("invalid subtree scope");}return scope;
+        while (root != target) {
+            bool found = false;
+            for (std::size_t j = 0; j < discreteArity(nodes_[root].kind()); ++j) {
+                const auto child = metadata_[root].children[j];
+                if (target >= metadata_[child].start && target <= child) {
+                    if (discreteIteration(nodes_[root].kind()) && j == 2)
+                        scope.push_back(nodes_[root].binder());
+                    root = child;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                throw std::logic_error("invalid subtree scope");
+        }
+        return scope;
     }
-    static constexpr std::size_t storageBytesPerNode() noexcept {return sizeof(DiscreteNode)+sizeof(Metadata)+8*sizeof(std::size_t);}
-    std::span<const DiscreteNode> nodes() const noexcept{return nodes_;}
-    std::size_t dimensions() const noexcept{return dimensions_;}
-    std::size_t nodeCount() const noexcept{return nodes_.size();}
+    static constexpr std::size_t storageBytesPerNode() noexcept {
+        return sizeof(DiscreteNode) + sizeof(Metadata) + 8 * sizeof(std::size_t);
+    }
+    static constexpr std::size_t evaluationFrameBytes() noexcept {
+        return sizeof(EvaluationFrame);
+    }
+    std::span<const DiscreteNode> nodes() const noexcept {
+        return nodes_;
+    }
+    std::size_t dimensions() const noexcept {
+        return dimensions_;
+    }
+    std::size_t nodeCount() const noexcept {
+        return nodes_.size();
+    }
     std::size_t depth() const {if(metadata_.empty())throw std::logic_error("moved-from discrete expression");return metadata_.back().depth;}
     std::size_t iterationDepth() const {(void)type();return metadata_.back().iterationDepth;}
     std::size_t iterationLevelAt(std::size_t target) const {
@@ -220,23 +261,55 @@ public:
     std::size_t constantCount() const noexcept{return constants_;}
     DiscreteType type() const {if(metadata_.empty())throw std::logic_error("moved-from discrete expression");return metadata_.back().type;}
     DiscreteType subtreeType(std::size_t i) const{return metadata_.at(i).type;}
-    std::size_t subtreeStart(std::size_t i) const{return metadata_.at(i).start;}
-    const auto& children(std::size_t i) const{return metadata_.at(i).children;}
-    DiscreteExpressionLimits limits() const noexcept{return limits_;}
-    bool sameRepresentation(const DiscreteExpression& e) const noexcept{return dimensions_==e.dimensions_&&outer_==e.outer_&&nodes_==e.nodes_;}
-    void swap(DiscreteExpression& e) noexcept {nodes_.swap(e.nodes_);metadata_.swap(e.metadata_);outer_.swap(e.outer_);binders_.swap(e.binders_);std::swap(dimensions_,e.dimensions_);std::swap(limits_,e.limits_);std::swap(constants_,e.constants_);}
-    DiscreteEvaluationResult evaluate(std::span<const std::int64_t> inputs,DiscreteEvaluationLimits l={},const std::atomic<bool>* stop=nullptr) const {
+    std::size_t subtreeStart(std::size_t i) const {
+        return metadata_.at(i).start;
+    }
+    const auto& children(std::size_t i) const {
+        return metadata_.at(i).children;
+    }
+    DiscreteExpressionLimits limits() const noexcept {
+        return limits_;
+    }
+    static void validateEvaluationLimits(DiscreteEvaluationLimits limits) {
+        if (limits.maxIterationDepth > 128 || limits.maxIterationsPerOperation > 1000000000 ||
+            limits.maxAggregateIterations > 1000000000)
+            throw std::invalid_argument("invalid iteration evaluation limits");
+    }
+    bool sameRepresentation(const DiscreteExpression& e) const noexcept {
+        return dimensions_ == e.dimensions_ && outer_ == e.outer_ && nodes_ == e.nodes_;
+    }
+    void swap(DiscreteExpression& e) noexcept {
+        nodes_.swap(e.nodes_);
+        metadata_.swap(e.metadata_);
+        outer_.swap(e.outer_);
+        binders_.swap(e.binders_);
+        std::swap(dimensions_, e.dimensions_);
+        std::swap(limits_, e.limits_);
+        std::swap(constants_, e.constants_);
+    }
+    DiscreteEvaluationResult evaluate(std::span<const std::int64_t> inputs,
+                                      DiscreteEvaluationLimits l = {},
+                                      const std::atomic<bool>* stop = nullptr) const {
         return evaluateWithCancellation(inputs,l,[&]{return stop&&stop->load(std::memory_order_relaxed);});
     }
     template<class Stop> DiscreteEvaluationResult evaluateWithCancellation(std::span<const std::int64_t> inputs,DiscreteEvaluationLimits l,Stop&& stop) const {
         (void)depth();
-        if(!outer_.empty())throw std::invalid_argument("open scoped fragment is not executable");
-        if(inputs.size()!=dimensions_)throw std::invalid_argument("discrete input dimension mismatch");
-        if(l.maxIterationDepth>128||l.maxIterationsPerOperation>1000000000||l.maxAggregateIterations>1000000000)throw std::invalid_argument("invalid iteration evaluation limits");
-        struct Frame {std::size_t index,stage;DiscreteValue left=DiscreteValue::integer(0);std::int64_t cursor=0,upper=0,accumulator=0;};
-        DiscreteEvaluationResult result;std::vector<Frame> frames;DiscreteValue last=DiscreteValue::integer(0);std::size_t activeIterations=0;
-        const auto fail=[&](DiscreteEvaluationStatus status,const char* why){result.status=status;result.reason=why;return result;};
-        const auto frameCap=l.maxWorkspaceBytes/sizeof(Frame);
+        if (!outer_.empty())
+            throw std::invalid_argument("open scoped fragment is not executable");
+        if (inputs.size() != dimensions_)
+            throw std::invalid_argument("discrete input dimension mismatch");
+        validateEvaluationLimits(l);
+        using Frame = EvaluationFrame;
+        DiscreteEvaluationResult result;
+        std::vector<Frame> frames;
+        DiscreteValue last = DiscreteValue::integer(0);
+        std::size_t activeIterations = 0;
+        const auto fail = [&](DiscreteEvaluationStatus status, const char* why) {
+            result.status = status;
+            result.reason = why;
+            return result;
+        };
+        const auto frameCap = l.maxWorkspaceBytes / sizeof(Frame);
         if(!frameCap)return fail(DiscreteEvaluationStatus::ResourceExhausted,"discrete frame storage exhausted");
         frames.reserve(std::min(depth(),frameCap));frames.push_back({nodes_.size()-1,0});
         const auto charge=[&]{if(result.operations==l.maxOperations)return false;++result.operations;return true;};

@@ -1,8 +1,11 @@
 # Testing and qualification
 
-CTest labels provide focused subsets without removing tests from the default
-suite. Tests can carry more than one label. The unfiltered CTest command remains
-the complete qualification suite.
+CTest categories are assigned explicitly in
+[`tests/CTestCategories.txt`](../tests/CTestCategories.txt), rather than inferred
+from test names. CMake fails configuration if a registered test has no category.
+Labels provide focused subsets without removing tests from the default suite.
+Tests can carry more than one label. The unfiltered CTest command remains the
+complete qualification suite.
 
 From a configured build directory:
 

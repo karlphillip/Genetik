@@ -1,13 +1,14 @@
-import importlib.util
 import json
 import tempfile
 import unittest
+import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location("prime_successor_benchmark", ROOT / "benchmarks/prime_successor/benchmark.py")
-bench = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(bench)
+bench = types.ModuleType("prime_successor_benchmark")
+source = ROOT / "benchmarks/prime_successor/benchmark.py"
+bench.__file__ = str(source)
+exec(compile(source.read_text(encoding="utf-8"), str(source), "exec"), bench.__dict__)
 
 
 class PrimeSuccessorBenchmarkTests(unittest.TestCase):
@@ -54,6 +55,52 @@ class PrimeSuccessorBenchmarkTests(unittest.TestCase):
         for split in ("training","validation","test"):
             self.assertEqual(exact[split]["exact_successors"],exact[split]["queries"])
             self.assertEqual(exact[split]["prime_output_validity"],1.0)
+
+    def test_modal_residue_and_parity_baselines_are_train_fitted(self):
+        rows,_=bench.load_dataset()
+        train=[row for row in rows if 1000<=row[0]<30000]
+        self.assertEqual(bench.fit_modal_gap(train),6)
+        self.assertEqual(bench.fit_modal_gap([(3,5,2),(7,11,4)]),2)  # deterministic tie
+        self.assertEqual(bench.parity_adjusted_log_gap(1009)%2,0)
+        expected={6:226,30:299,210:359}
+        for modulus,count in expected.items():
+            model=bench.fit_residue_gaps(train,modulus)
+            result=bench.score_candidate(rows,"residue_gap",residue_modulus=modulus,residue_gaps=model)
+            self.assertEqual(result["test"]["exact_successors"],count)
+            self.assertEqual(result["expression_complexity_nodes"]["stored_parameters"],len(model))
+        self.assertTrue(all(bench.parity_adjusted_log_gap(p)%2==0 for p,_,_ in rows if p>=40000))
+
+    def test_boundary_invalid_prediction_and_exact_gap_scoring(self):
+        rows,_=bench.load_dataset()
+        self.assertEqual([row[0] for row in rows if row[0] in (30000,40000,50000)],[])
+        self.assertEqual(next(p for p,_,_ in rows if p>=30000),30011)
+        self.assertEqual(next(p for p,_,_ in rows if p>=40000),40009)
+        for partition,lo,hi in bench.PARTITIONS:
+            subset=[row for row in rows if lo<=row[0]<hi]
+            self.assertEqual(len(subset),{"training":3077,"validation":958,"test":930}[partition])
+            self.assertTrue(all(lo<=row[0]<hi for row in subset))
+        bad,_,_,_=bench.predict([(1009,1013,4)],"predictive","p + 100001")
+        self.assertFalse(isinstance(bad[0],int))
+        valid,_,_,_=bench.predict([(1009,1013,4)],"predictive","p + 4")
+        scored=bench.metrics([(1009,1013,4)],valid,[1],0)
+        self.assertEqual(scored["exact_successor_accuracy"],1.0)
+        self.assertEqual(scored["exact_gap_accuracy"],1.0)
+
+    def test_candidate_freeze_and_track_separation(self):
+        import subprocess
+        import sys
+        with tempfile.TemporaryDirectory() as directory:
+            frozen=Path(directory)/"candidate.json"
+            command=[sys.executable,"-B",str(ROOT/"benchmarks/prime_successor/benchmark.py"),
+                     "--track","predictive","--freeze-candidate","p + 2","--output",str(frozen)]
+            subprocess.run(command,check=True,capture_output=True,text=True)
+            scored=subprocess.run([sys.executable,"-B",str(ROOT/"benchmarks/prime_successor/benchmark.py"),
+                "--track","predictive","--frozen-candidate",str(frozen),"--exclude-test"],check=True,capture_output=True,text=True)
+            result=json.loads(scored.stdout)
+            self.assertNotIn("test",result["candidate"]["metrics"])
+            wrong_track=subprocess.run([sys.executable,"-B",str(ROOT/"benchmarks/prime_successor/benchmark.py"),
+                "--track","algorithmic","--frozen-candidate",str(frozen)],capture_output=True,text=True)
+            self.assertNotEqual(wrong_track.returncode,0)
 
     def test_predictive_language_excludes_oracles_and_iteration(self):
         tree,nodes=bench.validate_expr("p + 2 * log(p)")

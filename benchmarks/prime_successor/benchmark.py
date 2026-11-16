@@ -140,6 +140,29 @@ def round_half_away(value):
     return math.floor(value + 0.5) if value >= 0 else math.ceil(value - 0.5)
 
 
+def fit_modal_gap(rows):
+    """Most frequent training gap; ties choose the smaller gap."""
+    counts = {}
+    for _, _, gap in rows:
+        counts[gap] = counts.get(gap, 0) + 1
+    return min(counts, key=lambda gap: (-counts[gap], gap))
+
+
+def fit_residue_gaps(rows, modulus):
+    """Fit a deterministic modal gap for each observed input residue."""
+    counts = {}
+    for p, _, gap in rows:
+        by_gap = counts.setdefault(p % modulus, {})
+        by_gap[gap] = by_gap.get(gap, 0) + 1
+    return {residue: min(gaps, key=lambda gap: (-gaps[gap], gap))
+            for residue, gaps in sorted(counts.items())}
+
+
+def parity_adjusted_log_gap(p):
+    """Nearest positive even integer to log(p), with ties rounded upward."""
+    return max(2, 2 * math.floor(math.log(p) / 2 + 0.5))
+
+
 def next_prime(p):
     """Exact computational reference. Returns result and trial-division count."""
     n = p + 1
@@ -208,7 +231,8 @@ def metrics(rows, outputs, works, elapsed_ns):
             "mathematical_work_total":sum(works),"mathematical_work_per_query":sum(works)/n}
 
 
-def predict(rows, kind, expression=None, constant_gap=None, algorithmic_limits=None):
+def predict(rows, kind, expression=None, constant_gap=None, algorithmic_limits=None,
+            residue_modulus=None, residue_gaps=None):
     tree=None; complexity=1
     if kind=="predictive": tree,complexity=validate_expr(expression)
     outputs=[];works=[];start=time.perf_counter_ns()
@@ -224,6 +248,9 @@ def predict(rows, kind, expression=None, constant_gap=None, algorithmic_limits=N
         elif kind=="p_plus_2": outputs.append(p+2);works.append(1)
         elif kind=="p_plus_6": outputs.append(p+6);works.append(1)
         elif kind=="log_gap": outputs.append(p+max(1,round(math.log(p))));works.append(2)
+        elif kind=="parity_log_gap": outputs.append(p+parity_adjusted_log_gap(p));works.append(3)
+        elif kind=="modal_gap": outputs.append(p+constant_gap);works.append(1)
+        elif kind=="residue_gap": outputs.append(p+residue_gaps.get(p % residue_modulus, 0));works.append(2)
         elif kind=="exact":
             q,w=next_prime(p);outputs.append(q);works.append(w)
         elif kind=="bounded_scan":
@@ -232,19 +259,26 @@ def predict(rows, kind, expression=None, constant_gap=None, algorithmic_limits=N
     return outputs,works,elapsed,complexity
 
 
-def score_candidate(rows, kind, expression=None, constant_gap=None, algorithmic_limits=None):
+def score_candidate(rows, kind, expression=None, constant_gap=None, algorithmic_limits=None,
+                    residue_modulus=None, residue_gaps=None, include_test=True):
     complexity=validate_expr(expression)[1] if kind=="predictive" else ("bounded algorithm" if kind in ("exact","bounded_scan") else 1)
+    if kind=="residue_gap":
+        complexity={"kind":"residue-conditioned gap table","modulus":residue_modulus,
+                    "structural_complexity":len(residue_gaps),"stored_parameters":len(residue_gaps)}
     scored={}
     for name,lo,hi in PARTITIONS:
+        if name == "test" and not include_test:
+            continue
         subset=[r for r in rows if lo<=r[0]<hi]
-        outputs,works,elapsed,_=predict(subset,kind,expression,constant_gap,algorithmic_limits)
+        outputs,works,elapsed,_=predict(subset,kind,expression,constant_gap,algorithmic_limits,residue_modulus,residue_gaps)
         scored[name]=metrics(subset,outputs,works,elapsed)
     scored["expression_complexity_nodes"]=complexity
-    scored["recursive_successor_generation"]=recursive_diagnostic(rows,kind,expression,constant_gap,algorithmic_limits)
+    diagnostic_rows=rows if include_test else [r for r in rows if r[0]<40000]
+    scored["recursive_successor_generation"]=recursive_diagnostic(diagnostic_rows,kind,expression,constant_gap,algorithmic_limits,residue_modulus,residue_gaps)
     return scored
 
 
-def recursive_diagnostic(rows,kind,expression=None,constant_gap=None,algorithmic_limits=None):
+def recursive_diagnostic(rows,kind,expression=None,constant_gap=None,algorithmic_limits=None,residue_modulus=None,residue_gaps=None):
     # Repeatedly feed each predicted successor back as the next input. This is
     # diagnostic only; it never contributes to model selection or split metrics.
     tree=validate_expr(expression)[0] if kind=="predictive" else None
@@ -260,6 +294,9 @@ def recursive_diagnostic(rows,kind,expression=None,constant_gap=None,algorithmic
         elif kind=="p_plus_2": out=p+2
         elif kind=="p_plus_6": out=p+6
         elif kind=="log_gap": out=p+max(1,round(math.log(p)))
+        elif kind=="parity_log_gap": out=p+parity_adjusted_log_gap(p)
+        elif kind in ("modal_gap","constant_gap"): out=p+constant_gap
+        elif kind=="residue_gap": out=p+residue_gaps.get(p % residue_modulus,0)
         elif kind=="exact": out=next_prime(p)[0]
         elif kind=="bounded_scan":
             out,_=bounded_trial_scan(p,*algorithmic_limits)
@@ -272,7 +309,9 @@ def recursive_diagnostic(rows,kind,expression=None,constant_gap=None,algorithmic
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--generate",action="store_true",help="regenerate frozen CSV and manifest")
-    ap.add_argument("--candidate",help="frozen expression for the selected track; predictive syntax uses p and log(p)")
+    ap.add_argument("--freeze-candidate",help="candidate expression/DSL to validate and freeze without evaluation")
+    ap.add_argument("--frozen-candidate",type=Path,help="candidate JSON manifest created with --freeze-candidate")
+    ap.add_argument("--exclude-test",action="store_true",help="score frozen candidate on training/validation only")
     ap.add_argument("--track",choices=("predictive","algorithmic"),default="predictive")
     ap.add_argument("--dataset",type=Path,default=DATA)
     ap.add_argument("--output",type=Path,help="write canonical JSON report (default stdout)")
@@ -281,39 +320,72 @@ def main():
         manifest=generate_dataset(args.dataset)
         args.dataset.with_suffix(".manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
         print(json.dumps(manifest,indent=2));return
+    if args.freeze_candidate is not None:
+        if args.track=="predictive":
+            validate_expr(args.freeze_candidate)
+            configuration={"ast_node_limit":32,"rounding":"nearest-ties-away","predicted_integer_range":[0,MAX_PREDICTED_INTEGER]}
+        else:
+            _,bounds=parse_algorithmic(args.freeze_candidate)
+            configuration={"algorithmic_bounds":bounds}
+        frozen={"protocol":"genetik-prime-successor-benchmark-v1","dataset_sha256":FROZEN_DATASET_SHA256,"track":args.track,
+                "expression":args.freeze_candidate,"configuration":configuration}
+        frozen["candidate_identity_sha256"]=hashlib.sha256(json.dumps(frozen,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+        text=json.dumps(frozen,sort_keys=True,indent=2)+"\n"
+        if args.output: args.output.write_text(text)
+        else: print(text,end="")
+        return
+    frozen=None
+    if args.frozen_candidate is not None:
+        frozen=json.loads(args.frozen_candidate.read_text(encoding="utf-8"))
+        identity=frozen.pop("candidate_identity_sha256",None)
+        expected=hashlib.sha256(json.dumps(frozen,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+        if identity!=expected: raise ValueError("frozen candidate identity hash mismatch")
+        if (frozen.get("protocol")!="genetik-prime-successor-benchmark-v1" or
+                frozen.get("dataset_sha256")!=FROZEN_DATASET_SHA256 or frozen.get("track")!=args.track):
+            raise ValueError("frozen candidate protocol/track mismatch")
+        if args.track=="predictive":
+            validate_expr(frozen.get("expression",""))
+            expected_configuration={"ast_node_limit":32,"rounding":"nearest-ties-away","predicted_integer_range":[0,MAX_PREDICTED_INTEGER]}
+        else:
+            _,bounds=parse_algorithmic(frozen.get("expression",""))
+            expected_configuration={"algorithmic_bounds":list(bounds)}
+        if frozen.get("configuration")!=expected_configuration:
+            raise ValueError("frozen candidate configuration does not match the evaluator")
     rows,digest=load_dataset(args.dataset)
     train=[r for r in rows if 1000<=r[0]<30000]
     train_mean=sum(r[2] for r in train)/len(train)
     fitted_gap=math.floor(train_mean+0.5)
+    modal_gap=fit_modal_gap(train)
+    residue_models={m:fit_residue_gaps(train,m) for m in (6,30,210)}
     candidates={"p_plus_2":("predictive","p + 2"),"p_plus_6":("predictive","p + 6"),
-                "train_fitted_constant_gap":("predictive",f"p + {fitted_gap}"),
+                "train_fitted_mean_gap":("constant_gap",fitted_gap),
+                "train_fitted_modal_gap":("modal_gap",modal_gap),
                 "logarithmic_gap_round_log_p":("predictive","p + log(p)"),
+                "parity_adjusted_logarithmic_gap":("parity_log_gap",None),
                 "exact_next_prime_computational_reference":("exact",None)}
     report={"protocol":"genetik-prime-successor-benchmark-v1","dataset_sha256":digest,
             "dataset_rows":len(rows),"train_fitted_constant_gap":fitted_gap,
             "partition_counts":{name:sum(lo<=p<hi for p,_,_ in rows) for name,lo,hi in PARTITIONS},
             "baselines":{}}
+    report["train_fitted_parameters"]={"mean_gap":fitted_gap,"modal_gap":modal_gap,
+        "residue_models":{str(m):{"modulus":m,"structural_complexity":len(model),"stored_parameters":len(model),"residue_gaps":model} for m,model in residue_models.items()}}
     for name,spec in candidates.items():
         kind,expression=spec
-        report["baselines"][name]=score_candidate(rows,kind,expression)
-    if args.candidate is not None:
-        if args.track=="predictive": kind="predictive"; expression=args.candidate
+        report["baselines"][name]=score_candidate(rows,kind,expression,constant_gap=expression if kind in ("constant_gap","modal_gap") else None)
+    for modulus,model in residue_models.items():
+        report["baselines"][f"train_fitted_residue_modal_gap_mod_{modulus}"]=score_candidate(rows,"residue_gap",residue_modulus=modulus,residue_gaps=model)
+    if frozen is not None:
+        expression=frozen["expression"]
+        if args.track=="predictive": kind="predictive"; algorithmic_limits=None
         else:
-            kind,algorithmic_limits=parse_algorithmic(args.candidate);expression=None
-        candidate_configuration=(
-            {"ast_node_limit":32,"rounding":"nearest-ties-away","predicted_integer_range":[0,MAX_PREDICTED_INTEGER]}
-            if args.track=="predictive" else {"algorithmic_bounds":algorithmic_limits}
-        )
-        candidate_identity={"protocol":"genetik-prime-successor-benchmark-v1","track":args.track,
-                            "expression":args.candidate,"configuration":candidate_configuration}
-        identity_bytes=json.dumps(candidate_identity,sort_keys=True,separators=(",",":")).encode("utf-8")
-        report["candidate"]={"track":args.track,"expression":args.candidate,
-                              "expression_sha256":hashlib.sha256(args.candidate.encode("utf-8")).hexdigest(),
-                              "candidate_identity_sha256":hashlib.sha256(identity_bytes).hexdigest(),
+            kind,algorithmic_limits=parse_algorithmic(expression)
+        report["candidate"]={"track":args.track,"expression":expression,
+                              "expression_sha256":hashlib.sha256(expression.encode("utf-8")).hexdigest(),
+                              "candidate_identity_sha256":identity,
                               "complexity_definition":"AST operation count" if args.track=="predictive" else "bounded algorithm, explicit gap and divisor bounds",
-                              "configuration":candidate_configuration,
+                              "configuration":frozen["configuration"],
                               "algorithmic_bounds":algorithmic_limits if args.track=="algorithmic" else None,
-                              "metrics":score_candidate(rows,kind,expression,algorithmic_limits=algorithmic_limits if args.track=="algorithmic" else None)}
+                              "metrics":score_candidate(rows,kind,expression,algorithmic_limits=algorithmic_limits,include_test=not args.exclude_test)}
     text=json.dumps(report,sort_keys=True,indent=2,allow_nan=False)+"\n"
     if args.output: args.output.write_text(text)
     else: print(text,end="")

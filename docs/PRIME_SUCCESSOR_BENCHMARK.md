@@ -60,11 +60,20 @@ back as input and counts the correct prefix. Scoring/verifier work is excluded f
 candidate runtime/work. Runtime is informational and machine/interpreter dependent;
 operator counts are the comparable work measure within a track.
 
-The constant-gap baseline is the training mean gap rounded to nearest integer with
-ties upward (`9` here). The evaluator freezes that value from training targets only.
-The logarithmic baseline is `p + max(1, round(log(p)))`, where `log` is natural log.
-The exact next-prime method is reported beside the formula baselines only as a
-computational reference.
+The train-fitted mean-gap baseline is the training mean rounded to nearest integer
+with ties upward (`9` here). It is a numerical-error baseline, not a competitive
+exact-successor predictor: every successor gap for odd primes above 1,000 is even,
+so adding the odd value 9 cannot produce a prime. The train-fitted modal gap is 6;
+ties choose the smaller gap. The logarithmic baseline is `p + max(1, round(log(p)))`,
+where `log` is natural log. The parity-adjusted logarithmic baseline rounds `log(p)`
+to the nearest positive even integer, with ties upward.
+
+Additional residue-conditioned baselines fit the most frequent training gap for
+each observed residue of `p mod m`, for `m` in `{6, 30, 210}`. Ties choose the
+smaller gap. These are explicit lookup-table baselines, not predictive formulas
+and not automatically discovered expressions. The reports list each model's
+structural complexity (stored residue classes) and parameter count. The exact
+next-prime method is a computational reference only.
 
 Run the deterministic baseline report:
 
@@ -72,28 +81,36 @@ Run the deterministic baseline report:
 python3 benchmarks/prime_successor/benchmark.py --output /tmp/prime-successor.json
 ```
 
-Evaluate a frozen predictive expression (the report includes its SHA-256):
+Freeze a predictive expression, then review training/validation metrics before
+requesting its final test assessment:
 
 ```sh
 python3 benchmarks/prime_successor/benchmark.py \
-  --track predictive --candidate 'p + 6' \
-  --output /tmp/prime-successor-frozen.json
+  --track predictive --freeze-candidate 'p + 6' \
+  --output /tmp/frozen-candidate.json
 
 python3 benchmarks/prime_successor/benchmark.py \
-  --track algorithmic --candidate 'bounded_trial_scan(max_gap=128,max_divisor=250)' \
+  --track predictive --frozen-candidate /tmp/frozen-candidate.json \
+  --exclude-test --output /tmp/prime-successor-validation.json
+
+python3 benchmarks/prime_successor/benchmark.py \
+  --track algorithmic --freeze-candidate 'bounded_trial_scan(max_gap=128,max_divisor=250)' \
+  --output /tmp/frozen-algorithmic.json
+
+python3 benchmarks/prime_successor/benchmark.py \
+  --track algorithmic --frozen-candidate /tmp/frozen-algorithmic.json \
   --output /tmp/prime-successor-algorithmic.json
 ```
 
-The report includes both the expression SHA-256 and a candidate identity SHA-256
-over the protocol version, track, exact expression text, and evaluation bounds/
-rounding configuration. The evaluator
-measures a supplied expression; it does not pick expressions or
-configurations. Freeze candidate text, complexity limits, rounding, and any
-selection/configuration choices before requesting a report. Training metrics may
-be used for fitting. Validation is for predeclared configuration selection. Only
-after these are frozen should final test metrics be inspected; test metrics must
-not feed candidate construction, configuration selection, or fitting. The baseline
-report's test columns are fixed reference results, not tuning recommendations.
+`--freeze-candidate` validates and writes a candidate identity hash without scoring
+it. `--frozen-candidate` verifies that identity and evaluator configuration before
+scoring; `--exclude-test` permits training/validation review without revealing
+candidate test results. Training and validation may guide a separately documented
+choice, which must then be frozen before final test assessment. Residue tables are
+baselines only and stay outside the predictive-expression track. Test results are
+already publicly examined for this benchmark release, so 50,000–100,000 is reserved
+as a future confirmatory extrapolation range and must not be used for development
+or tuning. Fixed baseline test results are reference comparisons, not tuning advice.
 
 ## Baseline reference run
 
@@ -105,7 +122,7 @@ successor accuracy and prime-output validity are shown for train/validation/test
 |---|---|---|---|---:|
 | `p + 2` | 14.04% / 12.94% / 12.26% | 7.425 / 8.436 / 8.766 | 14.04% / 12.94% / 12.26% | 1 |
 | `p + 6` | 22.16% / 20.04% / 19.35% | 5.104 / 5.944 / 6.228 | 28.50% / 25.37% / 24.19% | 1 |
-| Train-fitted constant gap `9` | 0% / 0% / 0% | 5.270 / 5.800 / 6.002 | 0% / 0% / 0% | 1 |
+| Train-fitted mean gap `9` (numerical-error baseline) | 0% / 0% / 0% | 5.270 / 5.800 / 6.002 | 0% / 0% / 0% | 1 |
 | `p + round(log(p))` | 5.75% / 6.26% / 0% | 5.258 / 5.966 / 6.256 | 10.95% / 10.65% / 0% | 2 |
 | Exact next-prime computational reference | 100% / 100% / 100% | 0 / 0 / 0 | 100% / 100% / 100% | 86.41 / 134.86 / 152.06 |
 
@@ -117,6 +134,22 @@ Python evaluator timings, not a performance claim about compiled code. The exact
 reference work increases with prime magnitude because trial division checks more
 divisors.
 
+The preceding table and runtime observations are retained as the original historical
+baseline run. The strengthened train-only baselines were independently recomputed
+from the frozen training rows; these test figures are comparisons, not choices made
+by tuning against test data.
+
+| Train-fitted baseline | Test exact successors | Gap MAE | Prime output validity | Work/query | Structural complexity / stored parameters |
+|---|---:|---:|---:|---:|---:|
+| Modal gap `6` | 180 / 930 (19.35%) | 6.228 | 24.19% | 1 | 1 constant |
+| Parity-adjusted `log(p)` gap | 92 / 930 (9.89%) | 6.030 | 17.74% | 3 | 1 formula |
+| Residue-modal gap, mod 6 | 226 / 930 (24.30%) | 7.761 | 24.30% | 2 | 2 classes / 2 gaps |
+| Residue-modal gap, mod 30 | 299 / 930 (32.15%) | 7.030 | 32.15% | 2 | 8 classes / 8 gaps |
+| Residue-modal gap, mod 210 | 359 / 930 (38.60%) | 6.447 | 38.60% | 2 | 48 classes / 48 gaps |
+
+The mean-gap value remains a numerical-error baseline; because the fitted value is
+odd, exact prime-successor accuracy is necessarily zero on this domain.
+
 As a separate algorithmic-track smoke case, the frozen bounded scan
 `bounded_trial_scan(max_gap=128,max_divisor=250)` scored 100% exact successors and
 100% prime validity on all three partitions. It used about 178, 275, and 310 counted
@@ -127,8 +160,8 @@ it is not a predictive-formula result or a new discovery claim.
 ## Optional future extrapolation
 
 An optional extrapolation assessment may later score frozen candidates on inputs
-`[50,000, 100,000)`. That range is not part of this dataset, current development,
-configuration selection, or reported baseline run. If authorized, freeze candidate
+`[50,000, 100,000)`. That range is not part of this dataset or any development,
+configuration selection, or reported baseline run. If separately authorized, freeze candidate
 and configuration hashes first, generate the new successor table independently
 with the same sieve plus trial-division cross-check, save its SHA-256, and run it as
 a separately labeled post-freeze assessment. Do not feed those results back into
@@ -137,9 +170,10 @@ the candidate or configuration that was assessed.
 ## Validation
 
 `tests/test_prime_successor_benchmark.py` checks deterministic byte identity,
-partition counts, the outside-range successor, independent primality/completeness,
-train-only constant fitting, exact algorithm correctness, rejection of oracle,
-branch, and iteration constructs in the predictive language, plus bounded
-algorithmic work and bound validation. It is registered as
+partition boundaries/counts, the outside-range successor, independent primality/
+completeness, mean/modal/residue fitting and parity, invalid-output handling,
+exact successor/gap scoring, frozen-candidate enforcement, predictive/algorithmic
+track separation, rejection of oracle/branch/iteration syntax, and bounded
+algorithmic work and bounds. It is registered as
 `genetik_prime_successor_benchmark` in CTest. No search runs or scientific budget
 are used by generation, evaluation, or tests.

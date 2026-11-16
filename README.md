@@ -61,7 +61,7 @@ and the required strict floating-point options. Newer C++ standards are allowed.
   and [bounded multivariate rational fitting](docs/CONSTRUCTIVE_MULTIVARIATE_RATIONAL_REGRESSION.md)
   are optional deterministic capabilities with documented limits.
 
-## Start here
+## Core examples
 
 - [First bounded symbolic search](docs/FIRST_SEARCH.md): a fixed seed, small
   training set, and explicit call budgets. It reports the best available result;
@@ -69,12 +69,14 @@ and the required strict floating-point options. Newer C++ standards are allowed.
 - [Complete scalar-genome program](examples/quickstarts/scalar.cpp): a custom real-valued
   candidate minimizes squared error, shares an explicit `RandomContext(42)` with
   its population/algorithm, and stops after ten generations.
-- [Bounded two-variable rational fitting](docs/CONSTRUCTIVE_MULTIVARIATE_RATIONAL_REGRESSION.md): optional degree-two QR reconstruction, explicit domain certification, and known near-pole limitations.
 - [Complete symbolic-regression program](examples/quickstarts/symbolic.cpp): caller-provided
   rows bind `x0` to the first input column. Optional constant fitting, a 256 actual
-  loss-call budget and four-generation ceiling bound the search. It prints the
-  stopping outcome and faithful expression. Exact discovery is not required for
-  either program to finish successfully.
+  loss-call budget and four-generation ceiling bound the search. It reports the
+  stopping outcome and any best expression found; exact discovery is not guaranteed.
+
+## Optional capabilities
+
+- [Bounded two-variable rational fitting](docs/CONSTRUCTIVE_MULTIVARIATE_RATIONAL_REGRESSION.md): optional degree-two QR reconstruction, explicit domain certification, and known near-pole limitations.
 - [Exact finite specification quickstart](examples/quickstarts/discrete_specification.cpp):
   validate a closed integer expression against immutable exact observations and
   report work. See [finite-domain validation limits](docs/DISCRETE_SPECIFICATION_VALIDATION.md);

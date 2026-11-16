@@ -134,3 +134,6 @@ genetik_d6_budget_cli|integration,scientific,smoke
 genetik_scientific_benchmark_preflight_contracts|numerical,scientific,unit
 genetik_equation_archive_contracts|numerical,unit
 genetik_smooth_operator_contracts|numerical,unit
+genetik_s2_exact_constraint_contracts|numerical,unit
+genetik_evaluation_reference|unit
+genetik_d6_optional_package|integration,scientific

@@ -416,7 +416,7 @@ void multiRegionGrammarRecovery() {
     check(recoveredA.status == DiscreteConditionalGrammarStatus::ExactTraining &&
               recoveredA.matchingRows == familyA.observations().size() &&
               recoveredA.expression.has_value(),
-          "nested grammar recovers sign/modular three-region training table");
+          "nested grammar selects an exact finite fit for the sign/modular training table");
     for (const auto x : {-9, -4, -3, 2, 5, 7, 9}) {
         const auto expected = x < 0 ? 10 : euclideanModulo(x, 3) == 0 ? 20 : 30;
         const auto value = recoveredA.expression->evaluate(std::array<std::int64_t, 1>{x});
@@ -477,7 +477,7 @@ void multiRegionGrammarRecovery() {
               directedB.expression && directedB.matchingRows == familyB.observations().size() &&
               directedB.expression->toString() ==
                   "if((x1 == (x0 % 2)), 30, if((0 == (x0 % 2)), 10, 20))",
-          "partition-directed joins recover the frozen multivariate modular control");
+          "partition-directed joins select the frozen multivariate modular exact-training fit");
     const auto directedBRepeat = runPartitionDirected(familyB, grammarB);
     check(directedBRepeat.status == directedB.status && directedBRepeat.expression &&
               directedBRepeat.expression->toString() == directedB.expression->toString() &&

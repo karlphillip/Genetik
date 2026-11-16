@@ -75,6 +75,7 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     examples/quickstarts/discrete_specification.cpp \
     examples/quickstarts/discrete_components.cpp \
     tests/discrete_specification.cpp \
+    genetik/DiscreteExpressionDomainComparison.hpp \
     tests/discrete_expression_components.cpp \
     tests/research_process_fixture.cpp \
     tests/discrete_conditional_grammar_synthesis.cpp \

@@ -1,9 +1,16 @@
 #include "common.hpp"
 #include <ConstructiveRecurrenceSynthesis.hpp>
+#include <DiscreteExpressionDomainComparison.hpp>
 #include <RationalFunctionRegression.hpp>
 #include <MultivariateRationalFunctionRegression.hpp>
 // Overlapping complete public-header use in a separately compiled translation unit.
 bool symbolic_check() {
+    const auto discreteInput=DiscreteExpression::variable(0,1);
+    const auto discreteIdentity=DiscreteExpression::binary(
+        DiscreteKind::Add,discreteInput,DiscreteExpression::integer(0,1));
+    const auto discreteComparison=compareDiscreteExpressionsOnBox(
+        discreteInput,discreteIdentity,std::array{DiscreteIntegerDomainRange{-2,2}});
+    if(discreteComparison.status!=DiscreteExpressionDomainComparisonStatus::EquivalentOnBoundedDomain)return false;
     if(formatExpression(parseExpression("log(x0)",1),ExpressionTextFormat::LaTeX,{}, {},ExpressionFormatOptions{6})!="\\ln\\left(x_{0}\\right)")return false;
     auto ip=IntegralRegressionProblem::create(1,parseExpression("0",1),parseExpression("x0",1),{{{1},1.25},{{2},4}}, {9,4,8});
     IntegralTrainingObjective io(ip,32);ConstantFitConfig iff;iff.maxLossAttempts=8;

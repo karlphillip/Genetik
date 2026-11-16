@@ -69,6 +69,8 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     tests/mathematical_objectives.cpp \
     tests/smooth_operators.cpp \
     examples/quickstarts/first_search.cpp \
+    examples/quickstarts/scalar.cpp \
+    examples/quickstarts/symbolic.cpp \
     tests/expressions.cpp \
     genetik/DiscreteExpressionSpecification.hpp \
     genetik/DiscreteExpressionComponents.hpp \

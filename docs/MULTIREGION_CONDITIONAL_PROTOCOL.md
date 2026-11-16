@@ -89,11 +89,52 @@ charges 672,965 cumulative work units, estimates 31,968,320 B peak logical memor
 and takes 21.6 ms median over three Release constructor runs. The full focused
 test process observed 55,572 KiB peak RSS; this process-level measurement is not
 attributed to B alone and is recorded in `BASELINE.md`.
-The selected expression is
+The selected expression (an exact finite-training fit, not structural recovery of
+the frozen rule) is
 `if((x1 == (x0 % 2)), 30, if((0 == (x0 % 2)), 10, 20))` and is independently
-checked against all six held-out rows. Small exhaustive and ambiguous partial
+checked against all six held-out rows. That agreement does not establish
+mathematical equivalence: the independent frozen target and selected candidate
+disagree at `(0,0)` (10 versus 30) and `(1,2)` (30 versus 20). A separate
+bounded-domain check over `x in [-4,4]`, `y in [-6,6]` reports the first
+candidate disagreement at `(-4,0)`. These counterexamples leave the frozen
+training table, held-out observations, selected expression, and historical
+resource-exhaustion result unchanged. Small exhaustive and ambiguous partial
 controls require identical selected expression, score and status; duplicate-row
 results match exhaustive validation. Separate guarded-modulo, invalid-predicate,
 cancellation, evaluator-quota and work-limit controls check lazy masking and
 stop-status distinctions. The opt-in mode does not
 change the historical B outcome or existing selector defaults.
+
+## Identifiability diagnostic addendum
+
+The bounded comparison is a post-selection diagnostic; it receives only two
+closed candidate expressions and inclusive input ranges. The independently
+implemented family B reference confirms the selected candidate's discrepancies
+at `(0,0)` and `(1,2)`. Across the declared diagnostic box
+`[-4,4] x [-6,6]`, direct expression comparison finds the first discrepancy
+at `(-4,0)` (reference expression 10, selected expression 30). The original
+eight training rows and six held-out rows remain unchanged; the selected rule
+still has 8/8 training and 6/6 held-out agreement. An independent reference
+function assessment over all 117 diagnostic inputs finds 33 ordinary value
+mismatches and zero mathematical invalidities. These are finite-data fit
+results, not structural or universal rule recovery.
+
+The comparison stops at its first difference after 7 box points and 14
+candidate evaluations: 134 node visits, 60 operations, zero iterations, and a
+1,048,760-byte comparer logical-memory estimate. One local Release run measured
+0.016 ms for this pair comparison. Independent reference assessment evaluated
+117 selected-candidate inputs (1,467 node visits and 675 operations), taking
+0.130 ms in one local Release run. The comparison defaults cap 100,000 box
+points, 200,000 candidate evaluations, 10,000,000 cumulative node visits,
+10,000,000 operations, and 2 MiB estimated comparer storage; evaluator limits
+also apply. These timings are machine-specific observations, not a speed claim.
+
+Independent two-variable controls also exercise ambiguity and partial fit.
+The predicates `x0 % 2 == 0` and `x1 % 3 == 0`, each mapped to 10 or 20,
+both fit the ambiguous rows `[(-2,-3)->10, (1,1)->20, (-1,2)->20]`, while the
+diagnostic finds disagreements elsewhere in `[-2,2] x [-3,3]`. On a separate
+three-row table from `x0 < 0 ? 10 : (EuclideanMod(x1,3)==0 ? 20 : 30)`, each
+candidate matches one row and misses two. This does not rank either as the
+intended general rule. Candidate comparison and reference assessment occur
+after expression construction; no independent reference labels or function are
+provided to conditional synthesis.

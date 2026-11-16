@@ -23,6 +23,7 @@ is not a C++ namespace migration.
 | Fitting/work | TrainingObjective, fitConstants, ConstantFitConfig | [Constant fitting](CONSTANT_FITTING.md) |
 | Scheduling | fitEveryGenerations (default 1) | [Cadence](FITTING_CADENCE.md) |
 | Domains | Divide, unary Log (opt-in grammar) | [Strict arithmetic](STRICT_ARITHMETIC.md) |
+| Discrete mathematics | DiscreteExpression, DiscreteSpecification, compareDiscreteExpressionsOnBox | [Discrete expressions and bounded comparison](DISCRETE_EXPRESSIONS.md) |
 
 ## Ownership, evaluation and stopping
 

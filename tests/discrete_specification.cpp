@@ -1,6 +1,10 @@
 #include <DiscreteExpressionSpecification.hpp>
+#include <DiscreteExpressionDomainComparison.hpp>
+#include <DiscreteExpressionParsing.hpp>
 
 #include <array>
+#include <atomic>
+#include <chrono>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -148,6 +152,213 @@ void counterexampleAndReplay() {
         validateDiscreteSpecification(DiscreteSpecification(1, trainingSubset), candidate).status ==
             DiscreteSpecificationValidationStatus::ValidatedFiniteDomain,
         "candidate demonstrates agreement on declared training subset only");
+}
+
+std::int64_t familyBReference(std::int64_t x, std::int64_t y) {
+    const auto euclidean = [](std::int64_t value, std::int64_t divisor) {
+        const auto remainder = value % divisor;
+        return remainder < 0 ? remainder + divisor : remainder;
+    };
+    if (euclidean(x, 2) == 0)
+        return 10;
+    if (euclidean(y, 3) == 0)
+        return 20;
+    return 30;
+}
+
+void boundedIdentifiability() {
+    const auto referenceExpression =
+        parseDiscreteExpression("if(x0 % 2 == 0, 10, if(x1 % 3 == 0, 20, 30))", 2);
+    const auto selected =
+        parseDiscreteExpression("if(x1 == x0 % 2, 30, if(x0 % 2 == 0, 10, 20))", 2);
+    for (const auto& [x, y, expectedTarget, expectedSelected] :
+         std::array<std::array<std::int64_t, 4>, 2>{{{{0, 0, 10, 30}}, {{1, 2, 30, 20}}}}) {
+        const auto target = familyBReference(x, y);
+        const auto candidate = selected.evaluate(std::array<std::int64_t, 2>{x, y});
+        check(target == expectedTarget && candidate.valid() &&
+                  candidate.value->integer() == expectedSelected && target != expectedSelected,
+              "family B selected expression has the independently reproduced counterexample");
+    }
+
+    const std::array box{DiscreteIntegerDomainRange{-4, 4}, DiscreteIntegerDomainRange{-6, 6}};
+    const auto comparisonStarted = std::chrono::steady_clock::now();
+    const auto disagreement = compareDiscreteExpressionsOnBox(referenceExpression, selected, box);
+    const auto comparisonMilliseconds = std::chrono::duration<double, std::milli>(
+                                            std::chrono::steady_clock::now() - comparisonStarted)
+                                            .count();
+    check(disagreement.status == DiscreteExpressionDomainComparisonStatus::DisagreementFound &&
+              disagreement.counterexample &&
+              disagreement.counterexample->inputs == std::vector<std::int64_t>{-4, 0} &&
+              disagreement.counterexample->leftValue == DiscreteValue::integer(10) &&
+              disagreement.counterexample->rightValue == DiscreteValue::integer(30),
+          "bounded candidate comparison reports the first deterministic family B disagreement");
+    check(disagreement.work.domainPoints == 7 && disagreement.work.candidateEvaluations == 14 &&
+              disagreement.work.nodeVisits > 0 && disagreement.work.operations > 0 &&
+              disagreement.work.peakLogicalBytesEstimate > 0,
+          "bounded disagreement comparison accounts point, evaluator, and memory work");
+    std::size_t independentlyChecked = 0, independentMismatches = 0, independentInvalid = 0;
+    std::size_t independentNodeVisits = 0, independentEvaluatorOperations = 0;
+    const auto assessmentStarted = std::chrono::steady_clock::now();
+    for (std::int64_t x = -4; x <= 4; ++x) {
+        for (std::int64_t y = -6; y <= 6; ++y) {
+            ++independentlyChecked;
+            const auto actual = selected.evaluate(std::array<std::int64_t, 2>{x, y});
+            independentNodeVisits += actual.nodeVisits;
+            independentEvaluatorOperations += actual.operations;
+            if (!actual.valid()) {
+                ++independentInvalid;
+            } else if (actual.value->integer() != familyBReference(x, y)) {
+                ++independentMismatches;
+            }
+        }
+    }
+    check(
+        independentlyChecked == 117 && independentMismatches == 33 && independentInvalid == 0,
+        "post-selection reference assessment independently finds 33 valid mismatches in 117 rows");
+    const auto assessmentMilliseconds = std::chrono::duration<double, std::milli>(
+                                            std::chrono::steady_clock::now() - assessmentStarted)
+                                            .count();
+    std::cout << "family_B_diagnostic points=" << disagreement.work.domainPoints
+              << " pair_evaluations=" << disagreement.work.candidateEvaluations
+              << " pair_node_visits=" << disagreement.work.nodeVisits
+              << " pair_operations=" << disagreement.work.operations
+              << " pair_iterations=" << disagreement.work.iterations
+              << " pair_iteration_operations=" << disagreement.work.iterationOperations
+              << " pair_logical_bytes=" << disagreement.work.peakLogicalBytesEstimate
+              << " comparison_ms=" << comparisonMilliseconds
+              << " reference_rows=" << independentlyChecked
+              << " reference_mismatches=" << independentMismatches
+              << " reference_invalid=" << independentInvalid
+              << " selected_node_visits=" << independentNodeVisits
+              << " selected_operations=" << independentEvaluatorOperations
+              << " assessment_ms=" << assessmentMilliseconds << '\n';
+
+    const auto equivalent = compareDiscreteExpressionsOnBox(
+        parseDiscreteExpression("x0", 1), parseDiscreteExpression("x0 + 0", 1),
+        std::array{DiscreteIntegerDomainRange{-3, 3}});
+    check(equivalent.status ==
+                  DiscreteExpressionDomainComparisonStatus::EquivalentOnBoundedDomain &&
+              equivalent.work.domainPoints == 7 && equivalent.work.candidateEvaluations == 14,
+          "bounded diagnostic does not report equivalent arithmetic candidates as different");
+    const auto boundaryRemainder = parseDiscreteExpression("x0 % 2", 1);
+    const auto int64Boundary = compareDiscreteExpressionsOnBox(
+        boundaryRemainder, boundaryRemainder,
+        std::array{DiscreteIntegerDomainRange{std::numeric_limits<std::int64_t>::min(),
+                                              std::numeric_limits<std::int64_t>::min() + 1}});
+    check(int64Boundary.status ==
+                  DiscreteExpressionDomainComparisonStatus::EquivalentOnBoundedDomain &&
+              int64Boundary.work.domainPoints == 2,
+          "lexicographic bounded enumeration safely crosses negative Int64 modulo boundaries");
+
+    const auto evenCandidate = parseDiscreteExpression("if(x0 % 2 == 0, 10, 20)", 2);
+    const auto yModuloCandidate = parseDiscreteExpression("if(x1 % 3 == 0, 10, 20)", 2);
+    const DiscreteSpecification ambiguous(2, {{{-2, -3}, DiscreteValue::integer(10)},
+                                              {{1, 1}, DiscreteValue::integer(20)},
+                                              {{-1, 2}, DiscreteValue::integer(20)}});
+    check(validateDiscreteSpecification(ambiguous, evenCandidate).status ==
+                  DiscreteSpecificationValidationStatus::ValidatedFiniteDomain &&
+              validateDiscreteSpecification(ambiguous, yModuloCandidate).status ==
+                  DiscreteSpecificationValidationStatus::ValidatedFiniteDomain &&
+              compareDiscreteExpressionsOnBox(
+                  evenCandidate, yModuloCandidate,
+                  std::array{DiscreteIntegerDomainRange{-2, 2}, DiscreteIntegerDomainRange{-3, 3}})
+                      .status == DiscreteExpressionDomainComparisonStatus::DisagreementFound,
+          "independent multivariate ambiguous table admits two exact but disagreeing candidates");
+
+    const auto partialReference = [](std::int64_t x, std::int64_t y) {
+        const auto remainder = y % 3;
+        return x < 0 ? 10 : remainder == 0 ? 20 : 30;
+    };
+    const DiscreteSpecification partial(
+        2, {{{-2, -3}, DiscreteValue::integer(partialReference(-2, -3))},
+            {{-1, 1}, DiscreteValue::integer(partialReference(-1, 1))},
+            {{2, 3}, DiscreteValue::integer(partialReference(2, 3))}});
+    const auto partialEven = validateDiscreteSpecification(partial, evenCandidate);
+    const auto partialY = validateDiscreteSpecification(partial, yModuloCandidate);
+    check(partialEven.status == DiscreteSpecificationValidationStatus::CounterexampleFound &&
+              partialY.status == DiscreteSpecificationValidationStatus::CounterexampleFound &&
+              partialEven.work.rowsMatched == 1 && partialY.work.rowsMatched == 1,
+          "independent multivariate partial table preserves equal one-of-three candidate scores");
+
+    const auto lazy = parseDiscreteExpression("if(x0 == 0, 7, 1 % 0)", 1);
+    const auto lazyAgreement = compareDiscreteExpressionsOnBox(
+        lazy, parseDiscreteExpression("7", 1), std::array{DiscreteIntegerDomainRange{0, 0}});
+    check(lazyAgreement.status ==
+              DiscreteExpressionDomainComparisonStatus::EquivalentOnBoundedDomain,
+          "unselected invalid branch remains lazy in bounded comparison");
+    const auto invalid = compareDiscreteExpressionsOnBox(
+        parseDiscreteExpression("1 % 0", 0), parseDiscreteExpression("7", 0),
+        std::span<const DiscreteIntegerDomainRange>{});
+    check(invalid.status == DiscreteExpressionDomainComparisonStatus::DisagreementFound &&
+              invalid.counterexample &&
+              invalid.counterexample->leftStatus == DiscreteEvaluationStatus::MathematicalInvalid &&
+              invalid.counterexample->rightValue == DiscreteValue::integer(7),
+          "mathematical invalidity differs from a valid value and is not resource exhaustion");
+    const auto dualInvalid = compareDiscreteExpressionsOnBox(
+        parseDiscreteExpression("1 % 0", 0), parseDiscreteExpression("2 % 0", 0),
+        std::span<const DiscreteIntegerDomainRange>{});
+    check(dualInvalid.status == DiscreteExpressionDomainComparisonStatus::EquivalentOnBoundedDomain,
+          "two mathematical-invalid outcomes agree as bounded observable behavior");
+
+    const auto noWitness = DiscreteExpression::iteration(
+        DiscreteKind::First, 5, DiscreteExpression::integer(0), DiscreteExpression::integer(1),
+        DiscreteExpression::boolean(false));
+    const auto sameNoWitness = compareDiscreteExpressionsOnBox(
+        noWitness, noWitness, std::span<const DiscreteIntegerDomainRange>{});
+    const auto noWitnessVersusValue = compareDiscreteExpressionsOnBox(
+        noWitness, parseDiscreteExpression("7", 0), std::span<const DiscreteIntegerDomainRange>{});
+    check(sameNoWitness.status ==
+                  DiscreteExpressionDomainComparisonStatus::EquivalentOnBoundedDomain &&
+              noWitnessVersusValue.status ==
+                  DiscreteExpressionDomainComparisonStatus::DisagreementFound &&
+              noWitnessVersusValue.counterexample &&
+              noWitnessVersusValue.counterexample->leftStatus ==
+                  DiscreteEvaluationStatus::NoWitness &&
+              sameNoWitness.work.iterations == 4 && sameNoWitness.work.iterationOperations == 2,
+          "completed NoWitness outcomes agree with each other but differ from values");
+
+    DiscreteExpressionDomainComparisonLimits pointLimited;
+    pointLimited.maxDomainPoints = 1;
+    const auto exhausted = compareDiscreteExpressionsOnBox(
+        parseDiscreteExpression("x0", 1), parseDiscreteExpression("x0 + 0", 1),
+        std::array{DiscreteIntegerDomainRange{-1, 1}}, pointLimited);
+    check(exhausted.status ==
+                  DiscreteExpressionDomainComparisonStatus::InconclusiveResourceExhausted &&
+              exhausted.work.domainPoints == 1,
+          "domain point limit yields an explicit inconclusive outcome");
+    auto workLimited = DiscreteExpressionDomainComparisonLimits{};
+    workLimited.maxOperations = 1;
+    const auto workStop = compareDiscreteExpressionsOnBox(
+        parseDiscreteExpression("x0 + 1", 1), parseDiscreteExpression("x0 + 2", 1),
+        std::array{DiscreteIntegerDomainRange{0, 0}}, workLimited);
+    check(workStop.status ==
+                  DiscreteExpressionDomainComparisonStatus::InconclusiveResourceExhausted &&
+              workStop.work.operations == 1,
+          "aggregate operation cap preserves the evaluator's charged partial second evaluation");
+    auto exactOperationBudget = DiscreteExpressionDomainComparisonLimits{};
+    exactOperationBudget.maxOperations = 1;
+    const auto literalAtZeroRemainingOps = compareDiscreteExpressionsOnBox(
+        parseDiscreteExpression("x0 + 1", 1), parseDiscreteExpression("1", 1),
+        std::array{DiscreteIntegerDomainRange{0, 0}}, exactOperationBudget);
+    check(literalAtZeroRemainingOps.status ==
+                  DiscreteExpressionDomainComparisonStatus::EquivalentOnBoundedDomain &&
+              literalAtZeroRemainingOps.work.operations == 1 &&
+              literalAtZeroRemainingOps.work.candidateEvaluations == 2,
+          "zero remaining operation allowance still permits a literal evaluation");
+    auto badEvaluationLimits = DiscreteExpressionDomainComparisonLimits{};
+    badEvaluationLimits.evaluation.maxIterationDepth = 129;
+    const auto badConfiguration = compareDiscreteExpressionsOnBox(
+        parseDiscreteExpression("x0", 1), parseDiscreteExpression("x0", 1),
+        std::array{DiscreteIntegerDomainRange{0, 0}}, badEvaluationLimits);
+    check(badConfiguration.status == DiscreteExpressionDomainComparisonStatus::InvalidConfiguration,
+          "invalid checked-evaluator configuration is rejected as configuration");
+    std::atomic<bool> stop{true};
+    const auto cancelled = compareDiscreteExpressionsOnBox(
+        parseDiscreteExpression("x0", 1), parseDiscreteExpression("x0", 1),
+        std::array{DiscreteIntegerDomainRange{-1, 1}}, {}, &stop);
+    check(cancelled.status == DiscreteExpressionDomainComparisonStatus::InconclusiveCancelled &&
+              cancelled.work.domainPoints == 0,
+          "cancellation remains distinct and precedes domain evaluation");
 }
 
 void lazyConditionals() {
@@ -433,6 +644,7 @@ int main() {
     try {
         exactControls();
         counterexampleAndReplay();
+        boundedIdentifiability();
         lazyConditionals();
         reductionsAndInvalidity();
         failuresAndAccounting();

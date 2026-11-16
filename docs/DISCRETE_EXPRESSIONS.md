@@ -114,6 +114,32 @@ results are invocation-owned. Shared immutable expressions can be evaluated or
 parsed independently from multiple workers. No RNG, fitness, cache or fitting
 state is touched by evaluation/formatting.
 
+## Bounded candidate comparison
+
+`DiscreteExpressionDomainComparison.hpp` provides an optional deterministic
+comparison of two closed expressions over a finite Cartesian box of inclusive
+Int64 ranges. It reports the first input where values differ or one expression
+is mathematically invalid while the other returns a value. If the full box is
+checked without a difference, the result is only `EquivalentOnBoundedDomain`;
+it is not a proof over all Int64 inputs. Resource exhaustion and cancellation
+are reported as inconclusive, never as mathematical disagreement. Completed
+`NoWitness` outcomes agree with each other and differ from a returned value.
+
+`DiscreteExpressionDomainComparisonLimits` caps enumerated points, candidate
+evaluations, cumulative node visits and operations, and estimated logical
+memory. Aggregate iterations and iteration-operation work are reported
+separately and are bounded by those cumulative operation and node-visit caps;
+the underlying evaluator limits also apply to each evaluation. Inputs are
+enumerated lexicographically, the final coordinate changing fastest. The
+comparison keeps one input tuple at a time and returns at most one counterexample.
+Its memory estimate covers comparer-owned tuple/result storage and evaluator
+workspace; caller-owned expressions and range arrays, allocator bookkeeping,
+and process RSS are excluded.
+It has no access to a target or training labels, so it can compare explanations
+without identifying which one is correct. For an independent reference function,
+evaluate the selected expression against separately generated reference values
+only after selection, as with the finite specification validator.
+
 ## Text and presentation
 
 Separately includable `DiscreteExpressionParsing.hpp` provides

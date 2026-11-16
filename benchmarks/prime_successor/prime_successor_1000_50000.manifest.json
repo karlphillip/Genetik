@@ -1,0 +1,17 @@
+{
+  "dataset": "prime_successor_1000_50000.csv",
+  "sha256": "b9d6565dc78ca52d4bf9c2a25860d934f8395fa338ba8d848cd1031e5e181018",
+  "rows": 4965,
+  "first": [
+    1009,
+    1013,
+    4
+  ],
+  "last": [
+    49999,
+    50021,
+    22
+  ],
+  "input_interval": "[1000,50000)",
+  "successor_outside_interval": 50021
+}

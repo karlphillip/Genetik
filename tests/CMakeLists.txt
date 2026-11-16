@@ -169,6 +169,9 @@ target_link_libraries(example_header_EvaluationCorpus PRIVATE genetik_lib)
 
 # Python is development integration tooling only, never an installed dependency.
 find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
+add_test(NAME genetik_prime_successor_benchmark
+    COMMAND ${Python3_EXECUTABLE} -B ${PROJECT_SOURCE_DIR}/tests/test_prime_successor_benchmark.py)
+set_tests_properties(genetik_prime_successor_benchmark PROPERTIES TIMEOUT 60)
 add_executable(genetik_research_process_fixture research_process_fixture.cpp)
 add_executable(genetik_fdi_runner ${PROJECT_SOURCE_DIR}/research/finite_domain_identifiability/runner.cpp)
 target_link_libraries(genetik_fdi_runner PRIVATE Genetik::Genetik)

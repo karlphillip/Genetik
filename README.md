@@ -232,6 +232,8 @@ Applications use the same public search path:
 - [Strict division/natural logarithm](docs/STRICT_ARITHMETIC.md).
 - [Prime-sequence regression](docs/PRIME_REGRESSION.md), an indexed-sequence example
   with application-level reference generation/scaling/baselines, not a prime oracle.
+- [Prime-successor benchmark](docs/PRIME_SUCCESSOR_BENCHMARK.md), a frozen-data
+  evaluator for formula and algorithmic tracks; it does not run search.
 - [Evaluation workspace measurements](docs/EVALUATION_WORKSPACE.md).
 
 For example, after generating ordinary numerical files as described in the guides:

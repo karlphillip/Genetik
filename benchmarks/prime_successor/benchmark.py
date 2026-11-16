@@ -7,6 +7,8 @@ import hashlib
 import json
 import math
 import re
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -15,6 +17,13 @@ DATA = ROOT / "prime_successor_1000_50000.csv"
 FROZEN_DATASET_SHA256 = "b9d6565dc78ca52d4bf9c2a25860d934f8395fa338ba8d848cd1031e5e181018"
 PARTITIONS = (("training", 1000, 30000), ("validation", 30000, 40000), ("test", 40000, 50000))
 MAX_PREDICTED_INTEGER = 100000
+NATIVE_LIMITS = {"max_node_visits": 4096, "max_operations": 4096, "max_workspace_bytes": 1048576}
+NATIVE_PARSER_LIMITS = {"max_nodes": 4096, "max_depth": 256, "max_source_bytes": 65536,
+                        "max_token_bytes": 64, "max_nesting": 64, "max_workspace_bytes": 1048576}
+
+
+class NativeEvaluationCancelled(RuntimeError):
+    """Cooperative cancellation aborts a native assessment without partial metrics."""
 
 
 def is_prime_trial(n):
@@ -232,7 +241,45 @@ def metrics(rows, outputs, works, elapsed_ns):
 
 
 def predict(rows, kind, expression=None, constant_gap=None, algorithmic_limits=None,
-            residue_modulus=None, residue_gaps=None):
+            residue_modulus=None, residue_gaps=None, native_evaluator=None, native_target="successor"):
+    if kind == "native_predictive":
+        if not native_evaluator:
+            raise ValueError("native predictive evaluation requires --native-evaluator")
+        command = [str(native_evaluator), expression, str(NATIVE_LIMITS["max_node_visits"]),
+                   str(NATIVE_LIMITS["max_operations"]), str(NATIVE_LIMITS["max_workspace_bytes"])]
+        start = time.perf_counter_ns()
+        completed = subprocess.run(command, input="".join(f"{p}\n" for p,_,_ in rows),
+            capture_output=True, text=True, check=False)
+        elapsed = time.perf_counter_ns() - start
+        if completed.returncode == 130:
+            raise NativeEvaluationCancelled("native evaluation cancelled; no partial metrics were scored")
+        if completed.returncode != 0:
+            raise RuntimeError("native evaluator failed: " + completed.stderr.strip())
+        lines = completed.stdout.splitlines()
+        header = lines.pop(0).split("\t") if lines else []
+        if (len(header) != 8 or header[:3] != ["#native", "1", "nodes"] or
+                header[4] != "constants" or header[6] != "version"):
+            raise RuntimeError("native evaluator protocol header mismatch")
+        complexity = {"kind":"Genetik DiscreteExpression","node_count":int(header[3]),
+                      "stored_parameters":int(header[5]),"genetik_version":header[7],
+                      "adapter_sha256":hashlib.sha256(Path(native_evaluator).read_bytes()).hexdigest()}; outputs=[]; works=[]; statuses=[]
+        if len(lines) != len(rows):
+            raise RuntimeError("native evaluator response row count mismatch")
+        for line, (p, _, _) in zip(lines, rows):
+            fields=line.split("\t")
+            if len(fields)!=6: raise RuntimeError("native evaluator response row malformed")
+            status, raw, visits, operations, iterations, iteration_operations=fields
+            statuses.append(status)
+            works.append(int(visits)+int(operations)+int(iterations)+int(iteration_operations))
+            if status=="valid":
+                value=int(raw)
+                lower=1 if native_target=="gap" else 0
+                if lower<=value<=MAX_PREDICTED_INTEGER:
+                    if native_target=="gap": value=p+value
+                    outputs.append(value if value<=MAX_PREDICTED_INTEGER else float("nan"))
+                else: outputs.append(float("nan"))
+            else: outputs.append(float("nan"))
+        return outputs, works, elapsed, complexity, statuses
     tree=None; complexity=1
     if kind=="predictive": tree,complexity=validate_expr(expression)
     outputs=[];works=[];start=time.perf_counter_ns()
@@ -260,8 +307,11 @@ def predict(rows, kind, expression=None, constant_gap=None, algorithmic_limits=N
 
 
 def score_candidate(rows, kind, expression=None, constant_gap=None, algorithmic_limits=None,
-                    residue_modulus=None, residue_gaps=None, include_test=True):
+                    residue_modulus=None, residue_gaps=None, include_test=True,
+                    native_evaluator=None, native_target="successor"):
     complexity=validate_expr(expression)[1] if kind=="predictive" else ("bounded algorithm" if kind in ("exact","bounded_scan") else 1)
+    if kind=="native_predictive":
+        complexity=validate_native(expression,native_evaluator)
     if kind=="residue_gap":
         complexity={"kind":"residue-conditioned gap table","modulus":residue_modulus,
                     "structural_complexity":len(residue_gaps),"stored_parameters":len(residue_gaps)}
@@ -270,21 +320,33 @@ def score_candidate(rows, kind, expression=None, constant_gap=None, algorithmic_
         if name == "test" and not include_test:
             continue
         subset=[r for r in rows if lo<=r[0]<hi]
-        outputs,works,elapsed,_=predict(subset,kind,expression,constant_gap,algorithmic_limits,residue_modulus,residue_gaps)
+        result=predict(subset,kind,expression,constant_gap,algorithmic_limits,residue_modulus,residue_gaps,native_evaluator,native_target)
+        outputs,works,elapsed,_=result[:4]
         scored[name]=metrics(subset,outputs,works,elapsed)
+        if kind=="native_predictive":
+            statuses=result[4]
+            scored[name]["evaluation_status_counts"]={s:statuses.count(s) for s in sorted(set(statuses))}
+            scored[name]["resource_exhaustions"]=statuses.count("resource_exhausted")
+            scored[name]["mathematical_invalidities"]=statuses.count("mathematical_invalid")
+            scored[name]["output_policy_invalidities"]=sum(status=="valid" and not isinstance(output,int)
+                for status,output in zip(statuses,outputs))
     scored["expression_complexity_nodes"]=complexity
     diagnostic_rows=rows if include_test else [r for r in rows if r[0]<40000]
-    scored["recursive_successor_generation"]=recursive_diagnostic(diagnostic_rows,kind,expression,constant_gap,algorithmic_limits,residue_modulus,residue_gaps)
+    scored["recursive_successor_generation"]=recursive_diagnostic(diagnostic_rows,kind,expression,constant_gap,algorithmic_limits,residue_modulus,residue_gaps,native_evaluator,native_target)
     return scored
 
 
-def recursive_diagnostic(rows,kind,expression=None,constant_gap=None,algorithmic_limits=None,residue_modulus=None,residue_gaps=None):
+def recursive_diagnostic(rows,kind,expression=None,constant_gap=None,algorithmic_limits=None,residue_modulus=None,residue_gaps=None,native_evaluator=None,native_target="successor"):
     # Repeatedly feed each predicted successor back as the next input. This is
     # diagnostic only; it never contributes to model selection or split metrics.
     tree=validate_expr(expression)[0] if kind=="predictive" else None
     p=rows[0][0]; expected=[r[0] for r in rows[1:]]+[rows[-1][1]]; matched=0
     for q in expected:
-        if kind=="predictive":
+        if kind=="native_predictive":
+            prediction,_,_,_,statuses=predict([(p,0,0)],kind,expression,native_evaluator=native_evaluator,native_target=native_target)
+            if statuses[0]!="valid" or not isinstance(prediction[0],int): break
+            out=prediction[0]
+        elif kind=="predictive":
             try:
                 val,_=evaluate_expr(tree,p); out=round_half_away(val)
                 if not isinstance(out,int) or not 0<=out<=MAX_PREDICTED_INTEGER: break
@@ -306,13 +368,27 @@ def recursive_diagnostic(rows,kind,expression=None,constant_gap=None,algorithmic
     return {"seed":rows[0][0],"successive_steps":len(expected),"correct_prefix_steps":matched,"complete":matched==len(expected)}
 
 
+def validate_native(expression, native_evaluator):
+    if not native_evaluator:
+        raise ValueError("native predictive mode requires --native-evaluator")
+    result=subprocess.run([str(native_evaluator),"--validate",expression],capture_output=True,text=True,check=True)
+    try:
+        node_count,stored,version=result.stdout.strip().split("\t")
+        digest=hashlib.sha256(Path(native_evaluator).read_bytes()).hexdigest()
+        return {"node_count":int(node_count),"stored_parameters":int(stored),"genetik_version":version,
+                "adapter_sha256":digest}
+    except ValueError as error: raise RuntimeError("native validator response malformed") from error
+
+
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--generate",action="store_true",help="regenerate frozen CSV and manifest")
     ap.add_argument("--freeze-candidate",help="candidate expression/DSL to validate and freeze without evaluation")
     ap.add_argument("--frozen-candidate",type=Path,help="candidate JSON manifest created with --freeze-candidate")
     ap.add_argument("--exclude-test",action="store_true",help="score frozen candidate on training/validation only")
-    ap.add_argument("--track",choices=("predictive","algorithmic"),default="predictive")
+    ap.add_argument("--track",choices=("predictive","algorithmic","native_predictive"),default="predictive")
+    ap.add_argument("--native-evaluator",type=Path,help="built Genetik native-expression benchmark adapter")
+    ap.add_argument("--native-target",choices=("successor","gap"),default="successor")
     ap.add_argument("--dataset",type=Path,default=DATA)
     ap.add_argument("--output",type=Path,help="write canonical JSON report (default stdout)")
     args=ap.parse_args()
@@ -324,10 +400,22 @@ def main():
         if args.track=="predictive":
             validate_expr(args.freeze_candidate)
             configuration={"ast_node_limit":32,"rounding":"nearest-ties-away","predicted_integer_range":[0,MAX_PREDICTED_INTEGER]}
+            protocol="genetik-prime-successor-benchmark-v1"
+        elif args.track=="native_predictive":
+            complexity=validate_native(args.freeze_candidate,args.native_evaluator)
+            configuration={"target":args.native_target,"limits":NATIVE_LIMITS,
+                           "parser_limits":NATIVE_PARSER_LIMITS,"genetik_version":complexity["genetik_version"],"exact_int64":True,
+                           "adapter_sha256":complexity["adapter_sha256"],
+                           "node_count":complexity["node_count"],"stored_parameters":complexity["stored_parameters"],
+                           "candidate_output_range":[1 if args.native_target=="gap" else 0,MAX_PREDICTED_INTEGER],
+                           "work_accounting":"node_visits+operations+iterations+iteration_operations",
+                           "runtime":"adapter wall time including process startup and parsing"}
+            protocol="genetik-prime-successor-native-v1"
         else:
             _,bounds=parse_algorithmic(args.freeze_candidate)
             configuration={"algorithmic_bounds":bounds}
-        frozen={"protocol":"genetik-prime-successor-benchmark-v1","dataset_sha256":FROZEN_DATASET_SHA256,"track":args.track,
+            protocol="genetik-prime-successor-benchmark-v1"
+        frozen={"protocol":protocol,"dataset_sha256":FROZEN_DATASET_SHA256,"track":args.track,
                 "expression":args.freeze_candidate,"configuration":configuration}
         frozen["candidate_identity_sha256"]=hashlib.sha256(json.dumps(frozen,sort_keys=True,separators=(",",":")).encode()).hexdigest()
         text=json.dumps(frozen,sort_keys=True,indent=2)+"\n"
@@ -340,12 +428,26 @@ def main():
         identity=frozen.pop("candidate_identity_sha256",None)
         expected=hashlib.sha256(json.dumps(frozen,sort_keys=True,separators=(",",":")).encode()).hexdigest()
         if identity!=expected: raise ValueError("frozen candidate identity hash mismatch")
-        if (frozen.get("protocol")!="genetik-prime-successor-benchmark-v1" or
+        expected_protocol="genetik-prime-successor-native-v1" if args.track=="native_predictive" else "genetik-prime-successor-benchmark-v1"
+        if (frozen.get("protocol")!=expected_protocol or
                 frozen.get("dataset_sha256")!=FROZEN_DATASET_SHA256 or frozen.get("track")!=args.track):
             raise ValueError("frozen candidate protocol/track mismatch")
         if args.track=="predictive":
             validate_expr(frozen.get("expression",""))
             expected_configuration={"ast_node_limit":32,"rounding":"nearest-ties-away","predicted_integer_range":[0,MAX_PREDICTED_INTEGER]}
+        elif args.track=="native_predictive":
+            complexity=validate_native(frozen.get("expression",""),args.native_evaluator)
+            expected_configuration={"target":frozen.get("configuration",{}).get("target"),"limits":NATIVE_LIMITS,
+                "parser_limits":NATIVE_PARSER_LIMITS,"genetik_version":complexity["genetik_version"],"exact_int64":True,
+                "adapter_sha256":complexity["adapter_sha256"],
+                "node_count":complexity["node_count"],"stored_parameters":complexity["stored_parameters"],
+                "candidate_output_range":[1 if frozen.get("configuration",{}).get("target")=="gap" else 0,MAX_PREDICTED_INTEGER],
+                "work_accounting":"node_visits+operations+iterations+iteration_operations",
+                "runtime":"adapter wall time including process startup and parsing"}
+            if expected_configuration["target"] not in ("successor","gap"):
+                raise ValueError("invalid native target")
+            if frozen.get("configuration") != expected_configuration:
+                raise ValueError("native candidate configuration does not match the evaluator")
         else:
             _,bounds=parse_algorithmic(frozen.get("expression",""))
             expected_configuration={"algorithmic_bounds":list(bounds)}
@@ -377,6 +479,7 @@ def main():
     if frozen is not None:
         expression=frozen["expression"]
         if args.track=="predictive": kind="predictive"; algorithmic_limits=None
+        elif args.track=="native_predictive": kind="native_predictive"; algorithmic_limits=None
         else:
             kind,algorithmic_limits=parse_algorithmic(expression)
         report["candidate"]={"track":args.track,"expression":expression,
@@ -385,10 +488,21 @@ def main():
                               "complexity_definition":"AST operation count" if args.track=="predictive" else "bounded algorithm, explicit gap and divisor bounds",
                               "configuration":frozen["configuration"],
                               "algorithmic_bounds":algorithmic_limits if args.track=="algorithmic" else None,
-                              "metrics":score_candidate(rows,kind,expression,algorithmic_limits=algorithmic_limits,include_test=not args.exclude_test)}
+                              "metrics":score_candidate(rows,kind,expression,algorithmic_limits=algorithmic_limits,include_test=not args.exclude_test,
+                                  native_evaluator=args.native_evaluator,native_target=frozen["configuration"].get("target","successor"))}
+        if args.track=="native_predictive":
+            report["candidate"]["protocol"]=frozen["protocol"]
+            report["candidate"]["complexity_definition"]="Genetik DiscreteExpression node count; stored parameters are expression literals"
+            report["candidate"]["stored_parameters"]=frozen["configuration"]["stored_parameters"]
     text=json.dumps(report,sort_keys=True,indent=2,allow_nan=False)+"\n"
     if args.output: args.output.write_text(text)
     else: print(text,end="")
 
 
-if __name__=="__main__": main()
+if __name__=="__main__":
+    try:
+        main()
+    except (NativeEvaluationCancelled, KeyboardInterrupt) as error:
+        message=str(error) or "benchmark interrupted; no partial metrics were scored"
+        print(message, file=sys.stderr)
+        raise SystemExit(130)

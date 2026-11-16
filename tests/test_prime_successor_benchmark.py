@@ -2,6 +2,8 @@ import json
 import tempfile
 import unittest
 import types
+import sys
+import hashlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,6 +11,8 @@ bench = types.ModuleType("prime_successor_benchmark")
 source = ROOT / "benchmarks/prime_successor/benchmark.py"
 bench.__file__ = str(source)
 exec(compile(source.read_text(encoding="utf-8"), str(source), "exec"), bench.__dict__)
+NATIVE = Path(sys.argv[1]) if len(sys.argv) > 1 else None
+sys.argv = sys.argv[:1]
 
 
 class PrimeSuccessorBenchmarkTests(unittest.TestCase):
@@ -118,6 +122,81 @@ class PrimeSuccessorBenchmarkTests(unittest.TestCase):
             self.assertGreater(report[split]["mathematical_work_per_query"],0)
         with self.assertRaises(ValueError):
             bench.parse_algorithmic("bounded_trial_scan(max_gap=0,max_divisor=250)")
+
+    @unittest.skipUnless(NATIVE and NATIVE.exists(), "native adapter executable supplied by CMake")
+    def test_native_expression_track_is_separate_checked_and_frozen(self):
+        import subprocess
+        rows=[(1009,1015,6),(1013,1019,6),(17,23,6)]
+        subprocess.run([str(NATIVE),"--self-test"],check=True,capture_output=True,text=True)
+        outputs,works,_,complexity,statuses=bench.predict(rows,"native_predictive","x0 + 6",native_evaluator=NATIVE)
+        self.assertEqual(outputs,[1015,1019,23])
+        self.assertEqual(statuses,["valid"]*3)
+        self.assertEqual(len(works),3)
+        self.assertEqual(complexity["node_count"],3)
+        self.assertEqual(complexity["stored_parameters"],1)
+        self.assertTrue(complexity["genetik_version"])
+        self.assertEqual(complexity["adapter_sha256"],hashlib.sha256(NATIVE.read_bytes()).hexdigest())
+        original=bench.score_candidate(bench.load_dataset()[0],"predictive","p + 6")
+        native=bench.score_candidate(bench.load_dataset()[0],"native_predictive","x0 + 6",native_evaluator=NATIVE)
+        for split in ("training","validation","test"):
+            for metric in ("exact_successor_accuracy","exact_gap_accuracy","gap_mae","prime_output_validity"):
+                self.assertEqual(native[split][metric],original[split][metric])
+        # Synthetic mathematical inputs intentionally carry no prime-target knowledge.
+        cond,_,_,_,statuses=bench.predict([(0,0,0),(1,0,0)],"native_predictive",
+            "if(x0 == 0, 7, 1 % 0)",native_evaluator=NATIVE)
+        self.assertEqual(cond[0],7)
+        self.assertTrue(__import__("math").isnan(cond[1]))
+        self.assertEqual(statuses,["valid","mathematical_invalid"])
+        mod,_,_,_,_=bench.predict([(4,0,0),(5,0,0)],"native_predictive",
+            "(x0 % 3) + 4",native_evaluator=NATIVE)
+        self.assertEqual(mod,[5,6])
+        gaps,_,_,_,_=bench.predict([(1009,1013,4)],"native_predictive","4",
+                                   native_evaluator=NATIVE,native_target="gap")
+        self.assertEqual(gaps,[1013])
+        negative_gap,_,_,_,_=bench.predict([(1009,1013,4)],"native_predictive","-4",
+                                            native_evaluator=NATIVE,native_target="gap")
+        self.assertTrue(__import__("math").isnan(negative_gap[0]))
+        # Checked overflow is mathematical invalidity, never wrapped output.
+        overflow=subprocess.run([str(NATIVE),"x0 + 1","32","32","4096"],input="9223372036854775807\n",
+                                capture_output=True,text=True,check=True)
+        self.assertIn("mathematical_invalid\t-",overflow.stdout)
+        limited=subprocess.run([str(NATIVE),"x0 + 1","1","32","4096"],input="9\n",
+                               capture_output=True,text=True,check=True)
+        self.assertIn("resource_exhausted\t-",limited.stdout)
+        repeated=subprocess.run([str(NATIVE),"x0 + 6","4096","4096","1048576"],input="1009\n",
+                                capture_output=True,text=True,check=True)
+        repeated_again=subprocess.run([str(NATIVE),"x0 + 6","4096","4096","1048576"],input="1009\n",
+                                      capture_output=True,text=True,check=True)
+        self.assertEqual(repeated.stdout,repeated_again.stdout)
+        from unittest.mock import patch
+        with patch("subprocess.run",return_value=subprocess.CompletedProcess([],130,"cancelled\t-\n","")):
+            with self.assertRaises(bench.NativeEvaluationCancelled):
+                bench.predict([(1009,1013,4)],"native_predictive","x0 + 6",native_evaluator=NATIVE)
+        for forbidden in ("sum(k0,0,2,k0)","first(k0,0,2,k0 == 2)","factorial(5)","pow(2,3)","true"):
+            result=subprocess.run([str(NATIVE),"--validate",forbidden],capture_output=True,text=True)
+            self.assertNotEqual(result.returncode,0,forbidden)
+        with tempfile.TemporaryDirectory() as directory:
+            frozen=Path(directory)/"native.json"
+            subprocess.run([sys.executable,"-B",str(source),"--track","native_predictive",
+                "--native-evaluator",str(NATIVE),"--freeze-candidate","x0 + 6","--output",str(frozen)],
+                check=True,capture_output=True,text=True)
+            scored=subprocess.run([sys.executable,"-B",str(source),"--track","native_predictive",
+                "--native-evaluator",str(NATIVE),"--frozen-candidate",str(frozen),"--exclude-test"],
+                check=True,capture_output=True,text=True)
+            report=json.loads(scored.stdout)
+            self.assertEqual(report["candidate"]["protocol"],"genetik-prime-successor-native-v1")
+            manifest=json.loads(frozen.read_text())
+            self.assertEqual(manifest["configuration"]["adapter_sha256"],hashlib.sha256(NATIVE.read_bytes()).hexdigest())
+            self.assertNotIn("test",report["candidate"]["metrics"])
+            self.assertEqual(report["candidate"]["metrics"]["recursive_successor_generation"]["successive_steps"],4035)
+            wrong=subprocess.run([sys.executable,"-B",str(source),"--track","predictive",
+                "--frozen-candidate",str(frozen)],capture_output=True,text=True)
+            self.assertNotEqual(wrong.returncode,0)
+            damaged=json.loads(frozen.read_text());damaged["configuration"]["limits"]["max_operations"]+=1
+            frozen.write_text(json.dumps(damaged))
+            tampered=subprocess.run([sys.executable,"-B",str(source),"--track","native_predictive",
+                "--native-evaluator",str(NATIVE),"--frozen-candidate",str(frozen)],capture_output=True,text=True)
+            self.assertNotEqual(tampered.returncode,0)
 
 
 if __name__ == "__main__":

@@ -79,7 +79,8 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     tests/discrete_expression_components.cpp \
     tests/research_process_fixture.cpp \
     tests/discrete_conditional_grammar_synthesis.cpp \
-    genetik/DiscreteConditionalGrammarSynthesis.hpp |
+    genetik/DiscreteConditionalGrammarSynthesis.hpp \
+    benchmarks/prime_successor/native_expression_evaluator.cpp |
     "$format_diff_tool" -p1 -binary "$format_tool")"
 if [[ -n "$format_diff" ]]; then
     printf '%s\n' "$format_diff" >&2
@@ -112,6 +113,7 @@ fi
     tests/discrete_expression_components.cpp \
     tests/research_process_fixture.cpp \
     tests/discrete_conditional_grammar_synthesis.cpp \
+    benchmarks/prime_successor/native_expression_evaluator.cpp \
     benchmarks/automatic_separable_comparison.cpp \
     benchmarks/automatic_separable_noise_followup.cpp \
     benchmarks/symbolic_selection_comparison.cpp

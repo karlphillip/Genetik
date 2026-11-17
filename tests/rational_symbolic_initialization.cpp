@@ -28,6 +28,10 @@ int main() {
     check(powerVariation.grammarAccepts(negativePower), "configured negative power rejected");
     check(!powerVariation.grammarAccepts(wrongPositivePower), "unconfigured positive power accepted");
     check(!powerVariation.grammarAccepts(wrongNegativePower), "unconfigured negative power accepted");
+    check(powerVariation.initializeFrom(positivePower).expression().sameRepresentation(positivePower),
+          "positive power failed seeded initialization");
+    check(powerVariation.initializeFrom(negativePower).expression().sameRepresentation(negativePower),
+          "negative power failed seeded initialization");
     ExpressionGrammar generalPowerGrammar;
     generalPowerGrammar.operators = {ExpressionKind::Pow};
     ExpressionVariation generalPowerVariation(problem, generalPowerGrammar);
@@ -57,6 +61,9 @@ int main() {
           "seed with a disallowed operator was accepted");
     check(rejectsSeed(powerVariation, Expression::constant(101, 1, {127, 16, 200, 1024})),
           "seed outside the constant bound was accepted");
+    check(rejectsSeed(powerVariation, wrongPositivePower) &&
+              rejectsSeed(powerVariation, wrongNegativePower),
+          "seed with an unconfigured integer exponent was accepted");
     auto smallLimitProblem = RegressionProblem::create(rows, {2, 16, 100, 1024});
     ExpressionVariation smallLimitVariation(smallLimitProblem, powerGrammar);
     check(rejectsSeed(smallLimitVariation,
@@ -164,6 +171,16 @@ int main() {
                                                 {}, observeProvider);
     check(noAdmission.stoppingReason == SearchStop::EvaluationBudget && !providerCalled,
           "provider ran without budget to admit initialization");
+    auto throwsProvider = [](const RegressionProblem&, std::size_t, std::uint64_t)
+        -> InitialExpressionBatch { throw std::runtime_error("provider failure"); };
+    RandomContext providerFailureRandom(19);
+    bool providerFailurePropagated = false;
+    try {
+        (void)symbolicRegression(problem, cfg, providerFailureRandom, {}, throwsProvider);
+    } catch (const std::runtime_error& error) {
+        providerFailurePropagated = std::string(error.what()) == "provider failure";
+    }
+    check(providerFailurePropagated, "initializer failure was not propagated to the caller");
     auto ordinary = cfg;
     ordinary.initialExpressionSlots = 0;
     ordinary.maximumInitializerWorkUnits = 0;

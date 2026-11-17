@@ -11,6 +11,10 @@ path; its objective evaluation and any configured constant refinement use the
 ordinary training-loss budget. Unfilled reserved slots and all remaining slots
 use ordinary random initialization.
 
+Seed expressions are checked against the problem's hard node and depth limits.
+`ExpressionGrammar::initialMaxDepth` controls random tree construction; it is
+not a hard limit for accepted candidates, including mutated candidates.
+
 Provider exceptions propagate and fail the search call; they are not converted
 into an empty batch. Initializer preparation is synchronous and has no
 cooperative cancellation hook, so a cancellation request cannot interrupt a

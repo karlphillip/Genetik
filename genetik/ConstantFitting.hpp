@@ -254,6 +254,9 @@ struct ConstantFitResult {
     ConstantFitStop stop = ConstantFitStop::SweepLimit;
     std::uint64_t lossAttempts = 0, sweeps = 0, proposals = 0;
     LMWork optimizerWork{};
+    // Present for LM fits; preserves the numerical solver's specific stop
+    // without changing the shared coordinate/LM ConstantFitStop contract.
+    std::optional<LMStop> optimizerStop;
 };
 // Shared deterministic reference algorithm. Representation adapters enumerate parameters,
 // read one coefficient and construct one checked replacement. No RNG or publication here.
@@ -262,7 +265,12 @@ template<class Result,class ExpressionValue,class Objective,class Parameters,cla
 Result fitCoordinates(ExpressionValue expression,Objective& objective,const ConstantFitConfig& config,
                       const Parameters& parameters,TrainingWork& work,Coefficient coefficient,Replace replace) {
     countTrainingWork(work.fittingInvocations);
-    Result result{std::move(expression), {}, {}};
+    Result result = [&] {
+        if constexpr (std::is_same_v<Result,ConstantFitResult>)
+            return Result{std::move(expression),{},{},false,ConstantFitStop::SweepLimit,0,0,0,{},std::nullopt};
+        else
+            return Result{std::move(expression),{}, {}};
+    }();
     const auto begin = work.lossAttempts;
     auto finish = [&](ConstantFitStop stop) {
         result.stop = stop; result.lossAttempts = work.lossAttempts - begin;
@@ -324,7 +332,7 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
         throw std::length_error("LM parameter limit");
     const auto original=input.nodes();std::vector<double> initial;initial.reserve(selected.size());
     for(std::size_t i=0;i<selected.size();++i){const auto n=selected[i];if(n>=original.size()||original[n].kind()!=ExpressionKind::Constant||(i&&n<=selected[i-1]))throw std::invalid_argument("LM constant indices must be increasing, distinct constants");const double v=original[n].constantValue();if(v<config.lower||v>config.upper)throw std::invalid_argument("LM starting constant outside fitting bounds");initial.push_back(v);}
-    ConstantFitResult result{input,{},{}};
+    ConstantFitResult result{input,{},{},false,ConstantFitStop::SweepLimit,0,0,0,{},std::nullopt};
     objective.recordFittingInvocation();
     if(selected.empty()){auto baseline=objective.measure(input,TrainingLossKind::FittingBaseline);result.loss=result.startingLoss=baseline.loss;result.stop=baseline.loss.state()==FitnessState::Invalid?ConstantFitStop::InvalidStart:ConstantFitStop::NoConstants;result.lossAttempts=1;return result;}
     if(rows.empty())throw std::invalid_argument("LM requires nonempty native observations");
@@ -339,7 +347,16 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
     if(!lm.maxObjectiveEvaluations)throw TrainingLossBudgetExceeded();
     const auto fit=levenbergMarquardt(initial,lower,upper,measured,lm);
     result.expression=input;for(std::size_t i=0;i<selected.size();++i)result.expression=result.expression.withConstant(selected[i],fit.parameters[i]);
-    result.startingLoss=starting;result.loss=lastTheta==fit.parameters?last:starting;result.improved=result.loss.state()==FitnessState::Valid&&starting.state()==FitnessState::Valid&&result.loss.score()<starting.score();result.lossAttempts=calls;result.optimizerWork=fit.work;
+    result.startingLoss=starting;
+    // The solver's residual sum is owned by its returned parameter vector.
+    // Exact equality with the most recently evaluated theta is not a valid
+    // proxy: the terminal step test can leave a nearby, previously scored
+    // iterate in lastTheta. Convert the same unweighted residual objective
+    // back to RegressionProblem's MSE without another charged loss call.
+    result.loss=fit.sumSquaredResiduals
+        ? Fitness::fromScore(*fit.sumSquaredResiduals/static_cast<double>(rows.size()))
+        : (lastTheta==fit.parameters?last:starting);
+    result.improved=result.loss.state()==FitnessState::Valid&&starting.state()==FitnessState::Valid&&result.loss.score()<starting.score();result.lossAttempts=calls;result.optimizerWork=fit.work;result.optimizerStop=fit.stop;
     switch(fit.stop){case LMStop::LossTolerance:result.stop=ConstantFitStop::LossThreshold;break;case LMStop::GradientTolerance:case LMStop::StepTolerance:result.stop=ConstantFitStop::MinimumStep;break;case LMStop::EvaluationLimit:case LMStop::DerivativeLimit:case LMStop::WorkspaceLimit:result.stop=ConstantFitStop::EvaluationLimit;break;case LMStop::IterationLimit:result.stop=ConstantFitStop::SweepLimit;break;default:result.stop=fit.sumSquaredResiduals?ConstantFitStop::MinimumStep:ConstantFitStop::InvalidStart;break;}
     return result;
 }

@@ -6,6 +6,15 @@
 #include "SymbolicSelection.hpp"
 
 #include <type_traits>
+#include <functional>
+
+struct InitialExpressionBatch {
+    std::vector<Expression> expressions;
+    std::uint64_t workUnits = 0;
+    std::string status = "success", detail;
+};
+using InitialExpressionProvider =
+    std::function<InitialExpressionBatch(const RegressionProblem&, std::size_t, std::uint64_t)>;
 
 struct SymbolicRegressionConfig {
     std::size_t population = 128;
@@ -25,6 +34,8 @@ struct SymbolicRegressionConfig {
     std::uint64_t maximumParetoComparisons = 10'000'000;
     std::size_t maximumParetoEstimatedMemoryBytes = 64 * 1024 * 1024;
     std::size_t maximumParetoFrontier = 64;
+    std::size_t initialExpressionSlots = 0;
+    std::uint64_t maximumInitializerWorkUnits = 0;
 };
 enum class SearchStop {
     ExactTrainingFit,
@@ -64,6 +75,8 @@ struct SymbolicRegressionResult {
     RegressionSupplementalWork supplementalWork;
     LMWork optimizerWork;
     PreparationStatistics preparationWork;
+    std::uint64_t initializerWorkUnits = 0;
+    std::string initializerStatus = "disabled", initializerDetail;
     TrainingWork initialWork;
     std::vector<std::string> preparedInitialExpressions;
     std::vector<Fitness> preparedInitialFitness;
@@ -86,14 +99,18 @@ struct SymbolicRegressionResult {
 
 namespace genetik_detail {
 template <class Variation, class Ordering>
-inline SymbolicRegressionResult
-runSymbolicSearch(std::shared_ptr<const RegressionProblem> problem,
-                  const SymbolicRegressionConfig& config, RandomContext& random,
-                  std::shared_ptr<TrainingObjective> objective,
-                  std::shared_ptr<ConstantRefinement> preparation, Variation variation,
-                  Ordering ordering, ParetoSelectionWork* paretoWork) {
+inline SymbolicRegressionResult runSymbolicSearch(
+    std::shared_ptr<const RegressionProblem> problem, const SymbolicRegressionConfig& config,
+    RandomContext& random, std::shared_ptr<TrainingObjective> objective,
+    std::shared_ptr<ConstantRefinement> preparation, Variation variation, Ordering ordering,
+    ParetoSelectionWork* paretoWork, const InitialExpressionBatch* initialBatch = nullptr) {
     (void)problem;
     SymbolicRegressionResult result;
+    if (initialBatch) {
+        result.initializerWorkUnits = initialBatch->workUnits;
+        result.initializerStatus = initialBatch->status;
+        result.initializerDetail = initialBatch->detail;
+    }
     if (config.maxEvaluations < config.population || config.maxTrainingLossAttempts < config.population) {
         result.stoppingReason = SearchStop::EvaluationBudget; return result;
     }
@@ -102,7 +119,15 @@ runSymbolicSearch(std::shared_ptr<const RegressionProblem> problem,
     {
     genetik_detail::ScopedTiming timer(config.diagnostics ? &config.diagnostics->generationSeconds:nullptr);
     for (std::size_t i = 0; i < config.population; ++i) {
-        initial.push_back(variation.initialize(random.engine()));
+        if (initialBatch && i < config.initialExpressionSlots &&
+            i < initialBatch->expressions.size()) {
+            if constexpr (requires { variation.initializeFrom(initialBatch->expressions[i]); })
+                initial.push_back(variation.initializeFrom(initialBatch->expressions[i]));
+            else
+                throw std::invalid_argument(
+                    "initial expressions require an expression variation policy");
+        } else
+            initial.push_back(variation.initialize(random.engine()));
         result.rawInitialExpressions.push_back(initial.back().text());
     }
     }
@@ -282,9 +307,11 @@ runSymbolicSearch(std::shared_ptr<const RegressionProblem> problem,
 }
 
 // Ordinary configuration retains the original construction and random draw order.
-inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const RegressionProblem> problem,
-                              const SymbolicRegressionConfig& config, RandomContext& random,
-                              std::shared_ptr<TrainingObjective> objective = {}) {
+inline SymbolicRegressionResult
+symbolicRegression(std::shared_ptr<const RegressionProblem> problem,
+                   const SymbolicRegressionConfig& config, RandomContext& random,
+                   std::shared_ptr<TrainingObjective> objective = {},
+                   InitialExpressionProvider initialProvider = {}) {
     if (random.evaluationAttempts() != 0) throw std::invalid_argument("symbolic search requires a fresh run context");
     if (config.fitEveryGenerations == 0 || config.population == 0 ||
         config.population > std::numeric_limits<unsigned int>::max() ||
@@ -297,6 +324,12 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
          (!config.maximumParetoComparisons || !config.maximumParetoEstimatedMemoryBytes ||
           !config.maximumParetoFrontier)))
         throw std::invalid_argument("invalid symbolic search configuration");
+    if (config.initialExpressionSlots > std::min<std::size_t>(8, config.population / 4) ||
+        (config.initialExpressionSlots &&
+         (!initialProvider || !config.maximumInitializerWorkUnits)) ||
+        (!config.initialExpressionSlots && initialProvider))
+        throw std::invalid_argument(
+            "initializer requires reserved slots and a positive work allowance");
     if (!objective) objective = std::make_shared<TrainingObjective>(problem, config.maxTrainingLossAttempts,config.diagnostics);
     if (objective->problem() != problem || objective->maximum() != config.maxTrainingLossAttempts || objective->diagnostics()!=config.diagnostics ||
         objective->work() != TrainingWork{})
@@ -306,21 +339,40 @@ inline SymbolicRegressionResult symbolicRegression(std::shared_ptr<const Regress
     if(random.execution().requested()>1)(void)objective->forkParallel(random.execution()); // validate factory before initialization
     auto preparation = std::make_shared<ConstantRefinement>(objective, config.fitting,config.fitEveryGenerations);
     ExpressionVariation variation(problem, config.grammar, preparation);
+    InitialExpressionBatch initialBatch;
+    const InitialExpressionBatch* batch = nullptr;
+    if (config.maxEvaluations < config.population ||
+        config.maxTrainingLossAttempts < config.population) {
+        SymbolicRegressionResult stopped;
+        stopped.stoppingReason = SearchStop::EvaluationBudget;
+        return stopped;
+    }
+    if (initialProvider) {
+        initialBatch = initialProvider(*problem, config.initialExpressionSlots,
+                                       config.maximumInitializerWorkUnits);
+        if (initialBatch.workUnits > config.maximumInitializerWorkUnits ||
+            initialBatch.expressions.size() > config.initialExpressionSlots ||
+            (!initialBatch.expressions.empty() && initialBatch.workUnits == 0) ||
+            initialBatch.status.empty())
+            throw std::invalid_argument("initializer exceeded its declared budget or slot count");
+        batch = &initialBatch;
+    }
     switch (config.selectionStrategy) {
     case SymbolicRegressionConfig::SelectionStrategy::PredictionLoss:
         return genetik_detail::runSymbolicSearch(problem, config, random, objective, preparation,
                                                  std::move(variation), RegressionOrdering{},
-                                                 nullptr);
+                                                 nullptr, batch);
     case SymbolicRegressionConfig::SelectionStrategy::ComplexityPenalty:
         return genetik_detail::runSymbolicSearch(
             problem, config, random, objective, preparation, std::move(variation),
-            ComplexityPenaltyOrdering(config.complexityPenalty), nullptr);
+            ComplexityPenaltyOrdering(config.complexityPenalty), nullptr, batch);
     case SymbolicRegressionConfig::SelectionStrategy::Pareto: {
         ParetoSelectionWork work;
         ParetoRegressionOrdering ordering(config.maximumParetoComparisons,
                                           config.maximumParetoEstimatedMemoryBytes, work);
         return genetik_detail::runSymbolicSearch(problem, config, random, objective, preparation,
-                                                 std::move(variation), std::move(ordering), &work);
+                                                 std::move(variation), std::move(ordering), &work,
+                                                 batch);
     }
     }
     throw std::invalid_argument("unknown symbolic selection strategy");

@@ -189,6 +189,36 @@ public:
         count(statistics_.initializations);
         return ExpressionCandidate(randomExpression(rng, grammar_.initialMaxDepth), problem_, preparation_);
     }
+    ExpressionCandidate initializeFrom(const Expression& expression) {
+        count(statistics_.initializations);
+        const auto checked = problem_->checkedExpression(expression);
+        if (!grammarAccepts(checked))
+            throw std::invalid_argument("initial expression is outside the configured grammar");
+        return ExpressionCandidate(checked, problem_, preparation_);
+    }
+    bool grammarAccepts(const Expression& expression) const {
+        const auto nodes = expression.nodes();
+        for (std::size_t i = 0; i < nodes.size(); ++i) {
+            const auto kind = nodes[i].kind();
+            if (kind == ExpressionKind::Constant) {
+                if (std::abs(nodes[i].constantValue()) > problem_->limits().maxAbsConstant)
+                    return false;
+            } else if (kind != ExpressionKind::Variable) {
+                if (std::find(grammar_.operators.begin(), grammar_.operators.end(), kind) ==
+                    grammar_.operators.end())
+                    return false;
+                if (expressionPowerMetadata(kind)) {
+                    const auto& allowed = kind == ExpressionKind::Powi
+                                              ? grammar_.exponents
+                                              : grammar_.negativeExponents;
+                    if (std::find(allowed.begin(), allowed.end(), nodes[i].exponent()) ==
+                        allowed.end())
+                        return false;
+                }
+            }
+        }
+        return genetik_detail::extendedGrammarAccepts(expression, grammar_);
+    }
     ExpressionCandidate mutation(const ExpressionCandidate& parent, float rate, std::mt19937& rng) {
         requireProblem(parent);
         ExpressionCandidate child = parent;

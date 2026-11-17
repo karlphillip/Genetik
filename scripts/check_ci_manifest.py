@@ -52,6 +52,7 @@ PORTABLE = {
     'genetik_repository_hygiene', 'genetik_typed_regression_contracts', 'genetik_typed_preparation_overlap', 'genetik_typed_search_quickstart', 'genetik_typed_regression_cli', 'genetik_typed_contracts', 'genetik_typed_overlap', 'genetik_typed_example',
     'genetik_strict_arithmetic', 'genetik_multivariate_contracts',
     'genetik_fitting_contracts', 'genetik_symbolic_contracts',
+    'genetik_lm_rational_fit_regression',
     'genetik_objective_regression_contracts', 'genetik_objectives_quickstart',
     'genetik_symbolic_selection_contracts', 'genetik_selection_strategies_quickstart',
     'genetik_multi_component_template_contracts', 'genetik_multi_component_templates_quickstart',

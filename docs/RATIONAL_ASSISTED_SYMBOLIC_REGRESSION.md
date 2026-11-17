@@ -11,6 +11,14 @@ path; its objective evaluation and any configured constant refinement use the
 ordinary training-loss budget. Unfilled reserved slots and all remaining slots
 use ordinary random initialization.
 
+Provider exceptions propagate and fail the search call; they are not converted
+into an empty batch. Initializer preparation is synchronous and has no
+cooperative cancellation hook, so a cancellation request cannot interrupt a
+provider already running. The work allowance is an application-reported bound,
+validated after return; providers must enforce it internally. When the search
+cannot admit the full initial population under its candidate/loss budgets, it
+returns the budget stop before invoking the provider.
+
 The driver caps reserved seeds at `min(8, floor(population/4))`; the remainder
 of the population always uses ordinary random initialization.
 

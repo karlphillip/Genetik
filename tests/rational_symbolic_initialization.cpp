@@ -14,6 +14,55 @@ int main() {
         rows.push_back({{x}, (1.0 + .4 * x) / (1.0 + .2 * x)});
     }
     auto problem = RegressionProblem::create(rows, {127, 16, 100, 1024});
+    ExpressionGrammar powerGrammar;
+    powerGrammar.operators = {ExpressionKind::Powi, ExpressionKind::NegativePowi};
+    powerGrammar.exponents = {2};
+    powerGrammar.negativeExponents = {3};
+    ExpressionVariation powerVariation(problem, powerGrammar);
+    const auto variable = Expression::variable(0, 1, problem->limits());
+    const auto positivePower = Expression::integerPower(variable, 2, problem->limits());
+    const auto negativePower = Expression::integerPower(variable, -3, problem->limits());
+    const auto wrongPositivePower = Expression::integerPower(variable, 3, problem->limits());
+    const auto wrongNegativePower = Expression::integerPower(variable, -2, problem->limits());
+    check(powerVariation.grammarAccepts(positivePower), "configured positive power rejected");
+    check(powerVariation.grammarAccepts(negativePower), "configured negative power rejected");
+    check(!powerVariation.grammarAccepts(wrongPositivePower), "unconfigured positive power accepted");
+    check(!powerVariation.grammarAccepts(wrongNegativePower), "unconfigured negative power accepted");
+    ExpressionGrammar generalPowerGrammar;
+    generalPowerGrammar.operators = {ExpressionKind::Pow};
+    ExpressionVariation generalPowerVariation(problem, generalPowerGrammar);
+    const auto constantExponentPower = Expression::binary(
+        ExpressionKind::Pow, variable, Expression::constant(2, 1, problem->limits()),
+        problem->limits());
+    const auto variableExponentPower = Expression::binary(
+        ExpressionKind::Pow, variable, variable, problem->limits());
+    check(generalPowerVariation.grammarAccepts(constantExponentPower),
+          "allowed constant general-power exponent rejected");
+    check(!generalPowerVariation.grammarAccepts(variableExponentPower),
+          "variable general-power exponent accepted");
+    const auto rejectsSeed = [](ExpressionVariation& variation, const Expression& expression) {
+        try {
+            (void)variation.initializeFrom(expression);
+            return false;
+        } catch (const std::invalid_argument&) {
+            return true;
+        } catch (const std::length_error&) {
+            return true;
+        }
+    };
+    check(rejectsSeed(powerVariation, Expression::variable(1, 2, problem->limits())),
+          "seed with a mismatched input schema was accepted");
+    check(rejectsSeed(powerVariation,
+                      Expression::unary(ExpressionKind::Log, variable, problem->limits())),
+          "seed with a disallowed operator was accepted");
+    check(rejectsSeed(powerVariation, Expression::constant(101, 1, {127, 16, 200, 1024})),
+          "seed outside the constant bound was accepted");
+    auto smallLimitProblem = RegressionProblem::create(rows, {2, 16, 100, 1024});
+    ExpressionVariation smallLimitVariation(smallLimitProblem, powerGrammar);
+    check(rejectsSeed(smallLimitVariation,
+                      Expression::binary(ExpressionKind::Add, variable, variable,
+                                         problem->limits())),
+          "seed outside the node limit was accepted");
     SymbolicRegressionConfig cfg;
     cfg.population = 8;
     cfg.elites = 1;
@@ -89,6 +138,32 @@ int main() {
               repeat.initializerWorkUnits == hybrid.initializerWorkUnits &&
               repeatRandom.engine() == hybridRandom.engine(),
           "enabled initializer path is not reproducible");
+    auto reusedProvider = rationalInitialExpressionProvider(rational);
+    const auto lowAllowance = reusedProvider(*problem, 2, 50'000);
+    const auto highAllowance = reusedProvider(*problem, 2, 50'000'000);
+    const auto freshHighAllowance = rationalInitialExpressionProvider(rational)(
+        *problem, 2, 50'000'000);
+    check(!lowAllowance.expressions.empty(), "low-budget provider call returned no fit");
+    check(highAllowance.status == freshHighAllowance.status &&
+              highAllowance.detail == freshHighAllowance.detail &&
+              highAllowance.workUnits == freshHighAllowance.workUnits &&
+              highAllowance.expressions.size() == freshHighAllowance.expressions.size(),
+          "provider budget leaked across invocations");
+    for (std::size_t i = 0; i < highAllowance.expressions.size(); ++i)
+        check(highAllowance.expressions[i].toString() == freshHighAllowance.expressions[i].toString(),
+              "provider result changed after low-budget invocation");
+    auto cannotInitialize = cfg;
+    cannotInitialize.maxEvaluations = cannotInitialize.population - 1;
+    bool providerCalled = false;
+    auto observeProvider = [&](const RegressionProblem&, std::size_t, std::uint64_t) {
+        providerCalled = true;
+        return InitialExpressionBatch{};
+    };
+    RandomContext noAdmissionRandom(19);
+    const auto noAdmission = symbolicRegression(problem, cannotInitialize, noAdmissionRandom,
+                                                {}, observeProvider);
+    check(noAdmission.stoppingReason == SearchStop::EvaluationBudget && !providerCalled,
+          "provider ran without budget to admit initialization");
     auto ordinary = cfg;
     ordinary.initialExpressionSlots = 0;
     ordinary.maximumInitializerWorkUnits = 0;

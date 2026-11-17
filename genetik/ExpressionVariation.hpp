@@ -207,10 +207,14 @@ public:
                 if (std::find(grammar_.operators.begin(), grammar_.operators.end(), kind) ==
                     grammar_.operators.end())
                     return false;
-                if (expressionPowerMetadata(kind) &&
-                    std::find(grammar_.exponents.begin(), grammar_.exponents.end(),
-                              nodes[i].exponent()) == grammar_.exponents.end())
-                    return false;
+                if (expressionPowerMetadata(kind)) {
+                    const auto& allowed = kind == ExpressionKind::Powi
+                                              ? grammar_.exponents
+                                              : grammar_.negativeExponents;
+                    if (std::find(allowed.begin(), allowed.end(), nodes[i].exponent()) ==
+                        allowed.end())
+                        return false;
+                }
             }
         }
         return genetik_detail::extendedGrammarAccepts(expression, grammar_);

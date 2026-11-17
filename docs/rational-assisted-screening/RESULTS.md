@@ -1,6 +1,7 @@
 # Rational-assisted screening results
 
-The frozen protocol is [PROTOCOL.md](PROTOCOL.md); full per-run rows, exact
+The frozen protocol is [PROTOCOL.md](PROTOCOL.md), with an interpretation
+correction in [INTERPRETATION.md](INTERPRETATION.md); full per-run rows, exact
 expressions, coefficient literals, work counters and runtimes are in
 [RESULTS.csv](RESULTS.csv). The build was Release with GCC 13.3 on the
 aarch64 host. The old D7 train/test files were read without modification. The
@@ -18,7 +19,7 @@ deterministic fit per case; `A` and `C` have three seeds each.
 | Historical D7 rational x² | 0/3 | 1/1 | 3/3 | 0/3 |
 | Independent rational (1,1) | 0/3 | 1/1 | 3/3 | 3/3 |
 | Independent rational (2,1) | 0/3 | 1/1 | 3/3 | 3/3 |
-| Nonrational cubic | 0/3 | 1/1 | 3/3 | 2/3 |
+| Cubic polynomial control | 0/3 | 1/1 | 3/3 | 2/3 |
 | Nonrational sine | 0/3 | 0/1 | 0/3 | 0/3 |
 
 Across the three seeds, median assessment NRMSE for A/B/C respectively was:
@@ -32,7 +33,7 @@ Across the three seeds, median assessment NRMSE for A/B/C respectively was:
 | Sine | 0.2362 | 1.82e-5 | 1.82e-5 |
 
 The rational fitter alone matched the hybrid's numerical recovery on every
-rational and cubic task; it also supplied the hybrid's sine approximation.
+rational and cubic polynomial task; it also supplied the hybrid's sine approximation.
 Thus these results show a substantial quality gain over the bounded ordinary
 symbolic configuration, but no accuracy improvement over the constructive
 rational fitter. On the three independent rational/cubic cases, 8 of 9 hybrid

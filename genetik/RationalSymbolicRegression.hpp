@@ -40,7 +40,7 @@ inline InitialExpressionBatch rationalInitialExpressions(const RationalFitResult
 inline InitialExpressionProvider rationalInitialExpressionProvider(RationalConfig config = {}) {
     return [config = std::move(config)](const RegressionProblem& problem,
                                         std::size_t maximumExpressions,
-                                        std::uint64_t maximumWorkUnits) mutable {
+                                        std::uint64_t maximumWorkUnits) {
         if (problem.dimensions() != 1 ||
             problem.objective().loss != RegressionLoss::MeanSquaredError)
             throw std::invalid_argument(
@@ -48,17 +48,18 @@ inline InitialExpressionProvider rationalInitialExpressionProvider(RationalConfi
         if (!maximumExpressions || !maximumWorkUnits)
             throw std::invalid_argument(
                 "rational initializer requires positive candidate and work budgets");
-        config.expressionLimits = problem.limits();
-        config.maximumLinearAlgebraOperations =
-            std::min<std::size_t>(config.maximumLinearAlgebraOperations, maximumWorkUnits);
-        config.maximumArithmeticOperations =
-            std::min<std::size_t>(config.maximumArithmeticOperations, maximumWorkUnits);
+        auto localConfig = config;
+        localConfig.expressionLimits = problem.limits();
+        localConfig.maximumLinearAlgebraOperations =
+            std::min<std::size_t>(localConfig.maximumLinearAlgebraOperations, maximumWorkUnits);
+        localConfig.maximumArithmeticOperations =
+            std::min<std::size_t>(localConfig.maximumArithmeticOperations, maximumWorkUnits);
         const auto rows = problem.trainingRows();
         std::vector<RationalObservation> observations;
         observations.reserve(rows.size());
         for (const auto& row : rows)
             observations.push_back({row.inputs[0], row.target});
-        const auto fit = fitRationalFunction(observations, config);
+        const auto fit = fitRationalFunction(observations, localConfig);
         auto batch = rationalInitialExpressions(fit, maximumExpressions);
         if (batch.workUnits > maximumWorkUnits)
             throw std::runtime_error("rational initializer exhausted its declared work allowance");

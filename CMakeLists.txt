@@ -126,6 +126,8 @@ if(GENETIK_BUILD_EXAMPLES)
     target_link_libraries(genetik_selection_strategies_quickstart PRIVATE Genetik::Genetik)
     add_executable(genetik_symbolic_selection_comparison benchmarks/symbolic_selection_comparison.cpp)
     target_link_libraries(genetik_symbolic_selection_comparison PRIVATE Genetik::Genetik)
+    add_executable(genetik_rational_assisted_screening benchmarks/rational_assisted_screening.cpp)
+    target_link_libraries(genetik_rational_assisted_screening PRIVATE Genetik::Genetik)
     add_executable(genetik_multi_component_templates_quickstart
         examples/quickstarts/multi_component_templates.cpp)
     target_link_libraries(genetik_multi_component_templates_quickstart PRIVATE Genetik::Genetik)

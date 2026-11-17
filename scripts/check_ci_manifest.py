@@ -36,6 +36,7 @@ PORTABLE = {
     'genetik_multivariate_rational_domain_contracts',
     'genetik_multivariate_rational_quickstart',
     'genetik_rational_function_contracts',
+    'genetik_rational_symbolic_initialization_contracts',
     'genetik_first_search_quickstart',
     'genetik_derivative_regression_contracts','genetik_derivative_regression_overlap','genetik_derivative_regression_quickstart','genetik_derivative_regression_cli',
     'genetik_derivative_contracts', 'genetik_derivative_overlap', 'genetik_derivatives_quickstart',

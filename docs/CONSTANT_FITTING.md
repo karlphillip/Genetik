@@ -65,12 +65,17 @@ cost also depends on the finite double spellings. Defaults: 256 loss attempts,
 strict per-node floating-point evaluation; see EXPRESSIONS.md for compiler flags,
 rounding, subnormal and intermediate-error behavior.
 
-`ConstantFitResult` returns the owned expression, its verified Fitness, starting
-Fitness, improvement flag, stop reason, local loss/proposal/sweeps-begun counts. Stop
-reason and improvement are independent: EvaluationLimit/SweepLimit/ProposalLimit/
-MinimumStep can follow successful improvements. Invalid/worse/equal later trials
-do not erase accepted improvements. No final verification call is needed: the
-returned score is the last accepted evaluation of exactly that expression.
+`ConstantFitResult` returns the owned expression, its Fitness, starting Fitness,
+improvement flag, stop reason, local loss/proposal/sweeps-begun counts, and (when
+the LM solver runs) the exact lower-level `LMStop` in `optimizerStop`. The shared
+`ConstantFitStop::MinimumStep` mapping remains for compatibility; inspect
+`optimizerStop` to distinguish gradient and step tolerance. Stop reason and
+improvement are independent: EvaluationLimit/SweepLimit/ProposalLimit/MinimumStep
+can follow successful improvements. For coordinate fitting, the returned score is
+the accepted probe score. For LM, the returned MSE comes from the solver's residual
+sum for its returned parameter vector; it does not infer score ownership from exact
+floating-point equality with a separately retained parameter vector. No extra
+objective call is added.
 
 Precedence: invalid baseline -> InvalidStart with original expression and Invalid
 fitness; baseline meeting optional threshold -> LossThreshold; otherwise no

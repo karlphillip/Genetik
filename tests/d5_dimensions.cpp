@@ -239,6 +239,12 @@ void resume(bool dimensioned, unsigned workers) {
     c.fitting = fitting;
     RandomContext continuousRandom(19, {workers});
     ScalarMathematicsRun continuous(p, c, continuousRandom);
+    auto explicitDefault = c;
+    explicitDefault.grammar.foldConstantSubtrees = false;
+    RandomContext explicitDefaultRandom(19, {workers});
+    ScalarMathematicsRun explicitDefaultRun(p, explicitDefault, explicitDefaultRandom);
+    check(continuous.checkpoint().payload == explicitDefaultRun.checkpoint().payload,
+          "disabled folding preserves default checkpoint identity and initial state");
     while (!continuous.stoppingReason())
         continuous.step();
     RandomContext splitRandom(19, {workers});
@@ -264,6 +270,16 @@ void resume(bool dimensioned, unsigned workers) {
         rejected = true;
     }
     check(rejected, "new exponent grammar identity mismatch");
+    auto folding = c;
+    folding.grammar.foldConstantSubtrees = true;
+    RandomContext foldingRandom(19, {workers});
+    rejected = false;
+    try {
+        (void)ScalarMathematicsRun::restore(document, p, folding, foldingRandom);
+    } catch (const CheckpointError &) {
+        rejected = true;
+    }
+    check(rejected, "enabled folding policy cannot resume a default-policy checkpoint");
 }
 void overlap() {
     auto p = std::make_shared<const DimensionalRegressionProblem>(

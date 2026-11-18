@@ -17,6 +17,9 @@ struct ExpressionGrammar {
     std::vector<unsigned> negativeExponents{1,2,3,4,5,6,7,8};
     bool powerExponentsAreConstants=true; // only affects opt-in Pow
     std::vector<double> realExponents{.5,1,2}; // initial constant exponent source, fitting remains explicit
+    // Opt-in mutation proposal: replace a selected nontrivial constant-only subtree
+    // with its checked binary64 value before considering ordinary subtree mutation.
+    bool foldConstantSubtrees = false;
 
 };
 struct VariationStatistics {
@@ -226,6 +229,40 @@ public:
         for (std::size_t i = 0; i < grammar_.proposalLimit; ++i) {
             count(statistics_.mutationProposals);
             const auto root = index(parent.expression().nodeCount(), rng);
+            if (grammar_.foldConstantSubtrees) {
+                const auto [begin, end] = expressionSubtree(parent.expression(), root);
+                if (end - begin > 1) {
+                    const auto nodes = parent.expression().nodes();
+                    const bool constantOnly = std::none_of(nodes.begin() + begin, nodes.begin() + end,
+                        [](const ExpressionNode& node) { return node.kind() == ExpressionKind::Variable; });
+                    if (constantOnly) {
+                        const Expression selected(std::span(nodes.data() + begin, end - begin),
+                                                  parent.expression().variableCount(),
+                                                  parent.expression().limits());
+                        const std::vector<double> unusedBindings(selected.variableCount(), 0.0);
+                        const auto folded = selected.evaluate(unusedBindings);
+                        if (folded.valid() && std::isfinite(folded.value()) &&
+                            std::abs(folded.value()) <= problem_->limits().maxAbsConstant) {
+                            try {
+                                const auto literal = Expression::constant(folded.value(),
+                                    parent.expression().variableCount(), problem_->limits());
+                                auto next = replaceExpressionSubtree(parent.expression(), root, literal,
+                                                                     problem_->limits());
+                                if (next && grammarAccepts(*next)) {
+                                    child.replaceExpression(*next);
+                                    count(statistics_.mutationChanges,
+                                          child.text() != parent.text());
+                                    return child;
+                                }
+                            } catch (const std::length_error&) {
+                                // Folding is an optional proposal; ordinary mutation remains available.
+                            } catch (const std::invalid_argument&) {
+                                // A result outside expression limits is not a valid fold.
+                            }
+                        }
+                    }
+                }
+            }
             if (std::find(grammar_.operators.begin(),grammar_.operators.end(),ExpressionKind::Powi)!=grammar_.operators.end() &&
                 parent.expression().nodes()[root].kind() == ExpressionKind::Powi &&
                 std::bernoulli_distribution(.5)(rng)) {

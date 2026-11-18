@@ -1257,6 +1257,27 @@ class ContinuationLifecycleContractTests(unittest.TestCase):
                                                 "slot": "candidate_outputs"}],
                                              "candidate_outputs", "verify", prior)
 
+    def test_address_space_incompatibility_is_rejected_before_run_reservation(self):
+        import research_execution
+        from research_execution import GateError, run_program
+
+        cap = 512 * 1024 * 1024
+        config = {
+            "runs": [{"run_id": "candidate", "phase_id": "campaign"}],
+            "limits": {"max_address_space_bytes": 4 * 1024 * 1024 * 1024},
+            "continuation_plan": None,
+        }
+        with (mock.patch.object(research_execution, "read_frozen_program",
+                                return_value=({}, config, "a" * 64)),
+              mock.patch.object(research_execution.resource, "getrlimit",
+                                return_value=(cap, cap)),
+              mock.patch.object(research_execution, "_authorize_program_run") as authorize):
+            with self.assertRaisesRegex(
+                    GateError,
+                    "requested address-space limit 4294967296 bytes exceeds inherited RLIMIT_AS hard limit 536870912 bytes; no invocation reserved"):
+                run_program(Path("/unused"), "candidate")
+            authorize.assert_not_called()
+
     def test_candidate_output_argv_expansion_preserves_order_and_scalar_behavior(self):
         first, second = Path("/tmp/candidate-a.json"), Path("/tmp/candidate-b.json")
         descriptor = {"stages": {"verifier": {"argv": ["/usr/bin/python3", "verify.py",

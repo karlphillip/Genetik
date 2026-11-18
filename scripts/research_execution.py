@@ -3245,6 +3245,17 @@ def run_program(directory: Path, run_id: str) -> dict:
     if run_id not in runs:
         raise GateError("run_id is not allowlisted by the frozen bounded-program protocol")
     run = runs[run_id]
+    # Refuse an unenforceable child limit before _authorize_program_run writes
+    # a reservation. In particular, a coordinator worker with a 512 MiB hard
+    # RLIMIT_AS cannot raise a child to a frozen 4 GiB request.
+    _, inherited_hard = resource.getrlimit(resource.RLIMIT_AS)
+    requested_address_space = config["limits"]["max_address_space_bytes"]
+    if (inherited_hard != resource.RLIM_INFINITY
+            and requested_address_space > inherited_hard):
+        raise GateError(
+            "requested address-space limit "
+            f"{requested_address_space} bytes exceeds inherited RLIMIT_AS hard limit "
+            f"{inherited_hard} bytes; no invocation reserved")
     continuation = config.get("continuation_plan")
     if continuation is not None:
         active_guard = _ACTIVE_COORDINATOR_GUARD

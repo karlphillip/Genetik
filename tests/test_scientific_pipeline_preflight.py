@@ -217,6 +217,11 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         receipt = json.loads(self.receipt_path.read_text())
         self.assertEqual(receipt["status"], "passed")
+        self.assertEqual(receipt["schema"], 2)
+        self.assertEqual(receipt["ordered_output_fanin"]["source_run_ids"],
+                         ["synthetic-run-a", "synthetic-run-b"])
+        self.assertTrue(receipt["ordered_output_fanin"]["identity_and_order_verified"])
+        self.assertTrue(receipt["ordered_output_fanin"]["integrity_tampering_rejected"])
         self.assertEqual([r["control_id"] for r in receipt["run_bindings"]], ["offset-a", "offset-b"])
         self.assertEqual([s["stage"] for s in receipt["stages"]], ["runner", "verifier", "scorer", "aggregator"])
         self.assertTrue(Path(receipt["evidence_directory"], "pipeline", "scientific-report.json").is_file())
@@ -232,11 +237,65 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
             "protocol_binding_sha256": receipt["protocol_binding_sha256"],
         }
         self.assertEqual(module.verify_admission(self.protocol)["spec_path"], self.spec_path.resolve())
+        incomplete_receipt = dict(receipt)
+        incomplete_receipt.pop("ordered_output_fanin")
+        self.receipt_path.chmod(0o644)
+        self.receipt_path.write_text(json.dumps(incomplete_receipt, sort_keys=True))
+        self.protocol["admission_preflight"]["receipt_sha256"] = sha(self.receipt_path.read_bytes())
+        for item in self.protocol["frozen_artifacts"]:
+            if item["id"] == self.receipt_path.stem:
+                item["sha256"] = self.protocol["admission_preflight"]["receipt_sha256"]
+        with self.assertRaisesRegex(module.PreflightError, "lacks complete synthetic ordered output fan-in evidence"):
+            module.verify_admission(self.protocol)
+        self.receipt_path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n")
+        self.protocol["admission_preflight"]["receipt_sha256"] = sha(self.receipt_path.read_bytes())
+        for item in self.protocol["frozen_artifacts"]:
+            if item["id"] == self.receipt_path.stem:
+                item["sha256"] = self.protocol["admission_preflight"]["receipt_sha256"]
         report_path = Path(receipt["evidence_directory"], "pipeline", "scientific-report.json")
         report_path.chmod(0o644)
         report_path.write_text('{"status":"passed","assessment_source":"synthetic"}')
         with self.assertRaises(module.PreflightError):
             module.verify_admission(self.protocol)
+
+    def test_unenforceable_address_space_refused_before_preflight_child_launch(self):
+        cap = 512 * 1024 * 1024
+        with mock.patch.object(preflight_module.resource, "getrlimit", return_value=(cap, cap)), \
+                mock.patch.object(preflight_module.subprocess, "Popen") as popen:
+            with self.assertRaisesRegex(preflight_module.PreflightError,
+                                        "inherited RLIMIT_AS hard limit is 536870912 bytes"):
+                preflight_module._invoke(
+                    "runner", {"argv": ["/not-launched"], "sha256": "0" * 64},
+                    Path("/unused"), Path("/unused"), 1.0, 1, 4 * 1024**3, 1024)
+            popen.assert_not_called()
+
+    def test_continuation_address_space_mismatch_refused_before_worker_admission(self):
+        cap = 512 * 1024 * 1024
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            program_dir = root / "frozen-program"
+            program_dir.mkdir()
+            protocol_path = root / "protocol.json"
+            protocol_path.write_text(json.dumps({
+                "pipeline_descriptor": {},
+                "execution_program_dir": str(program_dir),
+            }))
+            config = {"limits": {"max_address_space_bytes": 4 * 1024**3},
+                      "continuation_plan": {"primary_preflight": []}}
+            with (mock.patch.object(preflight_module, "_resolve_execution_program_directory",
+                                    return_value=program_dir),
+                  mock.patch("research_execution.read_frozen_program",
+                             return_value=({}, config, "a" * 64)),
+                  mock.patch.object(preflight_module.resource, "getrlimit",
+                                   side_effect=[(preflight_module.resource.RLIM_INFINITY,
+                                                 preflight_module.resource.RLIM_INFINITY), (cap, cap)]),
+                  mock.patch.object(preflight_module.resource, "setrlimit"),
+                  mock.patch("research_execution.record_supervised_coordinator_worker") as record,
+                  mock.patch.object(preflight_module.sys, "stderr")):
+                result = preflight_module._supervise_continuation_cli(
+                    ["--protocol", str(protocol_path)])
+            self.assertEqual(result, 2)
+            record.assert_not_called()
 
     def test_parent_assessment_environment_is_not_inherited(self):
         self.write_inputs()

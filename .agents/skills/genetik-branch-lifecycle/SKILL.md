@@ -29,7 +29,8 @@ Read and apply this skill at the **start and end of every source-changing task**
    git worktree add out/worktrees/<unique-slug> -b <unique-branch> <starting-sha>
    git -C out/worktrees/<unique-slug> rev-parse HEAD
    git -C out/worktrees/<unique-slug> status --short --branch
-   python3 scripts/branch_audit.py --repo out/worktrees/<unique-slug> --base origin/main
+   cd out/worktrees/<unique-slug>
+   python3 scripts/branch_audit.py --repo . --base origin/main
    git worktree list --porcelain
    git branch -avv
    ```
@@ -76,9 +77,10 @@ below pass. Approval to open a PR alone does not authorize merging.
 1. Open a PR targeting `main`; describe scope, compatibility, evidence, supported platforms, limitations, and migration impacts. Keep it Draft until implementation and required qualification are complete.
 2. Verify the PR source ref still equals the tested source SHA, the target is current `main`, all required hosted checks passed for that exact SHA, no blocking review/requested changes remain, and GitHub reports no conflicts. Inspect the final diff again for scope/provenance.
 3. Confirm the task's approval covers integration and no exception applies. If
-   all gates pass, mark the PR ready and merge with the repository's permitted
-   merge method. Do not squash or rebase if doing so would lose development
-   history expected by the task.
+   all gates pass, mark the PR ready and merge with a normal merge commit using
+   `gh pr merge --merge`. This preserves the approved task SHA as an ancestor
+   of `origin/main`, which the post-merge verification requires. Do not squash
+   or rebase.
 4. Fetch `origin/main`; record the merge SHA and verify the source commit is an
    ancestor of it and the intended tree is present. Do not force-push `main`.
 5. In the primary checkout, fast-forward `main` to the verified remote result

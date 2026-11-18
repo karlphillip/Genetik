@@ -2,22 +2,29 @@
 
 ## Required source-task branch lifecycle
 
-- At the beginning and end of every source-changing task, read and apply
-  `.agents/skills/genetik-branch-lifecycle/SKILL.md`. This applies automatically
-  to Codex work in this repository.
-- Start each task from fetched `origin/main` on a unique development branch in
-  a task-owned worktree. Inspect the complete branch/worktree/dirty-state audit
-  before editing; preserve existing user changes and research branches.
-- Routine changes may be integrated into `main` only after required tests and
-  qualification pass for the exact pushed SHA, the PR is conflict-free and
-  review-clear, and the scope and compatibility audit passes. This repository
-  grants standing authorization for that routine merge-commit workflow.
+- Before editing or investigating, fetch `origin/main`, record its full SHA,
+  and create a unique task-owned worktree from that exact SHA. Verify the new
+  worktree's `HEAD`, branch, and clean status before proceeding. Read and apply
+  `.agents/skills/genetik-branch-lifecycle/SKILL.md` at task start and end.
+  Inspect the branch/worktree/dirty-state audit and preserve existing user
+  changes and research branches.
+- At completion, fetch `origin/main` again and report the task `HEAD`, current
+  `main` SHA, and whether `main` advanced since the recorded base. If it
+  advanced, identify qualification needed against the new base. Keep frozen
+  research evidence bound to its original revision.
+- Completion produces a report and recommendation. Do not create a PR, including
+  a draft, until Karl explicitly approves that task. After approval, open the PR
+  against `main`; integrate only within the approval and after required checks,
+  review, mergeability, scope, and compatibility gates pass. No standing or
+  inferred authorization to create or merge PRs applies.
 - Keep research, incomplete/failed qualification, incompatible public API or
   checkpoint changes, significant mathematical-semantic changes, ambiguous
   provenance, and any task that prohibits merging isolated. Never publish,
   tag, or modify release assets without specific authorization.
-- After verified integration, clean up only the completed clean task-owned
-  worktree and branch. Verify remote deletion with an exact-SHA lease. Never
+- After an approved merge, verify the integrated result on fetched `origin/main`.
+  Fast-forward the primary `main` checkout only when safe; preserve local files
+  and report the actual checkout state if they prevent it. Clean up only the
+  completed clean task-owned worktree and branch, with exact-SHA checks. Never
   discard user changes or delete an unknown, dirty, active, or research branch.
 - Use `scripts/branch_audit.py` for the read-only local/fetched-ref inventory;
   separately verify GitHub PR and CI evidence. Qualify changes to this lifecycle

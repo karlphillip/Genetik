@@ -16,30 +16,30 @@ Read and apply this skill at the **start and end of every source-changing task**
 - Do not modify or move tags, publish releases/packages, or modify published assets unless the task explicitly authorizes that specific action.
 - Use `scripts/branch_audit.py` for a read-only inventory. It does not fetch refs or contact GitHub; fetch first and separately verify remote PR/CI state.
 
-## START: isolate the task before editing
+## START: establish GitHub main as the task base
 
-1. From the repository, fetch current refs and verify the base:
+1. Before editing or investigating, fetch current refs and capture the complete
+   `origin/main` SHA. Use that exact SHA to create a new task-owned worktree and
+   unique branch; verify the worktree's `HEAD` equals the captured SHA. Then
+   inspect repository state and the complete branch/worktree/dirty-state audit:
 
    ```sh
    git fetch origin
    git rev-parse origin/main
-   git status --short --branch
+   git worktree add out/worktrees/<unique-slug> -b <unique-branch> <starting-sha>
+   git -C out/worktrees/<unique-slug> rev-parse HEAD
+   git -C out/worktrees/<unique-slug> status --short --branch
+   cd out/worktrees/<unique-slug>
    python3 scripts/branch_audit.py --repo . --base origin/main
    git worktree list --porcelain
    git branch -avv
    ```
 
 2. Inspect all tracked, untracked, and ignored output relevant to the task. Read the audit's unique commits, local/remote divergence, and active/dirty worktrees. Do not reuse another task's branch or worktree. Preserve any existing modifications in place; if they make safe isolation impossible, stop and ask how to proceed.
-3. Select a unique branch name such as `fix/<slug>`, `feature/<slug>`, or `chore/<slug>`. If it already exists, choose another name; never reset it. Record the exact `origin/main` starting SHA and the user's constraints in the task notes.
-4. Create a task-owned worktree from the fetched SHA and verify its branch and cleanliness before implementation:
-
-   ```sh
-   git worktree add out/worktrees/<unique-slug> -b <unique-branch> <starting-sha>
-   git -C out/worktrees/<unique-slug> status --short --branch
-   git -C out/worktrees/<unique-slug> rev-parse HEAD
-   ```
-
-No source edit begins until this isolated branch exists. If a worktree cannot be created safely, retain existing state and report the blocker.
+3. Record the exact base SHA, branch, worktree path, and task constraints. Run
+   builds, tests, and qualification from this worktree. If a worktree cannot be
+   created safely or does not match the captured SHA, retain existing state and
+   report the blocker. Never repurpose an existing task or research worktree.
 
 ## IMPLEMENT: qualify and preserve evidence
 
@@ -47,16 +47,46 @@ No source edit begins until this isolated branch exists. If a worktree cannot be
 2. Run the task's applicable deterministic tests, full required suite, and requested qualification. A routine task is not integration-ready while required validation is missing or failing.
 3. Preserve useful failure reproductions and qualification evidence in the repository's established location. Do not replace historical evidence with a later result.
 4. Review the diff for unrelated files, credentials, generated binaries, omitted dependencies, public API or checkpoint changes, and user modifications. Check `git diff --check`, worktree status, and staged content.
-5. Commit the completed implementation on the task branch. Record its exact source SHA. Push that branch and verify GitHub's branch head is exactly that SHA before opening/updating a PR.
+5. Commit the completed implementation on the task branch and record its exact
+   source SHA. Do not push or open a PR yet.
 
-## INTEGRATE: routine, qualified changes only
+## COMPLETE: report and wait for task approval
 
-Routine source tasks have standing authorization to integrate after every gate below passes. This standing authorization excludes research and the explicit exceptions that follow.
+1. Fetch `origin/main` again. Report the task `HEAD`, current `origin/main`
+   SHA, and whether main advanced from the task's recorded base. Keep frozen
+   research evidence bound to the revision that produced it. If main advanced,
+   identify the rebase/merge and qualification needed against the new base;
+   do not silently move the task branch.
+2. Completion produces a report and recommendation. Wait for Karl's explicit
+   approval for this task before creating any PR, including a draft. Approval
+   must identify the completed task; prior task approvals and repository
+   history do not carry forward.
+3. After approval, open the PR against `main`. Keep it draft while required
+   implementation or qualification remains. A PR or merge approval does not
+   bypass exact-SHA qualification, hosted checks, independent review where
+   required, mergeability, scope, compatibility, or repository protection.
+   Integrate only within the approval given and after all required gates pass.
+
+## INTEGRATE: only after explicit task approval
+
+There is no standing authorization to create or merge a PR. Explicit approval
+for the current completed task is required before PR creation, including a
+draft. Merge only when that approval covers integration and all required gates
+below pass. Approval to open a PR alone does not authorize merging.
 
 1. Open a PR targeting `main`; describe scope, compatibility, evidence, supported platforms, limitations, and migration impacts. Keep it Draft until implementation and required qualification are complete.
 2. Verify the PR source ref still equals the tested source SHA, the target is current `main`, all required hosted checks passed for that exact SHA, no blocking review/requested changes remain, and GitHub reports no conflicts. Inspect the final diff again for scope/provenance.
-3. Confirm no exception applies. If all gates pass, mark the PR ready and merge with a normal merge commit (`gh pr merge --merge`). Do not squash or rebase if doing so would lose the development history expected by the task.
-4. Fetch `origin/main`; record the merge SHA and verify the source commit is an ancestor of it and the intended tree is present. Do not force-push `main`.
+3. Confirm the task's approval covers integration and no exception applies. If
+   all gates pass, mark the PR ready and merge with a normal merge commit using
+   `gh pr merge --merge`. This preserves the approved task SHA as an ancestor
+   of `origin/main`, which the post-merge verification requires. Do not squash
+   or rebase.
+4. Fetch `origin/main`; record the merge SHA and verify the source commit is an
+   ancestor of it and the intended tree is present. Do not force-push `main`.
+5. In the primary checkout, fast-forward `main` to the verified remote result
+   only if safe. If local changes or files prevent it, preserve them and report
+   the checkout's actual branch, SHA, and status; do not reset, clean, or stash
+   broadly.
 
 Automatic integration is **prohibited** if tests/qualification fail or are incomplete; work is exploratory research with unresolved results; a public API or checkpoint format is incompatible; mathematical/numerical semantics change significantly; conflicts or blocking reviews remain; the task forbids merging; publication/tag/release authorization is needed; or implementation/provenance is ambiguous. Keep the branch and report the blocker. Ask for direction when needed; do not delete the branch or silently resolve user changes.
 

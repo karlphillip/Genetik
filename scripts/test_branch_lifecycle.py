@@ -120,16 +120,21 @@ class BranchLifecycleTests(unittest.TestCase):
 
     def test_failed_ci_blocks_integration(self) -> None:
         evidence = {key: True for key in (
-            "routine_authorized", "tests_complete", "exact_ci_success", "source_head_unchanged",
+            "task_pr_approved", "task_merge_approved", "tests_complete",
+            "exact_ci_success", "source_head_unchanged",
             "conflict_free", "review_clear", "scope_verified", "compatible", "provenance_known",
         )}
         self.assertTrue(integration_allowed(evidence))
         for gate in ("tests_complete", "exact_ci_success", "source_head_unchanged", "conflict_free",
                      "review_clear", "scope_verified", "compatible", "provenance_known",
-                     "routine_authorized"):
+                     "task_pr_approved", "task_merge_approved"):
             blocked = dict(evidence)
             blocked[gate] = False
             self.assertFalse(integration_allowed(blocked), gate)
+        legacy_standing_authorization = {key: value for key, value in evidence.items()
+                                         if key not in ("task_pr_approved", "task_merge_approved")}
+        legacy_standing_authorization["routine_authorized"] = True
+        self.assertFalse(integration_allowed(legacy_standing_authorization))
         self.assertFalse(integration_allowed({}))
 
     def test_changed_remote_head_blocks_sha_leased_deletion(self) -> None:

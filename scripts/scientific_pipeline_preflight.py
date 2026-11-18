@@ -101,10 +101,12 @@ def _supervise_continuation_cli(argv: list[str]) -> int | None:
     supervisor_started_cpu = time.process_time()
     import resource
     launcher_limit_error = None
+    effective_coordinator_limit = None
     try:
         _, hard = resource.getrlimit(resource.RLIMIT_AS)
         cap = (min(_COORDINATOR_MEMORY_LIMIT_BYTES, hard)
                if hard != resource.RLIM_INFINITY else _COORDINATOR_MEMORY_LIMIT_BYTES)
+        effective_coordinator_limit = cap
         resource.setrlimit(resource.RLIMIT_AS, (cap, cap))
         if resource.getrlimit(resource.RLIMIT_AS) != (cap, cap):
             raise RuntimeError("coordinator launcher could not enforce address-space limit")
@@ -132,6 +134,20 @@ def _supervise_continuation_cli(argv: list[str]) -> int | None:
     from research_execution import (CONTINUATION_MEMORY_BYTES, GateError,
                                     read_frozen_program, record_supervised_coordinator_worker)
     _, config, _ = read_frozen_program(execution_dir)
+    requested_address_space = config.get("limits", {}).get("max_address_space_bytes")
+    if (isinstance(requested_address_space, int)
+            and not isinstance(requested_address_space, bool)
+            and requested_address_space > (effective_coordinator_limit
+                                           if effective_coordinator_limit is not None
+                                           else CONTINUATION_MEMORY_BYTES)):
+        enforced_limit = (effective_coordinator_limit if effective_coordinator_limit is not None
+                          else CONTINUATION_MEMORY_BYTES)
+        print(
+            "scientific-pipeline-preflight: refused before coordinator admission: "
+            f"bounded-program requests {requested_address_space} bytes of address space, "
+            f"above the effective {enforced_limit}-byte coordinator address-space ceiling",
+            file=sys.stderr)
+        return 2
     plan = config.get("continuation_plan")
     if not isinstance(plan, dict):
         return None
@@ -731,6 +747,12 @@ def validate_spec(spec: dict[str, Any], base: Path, protocol: dict[str, Any]) ->
 def _invoke(stage: str, command_spec: dict[str, Any], manifest: Path, workdir: Path,
             timeout: float, cpu_seconds: int, address_space_bytes: int,
             output_cap: int) -> dict[str, Any]:
+    _, inherited_hard = resource.getrlimit(resource.RLIMIT_AS)
+    if (inherited_hard != resource.RLIM_INFINITY
+            and address_space_bytes > inherited_hard):
+        raise PreflightError(
+            f"{stage} requests address-space limit {address_space_bytes} bytes, "
+            f"but inherited RLIMIT_AS hard limit is {inherited_hard} bytes")
     argv = [arg.replace("{manifest}", str(manifest)).replace("{workdir}", str(workdir)).replace("{stage}", stage) for arg in command_spec["argv"]]
     started = time.monotonic()
     def set_child_limits() -> None:
@@ -806,6 +828,96 @@ def _invoke(stage: str, command_spec: dict[str, Any], manifest: Path, workdir: P
     return {"stage": stage, "argv": argv, "executable_sha256": command_spec["sha256"], "returncode": returncode, "wall_seconds": wall, "stdout_sha256": digest(stdout), "stderr_sha256": digest(stderr)}
 
 
+def _validate_synthetic_ordered_output_fanin(evidence_root: Path) -> dict[str, Any]:
+    """Exercise the production ordered output resolver on isolated synthetic receipts."""
+    from research_execution import GateError, _resolve_pipeline_inputs
+
+    synthetic_root = evidence_root / "ordered-output-fanin"
+    events = []
+    references = []
+    expected_paths = []
+    expected_hashes = []
+    source_ids = ["synthetic-run-a", "synthetic-run-b"]
+    protocol_sha = "a" * 64
+    for index, run_id in enumerate(source_ids):
+        run_dir = synthetic_root / "runs" / run_id
+        outputs_dir = run_dir / "outputs"
+        outputs_dir.mkdir(parents=True)
+        output_path = outputs_dir / "candidate_outputs.json"
+        payload = canonical({"run_id": run_id, "ordinal": index, "synthetic": True}) + b"\n"
+        output_path.write_bytes(payload)
+        receipt_path = run_dir / "receipt.json"
+        receipt = {
+            "protocol_sha256": protocol_sha, "run_id": run_id,
+            "invocation_id": f"inv-{run_id}", "status": "completed",
+            "output_slots": {"candidate_outputs": {
+                "path": str(output_path.resolve()), "sha256": digest(payload)}},
+        }
+        receipt_path.write_bytes(canonical(receipt) + b"\n")
+        events.append({
+            "event": "completed", "protocol_sha256": protocol_sha,
+            "run_id": run_id, "invocation_id": f"inv-{run_id}",
+            "status": "completed", "receipt_path": str(receipt_path.resolve()),
+            "receipt_sha256": file_sha(receipt_path),
+        })
+        references.append({"kind": "run_output", "run_id": run_id,
+                           "slot": "candidate_outputs"})
+        expected_paths.append(str(output_path.resolve()))
+        expected_hashes.append(digest(payload))
+
+    target_run_id = "synthetic-verifier"
+    run_by_id = {run_id: {"run_id": run_id, "stage_id": "runner"}
+                 for run_id in source_ids}
+    run_by_id[target_run_id] = {"run_id": target_run_id, "stage_id": "verifier"}
+    config = {
+        "pipeline_descriptor": {"schema": 1, "stages": {"verifier": {
+            "argv": ["/synthetic/verifier", "{candidate_outputs}"],
+            "input_roles": ["candidate_outputs"], "output_roles": ["verified_receipts"],
+        }}},
+        "run_by_id": run_by_id, "artifacts": {}, "ledger_dir": synthetic_root,
+        "continuation_plan": None,
+    }
+    target = {"run_id": target_run_id, "stage_id": "verifier", "phase_id": "preflight",
+              "slot_bindings": {"candidate_outputs": references}}
+    target_dir = synthetic_root / "runs" / target_run_id
+    target_dir.mkdir(parents=True)
+    argv, input_hashes, _, input_paths = _resolve_pipeline_inputs(
+        synthetic_root, config, target, target_dir, protocol_sha, events)
+    if (argv != ["/synthetic/verifier", *expected_paths]
+            or input_hashes.get("candidate_outputs") != expected_hashes
+            or input_paths.get("candidate_outputs") != expected_paths):
+        raise PreflightError("synthetic ordered output fan-in changed identity, order, or integrity")
+    for ordinal, (run_id, path) in enumerate(zip(source_ids, expected_paths)):
+        try:
+            output_identity = json.loads(Path(path).read_bytes())
+        except (OSError, ValueError) as error:
+            raise PreflightError("synthetic ordered output fan-in contains unreadable evidence") from error
+        if output_identity != {"run_id": run_id, "ordinal": ordinal, "synthetic": True}:
+            raise PreflightError("synthetic ordered output fan-in contains a misidentified output")
+
+    first_output = Path(expected_paths[0])
+    original = first_output.read_bytes()
+    first_output.write_bytes(original + b"tampered")
+    try:
+        try:
+            _resolve_pipeline_inputs(synthetic_root, config, target, target_dir,
+                                     protocol_sha, events)
+        except GateError:
+            integrity_tampering_rejected = True
+        else:
+            raise PreflightError("synthetic ordered output fan-in accepted a hash-mismatched output")
+    finally:
+        first_output.write_bytes(original)
+
+    return {
+        "status": "passed", "source_run_ids": source_ids,
+        "ordered_output_sha256": expected_hashes,
+        "identity_and_order_verified": True,
+        "integrity_tampering_rejected": integrity_tampering_rejected,
+        "evidence_paths": [str(Path(path).relative_to(evidence_root)) for path in expected_paths],
+    }
+
+
 def _invoke_descriptor_stage(stage: str, execution_program_dir: Path, run_id: str,
                              workdir: Path) -> dict[str, Any]:
     # Lazy import avoids the research_execution <-> preflight module cycle.
@@ -878,6 +990,7 @@ def _run_preflight_impl(protocol_path: Path, spec_path: Path, receipt_path: Path
         workdir = evidence_root / "pipeline"
         workdir.mkdir()
         paths, runs, normalized_descriptor = validate_spec(spec, synthetic, protocol)
+        ordered_output_fanin = _validate_synthetic_ordered_output_fanin(evidence_root)
         controls = []
         for control in spec["controls"]:
             controls.append({
@@ -1195,7 +1308,7 @@ def _run_preflight_impl(protocol_path: Path, spec_path: Path, receipt_path: Path
             for path in sorted(evidence_root.rglob("*")) if path.is_file()
         }
         receipt = {
-            "schema": 1, "status": "passed", "preflight_id": spec["preflight_id"],
+            "schema": 2, "status": "passed", "preflight_id": spec["preflight_id"],
             "protocol_binding_sha256": protocol_binding(protocol),
             "protocol_input_sha256": digest(protocol_bytes), "spec_sha256": digest(spec_bytes),
             "evidence_directory": str(evidence_root.resolve()),
@@ -1218,6 +1331,7 @@ def _run_preflight_impl(protocol_path: Path, spec_path: Path, receipt_path: Path
             "run_bindings": run_bindings,
             "pipeline_identity": (protocol.get("pipeline_identity") if descriptor is not None else spec["commands"]),
             "pipeline_descriptor_sha256": (protocol["pipeline_descriptor"]["sha256"] if descriptor is not None else None),
+            "ordered_output_fanin": ordered_output_fanin,
             "stages": stages,
             "report_sha256": file_sha(report),
             "evidence_hashes": evidence_hashes,
@@ -1330,8 +1444,41 @@ def verify_admission(protocol: dict[str, Any]) -> dict[str, Any]:
         raise PreflightError("admission preflight receipt missing or hash mismatch")
     receipt = json.loads(receipt_path.read_text())
     binding = protocol_binding(protocol)
-    if receipt.get("schema") != 1 or receipt.get("status") != "passed" or receipt.get("preflight_id") != admission["preflight_id"]:
+    if receipt.get("schema") not in {1, 2} or receipt.get("status") != "passed" or receipt.get("preflight_id") != admission["preflight_id"]:
         raise PreflightError("admission preflight receipt is not a successful matching receipt")
+    if receipt.get("schema") == 2:
+        fanin = receipt.get("ordered_output_fanin")
+        evidence_root = Path(receipt.get("evidence_directory", "")).resolve()
+        if (not isinstance(fanin, dict) or fanin.get("status") != "passed"
+                or fanin.get("source_run_ids") != ["synthetic-run-a", "synthetic-run-b"]
+                or fanin.get("identity_and_order_verified") is not True
+                or fanin.get("integrity_tampering_rejected") is not True
+                or not isinstance(fanin.get("ordered_output_sha256"), list)
+                or len(fanin["ordered_output_sha256"]) != 2
+                or not isinstance(fanin.get("evidence_paths"), list)
+                or len(fanin["evidence_paths"]) != 2):
+            raise PreflightError("admission preflight lacks complete synthetic ordered output fan-in evidence")
+        for relative, expected_sha in zip(fanin["evidence_paths"], fanin["ordered_output_sha256"]):
+            candidate = Path(relative)
+            if candidate.is_absolute() or ".." in candidate.parts:
+                raise PreflightError("synthetic ordered output fan-in evidence path is unsafe")
+            output = (evidence_root / candidate).resolve()
+            if (not output.is_relative_to(evidence_root) or not output.is_file()
+                    or file_sha(output) != expected_sha):
+                raise PreflightError("synthetic ordered output fan-in evidence is missing or hash-mismatched")
+        expected_run_ids = fanin["source_run_ids"]
+        resolved_outputs = [(evidence_root / relative).resolve()
+                            for relative in fanin["evidence_paths"]]
+        if len(set(resolved_outputs)) != len(expected_run_ids):
+            raise PreflightError("synthetic ordered output fan-in evidence contains duplicate outputs")
+        for ordinal, (run_id, output) in enumerate(zip(expected_run_ids, resolved_outputs)):
+            try:
+                identity = json.loads(output.read_bytes())
+            except (OSError, ValueError) as error:
+                raise PreflightError("synthetic ordered output fan-in evidence is unreadable") from error
+            if (not isinstance(identity, dict) or identity.get("run_id") != run_id
+                    or identity.get("ordinal") != ordinal or identity.get("synthetic") is not True):
+                raise PreflightError("synthetic ordered output fan-in producer identity or ordinal is out of order")
     if receipt.get("spec_sha256") != admission["spec_sha256"] or receipt.get("protocol_binding_sha256") != binding or admission["protocol_binding_sha256"] != binding:
         raise PreflightError("admission preflight is bound to a different protocol")
     execution_program_dir = None

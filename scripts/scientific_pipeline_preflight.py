@@ -101,10 +101,12 @@ def _supervise_continuation_cli(argv: list[str]) -> int | None:
     supervisor_started_cpu = time.process_time()
     import resource
     launcher_limit_error = None
+    effective_coordinator_limit = None
     try:
         _, hard = resource.getrlimit(resource.RLIMIT_AS)
         cap = (min(_COORDINATOR_MEMORY_LIMIT_BYTES, hard)
                if hard != resource.RLIM_INFINITY else _COORDINATOR_MEMORY_LIMIT_BYTES)
+        effective_coordinator_limit = cap
         resource.setrlimit(resource.RLIMIT_AS, (cap, cap))
         if resource.getrlimit(resource.RLIMIT_AS) != (cap, cap):
             raise RuntimeError("coordinator launcher could not enforce address-space limit")
@@ -135,11 +137,15 @@ def _supervise_continuation_cli(argv: list[str]) -> int | None:
     requested_address_space = config.get("limits", {}).get("max_address_space_bytes")
     if (isinstance(requested_address_space, int)
             and not isinstance(requested_address_space, bool)
-            and requested_address_space > CONTINUATION_MEMORY_BYTES):
+            and requested_address_space > (effective_coordinator_limit
+                                           if effective_coordinator_limit is not None
+                                           else CONTINUATION_MEMORY_BYTES)):
+        enforced_limit = (effective_coordinator_limit if effective_coordinator_limit is not None
+                          else CONTINUATION_MEMORY_BYTES)
         print(
             "scientific-pipeline-preflight: refused before coordinator admission: "
             f"bounded-program requests {requested_address_space} bytes of address space, "
-            f"above the enforced {CONTINUATION_MEMORY_BYTES}-byte coordinator hard limit",
+            f"above the effective {enforced_limit}-byte coordinator address-space ceiling",
             file=sys.stderr)
         return 2
     plan = config.get("continuation_plan")
@@ -1460,6 +1466,19 @@ def verify_admission(protocol: dict[str, Any]) -> dict[str, Any]:
             if (not output.is_relative_to(evidence_root) or not output.is_file()
                     or file_sha(output) != expected_sha):
                 raise PreflightError("synthetic ordered output fan-in evidence is missing or hash-mismatched")
+        expected_run_ids = fanin["source_run_ids"]
+        resolved_outputs = [(evidence_root / relative).resolve()
+                            for relative in fanin["evidence_paths"]]
+        if len(set(resolved_outputs)) != len(expected_run_ids):
+            raise PreflightError("synthetic ordered output fan-in evidence contains duplicate outputs")
+        for ordinal, (run_id, output) in enumerate(zip(expected_run_ids, resolved_outputs)):
+            try:
+                identity = json.loads(output.read_bytes())
+            except (OSError, ValueError) as error:
+                raise PreflightError("synthetic ordered output fan-in evidence is unreadable") from error
+            if (not isinstance(identity, dict) or identity.get("run_id") != run_id
+                    or identity.get("ordinal") != ordinal or identity.get("synthetic") is not True):
+                raise PreflightError("synthetic ordered output fan-in producer identity or ordinal is out of order")
     if receipt.get("spec_sha256") != admission["spec_sha256"] or receipt.get("protocol_binding_sha256") != binding or admission["protocol_binding_sha256"] != binding:
         raise PreflightError("admission preflight is bound to a different protocol")
     execution_program_dir = None

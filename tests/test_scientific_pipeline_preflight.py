@@ -211,6 +211,32 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
     def invoke(self):
         return subprocess.run([sys.executable, str(PREFLIGHT), "--protocol", str(self.protocol_path), "--spec", str(self.spec_path), "--receipt", str(self.receipt_path)], capture_output=True, text=True)
 
+    def run_and_bind_receipt(self):
+        self.write_inputs()
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads(self.receipt_path.read_text())
+        for artifact in (self.spec_path, self.receipt_path):
+            self.protocol["frozen_artifacts"].append({
+                "id": artifact.stem,
+                "role": "admission_preflight_spec" if artifact == self.spec_path else "admission_preflight_receipt",
+                "path": str(artifact), "sha256": sha(artifact.read_bytes())})
+        self.protocol["admission_preflight"] = {
+            "preflight_id": receipt["preflight_id"], "spec_path": str(self.spec_path),
+            "spec_sha256": sha(self.spec_path.read_bytes()), "receipt_path": str(self.receipt_path),
+            "receipt_sha256": sha(self.receipt_path.read_bytes()),
+            "protocol_binding_sha256": receipt["protocol_binding_sha256"]}
+        return receipt
+
+    def rewrite_bound_receipt(self, receipt):
+        self.receipt_path.chmod(0o644)
+        self.receipt_path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n")
+        receipt_hash = sha(self.receipt_path.read_bytes())
+        self.protocol["admission_preflight"]["receipt_sha256"] = receipt_hash
+        for artifact in self.protocol["frozen_artifacts"]:
+            if artifact["id"] == self.receipt_path.stem:
+                artifact["sha256"] = receipt_hash
+
     def test_two_control_end_to_end_preflight_passes_and_is_bound(self):
         self.write_inputs()
         result = self.invoke()
@@ -270,7 +296,8 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
             popen.assert_not_called()
 
     def test_continuation_address_space_mismatch_refused_before_worker_admission(self):
-        cap = 512 * 1024 * 1024
+        parent_hard_cap = 256 * 1024 * 1024
+        requested = 512 * 1024 * 1024
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             program_dir = root / "frozen-program"
@@ -280,22 +307,51 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
                 "pipeline_descriptor": {},
                 "execution_program_dir": str(program_dir),
             }))
-            config = {"limits": {"max_address_space_bytes": 4 * 1024**3},
+            config = {"limits": {"max_address_space_bytes": requested},
                       "continuation_plan": {"primary_preflight": []}}
             with (mock.patch.object(preflight_module, "_resolve_execution_program_directory",
                                     return_value=program_dir),
                   mock.patch("research_execution.read_frozen_program",
                              return_value=({}, config, "a" * 64)),
                   mock.patch.object(preflight_module.resource, "getrlimit",
-                                   side_effect=[(preflight_module.resource.RLIM_INFINITY,
-                                                 preflight_module.resource.RLIM_INFINITY), (cap, cap)]),
+                                   return_value=(parent_hard_cap, parent_hard_cap)),
                   mock.patch.object(preflight_module.resource, "setrlimit"),
                   mock.patch("research_execution.record_supervised_coordinator_worker") as record,
+                  mock.patch("coordinator_supervisor.supervise") as supervise,
                   mock.patch.object(preflight_module.sys, "stderr")):
                 result = preflight_module._supervise_continuation_cli(
                     ["--protocol", str(protocol_path)])
             self.assertEqual(result, 2)
             record.assert_not_called()
+            supervise.assert_not_called()
+
+    def test_schema_two_fanin_rejects_swapped_and_duplicate_producer_evidence(self):
+        receipt = self.run_and_bind_receipt()
+        module = self.load_preflight()
+        self.assertEqual(module.verify_admission(self.protocol)["receipt_path"],
+                         self.receipt_path.resolve())
+        swapped = json.loads(json.dumps(receipt))
+        swapped["ordered_output_fanin"]["evidence_paths"].reverse()
+        swapped["ordered_output_fanin"]["ordered_output_sha256"].reverse()
+        self.rewrite_bound_receipt(swapped)
+        with self.assertRaisesRegex(module.PreflightError, "producer identity or ordinal"):
+            module.verify_admission(self.protocol)
+
+        duplicate = json.loads(json.dumps(receipt))
+        duplicate["ordered_output_fanin"]["evidence_paths"][1] = duplicate["ordered_output_fanin"]["evidence_paths"][0]
+        duplicate["ordered_output_fanin"]["ordered_output_sha256"][1] = duplicate["ordered_output_fanin"]["ordered_output_sha256"][0]
+        self.rewrite_bound_receipt(duplicate)
+        with self.assertRaisesRegex(module.PreflightError, "duplicate outputs"):
+            module.verify_admission(self.protocol)
+
+    def test_schema_one_admission_receipt_remains_compatible(self):
+        receipt = self.run_and_bind_receipt()
+        receipt["schema"] = 1
+        receipt.pop("ordered_output_fanin")
+        self.rewrite_bound_receipt(receipt)
+        module = self.load_preflight()
+        self.assertEqual(module.verify_admission(self.protocol)["receipt_path"],
+                         self.receipt_path.resolve())
 
     def test_parent_assessment_environment_is_not_inherited(self):
         self.write_inputs()

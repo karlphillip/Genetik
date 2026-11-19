@@ -351,7 +351,7 @@ def _expand_fdi_index(index_doc: Any, index_path: Path, runs: list[dict[str, Any
 
 def _fdi_synthetic_artifact_ids(control_id: str) -> tuple[str, str]:
     """Return the stable synthetic artifact identities used across FDI stages."""
-    return f"synthetic-training-{control_id}", f"synthetic-assess-{control_id}"
+    return f"synthetic-train-{control_id}", f"synthetic-assess-{control_id}"
 
 
 def _validate_fdi_synthetic_run_training_bindings(

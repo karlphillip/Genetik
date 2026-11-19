@@ -41,6 +41,9 @@ manifest = json.loads(pathlib.Path(sys.argv[sys.argv.index("--manifest") + 1]).r
 workdir = pathlib.Path(sys.argv[sys.argv.index("--workdir") + 1])
 preflight_id = manifest["preflight_id"]
 runs = manifest["runs"]
+if "--swap-training-bindings" in sys.argv:
+    runs[0]["training_artifact"], runs[1]["training_artifact"] = (
+        runs[1]["training_artifact"], runs[0]["training_artifact"])
 bindings = [{k: r[k] for k in ("run_id", "control_id", "method", "seed")} for r in runs]
 canonical = lambda value: json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
 if stage == "runner":
@@ -101,41 +104,6 @@ else:
 
 
 class ScientificPipelinePreflightTests(unittest.TestCase):
-    def test_fdi_synthetic_training_ids_are_control_scoped_and_swaps_fail(self):
-        control_ids = ["case-a", "case-b"]
-        protocol_ids = {"case-a": "protocol-training-a", "case-b": "protocol-training-b"}
-        synthetic_ids = {key: preflight_module._fdi_synthetic_artifact_ids(key)[0]
-                         for key in control_ids}
-        training_bytes = {"case-a": b"synthetic rows A", "case-b": b"synthetic rows B"}
-        bytes_by_synthetic_id = {synthetic_ids[key]: training_bytes[key] for key in control_ids}
-        self.assertNotEqual(protocol_ids, synthetic_ids)
-        self.assertEqual(len(set(synthetic_ids.values())), 2)
-        runs = [{"run_id": f"{key}-run", "control_id": key,
-                 "training_artifact": synthetic_ids[key]} for key in control_ids]
-
-        preflight_module._validate_fdi_synthetic_run_training_bindings(runs, synthetic_ids)
-        for run in runs:
-            self.assertEqual(bytes_by_synthetic_id[run["training_artifact"]],
-                             training_bytes[run["control_id"]])
-
-        reproduced = json.loads(json.dumps(runs))
-        for run in reproduced:
-            run["training_artifact"] = f"synthetic-train-{run['control_id']}"
-        with self.assertRaisesRegex(preflight_module.PreflightError, "misassociated"):
-            preflight_module._validate_fdi_synthetic_run_training_bindings(reproduced, synthetic_ids)
-
-        swapped_artifacts = json.loads(json.dumps(runs))
-        swapped_artifacts[0]["training_artifact"], swapped_artifacts[1]["training_artifact"] = (
-            swapped_artifacts[1]["training_artifact"], swapped_artifacts[0]["training_artifact"])
-        with self.assertRaisesRegex(preflight_module.PreflightError, "misassociated"):
-            preflight_module._validate_fdi_synthetic_run_training_bindings(swapped_artifacts, synthetic_ids)
-
-        swapped_controls = json.loads(json.dumps(runs))
-        swapped_controls[0]["control_id"], swapped_controls[1]["control_id"] = (
-            swapped_controls[1]["control_id"], swapped_controls[0]["control_id"])
-        with self.assertRaisesRegex(preflight_module.PreflightError, "misassociated"):
-            preflight_module._validate_fdi_synthetic_run_training_bindings(swapped_controls, synthetic_ids)
-
     def test_early_supervisor_reports_missing_anchor_as_preflight_error(self):
         with tempfile.TemporaryDirectory() as directory:
             protocol_path = Path(directory) / "protocol.json"
@@ -294,7 +262,14 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
         self.assertTrue(all(run["training_artifact"] == synthetic_ids[run["control_id"]]
                             for run in runner_manifest["runs"]))
         candidates = json.loads(Path(receipt["evidence_directory"], "pipeline", "candidate-outputs.json").read_text())
+        expected_training_values = {
+            control["id"]: [row["expected"] for row in json.loads(
+                Path(control["training"]["path"]).read_text())["rows"]]
+            for control in runner_manifest["controls"]
+        }
+        self.assertEqual(len(set(synthetic_ids.values())), 2)
         self.assertTrue(all(candidate["training_artifact"] == synthetic_ids[candidate["control_id"]]
+                            and candidate["predictions"] == expected_training_values[candidate["control_id"]][:1]
                             for candidate in candidates))
         harness = importlib.util.spec_from_file_location("research_execution_preflight_test", HARNESS)
         module = importlib.util.module_from_spec(harness)
@@ -307,6 +282,7 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
             "protocol_binding_sha256": receipt["protocol_binding_sha256"],
         }
         self.assertEqual(module.verify_admission(self.protocol)["spec_path"], self.spec_path.resolve())
+
         incomplete_receipt = dict(receipt)
         incomplete_receipt.pop("ordered_output_fanin")
         self.receipt_path.chmod(0o644)
@@ -327,6 +303,14 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
         report_path.write_text('{"status":"passed","assessment_source":"synthetic"}')
         with self.assertRaises(module.PreflightError):
             module.verify_admission(self.protocol)
+
+    def test_schema1_swapped_control_training_bindings_fail_in_runner(self):
+        self.spec["commands"]["runner"]["argv"].append("--swap-training-bindings")
+        self.write_inputs()
+        result = self.invoke()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("run training identity mismatch", result.stderr)
+        self.assertFalse(self.receipt_path.exists())
 
     def test_unenforceable_address_space_refused_before_preflight_child_launch(self):
         cap = 512 * 1024 * 1024

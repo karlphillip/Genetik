@@ -29,7 +29,8 @@ import uuid
 
 # The admission tool is sibling research tooling, not a library dependency.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from scientific_pipeline_preflight import PreflightError, verify_admission
+from scientific_pipeline_preflight import (PreflightError, effective_coordinator_address_space_limit,
+                                           verify_admission)
 from bounded_process import run_bounded_process
 from research_pipeline import PipelineDescriptorError, validate_descriptor as validate_pipeline_descriptor, expand_argv as expand_pipeline_argv
 
@@ -2632,6 +2633,13 @@ def freeze_program_protocol(source: Path, destination: Path) -> str:
     raw = source.read_bytes()
     protocol = json.loads(raw)
     config = _validate_bounded_program(protocol)
+    if config["pipeline_descriptor"] is not None:
+        requested = config["limits"]["max_address_space_bytes"]
+        effective = effective_coordinator_address_space_limit()
+        if requested > effective:
+            raise GateError(
+                f"bounded program requests {requested} bytes of address space, "
+                f"above the effective {effective}-byte scientific preflight coordinator ceiling")
     if (config["ledger_dir"] / "protocol-successor.json").exists():
         raise GateError("program ledger already has an active successor; use its registered frozen package")
     _initialize_process_ledger(config)

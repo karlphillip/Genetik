@@ -906,6 +906,74 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         again = self.command("run-program", "--protocol-dir", frozen, "--run-id", "preflight-unit")
         self.assertEqual(again.returncode, 3)
 
+    def test_coordinator_freeze_rejects_incompatible_address_space_before_writes(self):
+        import research_execution
+
+        for requested, inherited, expected_ceiling in (
+            (3 * 1024**3, 512 * 1024**2, 512 * 1024**2),
+            (512 * 1024**2, 256 * 1024**2, 256 * 1024**2),
+        ):
+            with self.subTest(requested=requested, inherited=inherited):
+                ledger = self.root / f"ledger-{inherited}"
+                destination = self.root / f"frozen-{inherited}"
+                protocol_source = self.root / f"protocol-{inherited}.json"
+                protocol_source.write_text('{"synthetic": true}\n')
+                config = {"pipeline_descriptor": {"synthetic": True},
+                          "continuation_plan": None,
+                          "limits": {"max_address_space_bytes": requested},
+                          "ledger_dir": ledger}
+                with (mock.patch.object(research_execution, "_validate_bounded_program",
+                                        return_value=config),
+                      mock.patch("resource.getrlimit", return_value=(inherited, inherited)),
+                      mock.patch.object(research_execution, "_initialize_process_ledger") as initialize):
+                    with self.assertRaisesRegex(
+                            GateError,
+                            rf"{requested} bytes.*effective {expected_ceiling}-byte scientific preflight coordinator ceiling"):
+                        research_execution.freeze_program_protocol(protocol_source, destination)
+                    initialize.assert_not_called()
+                self.assertFalse(destination.exists())
+                self.assertFalse(ledger.exists())
+
+    def test_coordinator_ceiling_matches_launcher_and_noncoordinator_freeze_path(self):
+        import research_execution
+        import scientific_pipeline_preflight
+
+        cap = 256 * 1024**2
+        self.assertEqual(scientific_pipeline_preflight.effective_coordinator_address_space_limit(cap), cap)
+        self.assertEqual(scientific_pipeline_preflight.effective_coordinator_address_space_limit(4 * 1024**3),
+                         512 * 1024**2)
+
+        # A descriptor-backed program with a request equal to the effective
+        # ceiling passes freeze and reaches the ordinary ledger/package writes.
+        compatible_destination = self.root / "compatible-frozen"
+        compatible_source = self.root / "compatible-protocol.json"
+        compatible_source.write_text('{"synthetic": true}\n')
+        compatible_config = {"pipeline_descriptor": {"synthetic": True},
+                             "limits": {"max_address_space_bytes": 512 * 1024**2},
+                             "ledger_dir": self.root / "compatible-ledger"}
+        with (mock.patch.object(research_execution, "_validate_bounded_program",
+                                return_value=compatible_config),
+              mock.patch("resource.getrlimit", return_value=(512 * 1024**2, 512 * 1024**2)),
+              mock.patch.object(research_execution, "_initialize_process_ledger") as initialize):
+            research_execution.freeze_program_protocol(compatible_source, compatible_destination)
+            initialize.assert_called_once()
+        self.assertTrue((compatible_destination / "PROGRAM.sha256").is_file())
+
+        destination = self.root / "ordinary-frozen"
+        protocol_source = self.root / "ordinary-protocol.json"
+        protocol_source.write_text('{"synthetic": true}\n')
+        ledger = self.root / "ordinary-ledger"
+        config = {"continuation_plan": None, "pipeline_descriptor": None, "ledger_dir": ledger}
+        with (mock.patch.object(research_execution, "_validate_bounded_program",
+                                return_value={**config, "limits": {"max_address_space_bytes": 4 * 1024**3}}),
+              mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()),
+              mock.patch.object(research_execution, "_initialize_process_ledger") as initialize):
+            with mock.patch("resource.getrlimit",
+                            side_effect=AssertionError("unexpected coordinator limit lookup")):
+                research_execution.freeze_program_protocol(protocol_source, destination)
+            initialize.assert_called_once()
+        self.assertTrue((destination / "PROGRAM.sha256").is_file())
+
 
 class ContinuationLifecycleContractTests(unittest.TestCase):
     """Offline pure-state tests; these never create a process ledger or launch a program."""

@@ -21,6 +21,16 @@ _WORKER_ENTRY_CPU_SECONDS = time.process_time()
 _WORKER_ENTRY_MONOTONIC_NS = time.monotonic_ns()
 
 
+def effective_coordinator_address_space_limit(inherited_hard_limit: int | None = None) -> int:
+    """Return the address-space ceiling the coordinator launcher can enforce."""
+    import resource
+    if inherited_hard_limit is None:
+        _, inherited_hard_limit = resource.getrlimit(resource.RLIMIT_AS)
+    if inherited_hard_limit == resource.RLIM_INFINITY:
+        return _COORDINATOR_MEMORY_LIMIT_BYTES
+    return min(_COORDINATOR_MEMORY_LIMIT_BYTES, int(inherited_hard_limit))
+
+
 class PreflightError(RuntimeError):
     pass
 
@@ -85,9 +95,7 @@ if __name__ == "__main__" and os.environ.get(_COORDINATOR_WORKER_MARKER):
     # coordinator or research modules so marker spoofing cannot bypass the
     # worker's address-space boundary.
     import resource
-    _, hard = resource.getrlimit(resource.RLIMIT_AS)
-    cap = (min(_COORDINATOR_MEMORY_LIMIT_BYTES, hard)
-           if hard != resource.RLIM_INFINITY else _COORDINATOR_MEMORY_LIMIT_BYTES)
+    cap = effective_coordinator_address_space_limit()
     resource.setrlimit(resource.RLIMIT_AS, (cap, cap))
     if resource.getrlimit(resource.RLIMIT_AS) != (cap, cap):
         raise SystemExit("coordinator worker could not enforce address-space limit")
@@ -103,9 +111,7 @@ def _supervise_continuation_cli(argv: list[str]) -> int | None:
     launcher_limit_error = None
     effective_coordinator_limit = None
     try:
-        _, hard = resource.getrlimit(resource.RLIMIT_AS)
-        cap = (min(_COORDINATOR_MEMORY_LIMIT_BYTES, hard)
-               if hard != resource.RLIM_INFINITY else _COORDINATOR_MEMORY_LIMIT_BYTES)
+        cap = effective_coordinator_address_space_limit()
         effective_coordinator_limit = cap
         resource.setrlimit(resource.RLIMIT_AS, (cap, cap))
         if resource.getrlimit(resource.RLIMIT_AS) != (cap, cap):

@@ -3937,8 +3937,12 @@ def qualify_program(directory: Path) -> dict:
         if (contains_assessment_key(runner_manifest)
                 or runner_manifest.get("preflight_id") != spec.get("preflight_id")):
             raise GateError("runner manifest must be bound to the synthetic spec and hide assessment data")
+        synthetic_training_id_by_control = {
+            control_id: control["training"]["id"] for control_id, control in controls.items()
+        }
         expected_runner_runs = [
-            {key: run[key] for key in ("run_id", "control_id", "method", "seed", "training_artifact")}
+            {**{key: run[key] for key in ("run_id", "control_id", "method", "seed")},
+             "training_artifact": synthetic_training_id_by_control[run["control_id"]]}
             for run in spec.get("runs", [])
         ]
         if runner_manifest.get("runs") != expected_runner_runs or scorer_manifest.get("runs") != spec.get("runs"):

@@ -41,12 +41,17 @@ manifest = json.loads(pathlib.Path(sys.argv[sys.argv.index("--manifest") + 1]).r
 workdir = pathlib.Path(sys.argv[sys.argv.index("--workdir") + 1])
 preflight_id = manifest["preflight_id"]
 runs = manifest["runs"]
+if "--swap-training-bindings" in sys.argv:
+    runs[0]["training_artifact"], runs[1]["training_artifact"] = (
+        runs[1]["training_artifact"], runs[0]["training_artifact"])
 bindings = [{k: r[k] for k in ("run_id", "control_id", "method", "seed")} for r in runs]
 canonical = lambda value: json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
 if stage == "runner":
     outputs = []
     for run in runs:
         control = next(c for c in manifest["controls"] if c["id"] == run["control_id"])
+        if control["training"]["id"] != run["training_artifact"]:
+            raise ValueError("run training identity mismatch")
         train = json.loads(pathlib.Path(control["training"]["path"]).read_text())
         value = train["rows"][0]["expected"]
         outputs.append({**{k: run[k] for k in ("run_id", "control_id", "method", "seed")},
@@ -252,6 +257,20 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
         self.assertEqual([s["stage"] for s in receipt["stages"]], ["runner", "verifier", "scorer", "aggregator"])
         self.assertTrue(Path(receipt["evidence_directory"], "pipeline", "scientific-report.json").is_file())
         self.assertNotEqual(receipt["control_artifacts"][0]["synthetic_training_sha256"], receipt["control_artifacts"][1]["synthetic_training_sha256"])
+        runner_manifest = json.loads(Path(receipt["evidence_directory"], "pipeline", "runner-manifest.json").read_text())
+        synthetic_ids = {control["id"]: control["training"]["id"] for control in runner_manifest["controls"]}
+        self.assertTrue(all(run["training_artifact"] == synthetic_ids[run["control_id"]]
+                            for run in runner_manifest["runs"]))
+        candidates = json.loads(Path(receipt["evidence_directory"], "pipeline", "candidate-outputs.json").read_text())
+        expected_training_values = {
+            control["id"]: [row["expected"] for row in json.loads(
+                Path(control["training"]["path"]).read_text())["rows"]]
+            for control in runner_manifest["controls"]
+        }
+        self.assertEqual(len(set(synthetic_ids.values())), 2)
+        self.assertTrue(all(candidate["training_artifact"] == synthetic_ids[candidate["control_id"]]
+                            and candidate["predictions"] == expected_training_values[candidate["control_id"]][:1]
+                            for candidate in candidates))
         harness = importlib.util.spec_from_file_location("research_execution_preflight_test", HARNESS)
         module = importlib.util.module_from_spec(harness)
         harness.loader.exec_module(module)
@@ -263,6 +282,7 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
             "protocol_binding_sha256": receipt["protocol_binding_sha256"],
         }
         self.assertEqual(module.verify_admission(self.protocol)["spec_path"], self.spec_path.resolve())
+
         incomplete_receipt = dict(receipt)
         incomplete_receipt.pop("ordered_output_fanin")
         self.receipt_path.chmod(0o644)
@@ -283,6 +303,14 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
         report_path.write_text('{"status":"passed","assessment_source":"synthetic"}')
         with self.assertRaises(module.PreflightError):
             module.verify_admission(self.protocol)
+
+    def test_schema1_swapped_control_training_bindings_fail_in_runner(self):
+        self.spec["commands"]["runner"]["argv"].append("--swap-training-bindings")
+        self.write_inputs()
+        result = self.invoke()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("run training identity mismatch", result.stderr)
+        self.assertFalse(self.receipt_path.exists())
 
     def test_unenforceable_address_space_refused_before_preflight_child_launch(self):
         cap = 512 * 1024 * 1024

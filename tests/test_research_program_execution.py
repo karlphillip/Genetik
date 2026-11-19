@@ -255,6 +255,99 @@ class BoundedProgramExecutionTests(unittest.TestCase):
                 with self.assertRaisesRegex(GateError, "changes frozen science"):
                     _validate_protocol_successor(predecessor, successor, predecessor_config, successor_config)
 
+    def _pr56_refusal_fixture(self, suffix=""):
+        protocol = self.protocol(max_wall=2.0, max_cpu=2.0)
+        protocol["protocol_id"] = "constant-folding-screen-20261119"
+        protocol["program_budget"]["program_id"] = "constant-folding-screen-pr56"
+        protocol["program_budget"]["ledger_dir"] = str(self.ledger / "constant-folding-screen-pr56")
+        protocol["limits"]["max_address_space_bytes"] = 3 * 1024 * 1024 * 1024
+        predecessor = self.freeze(protocol, self.root / f"pr56-predecessor{suffix}")
+        predecessor_sha = (predecessor / "PROGRAM.sha256").read_text().split()[0]
+        refusal = self.root / f"PRETARGET-REFUSAL{suffix}.md"
+        refusal.write_text(
+            "No D7 target run started. The frozen package SHA is " + predecessor_sha + ".\n"
+            "The bounded-program requested max_address_space_bytes=3221225472, while the "
+            "effective inherited address-space ceiling is 536870912 bytes. The preflight "
+            "correctly launched no worker; there is no pending reservation.\n")
+        return protocol, predecessor, refusal
+
+    def test_refusal_backed_successor_reduces_only_address_space_on_same_ledger(self):
+        import research_execution
+        from research_execution import read_frozen_program, resolve_active_successor_program
+
+        protocol, predecessor, refusal = self._pr56_refusal_fixture()
+        ledger = self.ledger / "constant-folding-screen-pr56"
+        original_events = (ledger / "process-events.jsonl").read_bytes()
+        successor = json.loads(json.dumps(protocol))
+        successor["protocol_id"] = "constant-folding-screen-pr56-resource-v2"
+        successor["source_commit"] = "b" * 40
+        successor["limits"]["max_address_space_bytes"] = 512 * 1024 * 1024
+        source = self._write_source(successor)
+        destination = self.root / "pr56-successor"
+        result = self.command("successor-program", "--predecessor-dir", predecessor,
+                              "--protocol", source, "--destination", destination,
+                              "--resource-reduction-refusal", refusal)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        event = json.loads((ledger / "protocol-successor.json").read_text())
+        self.assertEqual(event["amendment_kind"], "address_space_reduction")
+        self.assertEqual(event["predecessor_program_dir"], str(predecessor.resolve()))
+        self.assertEqual(event["predecessor_protocol_sha256"],
+                         (predecessor / "PROGRAM.sha256").read_text().split()[0])
+        self.assertEqual(event["refusal_path"], str(refusal.resolve()))
+        self.assertEqual(event["refusal_sha256"], sha(refusal))
+        self.assertEqual(event["previous_address_space_bytes"], 3 * 1024 * 1024 * 1024)
+        self.assertEqual(event["requested_address_space_bytes"], 512 * 1024 * 1024)
+        self.assertEqual((ledger / "process-events.jsonl").read_bytes(), original_events)
+        state = json.loads((ledger / "process-budget.json").read_text())
+        self.assertEqual(state["invocations_reserved"], 0)
+        self.assertEqual(state["cpu_seconds_charged"], 0)
+        self.assertEqual(state["wall_seconds_charged"], 0)
+        self.assertIsNone(state["pending"])
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            active, config, _ = read_frozen_program(destination)
+            self.assertEqual(config["limits"]["max_address_space_bytes"], 512 * 1024 * 1024)
+            self.assertEqual(resolve_active_successor_program(predecessor), destination.resolve())
+        self.assertEqual(active["runs"], protocol["runs"])
+
+        second = json.loads(json.dumps(successor))
+        second["protocol_id"] = "constant-folding-screen-pr56-resource-v3"
+        second["source_commit"] = "c" * 40
+        second["limits"]["max_address_space_bytes"] = 256 * 1024 * 1024
+        rejected = self.command("successor-program", "--predecessor-dir", predecessor,
+                                "--protocol", self._write_source(second),
+                                "--destination", self.root / "pr56-second-successor",
+                                "--resource-reduction-refusal", refusal)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertFalse((self.root / "pr56-second-successor").exists())
+
+    def test_resource_successor_rejects_other_changes_and_started_ledger(self):
+        protocol, predecessor, refusal = self._pr56_refusal_fixture()
+        changed = json.loads(json.dumps(protocol))
+        changed["protocol_id"] = "constant-folding-screen-pr56-invalid"
+        changed["source_commit"] = "d" * 40
+        changed["limits"]["max_address_space_bytes"] = 512 * 1024 * 1024
+        changed["limits"]["max_cpu_seconds"] += 1
+        rejected = self.command("successor-program", "--predecessor-dir", predecessor,
+                                "--protocol", self._write_source(changed),
+                                "--destination", self.root / "pr56-other-change",
+                                "--resource-reduction-refusal", refusal)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertFalse((self.root / "pr56-other-change").exists())
+
+        started_protocol, started, started_refusal = self._pr56_refusal_fixture("-started")
+        run = self.command("run-program", "--protocol-dir", started, "--run-id", "preflight-unit")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        lowered = json.loads(json.dumps(started_protocol))
+        lowered["protocol_id"] = "constant-folding-screen-pr56-started-v2"
+        lowered["source_commit"] = "e" * 40
+        lowered["limits"]["max_address_space_bytes"] = 512 * 1024 * 1024
+        refused = self.command("successor-program", "--predecessor-dir", started,
+                               "--protocol", self._write_source(lowered),
+                               "--destination", self.root / "pr56-started-successor",
+                               "--resource-reduction-refusal", started_refusal)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertFalse((self.root / "pr56-started-successor").exists())
+
     def test_successor_refuses_admission_after_any_invocation_reservation(self):
         import research_execution
 

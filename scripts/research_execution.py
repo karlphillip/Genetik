@@ -2655,6 +2655,13 @@ def freeze_program_protocol(source: Path, destination: Path) -> str:
 
 _SUCCESSOR_CODE_ROLES = {"pipeline-executable", "pipeline-dependency", "coordinator-entrypoint"}
 
+# Independently recorded identities for the one refused PR #56 package and its
+# pre-target refusal. Resource-only succession is intentionally study-specific.
+PR56_PREDECESSOR_PROTOCOL_SHA256 = "f8fe5c0e221ca922e96920cc7b1afe75eb600b1cbf239e308082e23a9defbc28"
+PR56_RETAINED_REFUSAL_SHA256 = "b64038b2977e5960b692559d18c94b45e6b37717d2fd9a70b017fc88820b7d7a"
+PR56_PREVIOUS_ADDRESS_SPACE_BYTES = 3 * 1024 * 1024 * 1024
+PR56_SUCCESSOR_ADDRESS_SPACE_BYTES = 512 * 1024 * 1024
+
 
 def _successor_projection(protocol: dict) -> dict:
     """Remove only source-version and pinned software identity fields."""
@@ -2677,7 +2684,8 @@ def _successor_projection(protocol: dict) -> dict:
 
 
 def _validate_protocol_successor(predecessor: dict, successor: dict,
-                                 predecessor_config: dict, successor_config: dict) -> str:
+                                 predecessor_config: dict, successor_config: dict,
+                                 resource_reduction: dict | None = None) -> str:
     """Require a pre-execution, software-identity-only protocol successor."""
     if predecessor_config["program_id"] != successor_config["program_id"]:
         raise GateError("protocol successor must retain the same persistent program identity")
@@ -2709,10 +2717,76 @@ def _validate_protocol_successor(predecessor: dict, successor: dict,
         if extra.get("role") != "coordinator-entrypoint":
             raise GateError("the new supervisor binding must be a coordinator entrypoint")
 
-    if _successor_projection(predecessor) != _successor_projection(successor):
-        raise GateError("protocol successor changes frozen science, data, phase plan, criteria, or resource limits")
+    if resource_reduction is None:
+        if _successor_projection(predecessor) != _successor_projection(successor):
+            raise GateError("protocol successor changes frozen science, data, phase plan, criteria, or resource limits")
+    else:
+        _validate_resource_reduction(predecessor, successor, resource_reduction,
+                                     predecessor_config["program_id"],
+                                     sha256_bytes(canonical_json(predecessor)))
     compatibility = sha256_bytes(canonical_json(_successor_projection(predecessor)))
     return compatibility
+
+
+def _validate_resource_reduction(predecessor: dict, successor: dict, amendment: dict,
+                                 program_id: str, predecessor_sha256: str) -> None:
+    """Allow a single address-space reduction backed by the preserved refusal."""
+    required = {"kind", "refusal_path", "refusal_sha256", "previous_bytes", "requested_bytes",
+                "predecessor_sha256"}
+    if not isinstance(amendment, dict) or set(amendment) != required or amendment.get("kind") != "address_space_reduction":
+        raise GateError("resource-only successor amendment is incomplete")
+    if program_id != "constant-folding-screen-pr56":
+        raise GateError("resource-only successor is authorized only for the refused PR #56 study")
+    if (predecessor_sha256 != PR56_PREDECESSOR_PROTOCOL_SHA256
+            or amendment.get("predecessor_sha256") != PR56_PREDECESSOR_PROTOCOL_SHA256):
+        raise GateError("resource-only successor predecessor is not the independently recorded PR #56 package")
+    refusal_path = Path(amendment["refusal_path"]).resolve()
+    try:
+        refusal = refusal_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        raise GateError("resource-only successor refusal record is unavailable") from error
+    if (sha256_file(refusal_path) != amendment["refusal_sha256"]
+            or amendment["refusal_sha256"] != PR56_RETAINED_REFUSAL_SHA256):
+        raise GateError("resource-only successor refusal record hash changed")
+    old_limit = predecessor.get("limits", {}).get("max_address_space_bytes")
+    new_limit = successor.get("limits", {}).get("max_address_space_bytes")
+    if (old_limit != amendment["previous_bytes"] or new_limit != amendment["requested_bytes"]
+            or not isinstance(old_limit, int) or isinstance(old_limit, bool)
+            or not isinstance(new_limit, int) or isinstance(new_limit, bool)
+            or old_limit != PR56_PREVIOUS_ADDRESS_SPACE_BYTES
+            or new_limit != PR56_SUCCESSOR_ADDRESS_SPACE_BYTES):
+        raise GateError("resource-only successor must reduce the approved 3 GiB limit exactly to 512 MiB")
+    required_evidence = (
+        "No D7 target run started",
+        amendment["predecessor_sha256"],
+        f"max_address_space_bytes={old_limit}",
+        "effective inherited address-space ceiling is 536870912 bytes",
+        "launched no worker",
+        "no pending reservation",
+    )
+    if any(marker not in refusal for marker in required_evidence):
+        raise GateError("resource-only successor is not backed by the recorded pre-target refusal")
+    adjusted = copy.deepcopy(successor)
+    adjusted["protocol_id"] = predecessor["protocol_id"]
+    adjusted["source_commit"] = predecessor["source_commit"]
+    adjusted["limits"]["max_address_space_bytes"] = old_limit
+    if predecessor != adjusted:
+        raise GateError("resource-only successor changes frozen settings or pinned benchmark artifacts")
+
+
+def _resource_reduction_from_event(event: dict | None) -> dict | None:
+    if event is None or event.get("amendment_kind") is None:
+        return None
+    if event.get("amendment_kind") != "address_space_reduction":
+        raise GateError("unknown bounded-program successor amendment kind")
+    return {
+        "kind": event["amendment_kind"],
+        "refusal_path": event.get("refusal_path"),
+        "refusal_sha256": event.get("refusal_sha256"),
+        "previous_bytes": event.get("previous_address_space_bytes"),
+        "requested_bytes": event.get("requested_address_space_bytes"),
+        "predecessor_sha256": event.get("predecessor_protocol_sha256"),
+    }
 
 
 def _ensure_unstarted_ledger(state: dict, events: list[dict]) -> None:
@@ -2839,10 +2913,11 @@ def _reconcile_active_protocol(directory: Path, config: dict, digest: str) -> No
             predecessor_dir = Path(successor.get("predecessor_program_dir", "")).resolve()
             predecessor_protocol, predecessor_sha = _read_frozen_program_unchecked(predecessor_dir)
             predecessor_config = _validate_bounded_program(predecessor_protocol, allow_legacy_predecessor=True)
+            amendment = _resource_reduction_from_event(successor)
             if (predecessor_sha != successor.get("predecessor_protocol_sha256")
                     or sha256_file(directory / "program.json") != digest
                     or _validate_protocol_successor(predecessor_protocol, config["protocol"],
-                                                    predecessor_config, config)
+                                                    predecessor_config, config, amendment)
                     != successor.get("compatibility_sha256")):
                 raise GateError("protocol successor predecessor/compatibility binding is invalid")
             return
@@ -2871,8 +2946,9 @@ def _reconcile_active_protocol(directory: Path, config: dict, digest: str) -> No
                 raise GateError("protocol successor predecessor package hash changed")
             predecessor_config = _validate_bounded_program(
                 predecessor_protocol, allow_legacy_predecessor=True)
+            amendment = _resource_reduction_from_event(successor)
             if _validate_protocol_successor(predecessor_protocol, config["protocol"],
-                                            predecessor_config, config) != successor.get("compatibility_sha256"):
+                                            predecessor_config, config, amendment) != successor.get("compatibility_sha256"):
                 raise GateError("protocol successor compatibility proof does not match its frozen packages")
             state_is_predecessor = (
                 state.get("frozen_protocol_sha256") == successor.get("predecessor_protocol_sha256")
@@ -2897,14 +2973,32 @@ def _reconcile_active_protocol(directory: Path, config: dict, digest: str) -> No
 
 
 def successor_program_protocol(predecessor_directory: Path, source: Path,
-                               destination: Path) -> str:
-    """Freeze and atomically register a software-only protocol successor."""
+                               destination: Path,
+                               refusal_record: Path | None = None) -> str:
+    """Freeze a software-only successor or one refusal-backed resource reduction."""
     predecessor_protocol, predecessor_sha = _read_frozen_program_unchecked(predecessor_directory)
     predecessor_config = _validate_bounded_program(predecessor_protocol, allow_legacy_predecessor=True)
     successor_protocol = json.loads(source.read_bytes())
     successor_config = _validate_bounded_program(successor_protocol)
+    resource_reduction = None
+    if refusal_record is not None:
+        refusal_record = refusal_record.resolve()
+        old_limit = predecessor_protocol.get("limits", {}).get("max_address_space_bytes")
+        new_limit = successor_protocol.get("limits", {}).get("max_address_space_bytes")
+        resource_reduction = {
+            "kind": "address_space_reduction", "refusal_path": str(refusal_record),
+            "refusal_sha256": sha256_file(refusal_record), "previous_bytes": old_limit,
+            "requested_bytes": new_limit, "predecessor_sha256": predecessor_sha,
+        }
     compatibility_sha = _validate_protocol_successor(
-        predecessor_protocol, successor_protocol, predecessor_config, successor_config)
+        predecessor_protocol, successor_protocol, predecessor_config, successor_config, resource_reduction)
+    if resource_reduction is not None:
+        requested = successor_config["limits"]["max_address_space_bytes"]
+        effective = effective_coordinator_address_space_limit()
+        if requested > effective:
+            raise GateError(
+                f"bounded successor requests {requested} bytes of address space, "
+                f"above the effective {effective}-byte scientific preflight coordinator ceiling")
     if predecessor_config["ledger_dir"] != successor_config["ledger_dir"]:
         raise GateError("protocol successor may not create or select another ledger")
     ledger = predecessor_config["ledger_dir"]
@@ -2922,7 +3016,8 @@ def successor_program_protocol(predecessor_directory: Path, source: Path,
             existing = json.loads(successor_path.read_text())
             if (existing.get("successor_protocol_sha256") != successor_sha
                     or Path(existing.get("successor_program_dir", "")).resolve() != destination
-                    or existing.get("compatibility_sha256") != compatibility_sha):
+                    or existing.get("compatibility_sha256") != compatibility_sha
+                    or _resource_reduction_from_event(existing) != resource_reduction):
                 raise GateError("a different protocol successor is already recorded")
             package_protocol, package_sha = _read_frozen_program_unchecked(destination)
             package_record = json.loads((destination / "SUCCESSOR.json").read_text())
@@ -2971,6 +3066,14 @@ def successor_program_protocol(predecessor_directory: Path, source: Path,
             "authorization_sha256": authorizations[0].get("authorization_sha256") if authorizations else None,
             "allowance": authorizations[0].get("allowance") if authorizations else None,
         }
+        if resource_reduction is not None:
+            event_body.update({
+                "amendment_kind": resource_reduction["kind"],
+                "refusal_path": resource_reduction["refusal_path"],
+                "refusal_sha256": resource_reduction["refusal_sha256"],
+                "previous_address_space_bytes": resource_reduction["previous_bytes"],
+                "requested_address_space_bytes": resource_reduction["requested_bytes"],
+            })
         event = {**event_body, "previous_hash": state["ledger_head"]}
         event["event_sha256"] = sha256_bytes(compact_json(event))
         _write_successor_package(destination, successor_protocol, successor_sha, event)
@@ -3034,7 +3137,8 @@ def resolve_active_successor_program(directory: Path) -> Path:
             or successor_config["ledger_dir"] != ledger
             or successor_config["program_id"] != predecessor_config["program_id"]
             or _validate_protocol_successor(
-                predecessor_protocol, successor_protocol, predecessor_config, successor_config)
+                predecessor_protocol, successor_protocol, predecessor_config, successor_config,
+                _resource_reduction_from_event(successor))
             != successor.get("compatibility_sha256")):
         raise GateError("active protocol successor does not preserve the authenticated predecessor scope")
     return successor_dir
@@ -5973,6 +6077,8 @@ def main(argv: list[str] | None = None) -> int:
     successor_program.add_argument("--predecessor-dir", type=Path, required=True)
     successor_program.add_argument("--protocol", type=Path, required=True)
     successor_program.add_argument("--destination", type=Path, required=True)
+    successor_program.add_argument("--resource-reduction-refusal", type=Path,
+                                   help="preserved pre-target refusal authorizing a lower address-space ceiling")
     run_program_parser = commands.add_parser("run-program", help="execute one allowlisted bounded-program invocation")
     run_program_parser.add_argument("--protocol-dir", type=Path, required=True)
     run_program_parser.add_argument("--run-id", required=True)
@@ -5991,7 +6097,8 @@ def main(argv: list[str] | None = None) -> int:
             digest = freeze_program_protocol(args.protocol, args.destination)
             print(digest)
         elif args.command == "successor-program":
-            digest = successor_program_protocol(args.predecessor_dir, args.protocol, args.destination)
+            digest = successor_program_protocol(args.predecessor_dir, args.protocol, args.destination,
+                                                args.resource_reduction_refusal)
             print(digest)
         elif args.command == "run-program":
             result = run_program(args.protocol_dir, args.run_id)

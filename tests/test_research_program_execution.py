@@ -255,6 +255,305 @@ class BoundedProgramExecutionTests(unittest.TestCase):
                 with self.assertRaisesRegex(GateError, "changes frozen science"):
                     _validate_protocol_successor(predecessor, successor, predecessor_config, successor_config)
 
+    def _pr56_refusal_fixture(self, suffix=""):
+        protocol = self.protocol(max_wall=2.0, max_cpu=2.0)
+        protocol["protocol_id"] = "constant-folding-screen-20261119"
+        protocol["program_budget"]["program_id"] = "constant-folding-screen-pr56"
+        protocol["program_budget"]["ledger_dir"] = str(self.ledger / "constant-folding-screen-pr56")
+        protocol["limits"]["max_address_space_bytes"] = 3 * 1024 * 1024 * 1024
+        predecessor = self.freeze(protocol, self.root / f"pr56-predecessor{suffix}")
+        predecessor_sha = (predecessor / "PROGRAM.sha256").read_text().split()[0]
+        refusal = self.root / f"PRETARGET-REFUSAL{suffix}.md"
+        refusal.write_text(
+            "No D7 target run started. The frozen package SHA is " + predecessor_sha + ".\n"
+            "The bounded-program requested max_address_space_bytes=3221225472, while the "
+            "effective inherited address-space ceiling is 536870912 bytes. The preflight "
+            "correctly launched no worker; there is no pending reservation.\n")
+        return protocol, predecessor, refusal
+
+    def _descriptor_pr56_fixture(self, suffix="", address_space=3 * 1024 * 1024 * 1024,
+                                 ledger_root=None):
+        """Build a descriptor-backed synthetic PR #56-shaped predecessor."""
+        import research_pipeline
+
+        protocol = self.protocol(max_wall=2.0, max_cpu=2.0)
+        ledger_root = self.ledger if ledger_root is None else ledger_root
+        protocol["protocol_id"] = "constant-folding-screen-20261119"
+        protocol["program_budget"]["program_id"] = "constant-folding-screen-pr56"
+        protocol["program_budget"]["ledger_dir"] = str(ledger_root / "constant-folding-screen-pr56")
+        protocol["limits"]["max_address_space_bytes"] = address_space
+        protocol.pop("command")
+
+        assessment = self.root / f"assessment{suffix}.bin"
+        assessment.write_bytes(b"synthetic assessment, never consumed by this fixture")
+        spec = self.root / f"preflight-spec{suffix}.json"
+        spec.write_text("{}")
+        executable = {"id": "python", "path": str(self.python), "sha256": sha(self.python),
+                      "role": "pipeline-executable"}
+        artifacts = [executable,
+            {"id": "training", "path": str(self.input_file), "sha256": sha(self.input_file), "role": "training"},
+            {"id": "synthetic-check-data", "path": str(assessment), "sha256": sha(assessment), "role": "input"},
+            {"id": "preflight-spec", "path": str(spec), "sha256": sha(spec), "role": "preflight-spec"}]
+
+        def stage(name, inputs, outputs):
+            argv = [str(self.python), "{run_manifest}", *[f"{{{slot}}}" for slot in inputs],
+                    *[f"{{{slot}}}" for slot in outputs]]
+            return {"executable_artifact": "python", "entrypoint_artifact": "python", "argv": argv,
+                    "environment": {"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C"},
+                    "version": sys.version.split()[0], "runtime_identity": f"CPython {sys.version.split()[0]}",
+                    "dependencies": [], "input_roles": ["run_manifest", *inputs],
+                    "output_roles": outputs}
+
+        stages = {
+            "runner": stage("runner", ["training_bundle"], ["candidate_outputs"]),
+            "verifier": stage("verifier", ["candidate_outputs"], ["verified_receipts"]),
+            "scorer": stage("scorer", ["candidate_outputs", "verified_receipts", "assessment_bundle"], ["scores_output"]),
+            "aggregator": stage("aggregator", ["scores_input"], ["report_output"]),
+        }
+        descriptor = {"schema": 1, "stages": stages}
+        descriptor["sha256"] = research_pipeline.descriptor_digest(descriptor)
+        protocol["pipeline_descriptor"] = descriptor
+        protocol["artifacts"] = artifacts
+
+        bindings = {
+            "synthetic-runner": {"run_manifest": {"kind": "controller_file", "path": "preflight/runner.json"},
+                                 "training_bundle": {"kind": "artifact", "artifact_id": "training"}},
+            "synthetic-verifier": {"run_manifest": {"kind": "controller_file", "path": "preflight/verifier.json"},
+                                   "candidate_outputs": {"kind": "run_output", "run_id": "synthetic-runner", "slot": "candidate_outputs"}},
+            "synthetic-scorer-a": {"run_manifest": {"kind": "controller_file", "path": "preflight/scorer-a.json"},
+                                   "candidate_outputs": {"kind": "run_output", "run_id": "synthetic-runner", "slot": "candidate_outputs"},
+                                   "verified_receipts": {"kind": "run_output", "run_id": "synthetic-verifier", "slot": "verified_receipts"},
+                                   "assessment_bundle": {"kind": "artifact", "artifact_id": "synthetic-check-data"}},
+            "synthetic-scorer-b": {"kind": "controller_file", "path": "preflight/scorer-b.json"},
+            "synthetic-aggregator": {"run_manifest": {"kind": "controller_file", "path": "preflight/aggregator.json"},
+                                     "scores_input": {"kind": "run_output", "run_id": "synthetic-scorer-a", "slot": "scores_output"}},
+        }
+        bindings["synthetic-scorer-b"] = {**bindings["synthetic-scorer-a"],
+                                          "run_manifest": {"kind": "controller_file", "path": "preflight/scorer-b.json"}}
+        run_rows = [
+            ("synthetic-runner", "runner"), ("synthetic-verifier", "verifier"),
+            ("synthetic-scorer-a", "scorer"), ("synthetic-scorer-b", "scorer"),
+            ("synthetic-aggregator", "aggregator"),
+        ]
+        protocol["runs"] = [{"run_id": run_id, "phase_id": "preflight", "stage_id": stage_id,
+                             "stdin_artifact": None, "slot_bindings": bindings[run_id]}
+                            for run_id, stage_id in run_rows]
+        protocol["limits"].update({"max_invocations": len(run_rows), "max_total_cpu_seconds": 50.0,
+                                   "max_total_wall_seconds": 50.0})
+        protocol["program_budget"].update({"max_lifetime_invocations": len(run_rows),
+                                           "max_lifetime_cpu_seconds": 50.0,
+                                           "max_lifetime_wall_seconds": 50.0})
+        protocol["phase_plan"] = [{"phase_id": phase, "run_ids": [run_id for run_id, _ in run_rows]
+                                   if phase == "preflight" else []}
+                                  for phase in ("preflight", "campaign", "verification", "scoring", "aggregation", "recovery")]
+        protocol["preflight_qualification"] = {
+            "stage_run_ids": {"runner": "synthetic-runner", "verifier": "synthetic-verifier",
+                              "scorer": "synthetic-scorer-a", "aggregator": "synthetic-aggregator"},
+            "expected_score_run_ids": ["synthetic-scorer-a", "synthetic-scorer-b"],
+            "expected_control_count": 2,
+            "expected_score_bindings": [
+                {"run_id": "synthetic-scorer-a", "control_id": "control-a", "method": "synthetic", "seed": 1},
+                {"run_id": "synthetic-scorer-b", "control_id": "control-b", "method": "synthetic", "seed": 1}],
+            "spec_artifact_id": "preflight-spec"}
+        import research_execution
+        source = self.root / f"descriptor-source{suffix}.json"
+        source.write_text(json.dumps(protocol, sort_keys=True))
+        predecessor = self.root / f"descriptor-pr56{suffix}"
+        with (mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", ledger_root.resolve()),
+              mock.patch.object(research_execution, "effective_coordinator_address_space_limit",
+                                return_value=max(address_space, 4 * 1024 * 1024 * 1024))):
+            research_execution.freeze_program_protocol(source, predecessor)
+        predecessor_sha = (predecessor / "PROGRAM.sha256").read_text().split()[0]
+        refusal = self.root / f"descriptor-refusal{suffix}.md"
+        refusal.write_text(
+            f"No D7 target run started. Frozen package SHA256 {predecessor_sha}. "
+            f"The bounded-program requested max_address_space_bytes={address_space}, while the "
+            "effective inherited address-space ceiling is 536870912 bytes. "
+            "The preflight correctly launched no worker; there is no pending reservation.\n")
+        return protocol, predecessor, refusal
+
+    def _patch_synthetic_pr56_identity(self, predecessor, refusal):
+        import research_execution
+        protocol_sha = (predecessor / "PROGRAM.sha256").read_text().split()[0]
+        return (mock.patch.object(research_execution, "PR56_PREDECESSOR_PROTOCOL_SHA256", protocol_sha),
+                mock.patch.object(research_execution, "PR56_RETAINED_REFUSAL_SHA256", sha(refusal)))
+
+    def test_refusal_backed_successor_reduces_only_address_space_on_same_ledger(self):
+        import research_execution
+        from research_execution import read_frozen_program, resolve_active_successor_program
+
+        protocol, predecessor, refusal = self._descriptor_pr56_fixture()
+        ledger = self.ledger / "constant-folding-screen-pr56"
+        original_events = (ledger / "process-events.jsonl").read_bytes()
+        successor = json.loads(json.dumps(protocol))
+        successor["protocol_id"] = "constant-folding-screen-pr56-resource-v2"
+        successor["source_commit"] = "b" * 40
+        successor["limits"]["max_address_space_bytes"] = 512 * 1024 * 1024
+        source = self._write_source(successor)
+        destination = self.root / "pr56-successor"
+        identity_patches = self._patch_synthetic_pr56_identity(predecessor, refusal)
+        with (identity_patches[0], identity_patches[1],
+              mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve())):
+            research_execution.successor_program_protocol(predecessor, source, destination, refusal)
+        event = json.loads((ledger / "protocol-successor.json").read_text())
+        self.assertEqual(event["amendment_kind"], "address_space_reduction")
+        self.assertEqual(event["predecessor_program_dir"], str(predecessor.resolve()))
+        self.assertEqual(event["predecessor_protocol_sha256"],
+                         (predecessor / "PROGRAM.sha256").read_text().split()[0])
+        self.assertEqual(event["refusal_path"], str(refusal.resolve()))
+        self.assertEqual(event["refusal_sha256"], sha(refusal))
+        self.assertEqual(event["previous_address_space_bytes"], 3 * 1024 * 1024 * 1024)
+        self.assertEqual(event["requested_address_space_bytes"], 512 * 1024 * 1024)
+        self.assertEqual((ledger / "process-events.jsonl").read_bytes(), original_events)
+        state = json.loads((ledger / "process-budget.json").read_text())
+        self.assertEqual(state["invocations_reserved"], 0)
+        self.assertEqual(state["cpu_seconds_charged"], 0)
+        self.assertEqual(state["wall_seconds_charged"], 0)
+        self.assertIsNone(state["pending"])
+        with (identity_patches[0], identity_patches[1],
+              mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve())):
+            active, config, _ = read_frozen_program(destination)
+            self.assertEqual(config["limits"]["max_address_space_bytes"], 512 * 1024 * 1024)
+            self.assertEqual(resolve_active_successor_program(predecessor), destination.resolve())
+        self.assertEqual(active["runs"], protocol["runs"])
+
+        second = json.loads(json.dumps(successor))
+        second["protocol_id"] = "constant-folding-screen-pr56-resource-v3"
+        second["source_commit"] = "c" * 40
+        second["limits"]["max_address_space_bytes"] = 256 * 1024 * 1024
+        rejected_destination = self.root / "pr56-second-successor"
+        with (identity_patches[0], identity_patches[1],
+              mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve())):
+            with self.assertRaisesRegex(GateError, "exactly to 512 MiB"):
+                research_execution.successor_program_protocol(
+                    predecessor, self._write_source(second), rejected_destination, refusal)
+        self.assertFalse(rejected_destination.exists())
+
+    def test_descriptor_resource_successor_rejects_pin_limit_and_refusal_substitution_before_activation(self):
+        import research_execution
+
+        protocol, predecessor, refusal = self._descriptor_pr56_fixture("-rejections")
+        successor = json.loads(json.dumps(protocol))
+        successor["protocol_id"] = "constant-folding-screen-pr56-resource-v2"
+        successor["source_commit"] = "b" * 40
+        successor["limits"]["max_address_space_bytes"] = 512 * 1024 * 1024
+        ledger = self.ledger / "constant-folding-screen-pr56"
+        original_events = (ledger / "process-events.jsonl").read_bytes()
+        original_state = (ledger / "process-budget.json").read_bytes()
+        identity_patches = self._patch_synthetic_pr56_identity(predecessor, refusal)
+
+        # A changed runner/software pin is rejected even though the descriptor
+        # and its artifact digest are internally consistent.
+        changed_pin = json.loads(json.dumps(successor))
+        changed_executable = self.root / "different-pinned-python"
+        changed_executable.write_bytes(self.python.read_bytes())
+        changed_executable.chmod(0o755)
+        changed_pin["artifacts"][0]["path"] = str(changed_executable)
+        changed_pin["artifacts"][0]["sha256"] = sha(changed_executable)
+        for descriptor_stage in changed_pin["pipeline_descriptor"]["stages"].values():
+            descriptor_stage["argv"][0] = str(changed_executable)
+        import research_pipeline
+        changed_pin["pipeline_descriptor"]["sha256"] = research_pipeline.descriptor_digest(
+            changed_pin["pipeline_descriptor"])
+        with (identity_patches[0], identity_patches[1],
+              mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve())):
+            with self.assertRaisesRegex(GateError, "pinned benchmark artifacts"):
+                research_execution.successor_program_protocol(
+                    predecessor, self._write_source(changed_pin), self.root / "bad-pin", refusal)
+
+        # A new independently identified package with a different initial
+        # ceiling still cannot use the PR #56 resource amendment.
+        separate_ledger_root = self.root / "other-ledger-root"
+        other_protocol, other_predecessor, other_refusal = self._descriptor_pr56_fixture(
+            "-different-start", address_space=2 * 1024 * 1024 * 1024,
+            ledger_root=separate_ledger_root)
+        other_successor = json.loads(json.dumps(other_protocol))
+        other_successor["protocol_id"] = "constant-folding-screen-pr56-resource-v2"
+        other_successor["source_commit"] = "c" * 40
+        other_successor["limits"]["max_address_space_bytes"] = 512 * 1024 * 1024
+        other_patches = self._patch_synthetic_pr56_identity(other_predecessor, other_refusal)
+        other_ledger = separate_ledger_root / "constant-folding-screen-pr56"
+        before_other = (other_ledger / "process-events.jsonl").read_bytes()
+        with (other_patches[0], other_patches[1],
+              mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", separate_ledger_root.resolve())):
+            with self.assertRaisesRegex(GateError, "exactly to 512 MiB"):
+                research_execution.successor_program_protocol(
+                    other_predecessor, self._write_source(other_successor),
+                    self.root / "bad-start-limit", other_refusal)
+        self.assertFalse((self.root / "bad-start-limit").exists())
+        self.assertFalse((other_ledger / "protocol-successor.json").exists())
+        self.assertEqual((other_ledger / "process-events.jsonl").read_bytes(), before_other)
+
+        # A substituted file with matching narrative markers is not the
+        # independently retained refusal identity.
+        substituted = self.root / "substituted-refusal.md"
+        substituted.write_text(refusal.read_text() + "substituted\n")
+        with (identity_patches[0], identity_patches[1],
+              mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve())):
+            with self.assertRaisesRegex(GateError, "refusal record hash changed"):
+                research_execution.successor_program_protocol(
+                    predecessor, self._write_source(successor), self.root / "bad-refusal", substituted)
+
+        self.assertFalse((self.root / "bad-pin").exists())
+        self.assertFalse((self.root / "bad-refusal").exists())
+        self.assertFalse((ledger / "protocol-successor.json").exists())
+        self.assertEqual((ledger / "process-events.jsonl").read_bytes(), original_events)
+        self.assertEqual((ledger / "process-budget.json").read_bytes(), original_state)
+
+    def test_resource_successor_rejects_other_changes_and_started_ledger(self):
+        protocol, predecessor, refusal = self._pr56_refusal_fixture()
+        changed = json.loads(json.dumps(protocol))
+        changed["protocol_id"] = "constant-folding-screen-pr56-invalid"
+        changed["source_commit"] = "d" * 40
+        changed["limits"]["max_address_space_bytes"] = 512 * 1024 * 1024
+        changed["limits"]["max_cpu_seconds"] += 1
+        rejected = self.command("successor-program", "--predecessor-dir", predecessor,
+                                "--protocol", self._write_source(changed),
+                                "--destination", self.root / "pr56-other-change",
+                                "--resource-reduction-refusal", refusal)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertFalse((self.root / "pr56-other-change").exists())
+
+        started_protocol, started, started_refusal = self._pr56_refusal_fixture("-started")
+        run = self.command("run-program", "--protocol-dir", started, "--run-id", "preflight-unit")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        lowered = json.loads(json.dumps(started_protocol))
+        lowered["protocol_id"] = "constant-folding-screen-pr56-started-v2"
+        lowered["source_commit"] = "e" * 40
+        lowered["limits"]["max_address_space_bytes"] = 512 * 1024 * 1024
+        refused = self.command("successor-program", "--predecessor-dir", started,
+                               "--protocol", self._write_source(lowered),
+                               "--destination", self.root / "pr56-started-successor",
+                               "--resource-reduction-refusal", started_refusal)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertFalse((self.root / "pr56-started-successor").exists())
+
+    def test_resource_successor_below_inherited_ceiling_fails_before_activation(self):
+        import research_execution
+
+        protocol, predecessor, refusal = self._descriptor_pr56_fixture("-low-parent")
+        successor = json.loads(json.dumps(protocol))
+        successor["protocol_id"] = "constant-folding-screen-pr56-resource-v2-low-parent"
+        successor["source_commit"] = "f" * 40
+        successor["limits"]["max_address_space_bytes"] = 512 * 1024 * 1024
+        source = self._write_source(successor)
+        destination = self.root / "pr56-successor-low-parent"
+        ledger = self.ledger / "constant-folding-screen-pr56"
+        original_events = (ledger / "process-events.jsonl").read_bytes()
+        original_state = (ledger / "process-budget.json").read_bytes()
+        identity_patches = self._patch_synthetic_pr56_identity(predecessor, refusal)
+        with (identity_patches[0], identity_patches[1],
+              mock.patch.object(research_execution, "effective_coordinator_address_space_limit",
+                                return_value=256 * 1024 * 1024),
+              mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve())):
+            with self.assertRaisesRegex(GateError, r"536870912 bytes.*effective 268435456-byte"):
+                research_execution.successor_program_protocol(predecessor, source, destination, refusal)
+
+        self.assertFalse(destination.exists())
+        self.assertFalse((ledger / "protocol-successor.json").exists())
+        self.assertEqual((ledger / "process-events.jsonl").read_bytes(), original_events)
+        self.assertEqual((ledger / "process-budget.json").read_bytes(), original_state)
+
     def test_successor_refuses_admission_after_any_invocation_reservation(self):
         import research_execution
 

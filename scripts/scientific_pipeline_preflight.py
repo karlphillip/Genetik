@@ -349,6 +349,20 @@ def _expand_fdi_index(index_doc: Any, index_path: Path, runs: list[dict[str, Any
     return expanded
 
 
+def _fdi_synthetic_artifact_ids(control_id: str) -> tuple[str, str]:
+    """Return the stable synthetic artifact identities used across FDI stages."""
+    return f"synthetic-training-{control_id}", f"synthetic-assess-{control_id}"
+
+
+def _validate_fdi_synthetic_run_training_bindings(
+    runs: list[dict[str, Any]], training_id_by_control: dict[str, str],
+) -> None:
+    for run in runs:
+        if (run.get("control_id") not in training_id_by_control
+                or run.get("training_artifact") != training_id_by_control[run["control_id"]]):
+            raise PreflightError(f"synthetic run training identity is misassociated for {run.get('run_id')}")
+
+
 def _validate_fdi_synthetic_pipeline(
     *, preflight_id: str, runner_manifest: dict[str, Any], runner_manifest_bytes: bytes,
     scorer_manifest: dict[str, Any], runs: list[dict[str, Any]],
@@ -385,7 +399,7 @@ def _validate_fdi_synthetic_pipeline(
         assess_rows = [(9, 9)] if fixture == "ambiguity" else [(9, 11)]
         train_bytes = b"genetik-fdi-training-v1\n" + b"".join(f"{x}\t{y}\n".encode() for x, y in train_rows)
         assess_bytes = b"genetik-fdi-assessment-v1\n" + b"".join(f"{x}\t{y}\n".encode() for x, y in assess_rows)
-        train_id, assess_id = f"synthetic-train-{control_id}", f"synthetic-assess-{control_id}"
+        train_id, assess_id = _fdi_synthetic_artifact_ids(control_id)
         expected_training[control_id] = train_bytes
         expected_assessment[control_id] = assess_bytes
         expected_synthetic_ids[control_id] = (train_id, assess_id)
@@ -418,6 +432,8 @@ def _validate_fdi_synthetic_pipeline(
             raise PreflightError("runner-visible training path does not match the exact synthetic training bytes")
     if runner_manifest.get("runs") != expected_runs:
         raise PreflightError("runner manifest run rows do not bind exact synthetic training artifacts")
+    _validate_fdi_synthetic_run_training_bindings(
+        runner_manifest["runs"], {key: value[0] for key, value in expected_synthetic_ids.items()})
     expected_catalogue = [{"control_id": control_id, "catalogue": fixture_by_control[control_id],
                            "reference_member": 0}
                           for control_id in ordered_control_ids]
@@ -1012,8 +1028,12 @@ def _run_preflight_impl(protocol_path: Path, spec_path: Path, receipt_path: Path
             {"run_id": r["run_id"], "control_id": r["control_id"], "method": r["method"], "seed": r["seed"]}
             for r in runs
         ]
+        synthetic_training_id_by_control = {
+            control["id"]: control["training"]["id"] for control in controls
+        }
         runner_runs = [
-            {key: run[key] for key in ("run_id", "control_id", "method", "seed", "training_artifact")}
+            {**{key: run[key] for key in ("run_id", "control_id", "method", "seed")},
+             "training_artifact": synthetic_training_id_by_control[run["control_id"]]}
             for run in runs
         ]
         continuation = execution_config.get("continuation_plan") if execution_config is not None else None
@@ -1040,7 +1060,7 @@ def _run_preflight_impl(protocol_path: Path, spec_path: Path, receipt_path: Path
             assessment_tsv: dict[str, tuple[Path, bytes]] = {}
             fixture_by_control = {control_id: ("ambiguity" if ordinal % 2 == 0 else "arithmetic")
                                   for ordinal, control_id in enumerate(sorted(c["id"] for c in controls))}
-            synthetic_ids = {control_id: (f"synthetic-train-{control_id}", f"synthetic-assess-{control_id}")
+            synthetic_ids = {control_id: _fdi_synthetic_artifact_ids(control_id)
                              for control_id in fixture_by_control}
             for control in controls:
                 control_id = control["id"]
@@ -1064,6 +1084,8 @@ def _run_preflight_impl(protocol_path: Path, spec_path: Path, receipt_path: Path
                     "training_artifact": synthetic_ids[run["control_id"]][0],
                     "training_sha256": digest(train_bytes), "training_path": str(train_path.resolve()),
                 })
+            _validate_fdi_synthetic_run_training_bindings(
+                runner_runs_v2, {key: value[0] for key, value in synthetic_ids.items()})
             interactive_session = continuation["interactive_session"]
             runner_manifest_obj = {
                 "schema": "genetik-fdi-run-manifest-v2", "mode": "synthetic-preflight",

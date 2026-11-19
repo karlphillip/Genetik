@@ -47,6 +47,8 @@ if stage == "runner":
     outputs = []
     for run in runs:
         control = next(c for c in manifest["controls"] if c["id"] == run["control_id"])
+        if control["training"]["id"] != run["training_artifact"]:
+            raise ValueError("run training identity mismatch")
         train = json.loads(pathlib.Path(control["training"]["path"]).read_text())
         value = train["rows"][0]["expected"]
         outputs.append({**{k: run[k] for k in ("run_id", "control_id", "method", "seed")},
@@ -99,6 +101,41 @@ else:
 
 
 class ScientificPipelinePreflightTests(unittest.TestCase):
+    def test_fdi_synthetic_training_ids_are_control_scoped_and_swaps_fail(self):
+        control_ids = ["case-a", "case-b"]
+        protocol_ids = {"case-a": "protocol-training-a", "case-b": "protocol-training-b"}
+        synthetic_ids = {key: preflight_module._fdi_synthetic_artifact_ids(key)[0]
+                         for key in control_ids}
+        training_bytes = {"case-a": b"synthetic rows A", "case-b": b"synthetic rows B"}
+        bytes_by_synthetic_id = {synthetic_ids[key]: training_bytes[key] for key in control_ids}
+        self.assertNotEqual(protocol_ids, synthetic_ids)
+        self.assertEqual(len(set(synthetic_ids.values())), 2)
+        runs = [{"run_id": f"{key}-run", "control_id": key,
+                 "training_artifact": synthetic_ids[key]} for key in control_ids]
+
+        preflight_module._validate_fdi_synthetic_run_training_bindings(runs, synthetic_ids)
+        for run in runs:
+            self.assertEqual(bytes_by_synthetic_id[run["training_artifact"]],
+                             training_bytes[run["control_id"]])
+
+        reproduced = json.loads(json.dumps(runs))
+        for run in reproduced:
+            run["training_artifact"] = f"synthetic-train-{run['control_id']}"
+        with self.assertRaisesRegex(preflight_module.PreflightError, "misassociated"):
+            preflight_module._validate_fdi_synthetic_run_training_bindings(reproduced, synthetic_ids)
+
+        swapped_artifacts = json.loads(json.dumps(runs))
+        swapped_artifacts[0]["training_artifact"], swapped_artifacts[1]["training_artifact"] = (
+            swapped_artifacts[1]["training_artifact"], swapped_artifacts[0]["training_artifact"])
+        with self.assertRaisesRegex(preflight_module.PreflightError, "misassociated"):
+            preflight_module._validate_fdi_synthetic_run_training_bindings(swapped_artifacts, synthetic_ids)
+
+        swapped_controls = json.loads(json.dumps(runs))
+        swapped_controls[0]["control_id"], swapped_controls[1]["control_id"] = (
+            swapped_controls[1]["control_id"], swapped_controls[0]["control_id"])
+        with self.assertRaisesRegex(preflight_module.PreflightError, "misassociated"):
+            preflight_module._validate_fdi_synthetic_run_training_bindings(swapped_controls, synthetic_ids)
+
     def test_early_supervisor_reports_missing_anchor_as_preflight_error(self):
         with tempfile.TemporaryDirectory() as directory:
             protocol_path = Path(directory) / "protocol.json"
@@ -252,6 +289,13 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
         self.assertEqual([s["stage"] for s in receipt["stages"]], ["runner", "verifier", "scorer", "aggregator"])
         self.assertTrue(Path(receipt["evidence_directory"], "pipeline", "scientific-report.json").is_file())
         self.assertNotEqual(receipt["control_artifacts"][0]["synthetic_training_sha256"], receipt["control_artifacts"][1]["synthetic_training_sha256"])
+        runner_manifest = json.loads(Path(receipt["evidence_directory"], "pipeline", "runner-manifest.json").read_text())
+        synthetic_ids = {control["id"]: control["training"]["id"] for control in runner_manifest["controls"]}
+        self.assertTrue(all(run["training_artifact"] == synthetic_ids[run["control_id"]]
+                            for run in runner_manifest["runs"]))
+        candidates = json.loads(Path(receipt["evidence_directory"], "pipeline", "candidate-outputs.json").read_text())
+        self.assertTrue(all(candidate["training_artifact"] == synthetic_ids[candidate["control_id"]]
+                            for candidate in candidates))
         harness = importlib.util.spec_from_file_location("research_execution_preflight_test", HARNESS)
         module = importlib.util.module_from_spec(harness)
         harness.loader.exec_module(module)

@@ -2978,6 +2978,13 @@ def successor_program_protocol(predecessor_directory: Path, source: Path,
         }
     compatibility_sha = _validate_protocol_successor(
         predecessor_protocol, successor_protocol, predecessor_config, successor_config, resource_reduction)
+    if resource_reduction is not None:
+        requested = successor_config["limits"]["max_address_space_bytes"]
+        effective = effective_coordinator_address_space_limit()
+        if requested > effective:
+            raise GateError(
+                f"bounded successor requests {requested} bytes of address space, "
+                f"above the effective {effective}-byte scientific preflight coordinator ceiling")
     if predecessor_config["ledger_dir"] != successor_config["ledger_dir"]:
         raise GateError("protocol successor may not create or select another ledger")
     ledger = predecessor_config["ledger_dir"]

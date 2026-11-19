@@ -348,6 +348,30 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         self.assertNotEqual(refused.returncode, 0)
         self.assertFalse((self.root / "pr56-started-successor").exists())
 
+    def test_resource_successor_below_inherited_ceiling_fails_before_activation(self):
+        import research_execution
+
+        protocol, predecessor, refusal = self._pr56_refusal_fixture("-low-parent")
+        successor = json.loads(json.dumps(protocol))
+        successor["protocol_id"] = "constant-folding-screen-pr56-resource-v2-low-parent"
+        successor["source_commit"] = "f" * 40
+        successor["limits"]["max_address_space_bytes"] = 512 * 1024 * 1024
+        source = self._write_source(successor)
+        destination = self.root / "pr56-successor-low-parent"
+        ledger = self.ledger / "constant-folding-screen-pr56"
+        original_events = (ledger / "process-events.jsonl").read_bytes()
+        original_state = (ledger / "process-budget.json").read_bytes()
+        with (mock.patch.object(research_execution, "effective_coordinator_address_space_limit",
+                                return_value=256 * 1024 * 1024),
+              mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve())):
+            with self.assertRaisesRegex(GateError, r"536870912 bytes.*effective 268435456-byte"):
+                research_execution.successor_program_protocol(predecessor, source, destination, refusal)
+
+        self.assertFalse(destination.exists())
+        self.assertFalse((ledger / "protocol-successor.json").exists())
+        self.assertEqual((ledger / "process-events.jsonl").read_bytes(), original_events)
+        self.assertEqual((ledger / "process-budget.json").read_bytes(), original_state)
+
     def test_successor_refuses_admission_after_any_invocation_reservation(self):
         import research_execution
 

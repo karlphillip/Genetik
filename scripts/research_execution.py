@@ -2655,6 +2655,13 @@ def freeze_program_protocol(source: Path, destination: Path) -> str:
 
 _SUCCESSOR_CODE_ROLES = {"pipeline-executable", "pipeline-dependency", "coordinator-entrypoint"}
 
+# Independently recorded identities for the one refused PR #56 package and its
+# pre-target refusal. Resource-only succession is intentionally study-specific.
+PR56_PREDECESSOR_PROTOCOL_SHA256 = "f8fe5c0e221ca922e96920cc7b1afe75eb600b1cbf239e308082e23a9defbc28"
+PR56_RETAINED_REFUSAL_SHA256 = "b64038b2977e5960b692559d18c94b45e6b37717d2fd9a70b017fc88820b7d7a"
+PR56_PREVIOUS_ADDRESS_SPACE_BYTES = 3 * 1024 * 1024 * 1024
+PR56_SUCCESSOR_ADDRESS_SPACE_BYTES = 512 * 1024 * 1024
+
 
 def _successor_projection(protocol: dict) -> dict:
     """Remove only source-version and pinned software identity fields."""
@@ -2715,13 +2722,14 @@ def _validate_protocol_successor(predecessor: dict, successor: dict,
             raise GateError("protocol successor changes frozen science, data, phase plan, criteria, or resource limits")
     else:
         _validate_resource_reduction(predecessor, successor, resource_reduction,
-                                     predecessor_config["program_id"])
+                                     predecessor_config["program_id"],
+                                     sha256_bytes(canonical_json(predecessor)))
     compatibility = sha256_bytes(canonical_json(_successor_projection(predecessor)))
     return compatibility
 
 
 def _validate_resource_reduction(predecessor: dict, successor: dict, amendment: dict,
-                                 program_id: str) -> None:
+                                 program_id: str, predecessor_sha256: str) -> None:
     """Allow a single address-space reduction backed by the preserved refusal."""
     required = {"kind", "refusal_path", "refusal_sha256", "previous_bytes", "requested_bytes",
                 "predecessor_sha256"}
@@ -2729,21 +2737,25 @@ def _validate_resource_reduction(predecessor: dict, successor: dict, amendment: 
         raise GateError("resource-only successor amendment is incomplete")
     if program_id != "constant-folding-screen-pr56":
         raise GateError("resource-only successor is authorized only for the refused PR #56 study")
+    if (predecessor_sha256 != PR56_PREDECESSOR_PROTOCOL_SHA256
+            or amendment.get("predecessor_sha256") != PR56_PREDECESSOR_PROTOCOL_SHA256):
+        raise GateError("resource-only successor predecessor is not the independently recorded PR #56 package")
     refusal_path = Path(amendment["refusal_path"]).resolve()
     try:
         refusal = refusal_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as error:
         raise GateError("resource-only successor refusal record is unavailable") from error
-    if sha256_file(refusal_path) != amendment["refusal_sha256"]:
+    if (sha256_file(refusal_path) != amendment["refusal_sha256"]
+            or amendment["refusal_sha256"] != PR56_RETAINED_REFUSAL_SHA256):
         raise GateError("resource-only successor refusal record hash changed")
     old_limit = predecessor.get("limits", {}).get("max_address_space_bytes")
     new_limit = successor.get("limits", {}).get("max_address_space_bytes")
     if (old_limit != amendment["previous_bytes"] or new_limit != amendment["requested_bytes"]
             or not isinstance(old_limit, int) or isinstance(old_limit, bool)
             or not isinstance(new_limit, int) or isinstance(new_limit, bool)
-            or not (new_limit < old_limit)
-            or new_limit != 512 * 1024 * 1024):
-        raise GateError("resource-only successor must lower address-space exactly to the 512 MiB coordinator ceiling")
+            or old_limit != PR56_PREVIOUS_ADDRESS_SPACE_BYTES
+            or new_limit != PR56_SUCCESSOR_ADDRESS_SPACE_BYTES):
+        raise GateError("resource-only successor must reduce the approved 3 GiB limit exactly to 512 MiB")
     required_evidence = (
         "No D7 target run started",
         amendment["predecessor_sha256"],
@@ -2755,9 +2767,11 @@ def _validate_resource_reduction(predecessor: dict, successor: dict, amendment: 
     if any(marker not in refusal for marker in required_evidence):
         raise GateError("resource-only successor is not backed by the recorded pre-target refusal")
     adjusted = copy.deepcopy(successor)
+    adjusted["protocol_id"] = predecessor["protocol_id"]
+    adjusted["source_commit"] = predecessor["source_commit"]
     adjusted["limits"]["max_address_space_bytes"] = old_limit
-    if _successor_projection(predecessor) != _successor_projection(adjusted):
-        raise GateError("resource-only successor changes settings other than address-space ceiling")
+    if predecessor != adjusted:
+        raise GateError("resource-only successor changes frozen settings or pinned benchmark artifacts")
 
 
 def _resource_reduction_from_event(event: dict | None) -> dict | None:

@@ -99,16 +99,29 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
             if (radius == 0.0)
                 throw genetik_science::Stop{ScientificStatus::Unavailable,
                                             "second partial at hypot origin"};
-            const double u = b.div(a.v, radius);
-            const double v = b.div(c.v, radius);
+            const double scale = std::max(std::abs(a.v), std::abs(c.v));
+            const double scaledA = b.div(a.v, scale);
+            const double scaledC = b.div(c.v, scale);
+            b.charge();
+            const double scaledRadius = b.finite(std::hypot(scaledA, scaledC));
+            const double u = b.div(scaledA, scaledRadius);
+            const double v = b.div(scaledC, scaledRadius);
             const double di = b.add(b.mul(u, a.di), b.mul(v, c.di));
             const double dj = b.add(b.mul(u, a.dj), b.mul(v, c.dj));
             double dij = b.add(b.mul(u, a.dij), b.mul(v, c.dij));
-            double curvature = b.mul(b.mul(v, v), b.mul(a.di, a.dj));
-            curvature =
-                b.sub(curvature, b.mul(b.mul(u, v), b.add(b.mul(a.di, c.dj), b.mul(c.di, a.dj))));
-            curvature = b.add(curvature, b.mul(b.mul(u, u), b.mul(c.di, c.dj)));
-            dij = b.add(dij, b.div(curvature, radius));
+            const auto productOverRadius = [&](double left, double right) {
+                if (std::abs(left) <= std::abs(right))
+                    return b.mul(b.div(left, radius), right);
+                return b.mul(b.div(right, radius), left);
+            };
+            const double hxx = productOverRadius(v, v);
+            const double hxy = b.sub(0.0, productOverRadius(u, v));
+            const double hyy = productOverRadius(u, u);
+            double curvature = b.mul(hxx, b.mul(a.di, a.dj));
+            const double mixedDirections = b.add(b.mul(a.di, c.dj), b.mul(c.di, a.dj));
+            curvature = b.add(curvature, b.mul(hxy, mixedDirections));
+            curvature = b.add(curvature, b.mul(hyy, b.mul(c.di, c.dj)));
+            dij = b.add(dij, curvature);
             stack.push_back({radius, di, dj, dij, true});
             continue;
         }

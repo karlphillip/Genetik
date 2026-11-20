@@ -619,7 +619,7 @@ inline SymbolicTransformResult SymbolicExpression::differentiate(std::size_t tar
                     break;
                 case K::Hypot:
                     b.assume(A::NonZero, root);
-                    d = div(b.op(K::Add, mul(a, da), mul(c, dc)), root);
+                    d = b.op(K::Add, mul(div(a, root), da), mul(div(c, root), dc));
                     break;
                 case K::Sinh:
                     d = mul(b.op(K::Cosh, a), da);

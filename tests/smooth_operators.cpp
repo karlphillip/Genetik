@@ -116,6 +116,14 @@ void derivatives() {
     check(hx.derivativeAvailable() && hy.derivativeAvailable() && hx.derivative() == 0.6 &&
               hy.derivative() == 0.8,
           "hypot analytic first partials");
+    const double denorm = std::numeric_limits<double>::denorm_min();
+    const auto tinyX = evaluatePartial(hypot, std::array{denorm, denorm}, 0);
+    const auto tinyY = evaluatePartial(hypot, std::array{denorm, denorm}, 1);
+    const double diagonalPartial = 1.0 / std::sqrt(2.0);
+    check(tinyX.derivativeAvailable() && std::abs(tinyX.derivative() - diagonalPartial) <= 2e-15,
+          "hypot x partial remains accurate at the subnormal diagonal");
+    check(tinyY.derivativeAvailable() && std::abs(tinyY.derivative() - diagonalPartial) <= 2e-15,
+          "hypot y partial remains accurate at the subnormal diagonal");
     const auto singular = evaluatePartial(hypot, std::array{0.0, -0.0}, 0);
     check(singular.valueAvailable() && !singular.derivativeAvailable() &&
               singular.derivativeFailure() == DerivativeFailure::SingularRule,
@@ -153,9 +161,27 @@ void derivatives() {
     check(hxy.status == ScientificStatus::Success && hxy.derivatives &&
               std::abs(hxy.derivatives->second + 12.0 / 125.0) < 1e-15,
           "hypot mixed second partial");
+    const auto thinCurvature = evaluateSecondPartial(hypot, std::array{1e-300, 1e-100}, 1, 1);
+    check(thinCurvature.status == ScientificStatus::Success && thinCurvature.derivatives &&
+              thinCurvature.derivatives->second > 0.0 &&
+              std::abs(thinCurvature.derivatives->second / 1e-300 - 1.0) < 2e-15,
+          "hypot small positive second partial survives intermediate underflow");
     const auto hOrigin = evaluateSecondPartial(hypot, std::array{0.0, 0.0}, 0, 0);
     check(hOrigin.status == ScientificStatus::Unavailable,
           "hypot origin second partial is unavailable");
+
+    const auto sameInputHypot = parseExpression("hypot(x0,x0)", 1);
+    const auto symbolicHypot = SymbolicExpression::fromExpression(sameInputHypot).differentiate(0);
+    check(symbolicHypot.status == SymbolicStatus::Success && symbolicHypot.expression,
+          "hypot symbolic derivative is available away from the origin");
+    const auto exportedDerivative = symbolicHypot.expression->toExecutable().expression;
+    const double large = 1e308;
+    const auto exportedValue = exportedDerivative.evaluate(std::array{large});
+    const auto directValue = evaluatePartial(sameInputHypot, std::array{large}, 0);
+    check(exportedValue.valid() && std::abs(exportedValue.value() / std::sqrt(2.0) - 1.0) < 2e-15 &&
+              directValue.derivativeAvailable() &&
+              std::abs(exportedValue.value() - directValue.derivative()) < 2e-15,
+          "exported hypot derivative avoids overflow at large equal inputs");
 }
 
 void dimensionsAndSymbolics() {

@@ -122,8 +122,15 @@ class DerivativeEvaluation final {
                 fail(DerivativeFailure::SingularRule);
                 return 0;
             }
-            const double u = binary(K::Divide, a.value, q);
-            const double v = binary(K::Divide, b.value, q);
+            // Normalize by the larger input before computing direction
+            // components. Dividing by q directly loses the angle when q is
+            // rounded to a subnormal value (for example denorm_min,denorm_min).
+            const double scale = std::max(std::abs(a.value), std::abs(b.value));
+            const double scaledA = binary(K::Divide, a.value, scale);
+            const double scaledB = binary(K::Divide, b.value, scale);
+            const double scaledRadius = hypot(scaledA, scaledB);
+            const double u = binary(K::Divide, scaledA, scaledRadius);
+            const double v = binary(K::Divide, scaledB, scaledRadius);
             double d = 0;
             if (a.active)
                 d = binary(K::Multiply, u, a.derivative);

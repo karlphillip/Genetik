@@ -93,6 +93,25 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
           stack.push_back({*value, 0, 0, 0, false});
           continue;
         }
+        if (k == K::Hypot) {
+            b.charge();
+            const double radius = b.finite(std::hypot(a.v, c.v));
+            if (radius == 0.0)
+                throw genetik_science::Stop{ScientificStatus::Unavailable,
+                                            "second partial at hypot origin"};
+            const double u = b.div(a.v, radius);
+            const double v = b.div(c.v, radius);
+            const double di = b.add(b.mul(u, a.di), b.mul(v, c.di));
+            const double dj = b.add(b.mul(u, a.dj), b.mul(v, c.dj));
+            double dij = b.add(b.mul(u, a.dij), b.mul(v, c.dij));
+            double curvature = b.mul(b.mul(v, v), b.mul(a.di, a.dj));
+            curvature =
+                b.sub(curvature, b.mul(b.mul(u, v), b.add(b.mul(a.di, c.dj), b.mul(c.di, a.dj))));
+            curvature = b.add(curvature, b.mul(b.mul(u, u), b.mul(c.di, c.dj)));
+            dij = b.add(dij, b.div(curvature, radius));
+            stack.push_back({radius, di, dj, dij, true});
+            continue;
+        }
         if (k == K::Add || k == K::Subtract) {
           auto op = [&](double u, double v) {
             return k == K::Add ? b.add(u, v) : b.sub(u, v);
@@ -101,24 +120,6 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
                            op(a.dij, c.dij), a.active || c.active});
         } else if (k == K::Multiply)
           stack.push_back(product(a, c));
-        else if (k == K::Hypot) {
-          b.charge();
-          const double radius = b.finite(std::hypot(a.v, c.v));
-          if (radius == 0.0)
-            throw genetik_science::Stop{ScientificStatus::Unavailable,
-                                        "second partial at hypot origin"};
-          const double u = b.div(a.v, radius);
-          const double v = b.div(c.v, radius);
-          const double di = b.add(b.mul(u, a.di), b.mul(v, c.di));
-          const double dj = b.add(b.mul(u, a.dj), b.mul(v, c.dj));
-          double dij = b.add(b.mul(u, a.dij), b.mul(v, c.dij));
-          double curvature = b.mul(b.mul(v, v), b.mul(a.di, a.dj));
-          curvature = b.sub(curvature, b.mul(b.mul(u, v),
-                                               b.add(b.mul(a.di, c.dj), b.mul(c.di, a.dj))));
-          curvature = b.add(curvature, b.mul(b.mul(u, u), b.mul(c.di, c.dj)));
-          dij = b.add(dij, b.div(curvature, radius));
-          stack.push_back({radius, di, dj, dij, true});
-        }
         else if (k == K::Divide) {
           if (!c.active) {
             stack.push_back({b.div(a.v, c.v), b.div(a.di, c.v),

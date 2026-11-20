@@ -124,6 +124,31 @@ void derivatives() {
           "hypot x partial remains accurate at the subnormal diagonal");
     check(tinyY.derivativeAvailable() && std::abs(tinyY.derivative() - diagonalPartial) <= 2e-15,
           "hypot y partial remains accurate at the subnormal diagonal");
+    for (std::size_t target = 0; target < 2; ++target) {
+        const auto symbolic = SymbolicExpression::fromExpression(hypot).differentiate(target);
+        check(symbolic.status == SymbolicStatus::Success && symbolic.expression,
+              "subnormal hypot symbolic partial is constructed");
+        const auto executable = symbolic.expression->toExecutable().expression;
+        const auto value = executable.evaluate(std::array{denorm, denorm});
+        check(value.valid() && std::abs(value.value() - diagonalPartial) <= 2e-15,
+              "exported subnormal hypot partial preserves direction");
+        const auto direct = evaluatePartial(hypot, std::array{denorm, denorm}, target);
+        check(direct.derivativeAvailable() && value.valid() && value.value() == direct.derivative(),
+              "exported and direct subnormal hypot partials agree");
+    }
+    for (int exponent : {-1074, -500, 0, 500, 1023}) {
+        const double coordinate = std::scalbn(1.0, exponent);
+        const double expected = 1.0 / std::sqrt(2.0);
+        for (std::size_t target = 0; target < 2; ++target) {
+            const auto symbolic = SymbolicExpression::fromExpression(hypot).differentiate(target);
+            check(symbolic.status == SymbolicStatus::Success && symbolic.expression,
+                  "scaled hypot symbolic partial is constructed");
+            const auto executable = symbolic.expression->toExecutable().expression;
+            const auto value = executable.evaluate(std::array{coordinate, coordinate});
+            check(value.valid() && std::abs(value.value() - expected) <= 2e-15,
+                  "exported hypot first partial is invariant under power-of-two scaling");
+        }
+    }
     const auto singular = evaluatePartial(hypot, std::array{0.0, -0.0}, 0);
     check(singular.valueAvailable() && !singular.derivativeAvailable() &&
               singular.derivativeFailure() == DerivativeFailure::SingularRule,
@@ -166,6 +191,38 @@ void derivatives() {
               thinCurvature.derivatives->second > 0.0 &&
               std::abs(thinCurvature.derivatives->second / 1e-300 - 1.0) < 2e-15,
           "hypot small positive second partial survives intermediate underflow");
+    const auto denormXX = evaluateSecondPartial(hypot, std::array{denorm, 0.0}, 0, 0);
+    const auto denormXY = evaluateSecondPartial(hypot, std::array{denorm, 0.0}, 0, 1);
+    const auto swappedXX = evaluateSecondPartial(hypot, std::array{0.0, denorm}, 1, 1);
+    const auto swappedXY = evaluateSecondPartial(hypot, std::array{0.0, denorm}, 1, 0);
+    check(denormXX.status == ScientificStatus::Success && denormXX.derivatives &&
+              denormXX.derivatives->second == 0.0 && denormXY.status == ScientificStatus::Success &&
+              denormXY.derivatives && denormXY.derivatives->second == 0.0,
+          "requested zero hypot curvatures do not evaluate unrelated entries");
+    check(swappedXX.status == ScientificStatus::Success && swappedXX.derivatives &&
+              swappedXX.derivatives->second == 0.0 &&
+              swappedXY.status == ScientificStatus::Success && swappedXY.derivatives &&
+              swappedXY.derivatives->second == 0.0,
+          "hypot zero curvature results are symmetric under axis swap");
+    const auto nearOverflowXX = evaluateSecondPartial(hypot, std::array{2e-309, 2e-309}, 0, 0);
+    const auto nearOverflowYY = evaluateSecondPartial(hypot, std::array{2e-309, 2e-309}, 1, 1);
+    const double nearOverflowExpected = 1.0 / (2.0 * std::sqrt(2.0) * 2e-309);
+    check(nearOverflowXX.status == ScientificStatus::Success && nearOverflowXX.derivatives &&
+              std::abs(nearOverflowXX.derivatives->second / nearOverflowExpected - 1.0) < 2e-15 &&
+              nearOverflowYY.status == ScientificStatus::Success && nearOverflowYY.derivatives &&
+              std::abs(nearOverflowYY.derivatives->second / nearOverflowExpected - 1.0) < 2e-15,
+          "hypot near-overflow curvature uses scaled intermediates on both axes");
+    for (int exponent : {-500, 0, 500}) {
+        const double coordinate = std::scalbn(1.0, exponent);
+        const double expected = 1.0 / (2.0 * std::sqrt(2.0) * coordinate);
+        const auto xx = evaluateSecondPartial(hypot, std::array{coordinate, coordinate}, 0, 0);
+        const auto yy = evaluateSecondPartial(hypot, std::array{coordinate, coordinate}, 1, 1);
+        check(xx.status == ScientificStatus::Success && xx.derivatives &&
+                  std::abs(xx.derivatives->second / expected - 1.0) < 3e-15 &&
+                  yy.status == ScientificStatus::Success && yy.derivatives &&
+                  std::abs(yy.derivatives->second / expected - 1.0) < 3e-15,
+              "hypot curvature scales consistently by powers of two");
+    }
     const auto hOrigin = evaluateSecondPartial(hypot, std::array{0.0, 0.0}, 0, 0);
     check(hOrigin.status == ScientificStatus::Unavailable,
           "hypot origin second partial is unavailable");

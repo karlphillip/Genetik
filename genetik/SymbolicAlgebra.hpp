@@ -618,8 +618,19 @@ inline SymbolicTransformResult SymbolicExpression::differentiate(std::size_t tar
                     d = div(b.op(K::Subtract, mul(c, da), mul(a, dc)), b.op(K::Add, mul(a, a), mul(c, c)));
                     break;
                 case K::Hypot:
-                    b.assume(A::NonZero, root);
-                    d = b.op(K::Add, mul(div(a, root), da), mul(div(c, root), dc));
+                    // Normalize before dividing by the radius. The primal
+                    // hypot can round to denorm_min even when both operands
+                    // are denorm_min, losing the direction if divided
+                    // directly.
+                    {
+                        const auto scale = b.op(K::Max, b.op(K::Abs, a), b.op(K::Abs, c));
+                        const auto scaledA = div(a, scale);
+                        const auto scaledC = div(c, scale);
+                        const auto scaledRadius = b.op(K::Hypot, scaledA, scaledC);
+                        b.assume(A::NonZero, scaledRadius);
+                        d = b.op(K::Add, mul(div(scaledA, scaledRadius), da),
+                                 mul(div(scaledC, scaledRadius), dc));
+                    }
                     break;
                 case K::Sinh:
                     d = mul(b.op(K::Cosh, a), da);

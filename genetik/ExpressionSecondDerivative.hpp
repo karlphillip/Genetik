@@ -109,18 +109,33 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
             const double di = b.add(b.mul(u, a.di), b.mul(v, c.di));
             const double dj = b.add(b.mul(u, a.dj), b.mul(v, c.dj));
             double dij = b.add(b.mul(u, a.dij), b.mul(v, c.dij));
-            const auto productOverRadius = [&](double left, double right) {
-                if (std::abs(left) <= std::abs(right))
-                    return b.mul(b.div(left, radius), right);
-                return b.mul(b.div(right, radius), left);
+            // Evaluate one Hessian contraction at a time. Computing all
+            // entries can overflow for an entry that is not part of this
+            // requested partial (for example yy when y=0 and x is tiny).
+            // Decompose factors before multiplying so a representable result
+            // such as v*v/radius near the top of the double range does not
+            // overflow in the intermediate division.
+            const auto scaledProductOverRadius = [&](double f0, double f1, double f2, double f3) {
+                if (f0 == 0.0 || f1 == 0.0 || f2 == 0.0 || f3 == 0.0)
+                    return 0.0;
+                b.charge(11); // four frexp/multiplies, radius frexp, divide, scalbn
+                int exponent = 0;
+                double mantissa = 1.0;
+                for (double factor : {f0, f1, f2, f3}) {
+                    int part = 0;
+                    mantissa *= std::frexp(factor, &part);
+                    exponent += part;
+                }
+                int radiusExponent = 0;
+                const double radiusMantissa = std::frexp(radius, &radiusExponent);
+                mantissa /= radiusMantissa;
+                exponent -= radiusExponent;
+                return b.finite(std::scalbn(mantissa, exponent));
             };
-            const double hxx = productOverRadius(v, v);
-            const double hxy = b.sub(0.0, productOverRadius(u, v));
-            const double hyy = productOverRadius(u, u);
-            double curvature = b.mul(hxx, b.mul(a.di, a.dj));
-            const double mixedDirections = b.add(b.mul(a.di, c.dj), b.mul(c.di, a.dj));
-            curvature = b.add(curvature, b.mul(hxy, mixedDirections));
-            curvature = b.add(curvature, b.mul(hyy, b.mul(c.di, c.dj)));
+            double curvature = scaledProductOverRadius(v, v, a.di, a.dj);
+            curvature = b.sub(curvature, scaledProductOverRadius(u, v, a.di, c.dj));
+            curvature = b.sub(curvature, scaledProductOverRadius(u, v, c.di, a.dj));
+            curvature = b.add(curvature, scaledProductOverRadius(u, u, c.di, c.dj));
             dij = b.add(dij, curvature);
             stack.push_back({radius, di, dj, dij, true});
             continue;

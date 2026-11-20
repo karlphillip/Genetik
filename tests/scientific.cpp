@@ -1,4 +1,6 @@
 #include <TypedSymbolicRegression.hpp>
+#include <ExpressionFormatting.hpp>
+#include <ExpressionParsing.hpp>
 #include <array>
 #include <bit>
 #include <cfenv>
@@ -15,6 +17,58 @@ static T typed(K k){switch(k){case K::Sin:return T::Sin;case K::Cos:return T::Co
 static bool bits(double a,double b){return std::bit_cast<std::uint64_t>(a)==std::bit_cast<std::uint64_t>(b);}
 static void arithmetic(){
     const auto x=Expression::variable(0);const std::array schema{TypedShape::scalar()};const auto tx=TypedExpression::variable(0,schema);
+    const auto u=Expression::variable(0,2),v=Expression::variable(1,2);
+    const auto hypot=Expression::binary(K::Hypot,u,v);
+    const auto squareRootFormula=Expression::unary(K::Sqrt,Expression::binary(K::Add,
+        Expression::binary(K::Multiply,u,u),Expression::binary(K::Multiply,v,v)));
+    check(hypot.nodeCount()==3 && hypot.depth()==2 && hypot.toString()=="hypot(x0, x1)","hypot construction and canonical export");
+    struct HypotCase { std::array<double,2> point; double expected; };
+    const std::array hypotCases{
+        HypotCase{{3.0,4.0},5.0},
+        HypotCase{{0.0,0.0},0.0},
+        HypotCase{{3e200,4e200},5e200},
+        HypotCase{{3e-200,4e-200},5e-200}};
+    for(const auto& item:hypotCases) {
+        const auto robust=hypot.evaluate(item.point),ordinary=squareRootFormula.evaluate(item.point);
+        check(robust.valid() && std::abs(robust.value()-item.expected)<=
+                  2*std::numeric_limits<double>::epsilon()*item.expected,
+              "public evaluator returns expected hypot magnitude");
+        if(item.expected==0.0) {
+            check(ordinary.valid() && ordinary.value()==0.0,
+                  "sqrt sum of squares agrees at the origin");
+        } else if(item.expected<1e-100) {
+            check(robust.value()>0.0 && std::abs(robust.value()-item.expected)/item.expected<=
+                      2*std::numeric_limits<double>::epsilon(),
+                  "tiny hypot passes a relative check that rejects zero");
+            check(ordinary.valid() && ordinary.value()==0.0,
+                  "sqrt sum of squares underflows to zero for tiny finite inputs");
+        } else if(item.expected>1e100) {
+            check(!ordinary.valid(),
+                  "sqrt sum of squares rejects overflowing squared intermediates");
+        } else {
+            check(ordinary.valid() && std::abs(ordinary.value()-item.expected)<=
+                      2*std::numeric_limits<double>::epsilon()*item.expected,
+                  "ordinary values agree to binary64 relative tolerance");
+        }
+    }
+    check(Expression::binary(K::Hypot,Expression::variable(0,2),Expression::variable(1,2)).arithmeticCost()==1,"hypot work is one checked operator");
+    check(parseExpression("hypot(x0,x1)",2).sameRepresentation(hypot),"hypot parser round trip");
+    check(formatExpression(hypot,ExpressionTextFormat::Canonical)=="hypot(x0, x1)" &&
+          formatExpression(hypot).find("hypot(")!=std::string::npos,"hypot canonical and presentation export");
+    check(ExpressionGrammar{}.operators==std::vector<K>{K::Add,K::Subtract,K::Multiply},"default grammar remains unchanged");
+    auto problem=RegressionProblem::create({{{3.,4.},5.},{{0.,0.},0.}},{15,5,8});
+    ExpressionGrammar grammar;grammar.operators={K::Add,K::Multiply,K::Sqrt,K::Hypot};
+    ExpressionVariation variation(problem,grammar);std::mt19937 random(71);bool generatedHypot=false;
+    for(unsigned attempt=0;attempt<300;++attempt)for(const auto& node:variation.initialize(random).expression().nodes())generatedHypot|=node.kind()==K::Hypot;
+    check(generatedHypot,"explicit grammar admits hypot search production");
+    SymbolicRegressionConfig searchConfig;searchConfig.population=64;searchConfig.maxGenerationAttempts=1;
+    searchConfig.maxEvaluations=64;searchConfig.maxTrainingLossAttempts=128;
+    searchConfig.grammar=grammar;
+    RandomContext searchRandom(71);
+    const auto search=symbolicRegression(problem,searchConfig,searchRandom);
+    check(std::any_of(search.rawInitialExpressions.begin(),search.rawInitialExpressions.end(),
+                      [](const auto& text){return text.find("hypot(")!=std::string::npos;}),
+          "normal symbolic-regression API initializes an enabled hypot production");
     for(const auto& r:scientificReferences){
         const auto a=Expression::unary(r.kind,x).evaluate(std::array{r.input});
         const auto b=TypedExpression::unary(typed(r.kind),tx).evaluate(std::array{TypedValue::scalar(r.input)});

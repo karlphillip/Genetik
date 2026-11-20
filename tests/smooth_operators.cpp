@@ -62,6 +62,21 @@ void scalarValuesAndDomains() {
     check(negative.valid() && negative.value() == 0.0, "negative-tail stable evaluation");
     const auto large = parseExpression("asinh(x0)", 1).evaluate(std::array{1e300});
     check(large.valid() && std::isfinite(large.value()), "asinh avoids square overflow");
+    const auto magnitude = parseExpression("hypot(x0,x1)", 2);
+    check(magnitude.evaluate(std::array{3.0, 4.0}).value() == 5.0,
+          "hypot binary scalar evaluation");
+    check(magnitude.evaluate(std::array{1e200, 1e200}).value() == std::hypot(1e200, 1e200),
+          "hypot avoids square overflow");
+    check(magnitude.evaluate(std::array{1e-200, 1e-200}).value() == std::hypot(1e-200, 1e-200),
+          "hypot avoids square underflow");
+    check(magnitude.evaluate(std::array{0.0, -0.0}).value() == 0.0, "hypot handles signed zeros");
+    check(!magnitude
+               .evaluate(std::array{std::numeric_limits<double>::max(),
+                                    std::numeric_limits<double>::max()})
+               .valid(),
+          "hypot still rejects an unrepresentable result");
+    check(parseExpression(magnitude.toString(), 2).sameRepresentation(magnitude),
+          "hypot export and parsing round trip");
 }
 
 void derivatives() {
@@ -95,6 +110,16 @@ void derivatives() {
         evaluatePartial(parseExpression("atanh(x0)", 1), std::array{std::nextafter(1.0, 0.0)}, 0);
     check(edge.derivativeAvailable() && std::isfinite(edge.derivative()),
           "atanh interior derivative remains finite");
+    const auto hypot = parseExpression("hypot(x0,x1)", 2);
+    const auto hx = evaluatePartial(hypot, std::array{3.0, 4.0}, 0);
+    const auto hy = evaluatePartial(hypot, std::array{3.0, 4.0}, 1);
+    check(hx.derivativeAvailable() && hy.derivativeAvailable() && hx.derivative() == 0.6 &&
+              hy.derivative() == 0.8,
+          "hypot analytic first partials");
+    const auto singular = evaluatePartial(hypot, std::array{0.0, -0.0}, 0);
+    check(singular.valueAvailable() && !singular.derivativeAvailable() &&
+              singular.derivativeFailure() == DerivativeFailure::SingularRule,
+          "hypot origin primal is valid and derivative is singular");
 
     struct CurvatureCase {
         const char* source;
@@ -120,6 +145,17 @@ void derivatives() {
         check(std::abs(result.derivatives->second - item.expected) < 2e-11,
               "independent curvature reference");
     }
+    const auto hxx = evaluateSecondPartial(hypot, std::array{3.0, 4.0}, 0, 0);
+    const auto hxy = evaluateSecondPartial(hypot, std::array{3.0, 4.0}, 0, 1);
+    check(hxx.status == ScientificStatus::Success && hxx.derivatives &&
+              std::abs(hxx.derivatives->second - 16.0 / 125.0) < 1e-15,
+          "hypot second x partial");
+    check(hxy.status == ScientificStatus::Success && hxy.derivatives &&
+              std::abs(hxy.derivatives->second + 12.0 / 125.0) < 1e-15,
+          "hypot mixed second partial");
+    const auto hOrigin = evaluateSecondPartial(hypot, std::array{0.0, 0.0}, 0, 0);
+    check(hOrigin.status == ScientificStatus::Unavailable,
+          "hypot origin second partial is unavailable");
 }
 
 void dimensionsAndSymbolics() {
@@ -137,6 +173,19 @@ void dimensionsAndSymbolics() {
         }
         check(rejected, "dimensionful smooth input rejected");
     }
+    const std::array lengths{PhysicalDimension::base(SIBaseDimension::Length),
+                             PhysicalDimension::base(SIBaseDimension::Length)};
+    const auto lengthNorm = parseExpression("hypot(x0,x1)", 2);
+    check(inferDimensions(lengthNorm, lengths).back() == lengths[0],
+          "hypot preserves equal operand dimension");
+    const std::array mismatched{lengths[0], PhysicalDimension::base(SIBaseDimension::Time)};
+    bool mismatchRejected = false;
+    try {
+        (void)inferDimensions(lengthNorm, mismatched);
+    } catch (const std::invalid_argument&) {
+        mismatchRejected = true;
+    }
+    check(mismatchRejected, "hypot rejects unlike dimensions");
 
     const auto sigmoid = parseExpression("sigmoid(x0)", 1);
     const auto symbolic = SymbolicExpression::fromExpression(sigmoid).differentiate(0);
@@ -148,6 +197,14 @@ void dimensionsAndSymbolics() {
     check(numeric.valid() && std::abs(numeric.value() - direct.derivative()) < 1e-15,
           "symbolic derivative agrees with direct evaluation");
 
+    const auto hypotSource = parseExpression("hypot(x0,x1)", 2);
+    const auto hypotSymbolic = SymbolicExpression::fromExpression(hypotSource).differentiate(0);
+    check(hypotSymbolic.status == SymbolicStatus::Success && hypotSymbolic.expression,
+          "symbolic hypot partial built away from origin");
+    const auto hypotExecutable = hypotSymbolic.expression->toExecutable();
+    const auto hypotValue = hypotExecutable.expression.evaluate(std::array{3.0, 4.0});
+    check(hypotValue.valid() && std::abs(hypotValue.value() - 0.6) < 1e-15,
+          "symbolic and numeric hypot partial agree");
     for (const auto& [name, point] :
          std::array<std::pair<const char*, double>, 6>{{{"asinh", 0.25},
                                                         {"acosh", 2.0},
@@ -173,6 +230,9 @@ void optInAndTypedParsing() {
     check(std::find(scalarGrammar.operators.begin(), scalarGrammar.operators.end(),
                     ExpressionKind::Sinc) == scalarGrammar.operators.end(),
           "smooth operators absent from default scalar grammar");
+    check(std::find(scalarGrammar.operators.begin(), scalarGrammar.operators.end(),
+                    ExpressionKind::Hypot) == scalarGrammar.operators.end(),
+          "hypot absent from default scalar grammar");
     TypedGrammar grammar;
     check(std::find(grammar.operators.begin(), grammar.operators.end(),
                     TypedExpressionKind::Asinh) == grammar.operators.end(),

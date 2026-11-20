@@ -148,7 +148,7 @@ if(NOT status EQUAL 0 OR NOT output MATCHES "x0=--threads" OR NOT output MATCHES
     message(FATAL_ERROR "flag-looking input name misparsed: ${output} ${error}")
 endif()
 
-execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/training.csv" --inputs first,second --target target --seed 2 --loss-budget 32 --no-fit --discrete-only --population 8 --nodes 15 --depth 5 --operators add,mul,sin,cos,exp,sqrt,powi --exponents 0,2,8 --threads 2 RESULT_VARIABLE result OUTPUT_VARIABLE scientific ERROR_VARIABLE error)
+execute_process(COMMAND "${SEARCH}" "${WORKSPACE}/training.csv" --inputs first,second --target target --seed 2 --loss-budget 32 --no-fit --discrete-only --population 8 --nodes 15 --depth 5 --operators add,mul,sin,cos,exp,sqrt,hypot,powi --exponents 0,2,8 --threads 2 RESULT_VARIABLE result OUTPUT_VARIABLE scientific ERROR_VARIABLE error)
 if(NOT result EQUAL 0 OR NOT scientific MATCHES "exponents=0,2,8" OR NOT scientific MATCHES "search_start")
     message(FATAL_ERROR "scientific CLI failed: ${scientific} ${error}")
 endif()

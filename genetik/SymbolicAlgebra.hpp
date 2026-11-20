@@ -617,6 +617,10 @@ inline SymbolicTransformResult SymbolicExpression::differentiate(std::size_t tar
                     b.assume(A::AwayFromAtan2Cut, a, c);
                     d = div(b.op(K::Subtract, mul(c, da), mul(a, dc)), b.op(K::Add, mul(a, a), mul(c, c)));
                     break;
+                case K::Hypot:
+                    b.assume(A::NonZero, root);
+                    d = div(b.op(K::Add, mul(a, da), mul(c, dc)), root);
+                    break;
                 case K::Sinh:
                     d = mul(b.op(K::Cosh, a), da);
                     break;

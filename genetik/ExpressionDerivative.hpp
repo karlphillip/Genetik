@@ -117,6 +117,22 @@ class DerivativeEvaluation final {
             if(b.active){auto term=binary(K::Multiply,binary(K::Multiply,q,native(K::Log,a.value)),b.derivative);d=a.active?binary(K::Add,d,term):term;}
             return d;
         }
+        if (kind == K::Hypot) {
+            if (q == 0.0) {
+                fail(DerivativeFailure::SingularRule);
+                return 0;
+            }
+            const double u = binary(K::Divide, a.value, q);
+            const double v = binary(K::Divide, b.value, q);
+            double d = 0;
+            if (a.active)
+                d = binary(K::Multiply, u, a.derivative);
+            if (b.active) {
+                const double term = binary(K::Multiply, v, b.derivative);
+                d = a.active ? binary(K::Add, d, term) : term;
+            }
+            return d;
+        }
         if(kind==K::Atan2){
             if(a.active&&a.value==0&&b.value<0){fail(DerivativeFailure::NonDifferentiable);return 0;}
             const double scale=std::max(std::abs(a.value),std::abs(b.value));

@@ -50,6 +50,11 @@ std::optional<double> scalarBinary(ExpressionKind kind, double left, double righ
     if (kind == ExpressionKind::Divide && right == 0.0) return {};
     if(kind==ExpressionKind::Pow&&((left<0&&std::trunc(right)!=right)||(left==0&&!(right>0))))return {};
     if(kind==ExpressionKind::Atan2&&left==0&&right==0)return {};
+    if (kind == ExpressionKind::Hypot) {
+        charge();
+        const double value = std::hypot(left, right);
+        return std::isfinite(value) ? std::optional<double>(value) : std::nullopt;
+    }
     if(kind==ExpressionKind::PoissonPmf){
         if(left<0||left>1000000||std::trunc(left)!=left||right<0||right>1000000)return {};
         charge();double v=right==0?(left==0?1:0):std::exp(left*std::log(right)-right-threadSafeLogGamma(left+1));

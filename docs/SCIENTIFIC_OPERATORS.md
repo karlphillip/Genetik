@@ -85,7 +85,7 @@ build/release/genetik_regression_search tests/fixtures/scientific/decay-training
   --evaluate tests/fixtures/scientific/decay-exterior.csv
 ```
 
-`--operators` accepts add,sub,mul,div,log,sin,cos,exp,sqrt,powi; names and exponent
+`--operators` accepts add,sub,mul,div,log,sin,cos,exp,sqrt,hypot,powi; names and exponent
 lists reject empty/duplicate/malformed entries before search. `--exponents` controls
 Powi only, never the continuous fitter. Defaults remain unchanged. File-application
 optional positive `--population`, `--nodes`, `--depth` (maximum4096), and
@@ -101,6 +101,37 @@ ULPs around the retained reference, with a denormal floor, for qualified runtime
 calls. Large trigonometric inputs are exact binary64 values, not rounded decimal
 phases. These are selected independent checks, not a universal libm accuracy bound.
 See scientific-results/PROTOCOL.md for the frozen campaign and data identities.
+
+## Optional scalar hypot
+
+`ExpressionKind::Hypot` is an appended binary scalar operator with canonical
+spelling `hypot(left,right)`. It evaluates through `std::hypot`, accepting finite
+inputs when their magnitude is representable even if separately squaring either
+input would overflow or underflow. A non-finite result remains mathematical
+invalidity. The operator is available to parsing, export, formatting, checkpoint
+coding, and scalar search when explicitly enabled; default scalar grammars are
+unchanged. It is not a typed-expression production.
+
+First derivatives use normalized components `u/r` and `v/r`; at the origin the
+primal is valid but active derivatives are unavailable because the norm is not
+differentiable. Second partials use the normalized Hessian formula and are
+likewise unavailable at the origin. Dimensional inference requires equal input
+dimensions and returns that dimension. Symbolic differentiation records the
+nonzero-magnitude domain assumption.
+
+Enable it through the ordinary scalar symbolic-regression configuration:
+
+```cpp
+SymbolicRegressionConfig config;
+config.grammar.operators = {ExpressionKind::Add, ExpressionKind::Multiply,
+                            ExpressionKind::Sqrt, ExpressionKind::Hypot};
+RandomContext run(42);
+const auto result = symbolicRegression(trainingProblem, config, run);
+```
+
+The general grammar still defaults to addition, subtraction, and multiplication;
+this explicit list replaces that default for this run. Autonomous discovery
+quality is not established by the evaluator robustness tests.
 
 Existing enum values are preserved, with new kinds appended. Consumer code using
 exhaustive enum switches must handle the added kinds when updating. Existing

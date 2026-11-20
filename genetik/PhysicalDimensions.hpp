@@ -130,6 +130,7 @@ inline PhysicalDimension scalarResultDimension(ExpressionKind kind,
     case K::Min:
     case K::Max:
     case K::Clamp:
+    case K::Hypot:
         return same();
     case K::Multiply:
         return a * operands[1];

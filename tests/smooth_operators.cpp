@@ -227,6 +227,23 @@ void derivatives() {
     check(hOrigin.status == ScientificStatus::Unavailable,
           "hypot origin second partial is unavailable");
 
+    const auto straightLine = parseExpression("hypot(3*x0,4*x0)", 1);
+    for (int exponent : {-70, -40, 0, 20}) {
+        const double coordinate = std::scalbn(1.0, exponent);
+        const auto result = evaluateSecondPartial(straightLine, std::array{coordinate}, 0, 0);
+        check(result.status == ScientificStatus::Success && result.derivatives &&
+                  result.derivatives->primal == 5.0 * coordinate &&
+                  result.derivatives->second == 0.0,
+              "composed hypot along a straight ray has exactly zero curvature across scales");
+    }
+
+    const auto curvedPath = parseExpression("hypot(x0,x0*x0)", 1);
+    const auto curvedResult = evaluateSecondPartial(curvedPath, std::array{1.0}, 0, 0);
+    const double curvedExpected = 5.0 / (2.0 * std::sqrt(2.0));
+    check(curvedResult.status == ScientificStatus::Success && curvedResult.derivatives &&
+              std::abs(curvedResult.derivatives->second / curvedExpected - 1.0) < 2e-15,
+          "composed hypot retains known nonzero curvature");
+
     const auto sameInputHypot = parseExpression("hypot(x0,x0)", 1);
     const auto symbolicHypot = SymbolicExpression::fromExpression(sameInputHypot).differentiate(0);
     check(symbolicHypot.status == SymbolicStatus::Success && symbolicHypot.expression,

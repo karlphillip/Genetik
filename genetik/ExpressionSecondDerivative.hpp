@@ -1,6 +1,8 @@
 #pragma once
 #include "ExpressionDerivative.hpp"
 #include "ScientificWork.hpp"
+#include <array>
+#include <utility>
 
 struct SecondPartialValue {
   double primal = 0, firstI = 0, firstJ = 0, second = 0;
@@ -113,29 +115,48 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
             // entries can overflow for an entry that is not part of this
             // requested partial (for example yy when y=0 and x is tiny).
             // Decompose factors before multiplying so a representable result
-            // such as v*v/radius near the top of the double range does not
-            // overflow in the intermediate division.
-            const auto scaledProductOverRadius = [&](double f0, double f1, double f2, double f3) {
-                if (f0 == 0.0 || f1 == 0.0 || f2 == 0.0 || f3 == 0.0)
-                    return 0.0;
-                b.charge(11); // four frexp/multiplies, radius frexp, divide, scalbn
+            // near the limits of the double range does not overflow in an
+            // intermediate operation.
+            const auto scaledProductQuotient = [&](std::array<double, 4> numerator,
+                                                   std::array<double, 4> denominator) {
+                for (double factor : numerator)
+                    if (factor == 0.0)
+                        return 0.0;
+                b.charge(18); // eight frexp/multiplies, divide, scalbn
                 int exponent = 0;
-                double mantissa = 1.0;
-                for (double factor : {f0, f1, f2, f3}) {
+                double numeratorMantissa = 1.0;
+                for (double factor : numerator) {
                     int part = 0;
-                    mantissa *= std::frexp(factor, &part);
+                    numeratorMantissa *= std::frexp(factor, &part);
                     exponent += part;
                 }
-                int radiusExponent = 0;
-                const double radiusMantissa = std::frexp(radius, &radiusExponent);
-                mantissa /= radiusMantissa;
-                exponent -= radiusExponent;
+                double denominatorMantissa = 1.0;
+                for (double factor : denominator) {
+                    int part = 0;
+                    denominatorMantissa *= std::frexp(factor, &part);
+                    exponent -= part;
+                }
+                const double mantissa = numeratorMantissa / denominatorMantissa;
                 return b.finite(std::scalbn(mantissa, exponent));
             };
-            double curvature = scaledProductOverRadius(v, v, a.di, a.dj);
-            curvature = b.sub(curvature, scaledProductOverRadius(u, v, a.di, c.dj));
-            curvature = b.sub(curvature, scaledProductOverRadius(u, v, c.di, a.dj));
-            curvature = b.add(curvature, scaledProductOverRadius(u, u, c.di, c.dj));
+            // Form each directional difference before multiplying. Expanding
+            // the product into four Hessian terms leaves rounding residuals
+            // for a composed straight ray such as hypot(3*x,4*x). Scale the
+            // derivative pair and operands before subtraction to avoid
+            // overflowing their products.
+            const auto directionalDifference = [&](double first, double second) {
+                const double derivativeScale = std::max(std::abs(first), std::abs(second));
+                if (derivativeScale == 0.0)
+                    return std::pair{0.0, 0.0};
+                const double difference = b.sub(b.mul(scaledC, b.div(first, derivativeScale)),
+                                                b.mul(scaledA, b.div(second, derivativeScale)));
+                return std::pair{derivativeScale, difference};
+            };
+            const auto [scaleI, differenceI] = directionalDifference(a.di, c.di);
+            const auto [scaleJ, differenceJ] = directionalDifference(a.dj, c.dj);
+            const double curvature =
+                scaledProductQuotient({scaleI, differenceI, scaleJ, differenceJ},
+                                      {scale, scaledRadius, scaledRadius, scaledRadius});
             dij = b.add(dij, curvature);
             stack.push_back({radius, di, dj, dij, true});
             continue;

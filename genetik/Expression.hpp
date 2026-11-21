@@ -2,6 +2,7 @@
 #include <algorithm>
 #include "detail/ScientificScalar.hpp"
 #include "detail/ScalarOperators.hpp"
+#include "CustomScalarOperator.hpp"
 #include <bit>
 #include <cstdint>
 #include <charconv>
@@ -10,6 +11,7 @@
 #include <cstddef>
 #include <limits>
 #include <mutex>
+#include <memory>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -178,11 +180,15 @@ public:
     static ExpressionNode variable(std::size_t index) { return {ExpressionKind::Variable, index, 0}; }
     static ExpressionNode constant(double value) { return {ExpressionKind::Constant, 0, value}; }
     static ExpressionNode binary(ExpressionKind kind) {
+        if (kind == ExpressionKind::CustomBinary)
+            throw std::invalid_argument("custom operator descriptor required");
         if (expressionArity(kind) != 2)
             throw std::invalid_argument("expected a supported binary expression operator");
         return {kind, 0, 0};
     }
     static ExpressionNode unary(ExpressionKind kind) {
+        if (kind == ExpressionKind::CustomUnary)
+            throw std::invalid_argument("custom operator descriptor required");
         if (expressionPowerMetadata(kind) || expressionArity(kind) != 1) throw std::invalid_argument("expected a supported unary expression operator");
         return {kind, 0, 0};
     }
@@ -190,8 +196,29 @@ public:
         genetik_detail::validateExponent(exponent);
         return {ExpressionKind::Powi, exponent, 0};
     }
-    static ExpressionNode signedPower(int exponent){if(exponent>=0)return power(static_cast<unsigned>(exponent));if(exponent< -8)throw std::invalid_argument("negative powi exponent must be -8..-1");return {ExpressionKind::NegativePowi,static_cast<unsigned>(-exponent),0};}
-    static ExpressionNode ternary(ExpressionKind kind){if(expressionArity(kind)!=3)throw std::invalid_argument("ternary operation required");return {kind,0,0};}
+    static ExpressionNode signedPower(int exponent) {
+        if (exponent >= 0)
+            return power(static_cast<unsigned>(exponent));
+        if (exponent < -8)
+            throw std::invalid_argument("negative powi exponent must be -8..-1");
+        return {ExpressionKind::NegativePowi, static_cast<unsigned>(-exponent), 0};
+    }
+    static ExpressionNode ternary(ExpressionKind kind) {
+        if (expressionArity(kind) != 3)
+            throw std::invalid_argument("ternary operation required");
+        return {kind, 0, 0};
+    }
+    static ExpressionNode custom(CustomScalarOperator operation) {
+        operation.validate();
+        auto value = std::make_shared<const CustomScalarOperator>(std::move(operation));
+        return {value->arity == 1 ? ExpressionKind::CustomUnary : ExpressionKind::CustomBinary, 0,
+                0, std::move(value)};
+    }
+    const CustomScalarOperator& customOperator() const {
+        if (!custom_)
+            throw std::logic_error("node is not a custom operator");
+        return *custom_;
+    }
     unsigned exponent() const {
         if (!expressionPowerMetadata(kind_)) throw std::logic_error("node is not integer power");
         return static_cast<unsigned>(index_);
@@ -202,14 +229,18 @@ public:
         return index_;
     }
     double constantValue() const {
-        if (kind_ != ExpressionKind::Constant) throw std::logic_error("node is not a constant");
+        if (kind_ != ExpressionKind::Constant)
+            throw std::logic_error("node is not a constant");
         return value_;
     }
 private:
-    ExpressionNode(ExpressionKind kind, std::size_t index, double value) : kind_(kind), index_(index), value_(value) {}
+    ExpressionNode(ExpressionKind kind, std::size_t index, double value,
+                   std::shared_ptr<const CustomScalarOperator> custom = {})
+        : kind_(kind), index_(index), value_(value), custom_(std::move(custom)) {}
     ExpressionKind kind_;
     std::size_t index_;
     double value_;
+    std::shared_ptr<const CustomScalarOperator> custom_;
 };
 
 struct ExpressionLimits {
@@ -260,6 +291,10 @@ public:
         for(std::size_t i=0;i<nodes_.size();++i) {
             const auto& a=nodes_[i];const auto& b=other.nodes_[i];
             if(a.kind()!=b.kind())return false;
+            if ((a.kind() == ExpressionKind::CustomUnary ||
+                 a.kind() == ExpressionKind::CustomBinary) &&
+                a.customOperator().id != b.customOperator().id)
+                return false;
             if(expressionPowerMetadata(a.kind()) && a.exponent()!=b.exponent())return false;
             if(a.kind()==ExpressionKind::Variable && a.variableIndex()!=b.variableIndex())return false;
             if(a.kind()==ExpressionKind::Constant && std::bit_cast<std::uint64_t>(a.constantValue())!=std::bit_cast<std::uint64_t>(b.constantValue()))return false;
@@ -367,6 +402,15 @@ private:
             else if (node.kind() == ExpressionKind::Variable) stack.push_back(bindings[node.variableIndex()]);
             else if (expressionArity(node.kind()) == 1) {
                 const double argument = stack.back();
+                if (node.kind() == ExpressionKind::CustomUnary) {
+                    const double args[]{argument};
+                    ++executed;
+                    auto value = node.customOperator().evaluate(args);
+                    if (!value || !std::isfinite(*value))
+                        return ExpressionResult(i, executed);
+                    stack.back() = *value;
+                    continue;
+                }
                 const auto value = genetik_detail::scalarUnary(node.kind(), argument,
                     expressionPowerMetadata(node.kind()) ? node.exponent() : 0, [&executed]{++executed;});
                 if (!value) return ExpressionResult(i, executed);
@@ -377,6 +421,15 @@ private:
             } else {
                 const double right = stack.back(); stack.pop_back();
                 const double left = stack.back();
+                if (node.kind() == ExpressionKind::CustomBinary) {
+                    const double args[]{left, right};
+                    ++executed;
+                    auto value = node.customOperator().evaluate(args);
+                    if (!value || !std::isfinite(*value))
+                        return ExpressionResult(i, executed);
+                    stack.back() = *value;
+                    continue;
+                }
                 const auto value = genetik_detail::scalarBinary(node.kind(), left, right, [&executed]{++executed;});
                 if (!value) return ExpressionResult(i, executed);
                 stack.back() = *value;
@@ -405,9 +458,37 @@ public:
                 out += 'x'; out.append(buffer, result.ptr); stack.pop_back();
             } else if(node.kind()>=ExpressionKind::NegativePowi){
                 const auto arity=expressionArity(node.kind());
-                if(frame.phase==0){out+=(node.kind()==ExpressionKind::NegativePowi?"powi":std::string(scalarOperatorDescription(node.kind()).name))+"(";frame.phase=1;std::size_t child=frame.root-1;for(std::size_t j=1;j<arity;++j)child-=subtreeSizes_[child];stack.push_back({child,0});}
-                else if(frame.phase<arity){out+=", ";const auto next=frame.phase++;std::size_t child=frame.root-1;for(std::size_t j=next+1;j<arity;++j)child-=subtreeSizes_[child];stack.push_back({child,0});}
-                else {if(node.kind()==ExpressionKind::NegativePowi)out+=",-"+std::to_string(node.exponent());out+=')';stack.pop_back();}
+                if (frame.phase == 0) {
+                    if (node.kind() == ExpressionKind::CustomUnary ||
+                        node.kind() == ExpressionKind::CustomBinary) {
+                        // Keep custom calls in a reserved, quoted namespace. IDs may
+                        // contain token characters such as '-' and '/', which the
+                        // built-in parser otherwise interprets as arithmetic.
+                        out += "custom(\"" + node.customOperator().id + "\", ";
+                    } else {
+                        out += (node.kind() == ExpressionKind::NegativePowi
+                                    ? "powi"
+                                    : std::string(scalarOperatorDescription(node.kind()).name)) +
+                               "(";
+                    }
+                    frame.phase = 1;
+                    std::size_t child = frame.root - 1;
+                    for (std::size_t j = 1; j < arity; ++j)
+                        child -= subtreeSizes_[child];
+                    stack.push_back({child, 0});
+                } else if (frame.phase < arity) {
+                    out += ", ";
+                    const auto next = frame.phase++;
+                    std::size_t child = frame.root - 1;
+                    for (std::size_t j = next + 1; j < arity; ++j)
+                        child -= subtreeSizes_[child];
+                    stack.push_back({child, 0});
+                } else {
+                    if (node.kind() == ExpressionKind::NegativePowi)
+                        out += ",-" + std::to_string(node.exponent());
+                    out += ')';
+                    stack.pop_back();
+                }
             } else if (expressionArity(node.kind()) == 1) {
                 if (frame.phase == 0) {
                     out += node.kind() == ExpressionKind::Log ? "log(" : genetik_detail::scientificName(genetik_detail::scientificKind(node.kind())) + "("; frame.phase = 1; stack.push_back({frame.root - 1, 0});

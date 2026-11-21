@@ -132,6 +132,9 @@ private:
         if(t.kind!=TokenKind::Name)fail(Category::Syntax,t.offset,"expected expression");
         lex_.next();
         if(t.text=="nan"||t.text=="inf"||t.text=="infinity")fail(Category::Literal,t.offset,"nonfinite literal is unsupported");
+        if (t.text == "custom")
+            fail(Category::UnknownSymbol, t.offset,
+                 "custom operator calls require a registered operator and cannot be parsed here");
         if(t.text.size()>1 && t.text[0]=='x' && digit(t.text[1])) {
             std::size_t index=0;const auto s=t.text.substr(1);const auto r=std::from_chars(s.data(),s.data()+s.size(),index);
             if(r.ec!=std::errc{} || r.ptr!=s.data()+s.size() || (s.size()>1&&s[0]=='0'))fail(Category::UnknownSymbol,t.offset,"invalid canonical variable");

@@ -139,3 +139,4 @@ genetik_rational_symbolic_initialization_contracts|numerical,unit,integration
 genetik_s2_exact_constraint_contracts|numerical,unit
 genetik_evaluation_reference|unit
 genetik_d6_optional_package|integration,scientific
+genetik_user_defined_operator_contracts|unit,numerical,integration

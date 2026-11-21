@@ -1,6 +1,8 @@
 #pragma once
 #include "ExpressionDerivative.hpp"
 #include "ScientificWork.hpp"
+#include <array>
+#include <utility>
 
 struct SecondPartialValue {
   double primal = 0, firstI = 0, firstJ = 0, second = 0;
@@ -92,6 +94,72 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
                                         "inactive binary primal"};
           stack.push_back({*value, 0, 0, 0, false});
           continue;
+        }
+        if (k == K::Hypot) {
+            b.charge();
+            const double radius = b.finite(std::hypot(a.v, c.v));
+            if (radius == 0.0)
+                throw genetik_science::Stop{ScientificStatus::Unavailable,
+                                            "second partial at hypot origin"};
+            const double scale = std::max(std::abs(a.v), std::abs(c.v));
+            const double scaledA = b.div(a.v, scale);
+            const double scaledC = b.div(c.v, scale);
+            b.charge();
+            const double scaledRadius = b.finite(std::hypot(scaledA, scaledC));
+            const double u = b.div(scaledA, scaledRadius);
+            const double v = b.div(scaledC, scaledRadius);
+            const double di = b.add(b.mul(u, a.di), b.mul(v, c.di));
+            const double dj = b.add(b.mul(u, a.dj), b.mul(v, c.dj));
+            double dij = b.add(b.mul(u, a.dij), b.mul(v, c.dij));
+            // Evaluate one Hessian contraction at a time. Computing all
+            // entries can overflow for an entry that is not part of this
+            // requested partial (for example yy when y=0 and x is tiny).
+            // Decompose factors before multiplying so a representable result
+            // near the limits of the double range does not overflow in an
+            // intermediate operation.
+            const auto scaledProductQuotient = [&](std::array<double, 4> numerator,
+                                                   std::array<double, 4> denominator) {
+                for (double factor : numerator)
+                    if (factor == 0.0)
+                        return 0.0;
+                b.charge(18); // eight frexp/multiplies, divide, scalbn
+                int exponent = 0;
+                double numeratorMantissa = 1.0;
+                for (double factor : numerator) {
+                    int part = 0;
+                    numeratorMantissa *= std::frexp(factor, &part);
+                    exponent += part;
+                }
+                double denominatorMantissa = 1.0;
+                for (double factor : denominator) {
+                    int part = 0;
+                    denominatorMantissa *= std::frexp(factor, &part);
+                    exponent -= part;
+                }
+                const double mantissa = numeratorMantissa / denominatorMantissa;
+                return b.finite(std::scalbn(mantissa, exponent));
+            };
+            // Form each directional difference before multiplying. Expanding
+            // the product into four Hessian terms leaves rounding residuals
+            // for a composed straight ray such as hypot(3*x,4*x). Scale the
+            // derivative pair and operands before subtraction to avoid
+            // overflowing their products.
+            const auto directionalDifference = [&](double first, double second) {
+                const double derivativeScale = std::max(std::abs(first), std::abs(second));
+                if (derivativeScale == 0.0)
+                    return std::pair{0.0, 0.0};
+                const double difference = b.sub(b.mul(scaledC, b.div(first, derivativeScale)),
+                                                b.mul(scaledA, b.div(second, derivativeScale)));
+                return std::pair{derivativeScale, difference};
+            };
+            const auto [scaleI, differenceI] = directionalDifference(a.di, c.di);
+            const auto [scaleJ, differenceJ] = directionalDifference(a.dj, c.dj);
+            const double curvature =
+                scaledProductQuotient({scaleI, differenceI, scaleJ, differenceJ},
+                                      {scale, scaledRadius, scaledRadius, scaledRadius});
+            dij = b.add(dij, curvature);
+            stack.push_back({radius, di, dj, dij, true});
+            continue;
         }
         if (k == K::Add || k == K::Subtract) {
           auto op = [&](double u, double v) {

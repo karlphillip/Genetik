@@ -51,7 +51,8 @@ enum class ExpressionKind {
     Atanh,
     Sigmoid,
     Softplus,
-    Sinc
+    Sinc,
+    Hypot
 };
 struct ScalarOperatorDescription {
     ExpressionKind kind;
@@ -103,7 +104,8 @@ inline constexpr std::array scalarOperators{
     ScalarOperatorDescription{ExpressionKind::Atanh, "atanh", 1},
     ScalarOperatorDescription{ExpressionKind::Sigmoid, "sigmoid", 1},
     ScalarOperatorDescription{ExpressionKind::Softplus, "softplus", 1},
-    ScalarOperatorDescription{ExpressionKind::Sinc, "sinc", 1}};
+    ScalarOperatorDescription{ExpressionKind::Sinc, "sinc", 1},
+    ScalarOperatorDescription{ExpressionKind::Hypot, "hypot", 2}};
 inline const ScalarOperatorDescription &scalarOperatorDescription(ExpressionKind kind) {
     const auto i = static_cast<std::size_t>(kind);
     if (i >= scalarOperators.size() || scalarOperators[i].kind != kind)

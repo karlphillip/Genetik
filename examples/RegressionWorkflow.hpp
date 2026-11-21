@@ -31,6 +31,7 @@ inline const char* operatorName(ExpressionKind kind) {
     case ExpressionKind::Sigmoid: return "sigmoid";
     case ExpressionKind::Softplus: return "softplus";
     case ExpressionKind::Sinc: return "sinc";
+    case ExpressionKind::Hypot: return "hypot";
     default: throw std::invalid_argument("expected an operator kind");
     }
 }
@@ -46,7 +47,7 @@ inline std::vector<ExpressionKind> selectOperators(const std::vector<std::string
                           ExpressionKind::Cos, ExpressionKind::Exp, ExpressionKind::Sqrt,
                           ExpressionKind::Powi, ExpressionKind::Asinh, ExpressionKind::Acosh,
                           ExpressionKind::Atanh, ExpressionKind::Sigmoid, ExpressionKind::Softplus,
-                          ExpressionKind::Sinc})
+                          ExpressionKind::Sinc, ExpressionKind::Hypot})
             if (name == operatorName(kind)) { kinds.push_back(kind); found = true; break; }
         if (!found) throw std::invalid_argument("--operators: unsupported operator '" + name + "'");
     }

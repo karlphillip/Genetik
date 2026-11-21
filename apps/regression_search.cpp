@@ -16,7 +16,8 @@ static void usage() {
         << "Usage: genetik_regression_search TRAIN.csv --inputs first,second --target target "
            "--seed N --loss-budget N [--loss-threshold MSE] [--threads N] [--fit-every N] "
            "[--no-fit] [--operators "
-           "add,sub,mul,div,log,sin,cos,exp,sqrt,powi,asinh,acosh,atanh,sigmoid,softplus,sinc] "
+           "add,sub,mul,div,log,sin,cos,exp,sqrt,hypot,powi,asinh,acosh,atanh,sigmoid,softplus,"
+           "sinc] "
            "[--exponents 0,1,2,3,4,5,6,7,8] [--population N] [--nodes N] [--depth N] "
            "[--discrete-only] [--evaluate FILE ...]\n"
         << "Input order defines x0,x1,...; budget is actual training-loss attempts, 0..10000000.\n";

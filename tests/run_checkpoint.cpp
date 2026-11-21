@@ -97,7 +97,7 @@ static void fileTests(const std::filesystem::path& root){
     CheckpointWriter fields;fields.integer(0x0102030405060708ULL);fields.real(-0.0);CheckpointReader values(fields.data());check(values.integer()==0x0102030405060708ULL&&std::signbit(values.real()),"fixed-endian integer and signed binary64 fields");values.finish();
     auto incompatible=d;incompatible.runtime="other-runtime";rejects([&]{decodeCheckpoint(encodeCheckpoint(incompatible));});
     auto scalarProblem=RegressionProblem::create({{{1},1}},{64,16,std::numeric_limits<double>::max()});
-    for(auto source:{"x0+1","x0-1","x0*x0","x0/0","log(x0)","sin(x0)","cos(x0)","exp(x0)","sqrt(x0)","powi(x0,0)","powi(x0,1)","powi(x0,8)","(-0.0)","1e-300","1.7976931348623157e308","1+1"}){
+    for(auto source:{"x0+1","x0-1","x0*x0","x0/0","hypot(x0,x0)","log(x0)","sin(x0)","cos(x0)","exp(x0)","sqrt(x0)","powi(x0,0)","powi(x0,1)","powi(x0,8)","(-0.0)","1e-300","1.7976931348623157e308","1+1"}){
         ExpressionCandidate original(parseExpression(source,1,{},scalarProblem->limits()),scalarProblem);original.calculateFitness();CheckpointWriter writer;CandidateCheckpointCodec<ExpressionCandidate>::encode(writer,original);
         CheckpointReader reader(writer.data());const auto copy=CandidateCheckpointCodec<ExpressionCandidate>::decode(reader,ScalarCheckpointContext{scalarProblem,{}});reader.finish();check(copy.expression().sameRepresentation(original.expression())&&copy.evaluation()==original.evaluation(),"all scalar codec node/constant bits and fitness outcomes");
     }

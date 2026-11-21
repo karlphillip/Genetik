@@ -118,23 +118,24 @@ class BranchLifecycleTests(unittest.TestCase):
         self.assertFalse(remote_delete_allowed(expected_sha=self.base, observed_sha=self.base,
                                                integrated=True, active_worktree=True, dirty_worktree=True))
 
-    def test_failed_ci_blocks_integration(self) -> None:
+    def test_merge_requires_explicit_approval_and_all_qualification_gates(self) -> None:
         evidence = {key: True for key in (
-            "task_pr_approved", "task_merge_approved", "tests_complete",
+            "task_merge_approved", "tests_complete",
             "exact_ci_success", "source_head_unchanged",
             "conflict_free", "review_clear", "scope_verified", "compatible", "provenance_known",
         )}
         self.assertTrue(integration_allowed(evidence))
         for gate in ("tests_complete", "exact_ci_success", "source_head_unchanged", "conflict_free",
                      "review_clear", "scope_verified", "compatible", "provenance_known",
-                     "task_pr_approved", "task_merge_approved"):
+                     "task_merge_approved"):
             blocked = dict(evidence)
             blocked[gate] = False
             self.assertFalse(integration_allowed(blocked), gate)
-        legacy_standing_authorization = {key: value for key, value in evidence.items()
-                                         if key not in ("task_pr_approved", "task_merge_approved")}
-        legacy_standing_authorization["routine_authorized"] = True
-        self.assertFalse(integration_allowed(legacy_standing_authorization))
+        missing_merge_approval = evidence.copy()
+        del missing_merge_approval["task_merge_approved"]
+        self.assertFalse(integration_allowed(missing_merge_approval))
+        for legacy_approval in ("task_pr_approved", "routine_authorized"):
+            self.assertFalse(integration_allowed({**missing_merge_approval, legacy_approval: True}))
         self.assertFalse(integration_allowed({}))
 
     def test_changed_remote_head_blocks_sha_leased_deletion(self) -> None:

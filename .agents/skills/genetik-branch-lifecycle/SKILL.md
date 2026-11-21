@@ -5,7 +5,7 @@ description: Manage the start, qualification, integration, and cleanup of Geneti
 
 # Genetik branch lifecycle
 
-Read and apply this skill at the **start and end of every source-changing task** in this repository. `AGENTS.md` invokes it automatically. Task-specific instructions and the exception rules below override routine automatic integration. This workflow does not authorize publication, tagging, or changes to GitHub protection settings.
+Read and apply this skill at the **start and end of every source-changing task** in this repository. `AGENTS.md` invokes it automatically. Honor task-specific instructions to keep work local. Release publication, tagging, and changes to GitHub protection settings require separate authorization.
 
 ## Safety rules
 
@@ -48,39 +48,33 @@ Read and apply this skill at the **start and end of every source-changing task**
 3. Preserve useful failure reproductions and qualification evidence in the repository's established location. Do not replace historical evidence with a later result.
 4. Review the diff for unrelated files, credentials, generated binaries, omitted dependencies, public API or checkpoint changes, and user modifications. Check `git diff --check`, worktree status, and staged content.
 5. Commit the completed implementation on the task branch and record its exact
-   source SHA. Do not push or open a PR yet.
+   source SHA.
 
-## COMPLETE: report and wait for task approval
+## COMPLETE: open or update the PR
 
 1. Fetch `origin/main` again. Report the task `HEAD`, current `origin/main`
    SHA, and whether main advanced from the task's recorded base. Keep frozen
    research evidence bound to the revision that produced it. If main advanced,
    identify the rebase/merge and qualification needed against the new base;
    do not silently move the task branch.
-2. Completion produces a report and recommendation. Wait for Karl's explicit
-   approval for this task before creating any PR, including a draft. Approval
-   must identify the completed task; prior task approvals and repository
-   history do not carry forward.
-3. After approval, open the PR against `main`. Keep it draft while required
-   implementation or qualification remains. A PR or merge approval does not
-   bypass exact-SHA qualification, hosted checks, independent review where
-   required, mergeability, scope, compatibility, or repository protection.
-   Integrate only within the approval given and after all required gates pass.
+2. When the work is ready to propose, push the task branch and open a PR
+   targeting `main`, or update its existing PR. No approval is needed for
+   either action. Keep work designated local-only or retained as research on
+   its branch. Describe the scope, compatibility, qualification, and limitations.
+3. Use a draft while implementation or required qualification is pending.
+   Once qualified, mark the PR ready for review. Report the PR link, exact
+   head SHA, check results, and merge recommendation to Karl.
 
-## INTEGRATE: only after explicit task approval
+## INTEGRATE: obtain explicit merge approval
 
-There is no standing authorization to create or merge a PR. Explicit approval
-for the current completed task is required before PR creation, including a
-draft. Merge only when that approval covers integration and all required gates
-below pass. Approval to open a PR alone does not authorize merging.
-
-1. Open a PR targeting `main`; describe scope, compatibility, evidence, supported platforms, limitations, and migration impacts. Keep it Draft until implementation and required qualification are complete.
-2. Verify the PR source ref still equals the tested source SHA, the target is current `main`, all required hosted checks passed for that exact SHA, no blocking review/requested changes remain, and GitHub reports no conflicts. Inspect the final diff again for scope/provenance.
-3. Confirm the task's approval covers integration and no exception applies. If
-   all gates pass, mark the PR ready and merge with a normal merge commit using
-   `gh pr merge --merge`. This preserves the approved task SHA as an ancestor
-   of `origin/main`, which the post-merge verification requires. Do not squash
-   or rebase.
+1. Obtain Karl's explicit approval to merge the specific PR at its current head
+   SHA. A new head requires fresh approval. Opening a PR, passing CI, or a
+   reviewer approving the code cannot substitute for Karl's merge decision.
+2. Verify the PR source ref still equals the approved and tested SHA, the target is current `main`, all required hosted checks passed for that exact SHA, required reviews are satisfied, and GitHub reports no conflicts. Inspect the final diff again for scope/provenance.
+3. When all gates pass and no exception applies, merge with
+   `gh pr merge <PR> --merge --match-head-commit <approved-sha>`. The head
+   check prevents merging a newer revision. The normal merge commit preserves
+   the approved SHA as an ancestor of `origin/main`.
 4. Fetch `origin/main`; record the merge SHA and verify the source commit is an
    ancestor of it and the intended tree is present. Do not force-push `main`.
 5. In the primary checkout, fast-forward `main` to the verified remote result
@@ -88,7 +82,7 @@ below pass. Approval to open a PR alone does not authorize merging.
    the checkout's actual branch, SHA, and status; do not reset, clean, or stash
    broadly.
 
-Automatic integration is **prohibited** if tests/qualification fail or are incomplete; work is exploratory research with unresolved results; a public API or checkpoint format is incompatible; mathematical/numerical semantics change significantly; conflicts or blocking reviews remain; the task forbids merging; publication/tag/release authorization is needed; or implementation/provenance is ambiguous. Keep the branch and report the blocker. Ask for direction when needed; do not delete the branch or silently resolve user changes.
+Integration is **prohibited** if tests/qualification fail or are incomplete; work is exploratory research with unresolved results; a public API or checkpoint format is incompatible; mathematical/numerical semantics change significantly; conflicts or blocking reviews remain; the task forbids merging; publication/tag/release authorization is needed; or implementation/provenance is ambiguous. Keep the branch and report the blocker. Ask for direction when needed; do not delete the branch or silently resolve user changes.
 
 ## CLEANUP: only after verified integration
 

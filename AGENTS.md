@@ -12,11 +12,12 @@
   `main` SHA, and whether `main` advanced since the recorded base. If it
   advanced, identify qualification needed against the new base. Keep frozen
   research evidence bound to its original revision.
-- Completion produces a report and recommendation. Do not create a PR, including
-  a draft, until Karl explicitly approves that task. After approval, open the PR
-  against `main`; integrate only within the approval and after required checks,
-  review, mergeability, scope, and compatibility gates pass. No standing or
-  inferred authorization to create or merge PRs applies.
+- For work ready to propose, push the task branch and open or update a PR
+  against `main` without asking Karl. Use a draft while qualification is pending.
+  Honor task-specific instructions to keep work local or research isolated.
+- Only merge after Karl explicitly approves that PR at its current head SHA
+  and all required checks, review, mergeability, scope, and compatibility
+  gates pass. If the head changes, obtain fresh merge approval.
 - Keep research, incomplete/failed qualification, incompatible public API or
   checkpoint changes, significant mathematical-semantic changes, ambiguous
   provenance, and any task that prohibits merging isolated. Never publish,

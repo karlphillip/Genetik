@@ -27,9 +27,8 @@ def git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProce
 
 
 def integration_allowed(evidence: dict[str, bool]) -> bool:
-    """Fail closed unless this task is approved and every integration gate passes."""
+    """Require explicit approval to merge and a passing result for every gate."""
     required = (
-        "task_pr_approved",
         "task_merge_approved",
         "tests_complete",
         "exact_ci_success",

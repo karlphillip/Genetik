@@ -2,6 +2,7 @@
 #include <ScalarExpressionCheckpoint.hpp>
 #include <ScalarMathematicsRun.hpp>
 #include <ExpressionFormatting.hpp>
+#include <ExpressionParsing.hpp>
 #include <ExpressionSecondDerivative.hpp>
 #include <array>
 #include <cmath>
@@ -59,6 +60,38 @@ int main() {
         check(direct.nodeCount() == 6 && stable.nodeCount() == 12 && e.nodeCount() == 3,
               "operator-node complexity comparison");
         check(e.toString().find(op.id) != std::string::npos, "custom operator export identity");
+        const auto checkReservedExport = [](std::string id, std::size_t arity,
+                                            std::vector<ExpressionNode> nodes,
+                                            std::span<const double> input, double expected) {
+            CustomScalarOperator operation{
+                std::move(id),
+                arity,
+                [arity](std::span<const double> args) -> std::optional<double> {
+                    return arity == 1 ? args[0] * args[0] : args[0] + args[1];
+                },
+                {}};
+            nodes.push_back(ExpressionNode::custom(operation));
+            Expression expression(nodes, input.size());
+            const auto text = expression.toString();
+            const auto value = expression.evaluate(input);
+            check(value.valid() && value.value() == expected,
+                  "custom ID example keeps its original value");
+            check(text.starts_with("custom(\"") && text.find(operation.id) != std::string::npos,
+                  "custom export uses reserved ID-bearing form");
+            bool rejected = false;
+            try {
+                (void)parseExpression(text, input.size());
+            } catch (const ExpressionParseError& error) {
+                rejected = error.category() == ExpressionParseCategory::UnknownSymbol;
+            }
+            check(rejected, "built-in parser rejects custom export instead of reinterpreting it");
+        };
+        checkReservedExport("x0-sin", 1, {ExpressionNode::variable(0)}, std::array{2.0}, 4.0);
+        checkReservedExport("1-exp", 1, {ExpressionNode::variable(0)}, std::array{2.0}, 4.0);
+        checkReservedExport("x0/sin", 1, {ExpressionNode::variable(0)}, std::array{2.0}, 4.0);
+        checkReservedExport("example.logaddexp/1", 2,
+                            {ExpressionNode::constant(2.0), ExpressionNode::constant(3.0)},
+                            std::array<double, 0>{}, 5.0);
         const auto squareNamedSin = CustomScalarOperator{
             "sin",
             1,

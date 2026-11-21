@@ -24,9 +24,14 @@ ordinary grammar remains unchanged unless custom descriptors are supplied.
 Full `ScalarMathematicsRun` checkpoints also bind the ordered custom IDs and
 arities in the run identity, including when no saved candidate currently uses
 those operators. A changed custom grammar is therefore rejected on restore.
-Custom IDs may not shadow a built-in operator name or alias. Unicode output prints the
-registered ID as a call, and LaTeX uses `\operatorname{ID}` so a custom
-operation is not displayed as a built-in one. Second-partial evaluation returns
+Custom IDs may not shadow a built-in operator name or alias. Canonical output
+uses the reserved form `custom("ID", arguments...)`, so IDs containing
+arithmetic punctuation cannot be reinterpreted by the built-in expression
+parser. That parser rejects `custom` calls because it has no operator registry;
+applications restore custom expressions from checkpoints with their registered
+descriptors. Unicode output prints the registered ID as a call, and LaTeX uses
+`\operatorname{ID}` so a custom operation is not displayed as a built-in one.
+Second-partial evaluation returns
 zero for custom subtrees independent of the requested variables; active custom
 nodes report unavailable because the API has no custom Hessian callback.
 

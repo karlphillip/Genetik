@@ -459,13 +459,18 @@ public:
             } else if(node.kind()>=ExpressionKind::NegativePowi){
                 const auto arity=expressionArity(node.kind());
                 if (frame.phase == 0) {
-                    out += (node.kind() == ExpressionKind::CustomUnary ||
-                                    node.kind() == ExpressionKind::CustomBinary
-                                ? node.customOperator().id
-                            : node.kind() == ExpressionKind::NegativePowi
-                                ? "powi"
-                                : std::string(scalarOperatorDescription(node.kind()).name)) +
-                           "(";
+                    if (node.kind() == ExpressionKind::CustomUnary ||
+                        node.kind() == ExpressionKind::CustomBinary) {
+                        // Keep custom calls in a reserved, quoted namespace. IDs may
+                        // contain token characters such as '-' and '/', which the
+                        // built-in parser otherwise interprets as arithmetic.
+                        out += "custom(\"" + node.customOperator().id + "\", ";
+                    } else {
+                        out += (node.kind() == ExpressionKind::NegativePowi
+                                    ? "powi"
+                                    : std::string(scalarOperatorDescription(node.kind()).name)) +
+                               "(";
+                    }
                     frame.phase = 1;
                     std::size_t child = frame.root - 1;
                     for (std::size_t j = 1; j < arity; ++j)

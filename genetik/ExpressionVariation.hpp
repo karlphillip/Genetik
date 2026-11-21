@@ -17,7 +17,7 @@ struct ExpressionGrammar {
     std::vector<unsigned> negativeExponents{1,2,3,4,5,6,7,8};
     bool powerExponentsAreConstants=true; // only affects opt-in Pow
     std::vector<double> realExponents{.5,1,2}; // initial constant exponent source, fitting remains explicit
-
+    std::vector<CustomScalarOperator> customOperators;
 };
 struct VariationStatistics {
     std::uint64_t initializations = 0, mutationProposals = 0, crossoverProposals = 0;
@@ -98,34 +98,88 @@ inline void validateExpressionGrammar(std::size_t dimensions,ExpressionLimits li
         if(grammar.realExponents.size()>256||(grammar.powerExponentsAreConstants&&std::find(grammar.operators.begin(),grammar.operators.end(),ExpressionKind::Pow)!=grammar.operators.end()&&grammar.realExponents.empty()))throw std::invalid_argument("constant real-power exponent source");
         if(std::find(grammar.operators.begin(),grammar.operators.end(),ExpressionKind::Pow)!=grammar.operators.end())for(auto e:grammar.realExponents)if(!std::isfinite(e)||std::abs(e)>limits.maxAbsConstant)throw std::invalid_argument("real-power exponent bound");
         for (auto kind : grammar.operators)
-            if (expressionArity(kind) == 0) throw std::invalid_argument("grammar operator cannot be a terminal");
+            if (expressionArity(kind) == 0 || kind == ExpressionKind::CustomUnary ||
+                kind == ExpressionKind::CustomBinary)
+                throw std::invalid_argument("grammar operators must be built-ins; register custom "
+                                            "operators with customOperators");
+        for (std::size_t i = 0; i < grammar.customOperators.size(); ++i) {
+            grammar.customOperators[i].validate();
+            for (std::size_t j = 0; j < i; ++j)
+                if (grammar.customOperators[i].id == grammar.customOperators[j].id)
+                    throw std::invalid_argument("duplicate custom operator ID");
+        }
         for (double value : grammar.constants)
             if (!std::isfinite(value) || std::abs(value) > limits.maxAbsConstant)
                 throw std::invalid_argument("terminal outside problem constant bound");
 }
-inline Expression generateExpression(std::mt19937& rng,std::size_t maximumDepth,std::size_t dimensions,
-       ExpressionLimits limits,const ExpressionGrammar& grammar,const std::vector<std::size_t>* allowed=nullptr) {
-        struct Task { std::size_t budget, depth; bool emit; ExpressionKind kind; unsigned exponent=0; std::size_t work=std::numeric_limits<std::size_t>::max();bool literal=false;double value=0; };
+inline Expression generateExpression(std::mt19937& rng, std::size_t maximumDepth,
+                                     std::size_t dimensions, ExpressionLimits limits,
+                                     const ExpressionGrammar& grammar,
+                                     const std::vector<std::size_t>* allowed = nullptr) {
+    struct Task {
+        std::size_t budget, depth;
+        bool emit;
+        ExpressionKind kind;
+        unsigned exponent = 0;
+        std::size_t work = std::numeric_limits<std::size_t>::max();
+        bool literal = false;
+        double value = 0;
+        std::shared_ptr<const CustomScalarOperator> custom;
+    };
         const auto variableCount=allowed ? allowed->size():dimensions;
         const auto index=[](std::size_t n,std::mt19937& engine){return std::uniform_int_distribution<std::size_t>(0,n-1)(engine);};
         const auto depth = 1 + index(std::min(maximumDepth, limits.maxDepth), rng);
         const bool full = std::bernoulli_distribution(.5)(rng);
-        std::vector<Task> tasks{{limits.maxNodes, depth, false, ExpressionKind::Add, 0, limits.maxArithmeticOperations}};
+        std::vector<Task> tasks{{limits.maxNodes,
+                                 depth,
+                                 false,
+                                 ExpressionKind::Add,
+                                 0,
+                                 limits.maxArithmeticOperations,
+                                 false,
+                                 0,
+                                 {}}};
         std::vector<ExpressionNode> nodes;
         while (!tasks.empty()) {
-            const auto task = tasks.back(); tasks.pop_back();
+            const auto task = tasks.back();
+            tasks.pop_back();
             if(task.literal){nodes.push_back(ExpressionNode::constant(task.value));continue;}
             if (task.emit) {
-                nodes.push_back(expressionPowerMetadata(task.kind)?(task.kind==ExpressionKind::Powi?ExpressionNode::power(task.exponent):ExpressionNode::signedPower(-static_cast<int>(task.exponent))):expressionArity(task.kind)==1?ExpressionNode::unary(task.kind):expressionArity(task.kind)==2?ExpressionNode::binary(task.kind):ExpressionNode::ternary(task.kind));
+                nodes.push_back(
+                    task.custom ? ExpressionNode::custom(*task.custom)
+                    : expressionPowerMetadata(task.kind)
+                        ? (task.kind == ExpressionKind::Powi
+                               ? ExpressionNode::power(task.exponent)
+                               : ExpressionNode::signedPower(-static_cast<int>(task.exponent)))
+                    : expressionArity(task.kind) == 1 ? ExpressionNode::unary(task.kind)
+                    : expressionArity(task.kind) == 2 ? ExpressionNode::binary(task.kind)
+                                                      : ExpressionNode::ternary(task.kind));
                 continue;
             }
             std::vector<ExpressionKind> feasible;
+            if (task.depth > 1)
+                for (const auto& custom : grammar.customOperators) {
+                    const auto kind = custom.arity == 1 ? ExpressionKind::CustomUnary
+                                                        : ExpressionKind::CustomBinary;
+                    if (task.budget > custom.arity && task.work > 0 &&
+                        std::find(feasible.begin(), feasible.end(), kind) == feasible.end())
+                        feasible.push_back(kind);
+                }
             if (task.depth > 1) for (auto kind : grammar.operators)
                 if (task.budget > expressionArity(kind) && (expressionPowerMetadata(kind)?(kind==ExpressionKind::Powi?std::any_of(grammar.exponents.begin(),grammar.exponents.end(),[&](unsigned e){return expressionOperationCost(kind,e)<=task.work;}):std::any_of(grammar.negativeExponents.begin(),grammar.negativeExponents.end(),[&](unsigned e){return expressionOperationCost(kind,e)<=task.work;})):task.work>0)) feasible.push_back(kind);
             const bool operation = !feasible.empty() &&
                 (full || std::bernoulli_distribution(grammar.growBinaryProbability)(rng));
             if (operation) {
                 const auto kind = feasible[index(feasible.size(), rng)];
+                std::shared_ptr<const CustomScalarOperator> custom;
+                if (kind == ExpressionKind::CustomUnary || kind == ExpressionKind::CustomBinary) {
+                    std::vector<const CustomScalarOperator*> choices;
+                    for (const auto& op : grammar.customOperators)
+                        if (op.arity == expressionArity(kind))
+                            choices.push_back(&op);
+                    custom = std::make_shared<const CustomScalarOperator>(
+                        *choices[index(choices.size(), rng)]);
+                }
                 unsigned exponent=0;
                 if(expressionPowerMetadata(kind)) {
                     const auto& source=kind==ExpressionKind::Powi?grammar.exponents:grammar.negativeExponents;std::vector<unsigned> options;for(auto e:source)if(expressionOperationCost(kind,e)<=task.work)options.push_back(e);
@@ -133,24 +187,52 @@ inline Expression generateExpression(std::mt19937& rng,std::size_t maximumDepth,
                 }
                 const auto cost=expressionOperationCost(kind,exponent);
                 const auto remainingWork=task.work-cost;
-                tasks.push_back({0, 0, true, kind, exponent});
-                if (expressionArity(kind) == 1) tasks.push_back({task.budget - 1, task.depth - 1, false, kind, 0, remainingWork});
+                tasks.push_back({0, 0, true, kind, exponent,
+                                 std::numeric_limits<std::size_t>::max(), false, 0,
+                                 std::move(custom)});
+                if (expressionArity(kind) == 1)
+                    tasks.push_back({task.budget - 1,
+                                     task.depth - 1,
+                                     false,
+                                     kind,
+                                     0,
+                                     remainingWork,
+                                     false,
+                                     0,
+                                     {}});
                 else if(expressionArity(kind)==3){
                     // Deterministic left/middle/right budget partition; this branch is opt-in only.
                     const auto first=1+index(task.budget-3,rng);const auto second=1+index(task.budget-2-first,rng);const auto third=task.budget-1-first-second;
                     const auto w=limits.maxArithmeticOperations==std::numeric_limits<std::size_t>::max()?remainingWork:remainingWork/3;
-                    tasks.push_back({third,task.depth-1,false,kind,0,w});tasks.push_back({second,task.depth-1,false,kind,0,w});tasks.push_back({first,task.depth-1,false,kind,0,w});
-                }
-                else if(kind==ExpressionKind::Pow&&grammar.powerExponentsAreConstants){
+                    tasks.push_back({third, task.depth - 1, false, kind, 0, w, false, 0, {}});
+                    tasks.push_back({second, task.depth - 1, false, kind, 0, w, false, 0, {}});
+                    tasks.push_back({first, task.depth - 1, false, kind, 0, w, false, 0, {}});
+                } else if (kind == ExpressionKind::Pow && grammar.powerExponentsAreConstants) {
                     const auto exponentValue=grammar.realExponents[index(grammar.realExponents.size(),rng)];
-                    tasks.push_back({1,1,false,kind,0,0,true,exponentValue});tasks.push_back({task.budget-2,task.depth-1,false,kind,0,remainingWork});
-                }
-                else {
+                    tasks.push_back({1, 1, false, kind, 0, 0, true, exponentValue, {}});
+                    tasks.push_back({task.budget - 2,
+                                     task.depth - 1,
+                                     false,
+                                     kind,
+                                     0,
+                                     remainingWork,
+                                     false,
+                                     0,
+                                     {}});
+                } else {
                     const auto left = 1 + index(task.budget - 2, rng);
                     const auto leftWork=limits.maxArithmeticOperations==std::numeric_limits<std::size_t>::max() ? remainingWork : remainingWork/2;
                     const auto rightWork=limits.maxArithmeticOperations==std::numeric_limits<std::size_t>::max() ? remainingWork : remainingWork-leftWork;
-                    tasks.push_back({task.budget - 1 - left, task.depth - 1, false, kind, 0, rightWork});
-                    tasks.push_back({left, task.depth - 1, false, kind, 0, leftWork});
+                    tasks.push_back({task.budget - 1 - left,
+                                     task.depth - 1,
+                                     false,
+                                     kind,
+                                     0,
+                                     rightWork,
+                                     false,
+                                     0,
+                                     {}});
+                    tasks.push_back({left, task.depth - 1, false, kind, 0, leftWork, false, 0, {}});
                 }
             } else if (variableCount && ((grammar.constants.empty() && grammar.continuousProbability == 0) || std::bernoulli_distribution(.5)(rng)))
                 nodes.push_back(ExpressionNode::variable(allowed ? (*allowed)[index(variableCount,rng)]:index(dimensions,rng)));
@@ -200,6 +282,16 @@ public:
         const auto nodes = expression.nodes();
         for (std::size_t i = 0; i < nodes.size(); ++i) {
             const auto kind = nodes[i].kind();
+            if (kind == ExpressionKind::CustomUnary || kind == ExpressionKind::CustomBinary) {
+                const auto& id = nodes[i].customOperator().id;
+                auto it = std::find_if(grammar_.customOperators.begin(),
+                                       grammar_.customOperators.end(), [&](const auto& op) {
+                                           return op.id == id && op.arity == expressionArity(kind);
+                                       });
+                if (it == grammar_.customOperators.end())
+                    return false;
+                continue;
+            }
             if (kind == ExpressionKind::Constant) {
                 if (std::abs(nodes[i].constantValue()) > problem_->limits().maxAbsConstant)
                     return false;

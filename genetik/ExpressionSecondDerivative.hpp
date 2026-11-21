@@ -86,6 +86,19 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
       if (expressionArity(k) == 2) {
         auto a = stack.back();
         stack.pop_back();
+        if (k == K::CustomBinary) {
+            b.charge();
+            const double args[]{a.v, c.v};
+            auto value = n.customOperator().evaluate(args);
+            if (!value || !std::isfinite(*value))
+                throw genetik_science::Stop{ScientificStatus::Invalid,
+                                            "invalid custom binary primal"};
+            if (a.active || c.active)
+                throw genetik_science::Stop{ScientificStatus::Unavailable,
+                                            "custom binary second partial rule unavailable"};
+            stack.push_back({*value, 0, 0, 0, false});
+            continue;
+        }
         if (!a.active && !c.active) {
           auto value =
               genetik_detail::scalarBinary(k, a.v, c.v, [&] { b.charge(); });
@@ -203,6 +216,19 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
                                       "inactive ternary primal"};
         stack.push_back({*value, 0, 0, 0, false});
       } else {
+          if (k == K::CustomUnary) {
+              b.charge();
+              const double args[]{c.v};
+              auto value = n.customOperator().evaluate(args);
+              if (!value || !std::isfinite(*value))
+                  throw genetik_science::Stop{ScientificStatus::Invalid,
+                                              "invalid custom unary primal"};
+              if (c.active)
+                  throw genetik_science::Stop{ScientificStatus::Unavailable,
+                                              "custom unary second partial rule unavailable"};
+              stack.push_back({*value, 0, 0, 0, false});
+              continue;
+          }
         auto v = genetik_detail::scalarUnary(
             k, c.v, expressionPowerMetadata(k) ? n.exponent() : 0,
             [&] { b.charge(); });

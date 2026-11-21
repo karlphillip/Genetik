@@ -52,7 +52,9 @@ enum class ExpressionKind {
     Sigmoid,
     Softplus,
     Sinc,
-    Hypot
+    Hypot,
+    CustomUnary,
+    CustomBinary
 };
 struct ScalarOperatorDescription {
     ExpressionKind kind;
@@ -105,7 +107,9 @@ inline constexpr std::array scalarOperators{
     ScalarOperatorDescription{ExpressionKind::Sigmoid, "sigmoid", 1},
     ScalarOperatorDescription{ExpressionKind::Softplus, "softplus", 1},
     ScalarOperatorDescription{ExpressionKind::Sinc, "sinc", 1},
-    ScalarOperatorDescription{ExpressionKind::Hypot, "hypot", 2}};
+    ScalarOperatorDescription{ExpressionKind::Hypot, "hypot", 2},
+    ScalarOperatorDescription{ExpressionKind::CustomUnary, "custom_unary", 1},
+    ScalarOperatorDescription{ExpressionKind::CustomBinary, "custom_binary", 2}};
 inline const ScalarOperatorDescription &scalarOperatorDescription(ExpressionKind kind) {
     const auto i = static_cast<std::size_t>(kind);
     if (i >= scalarOperators.size() || scalarOperators[i].kind != kind)
@@ -115,7 +119,8 @@ inline const ScalarOperatorDescription &scalarOperatorDescription(ExpressionKind
 inline std::size_t expressionArity(ExpressionKind kind) { return scalarOperatorDescription(kind).arity; }
 inline std::optional<ExpressionKind> scalarOperatorFromName(std::string_view name) {
     for (auto d : scalarOperators)
-        if (d.arity && d.name == name)
+        if (d.arity && d.kind != ExpressionKind::CustomUnary &&
+            d.kind != ExpressionKind::CustomBinary && d.name == name)
             return d.kind;
     return {};
 }

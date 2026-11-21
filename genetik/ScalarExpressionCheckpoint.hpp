@@ -6,6 +6,7 @@
 struct ScalarCheckpointContext {
     std::shared_ptr<const RegressionProblem> problem;
     std::shared_ptr<RegressionPreparation> preparation;
+    std::vector<CustomScalarOperator> customOperators{};
 };
 // Explicit first-party codec; constrained/template contexts and custom subclasses
 // require their own codec. Cached scores are trusted only after context validation.
@@ -20,6 +21,9 @@ template<> struct CandidateCheckpointCodec<ExpressionCandidate> {
             if(n.kind()==ExpressionKind::Constant)w.real(n.constantValue());
             else if(n.kind()==ExpressionKind::Variable)w.integer(n.variableIndex());
             else if(expressionPowerMetadata(n.kind()))w.integer(n.exponent());
+            else if (n.kind() == ExpressionKind::CustomUnary ||
+                     n.kind() == ExpressionKind::CustomBinary)
+                w.text(n.customOperator().id);
         }
         w.integer(c.fitnessState()==FitnessState::Valid?1:c.fitnessState()==FitnessState::Invalid?2:0);
         if(c.fitnessState()==FitnessState::Valid)w.real(c.fitness());
@@ -36,9 +40,26 @@ template<> struct CandidateCheckpointCodec<ExpressionCandidate> {
         const auto count=r.count(l.maxNodes);if(!count)throw CheckpointError("empty expression checkpoint");std::vector<ExpressionNode> nodes;nodes.reserve(count);
         for(std::size_t i=0;i<count;++i){const auto k=codeKind(r.integer());
             if(k==ExpressionKind::Constant)nodes.push_back(ExpressionNode::constant(r.real()));
-            else if(k==ExpressionKind::Variable)nodes.push_back(ExpressionNode::variable(r.count(vars?vars-1:0)));
-            else if(expressionPowerMetadata(k)){auto power=static_cast<unsigned>(r.count(8));if(k==ExpressionKind::NegativePowi&&!power)throw CheckpointError("zero negative-power magnitude");nodes.push_back(k==ExpressionKind::Powi?ExpressionNode::power(power):ExpressionNode::signedPower(-static_cast<int>(power)));}
-            else if(expressionArity(k)==1)nodes.push_back(ExpressionNode::unary(k));
+            else if (k == ExpressionKind::Variable)
+                nodes.push_back(ExpressionNode::variable(r.count(vars ? vars - 1 : 0)));
+            else if (expressionPowerMetadata(k)) {
+                auto power = static_cast<unsigned>(r.count(8));
+                if (k == ExpressionKind::NegativePowi && !power)
+                    throw CheckpointError("zero negative-power magnitude");
+                nodes.push_back(k == ExpressionKind::Powi
+                                    ? ExpressionNode::power(power)
+                                    : ExpressionNode::signedPower(-static_cast<int>(power)));
+            } else if (k == ExpressionKind::CustomUnary || k == ExpressionKind::CustomBinary) {
+                const auto id = r.text();
+                auto it = std::find_if(
+                    context.customOperators.begin(), context.customOperators.end(),
+                    [&](const auto& op) { return op.id == id && op.arity == expressionArity(k); });
+                if (it == context.customOperators.end())
+                    throw CheckpointError("checkpoint custom operator is not registered: " + id);
+                it->validate();
+                nodes.push_back(ExpressionNode::custom(*it));
+            } else if (expressionArity(k) == 1)
+                nodes.push_back(ExpressionNode::unary(k));
             else if(expressionArity(k)==2)nodes.push_back(ExpressionNode::binary(k));else nodes.push_back(ExpressionNode::ternary(k));
         }
         ExpressionCandidate c(Expression(nodes,vars,l),context.problem,context.preparation);

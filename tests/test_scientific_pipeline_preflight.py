@@ -304,6 +304,24 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
         with self.assertRaises(module.PreflightError):
             module.verify_admission(self.protocol)
 
+    def test_rational_rehearsal_limits_complete_outer_synthetic_preflight(self):
+        self.spec["limits"] = {
+            "address_space_bytes": 512 * 1024 * 1024,
+            "cpu_seconds": 8,
+            "output_bytes": 8 * 1024 * 1024,
+            "wall_seconds": 20,
+        }
+        self.write_inputs()
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads(self.receipt_path.read_text())
+        self.assertEqual(receipt["status"], "passed")
+        self.assertEqual(receipt["spec_sha256"], sha(self.spec_path.read_bytes()))
+        evidence = Path(receipt["evidence_directory"])
+        report = json.loads((evidence / "pipeline/scientific-report.json").read_text())
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(report["scored_run_count"], 2)
+
     def test_schema1_swapped_control_training_bindings_fail_in_runner(self):
         self.spec["commands"]["runner"]["argv"].append("--swap-training-bindings")
         self.write_inputs()
@@ -957,6 +975,132 @@ pathlib.Path(a.report_output).write_text(json.dumps(report,sort_keys=True))
             self.assertEqual(admission["receipt_path"], self.receipt_path.resolve())
         self.assertEqual(json.loads((successor_dir / "runs/preflight-runner/receipt.json").read_text())[
             "protocol_sha256"], (successor_dir / "PROGRAM.sha256").read_text().split()[0])
+
+    def test_rational_limits_successor_activation_runs_outer_preflight_through_aggregation(self):
+        """Activate one disposable limits-only successor, then admit its exact package."""
+        import contextlib
+        import copy
+        import io
+        import research_execution
+        from research_execution import canonical_json, _initialize_process_ledger, _validate_bounded_program
+
+        predecessor_dir = self.root / "rational-predecessor"
+        self.protocol["execution_program_dir"] = str(predecessor_dir)
+        self.write_inputs()
+        original_spec = copy.deepcopy(self.spec)
+        original_spec.pop("limits")
+        old_spec_path = self.root / "rational-refused-spec.json"
+        old_spec_path.write_bytes(canonical_json(original_spec))
+
+        predecessor = json.loads(self.process_protocol_path.read_text())
+        predecessor["protocol_id"] = "rational-seeded-synthetic-v1"
+        predecessor["source_commit"] = "a" * 40
+        predecessor["program_budget"]["program_id"] = "rational-seeded-synthetic"
+        ledger = self.process_ledger / "rational-seeded-synthetic"
+        predecessor["program_budget"]["ledger_dir"] = str(ledger.resolve())
+        predecessor["program_budget"]["max_lifetime_cpu_seconds"] = 1_000_000
+        predecessor["program_budget"]["max_lifetime_wall_seconds"] = 1_000_000
+        predecessor["limits"]["max_total_cpu_seconds"] = 1_000_000
+        predecessor["limits"]["max_total_wall_seconds"] = 1_000_000
+        predecessor["limits"]["max_cpu_seconds"] = 30
+        predecessor["limits"]["max_wall_seconds"] = 45
+        predecessor["limits"]["max_output_bytes"] = 8 * 1024 * 1024
+        spec_artifact = next(item for item in predecessor["artifacts"] if item["id"] == "preflight-spec")
+        spec_artifact["path"] = str(old_spec_path)
+        spec_artifact["sha256"] = sha(old_spec_path.read_bytes())
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.process_ledger.resolve()):
+            config = _validate_bounded_program(predecessor)
+            predecessor_dir.mkdir()
+            predecessor_bytes = canonical_json(predecessor)
+            predecessor_sha = sha(predecessor_bytes)
+            (predecessor_dir / "program.json").write_bytes(predecessor_bytes)
+            (predecessor_dir / "PROGRAM.sha256").write_text(f"{predecessor_sha}  program.json\n")
+            _initialize_process_ledger(config)
+
+        limits = dict(research_execution.RATIONAL_SEEDED_LIMITS)
+        successor_spec = copy.deepcopy(original_spec)
+        successor_spec["limits"] = limits
+        successor_spec_path = self.root / "rational-successor-spec.json"
+        successor_spec_path.write_text(json.dumps(successor_spec, sort_keys=True))
+        limits_source = self.root / "passing-rehearsal.json"
+        limits_source.write_bytes(successor_spec_path.read_bytes())
+        refusal = self.root / "retained-refusal.md"
+        refusal.write_text(
+            "No bounded stage was launched and no target run started.\n"
+            f"{predecessor_sha}\n"
+            "0 invocations reserved, 0 CPU seconds charged, 0 wall seconds charged; "
+            "no pending reservation; only ledger event is creation.\n")
+
+        successor = copy.deepcopy(predecessor)
+        successor["protocol_id"] = "rational-seeded-synthetic-v2"
+        successor["source_commit"] = "b" * 40
+        successor_spec_artifact = next(item for item in successor["artifacts"]
+                                       if item["id"] == "preflight-spec")
+        successor_spec_artifact["path"] = str(successor_spec_path)
+        successor_spec_artifact["sha256"] = sha(successor_spec_path.read_bytes())
+        successor_source = self.root / "rational-successor-protocol.json"
+        successor_source.write_bytes(canonical_json(successor))
+        successor_dir = self.root / "rational-successor"
+
+        with contextlib.ExitStack() as stack, contextlib.redirect_stdout(io.StringIO()):
+            stack.enter_context(mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.process_ledger.resolve()))
+            stack.enter_context(mock.patch.object(research_execution, "RATIONAL_SEEDED_PROGRAM_ID",
+                                                   "rational-seeded-synthetic"))
+            stack.enter_context(mock.patch.object(research_execution, "RATIONAL_SEEDED_PREDECESSOR_PROTOCOL_SHA256",
+                                                   predecessor_sha))
+            stack.enter_context(mock.patch.object(research_execution, "RATIONAL_SEEDED_REFUSAL_SHA256",
+                                                   sha(refusal.read_bytes())))
+            stack.enter_context(mock.patch.object(research_execution, "RATIONAL_SEEDED_PREDECESSOR_SPEC_SHA256",
+                                                   sha(old_spec_path.read_bytes())))
+            stack.enter_context(mock.patch.object(research_execution, "RATIONAL_SEEDED_LIMITS_SOURCE_SHA256",
+                                                   sha(limits_source.read_bytes())))
+            self.assertEqual(research_execution.main([
+                "successor-program", "--predecessor-dir", str(predecessor_dir),
+                "--protocol", str(successor_source), "--destination", str(successor_dir),
+                "--preflight-limits-refusal", str(refusal), "--preflight-limits-source", str(limits_source)]), 0)
+
+        # The outer preflight resolves the predecessor anchor through the active
+        # ledger and runs only the exact successor-pinned spec bytes.
+        self.execution_dir = predecessor_dir
+        self.spec = successor_spec
+        self.spec_path = successor_spec_path
+        self.protocol["execution_program_dir"] = str(predecessor_dir)
+        self.receipt_path = self.root / "rational-successor-receipt.json"
+        self.write_inputs()
+        activated = json.loads((successor_dir / "program.json").read_text())
+        activated_spec = next(item for item in activated["artifacts"] if item["id"] == "preflight-spec")
+        self.assertEqual(sha(successor_spec_path.read_bytes()), activated_spec["sha256"])
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.process_ledger.resolve()))
+            stack.enter_context(mock.patch.object(research_execution, "RATIONAL_SEEDED_PROGRAM_ID",
+                                                   "rational-seeded-synthetic"))
+            stack.enter_context(mock.patch.object(research_execution, "RATIONAL_SEEDED_PREDECESSOR_PROTOCOL_SHA256",
+                                                   predecessor_sha))
+            stack.enter_context(mock.patch.object(research_execution, "RATIONAL_SEEDED_REFUSAL_SHA256",
+                                                   sha(refusal.read_bytes())))
+            stack.enter_context(mock.patch.object(research_execution, "RATIONAL_SEEDED_PREDECESSOR_SPEC_SHA256",
+                                                   sha(old_spec_path.read_bytes())))
+            stack.enter_context(mock.patch.object(research_execution, "RATIONAL_SEEDED_LIMITS_SOURCE_SHA256",
+                                                   sha(limits_source.read_bytes())))
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as stderr:
+                result = preflight_module.main([
+                    "--protocol", str(self.protocol_path), "--spec", str(self.spec_path),
+                    "--receipt", str(self.receipt_path)])
+            self.assertEqual(result, 0, stderr.getvalue())
+        receipt = json.loads(self.receipt_path.read_text())
+        self.assertEqual(receipt["status"], "passed")
+        self.assertEqual(receipt["spec_sha256"], sha(successor_spec_path.read_bytes()))
+        self.assertEqual(receipt["spec_sha256"], activated_spec["sha256"])
+        self.assertEqual([stage["stage"] for stage in receipt["stages"]],
+                         ["runner", "verifier", "scorer", "aggregator"])
+        report = json.loads((Path(receipt["evidence_directory"]) /
+                             "pipeline/scientific-report.json").read_text())
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(report["scored_run_count"], 2)
+        self.assertEqual(report["exact_run_count"], 2)
+        ledger_state = json.loads((ledger / "process-budget.json").read_text())
+        self.assertEqual(ledger_state["qualification_status"], "qualified")
+        self.assertIsNone(ledger_state["pending"])
 
     def test_synthetic_pipeline_runs_complete_campaign_verification_scoring_and_aggregation(self):
         self.write_inputs()

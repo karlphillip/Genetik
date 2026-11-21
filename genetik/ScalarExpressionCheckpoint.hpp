@@ -6,7 +6,7 @@
 struct ScalarCheckpointContext {
     std::shared_ptr<const RegressionProblem> problem;
     std::shared_ptr<RegressionPreparation> preparation;
-    std::vector<CustomScalarOperator> customOperators;
+    std::vector<CustomScalarOperator> customOperators{};
 };
 // Explicit first-party codec; constrained/template contexts and custom subclasses
 // require their own codec. Cached scores are trusted only after context validation.

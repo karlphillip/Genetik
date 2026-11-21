@@ -495,3 +495,8 @@ resource limits. Runtime is measured separately. The next mathematical priority 
 to improve exact recovery within the existing grammar by reducing the search space
 through sound specification constraints, with matched controls and explicit cost
 accounting. See `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
+# Regression priority
+
+The next regression capability after opt-in user-defined scalar operators is
+complex-coefficient fitting. Treat it as a separate milestone; do not infer
+complex support from the existing real-valued LM and derivative paths.

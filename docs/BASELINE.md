@@ -1286,3 +1286,15 @@ before initializing the process ledger or writing a package. Runtime preflight
 continues to validate the spec, and historical package read/verification
 behavior is unchanged. This closes the gap where a successful rehearsal spec
 and a different frozen spec could have different hashes and limits contracts.
+
+## User-defined scalar operators
+
+An opt-in scalar grammar extension accepts immutable application descriptors
+for unary and binary operators with stable checkpoint IDs, checked finite
+evaluation, and analytic first partials. Built-in grammar generation and
+checkpoint payloads remain unchanged when no descriptors are configured.
+Checkpoint restoration of custom nodes requires the application to provide the
+same ID and arity; callback code is never serialized. `logaddexp` demonstrates
+the 3-node primitive versus a 12-node stable built-in composition and the
+strict-domain failure of its 6-node direct exponential formula at extreme
+inputs. See `USER_DEFINED_SCALAR_OPERATORS.md`.

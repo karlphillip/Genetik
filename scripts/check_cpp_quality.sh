@@ -39,6 +39,10 @@ cd "$repo_root"
 format_diff="$(git diff --no-color --unified=0 origin/main -- \
     genetik/Expression.hpp \
     genetik/ExpressionDerivative.hpp \
+    genetik/ScalarExpressionCheckpoint.hpp \
+    genetik/CustomScalarOperator.hpp \
+    tests/user_defined_operators.cpp \
+    examples/quickstarts/custom_scalar_operator.cpp \
     genetik/ExpressionSecondDerivative.hpp \
     genetik/PhysicalDimensions.hpp \
     genetik/Regression.hpp \
@@ -105,6 +109,7 @@ fi
 
 "$tidy_tool" "${tidy_args[@]}" \
     tests/expressions.cpp \
+    tests/user_defined_operators.cpp \
     tests/advanced_regression.cpp \
     tests/smooth_operators.cpp \
     tests/mathematical_objectives.cpp \

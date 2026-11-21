@@ -281,9 +281,34 @@ public:
                             const double term = binary(ExpressionKind::Multiply, previous, right.derivative);
                             derivative = binary(ExpressionKind::Add, left, term);
                         };
-                        value = scalarUnary(kind, right.value,
-                            expressionPowerMetadata(kind) ? node.exponent() : 0, primalCharge, step);
-                        if (value && right.active && !result_.failure_) {
+                        if (kind == ExpressionKind::CustomUnary) {
+                            const double args[]{right.value};
+                            primalCharge();
+                            value = expression.nodes_[i].customOperator().evaluate(args);
+                            if (value && !std::isfinite(*value))
+                                value.reset();
+                            if (value && right.active && !result_.failure_) {
+                                const auto& op = expression.nodes_[i].customOperator();
+                                if (!op.partials)
+                                    fail(DerivativeFailure::UnsupportedRule);
+                                else {
+                                    charge(result_.work_.derivativeMathCalls);
+                                    auto p = op.partials(args);
+                                    if (!p || p->size() != 1)
+                                        fail(DerivativeFailure::UnsupportedRule);
+                                    else if (!std::isfinite((*p)[0]))
+                                        fail(DerivativeFailure::NonfiniteArithmetic);
+                                    else
+                                        output.derivative = binary(ExpressionKind::Multiply,
+                                                                   (*p)[0], right.derivative);
+                                }
+                            }
+                        } else
+                            value = scalarUnary(kind, right.value,
+                                                expressionPowerMetadata(kind) ? node.exponent() : 0,
+                                                primalCharge, step);
+                        if (value && right.active && !result_.failure_ &&
+                            kind != ExpressionKind::CustomUnary) {
                             output.derivative = kind == ExpressionKind::Powi
                                 ? (node.exponent() == 0 ? 0.0 : derivative)
                                 : derivativeUnary(kind, right, *value,expressionPowerMetadata(kind)?node.exponent():0);
@@ -295,8 +320,42 @@ public:
                     } else {
                         stack.pop_back(); const Slot left = stack.back();
                         output.active = left.active || right.active;
-                        value = scalarBinary(kind, left.value, right.value, primalCharge);
-                        if (value && output.active && !result_.failure_)
+                        if (kind == ExpressionKind::CustomBinary) {
+                            const double args[]{left.value, right.value};
+                            primalCharge();
+                            value = expression.nodes_[i].customOperator().evaluate(args);
+                            if (value && !std::isfinite(*value))
+                                value.reset();
+                            if (value && output.active && !result_.failure_) {
+                                const auto& op = expression.nodes_[i].customOperator();
+                                if (!op.partials)
+                                    fail(DerivativeFailure::UnsupportedRule);
+                                else {
+                                    charge(result_.work_.derivativeMathCalls);
+                                    auto p = op.partials(args);
+                                    if (!p || p->size() != 2)
+                                        fail(DerivativeFailure::UnsupportedRule);
+                                    else if (!std::isfinite((*p)[0]) || !std::isfinite((*p)[1]))
+                                        fail(DerivativeFailure::NonfiniteArithmetic);
+                                    else {
+                                        double d = 0;
+                                        if (left.active)
+                                            d = binary(ExpressionKind::Multiply, (*p)[0],
+                                                       left.derivative);
+                                        if (right.active) {
+                                            const auto term = binary(ExpressionKind::Multiply,
+                                                                     (*p)[1], right.derivative);
+                                            d = left.active ? binary(ExpressionKind::Add, d, term)
+                                                            : term;
+                                        }
+                                        output.derivative = d;
+                                    }
+                                }
+                            }
+                        } else
+                            value = scalarBinary(kind, left.value, right.value, primalCharge);
+                        if (value && output.active && !result_.failure_ &&
+                            kind != ExpressionKind::CustomBinary)
                             output.derivative = derivativeBinary(kind, left, right, *value);
                     }
                     if (!value) {

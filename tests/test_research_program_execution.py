@@ -287,7 +287,8 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         assessment = self.root / f"assessment{suffix}.bin"
         assessment.write_bytes(b"synthetic assessment, never consumed by this fixture")
         spec = self.root / f"preflight-spec{suffix}.json"
-        spec.write_text("{}")
+        spec.write_text(json.dumps({"limits": {"wall_seconds": 5, "cpu_seconds": 5,
+            "address_space_bytes": 512 * 1024 * 1024, "output_bytes": 1024 * 1024}}))
         executable = {"id": "python", "path": str(self.python), "sha256": sha(self.python),
                       "role": "pipeline-executable"}
         artifacts = [executable,
@@ -1247,9 +1248,15 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         compatible_destination = self.root / "compatible-frozen"
         compatible_source = self.root / "compatible-protocol.json"
         compatible_source.write_text('{"synthetic": true}\n')
+        spec_path = self.root / "compatible-spec.json"
+        spec_path.write_text(json.dumps({"limits": {"wall_seconds": 5, "cpu_seconds": 5,
+            "address_space_bytes": 512 * 1024 * 1024, "output_bytes": 1024 * 1024}}))
         compatible_config = {"pipeline_descriptor": {"synthetic": True},
                              "limits": {"max_address_space_bytes": 512 * 1024**2},
-                             "ledger_dir": self.root / "compatible-ledger"}
+                             "ledger_dir": self.root / "compatible-ledger",
+                             "preflight_qualification": {"spec_artifact_id": "preflight-spec"},
+                             "artifacts": {"preflight-spec": {"path": str(spec_path),
+                                 "sha256": sha(spec_path)}}}
         with (mock.patch.object(research_execution, "_validate_bounded_program",
                                 return_value=compatible_config),
               mock.patch("resource.getrlimit", return_value=(512 * 1024**2, 512 * 1024**2)),

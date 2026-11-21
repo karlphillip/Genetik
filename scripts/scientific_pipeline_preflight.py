@@ -35,6 +35,34 @@ class PreflightError(RuntimeError):
     pass
 
 
+def validate_runtime_limits(spec: object) -> dict[str, int | float]:
+    """Validate and return the limits used to run a synthetic preflight."""
+    if not isinstance(spec, dict):
+        raise PreflightError("preflight specification must be an object")
+    limits = spec.get("limits")
+    if not isinstance(limits, dict):
+        raise PreflightError("preflight resource limits are required")
+    wall_seconds = limits.get("wall_seconds")
+    try:
+        valid_wall_limit = (not isinstance(wall_seconds, bool)
+                            and isinstance(wall_seconds, (int, float))
+                            and math.isfinite(wall_seconds) and wall_seconds > 0)
+    except OverflowError:
+        valid_wall_limit = False
+    if not valid_wall_limit:
+        raise PreflightError("positive finite wall_seconds limit is required")
+    cpu_seconds = limits.get("cpu_seconds")
+    if type(cpu_seconds) is not int or cpu_seconds < 1:
+        raise PreflightError("cpu_seconds must be an integer of at least one second (RLIMIT_CPU granularity)")
+    result: dict[str, int | float] = {"wall_seconds": wall_seconds, "cpu_seconds": cpu_seconds}
+    for name in ("address_space_bytes", "output_bytes"):
+        value = limits.get(name)
+        if type(value) is not int or value < 1024 * 1024:
+            raise PreflightError(f"{name} must be an integer of at least one MiB")
+        result[name] = value
+    return result
+
+
 def _consume_worker_nonce() -> bool:
     """Validate the one-shot supervisor pipe before project imports."""
     import hmac
@@ -749,20 +777,7 @@ def validate_spec(spec: dict[str, Any], base: Path, protocol: dict[str, Any]) ->
             raise PreflightError(f"{stage} command identity differs from campaign protocol")
         if not isinstance(command.get("version"), str) or not command["version"].strip():
             raise PreflightError(f"{stage} version must be explicitly recorded")
-    limits = spec.get("limits")
-    if not isinstance(limits, dict):
-        raise PreflightError("preflight resource limits are required")
-    for name in ("wall_seconds",):
-        value = limits.get(name)
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
-            raise PreflightError(f"positive finite {name} limit is required")
-    cpu_seconds = limits.get("cpu_seconds")
-    if type(cpu_seconds) is not int or cpu_seconds < 1:
-        raise PreflightError("cpu_seconds must be an integer of at least one second (RLIMIT_CPU granularity)")
-    for name in ("address_space_bytes", "output_bytes"):
-        value = limits.get(name)
-        if type(value) is not int or value < 1024 * 1024:
-            raise PreflightError(f"{name} must be an integer of at least one MiB")
+    validate_runtime_limits(spec)
     return artifact_paths, runs, normalized_descriptor
 
 

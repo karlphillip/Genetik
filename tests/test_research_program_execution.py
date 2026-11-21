@@ -379,6 +379,180 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         return (mock.patch.object(research_execution, "PR56_PREDECESSOR_PROTOCOL_SHA256", protocol_sha),
                 mock.patch.object(research_execution, "PR56_RETAINED_REFUSAL_SHA256", sha(refusal)))
 
+    def _rational_limits_recovery_fixture(self, suffix=""):
+        """Create a disposable old-format package and its one-field recovery inputs."""
+        import shutil
+        import research_execution
+
+        protocol, predecessor, _ = self._descriptor_pr56_fixture(f"-rational{suffix}")
+        protocol["limits"].update({"max_cpu_seconds": 30.0, "max_wall_seconds": 45.0,
+                                   "max_output_bytes": 8 * 1024 * 1024})
+        for run in protocol["runs"]:
+            run["max_cpu_seconds"] = 2.0
+            run["max_wall_seconds"] = 2.0
+        artifact = next(item for item in protocol["artifacts"] if item["id"] == "preflight-spec")
+        original_spec_path = Path(artifact["path"])
+        rehearsal = json.loads(original_spec_path.read_text())
+        rehearsal["limits"] = dict(research_execution.RATIONAL_SEEDED_LIMITS)
+        limits_source = self.root / f"rational-limits-source{suffix}.json"
+        limits_source.write_text(json.dumps(rehearsal, sort_keys=True))
+        old_spec = {key: value for key, value in rehearsal.items() if key != "limits"}
+        old_spec_path = self.root / f"rational-old-spec{suffix}.json"
+        old_spec_path.write_text(json.dumps(old_spec, sort_keys=True))
+        artifact["path"] = str(old_spec_path)
+        artifact["sha256"] = sha(old_spec_path)
+        protocol["protocol_id"] = "rational-seeded-fixed-budget-test-v1"
+        protocol["program_budget"]["program_id"] = "rational-seeded-fixed-budget-test"
+        protocol["program_budget"]["ledger_dir"] = str(
+            (self.ledger / "rational-seeded-fixed-budget-test").resolve())
+        predecessor_dir = self.root / f"rational-predecessor{suffix}"
+        import os
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            config = research_execution._validate_bounded_program(protocol)
+            ledger = config["ledger_dir"]
+            if ledger.exists():
+                shutil.rmtree(ledger)
+            encoded = research_execution.canonical_json(protocol)
+            predecessor_dir.mkdir(exist_ok=True)
+            (predecessor_dir / "program.json").write_bytes(encoded)
+            predecessor_sha = research_execution.sha256_bytes(encoded)
+            (predecessor_dir / "PROGRAM.sha256").write_text(f"{predecessor_sha}  program.json\n")
+            research_execution._initialize_process_ledger(config)
+        refusal = self.root / f"rational-refusal{suffix}.md"
+        refusal.write_text(
+            "No bounded stage was launched and no target run started.\n"
+            f"Frozen bounded-program package SHA256 {predecessor_sha}.\n"
+            "Canonical lifetime ledger: 0 invocations reserved, 0 CPU seconds charged, "
+            "0 wall seconds charged, no pending reservation; its only ledger event is creation.\n")
+        candidate = dict(old_spec)
+        candidate["limits"] = dict(rehearsal["limits"])
+        candidate_path = self.root / f"rational-candidate-spec{suffix}.json"
+        candidate_path.write_text(json.dumps(candidate, sort_keys=True))
+        successor = json.loads(json.dumps(protocol))
+        successor["protocol_id"] = "rational-seeded-fixed-budget-test-v2"
+        successor["source_commit"] = "b" * 40
+        successor_artifact = next(item for item in successor["artifacts"] if item["id"] == "preflight-spec")
+        successor_artifact["path"] = str(candidate_path)
+        successor_artifact["sha256"] = sha(candidate_path)
+        source = self.root / f"rational-successor{suffix}.json"
+        source.write_bytes(research_execution.canonical_json(successor))
+        return protocol, predecessor_dir, refusal, limits_source, successor, source, candidate_path, ledger
+
+    def _patch_rational_recovery_identities(self, predecessor, refusal, limits_source, old_spec):
+        import research_execution
+        predecessor_sha = (predecessor / "PROGRAM.sha256").read_text().split()[0]
+        return (
+            mock.patch.object(research_execution, "RATIONAL_SEEDED_PROGRAM_ID",
+                              "rational-seeded-fixed-budget-test"),
+            mock.patch.object(research_execution, "RATIONAL_SEEDED_PREDECESSOR_PROTOCOL_SHA256",
+                              predecessor_sha),
+            mock.patch.object(research_execution, "RATIONAL_SEEDED_REFUSAL_SHA256", sha(refusal)),
+            mock.patch.object(research_execution, "RATIONAL_SEEDED_PREDECESSOR_SPEC_SHA256", sha(old_spec)),
+            mock.patch.object(research_execution, "RATIONAL_SEEDED_LIMITS_SOURCE_SHA256", sha(limits_source)),
+        )
+
+    def test_rational_preflight_limits_successor_is_limits_only_and_hash_bound(self):
+        import contextlib
+        import io
+        import research_execution
+        from research_execution import read_frozen_program, resolve_active_successor_program
+
+        (predecessor_protocol, predecessor, refusal, limits_source, successor, source,
+         candidate_path, ledger) = self._rational_limits_recovery_fixture()
+        old_spec = Path(next(item["path"] for item in predecessor_protocol["artifacts"]
+                             if item["id"] == "preflight-spec"))
+        identities = self._patch_rational_recovery_identities(predecessor, refusal, limits_source, old_spec)
+        original_events = (ledger / "process-events.jsonl").read_bytes()
+        original_state = (ledger / "process-budget.json").read_bytes()
+
+        # Any scientific/budget change fails before package creation or ledger mutation.
+        changed = json.loads(json.dumps(successor))
+        changed["limits"]["max_cpu_seconds"] += 1
+        changed_source = self._write_source(changed)
+        with contextlib.ExitStack() as stack:
+            for patcher in identities:
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()))
+            with self.assertRaisesRegex(GateError, "beyond the limits-only"):
+                research_execution.successor_program_protocol(
+                    predecessor, changed_source, self.root / "rational-changed-science",
+                    preflight_limits_refusal=refusal, preflight_limits_source=limits_source)
+        self.assertFalse((self.root / "rational-changed-science").exists())
+        self.assertEqual((ledger / "process-events.jsonl").read_bytes(), original_events)
+        self.assertEqual((ledger / "process-budget.json").read_bytes(), original_state)
+
+        destination = self.root / "rational-successor-package"
+        args = ["successor-program", "--predecessor-dir", str(predecessor),
+                "--protocol", str(source), "--destination", str(destination),
+                "--preflight-limits-refusal", str(refusal),
+                "--preflight-limits-source", str(limits_source)]
+        with contextlib.ExitStack() as stack, contextlib.redirect_stdout(io.StringIO()):
+            for patcher in identities:
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()))
+            self.assertEqual(research_execution.main(args), 0)
+            active, config, _ = read_frozen_program(destination)
+            self.assertEqual(config["program_id"], "rational-seeded-fixed-budget-test")
+            self.assertEqual(resolve_active_successor_program(predecessor), destination.resolve())
+        self.assertEqual(json.loads(candidate_path.read_text())["limits"], research_execution.RATIONAL_SEEDED_LIMITS)
+        event = json.loads((ledger / "protocol-successor.json").read_text())
+        self.assertEqual(event["amendment_kind"], "rational_seeded_preflight_limits")
+        self.assertEqual(event["predecessor_protocol_sha256"],
+                         (predecessor / "PROGRAM.sha256").read_text().split()[0])
+        self.assertEqual(event["refusal_sha256"], sha(refusal))
+        self.assertEqual(event["limits_source_sha256"], sha(limits_source))
+        self.assertEqual(event["predecessor_spec_sha256"], sha(old_spec))
+        self.assertEqual(event["successor_spec_sha256"], sha(candidate_path))
+        state = json.loads((ledger / "process-budget.json").read_text())
+        self.assertEqual(state["invocations_reserved"], 0)
+        self.assertEqual(state["cpu_seconds_charged"], 0)
+        self.assertEqual(state["wall_seconds_charged"], 0)
+        self.assertIsNone(state["pending"])
+        self.assertEqual(active["runs"], successor["runs"])
+        events_after_success = (ledger / "process-events.jsonl").read_bytes()
+
+        second = json.loads(json.dumps(successor))
+        second["protocol_id"] = "rational-seeded-fixed-budget-test-v3"
+        second["source_commit"] = "c" * 40
+        second_source = self._write_source(second)
+        with contextlib.ExitStack() as stack, contextlib.redirect_stderr(io.StringIO()):
+            for patcher in identities:
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()))
+            self.assertEqual(research_execution.main([
+                "successor-program", "--predecessor-dir", str(predecessor), "--protocol", str(second_source),
+                "--destination", str(self.root / "rational-second-amendment"),
+                "--preflight-limits-refusal", str(refusal), "--preflight-limits-source", str(limits_source)]), 3)
+        self.assertFalse((self.root / "rational-second-amendment").exists())
+        self.assertEqual((ledger / "process-events.jsonl").read_bytes(), events_after_success)
+
+    def test_rational_preflight_limits_successor_rejects_started_ledger(self):
+        import contextlib
+        import io
+        import research_execution
+
+        (protocol, predecessor, refusal, limits_source, successor, source,
+         _, ledger) = self._rational_limits_recovery_fixture("-started")
+        old_spec = Path(next(item["path"] for item in protocol["artifacts"] if item["id"] == "preflight-spec"))
+        identities = self._patch_rational_recovery_identities(predecessor, refusal, limits_source, old_spec)
+        state_path = ledger / "process-budget.json"
+        state = json.loads(state_path.read_text())
+        with mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()):
+            state["ledger_head"] = research_execution._process_ledger_event(
+                ledger / "process-events.jsonl", {"event": "program_started"}, state["ledger_head"])
+            state["event_count"] += 1
+            research_execution._replace_process_budget(ledger, state)
+        with contextlib.ExitStack() as stack, contextlib.redirect_stderr(io.StringIO()):
+            for patcher in identities:
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()))
+            self.assertEqual(research_execution.main([
+                "successor-program", "--predecessor-dir", str(predecessor), "--protocol", str(source),
+                "--destination", str(self.root / "rational-started-successor"),
+                "--preflight-limits-refusal", str(refusal), "--preflight-limits-source", str(limits_source)]), 3)
+        self.assertFalse((self.root / "rational-started-successor").exists())
+        self.assertFalse((ledger / "protocol-successor.json").exists())
+
     def test_refusal_backed_successor_reduces_only_address_space_on_same_ledger(self):
         import research_execution
         from research_execution import read_frozen_program, resolve_active_successor_program

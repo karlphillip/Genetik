@@ -304,6 +304,24 @@ class ScientificPipelinePreflightTests(unittest.TestCase):
         with self.assertRaises(module.PreflightError):
             module.verify_admission(self.protocol)
 
+    def test_rational_rehearsal_limits_complete_outer_synthetic_preflight(self):
+        self.spec["limits"] = {
+            "address_space_bytes": 512 * 1024 * 1024,
+            "cpu_seconds": 8,
+            "output_bytes": 8 * 1024 * 1024,
+            "wall_seconds": 20,
+        }
+        self.write_inputs()
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads(self.receipt_path.read_text())
+        self.assertEqual(receipt["status"], "passed")
+        self.assertEqual(receipt["spec_sha256"], sha(self.spec_path.read_bytes()))
+        evidence = Path(receipt["evidence_directory"])
+        report = json.loads((evidence / "pipeline/scientific-report.json").read_text())
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(report["scored_run_count"], 2)
+
     def test_schema1_swapped_control_training_bindings_fail_in_runner(self):
         self.spec["commands"]["runner"]["argv"].append("--swap-training-bindings")
         self.write_inputs()

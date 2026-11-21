@@ -327,6 +327,87 @@ void complexMath() {
   }
   check(rejected, "branch identity mismatch");
 }
+void complexCoefficientFitting() {
+    const std::vector<std::complex<double>> trainZ{{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    const std::vector<std::complex<double>> heldZ{{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+    auto rowsFor = [](const auto& inputs, std::complex<double> a, std::complex<double> b) {
+        std::vector<ComplexObservation> rows;
+        for (auto z : inputs)
+            rows.push_back({{z}, a * z + b});
+        return rows;
+    };
+    auto start = parse("0.5*x0+0.5");
+    ConstantFitConfig realConfig;
+    realConfig.lower = -10;
+    realConfig.upper = 10;
+    realConfig.initialStep = 1;
+    realConfig.minimumStep = 1e-7;
+    realConfig.maxSweeps = 40;
+    realConfig.maxProposals = 4000;
+    realConfig.maxLossAttempts = 5000;
+    auto rows = rowsFor(trainZ, {1, 2}, {3, -1});
+    auto held = rowsFor(heldZ, {1, 2}, {3, -1});
+    auto problem = std::make_shared<const ComplexRegressionProblem>(rows);
+    TrainingObjective objective(problem, 5000);
+    auto realFit = fitConstants(start, objective, realConfig);
+    auto heldProblem = ComplexRegressionProblem(held);
+    auto realHeld = heldProblem.assess(ComplexExpression::fromScalarGenome(realFit.expression));
+    ComplexCoefficientFitConfig complexConfig;
+    complexConfig.lower = -10;
+    complexConfig.upper = 10;
+    complexConfig.optimizer.maxIterations = 100;
+    complexConfig.optimizer.maxObjectiveEvaluations = 100;
+    complexConfig.optimizer.maxJacobianEvaluations = 100;
+    complexConfig.optimizer.lossTolerance = 1e-25;
+    auto complexFit =
+        fitComplexCoefficients(*problem, ComplexExpression::fromScalarGenome(start), complexConfig);
+    auto complexHeld = heldProblem.assess(complexFit.expression);
+    check(realFit.loss.state() == FitnessState::Valid && realHeld.loss.has_value(),
+          "real coefficient baseline produces a scored model");
+    near(realFit.expression.nodes()[0].constantValue(), 1);
+    near(realFit.expression.nodes()[3].constantValue(), 3);
+    check(complexFit.trainingLoss.state() == FitnessState::Valid &&
+              complexFit.trainingLoss.score() < 1e-18 && complexHeld.loss.has_value() &&
+              *complexHeld.loss < 1e-18,
+          "complex coefficient fit independently recovers both parts");
+    near(complexFit.expression.nodes()[0].value.real(), 1, 1e-8);
+    near(complexFit.expression.nodes()[0].value.imag(), 2, 1e-8);
+    near(complexFit.expression.nodes()[3].value.real(), 3, 1e-8);
+    near(complexFit.expression.nodes()[3].value.imag(), -1, 1e-8);
+    std::cout << "Complex coefficient comparison: real coefficients="
+              << realFit.expression.toString() << " train_mse=" << realFit.loss.score()
+              << " heldout_mse=" << *realHeld.loss << " loss_evaluations=" << realFit.lossAttempts
+              << " prediction_evaluations=" << realFit.lossAttempts * rows.size()
+              << " math_ops=" << objective.supplementalWork().mathematicalOperations
+              << "; complex coefficients=" << complexFit.expression.format()
+              << " a=" << complexFit.expression.nodes()[0].value
+              << " b=" << complexFit.expression.nodes()[3].value
+              << " train_mse=" << complexFit.trainingLoss.score()
+              << " heldout_mse=" << *complexHeld.loss
+              << " objective_evaluations=" << complexFit.objectiveEvaluations
+              << " jacobians=" << complexFit.work.jacobianEvaluations
+              << " prediction_evaluations=" << complexFit.work.forwardEvaluations
+              << " math_ops=" << complexFit.work.mathematicalOperations << '\n';
+
+    auto realRows = rowsFor(trainZ, {2, 0}, {3, 0});
+    auto realHeldRows = rowsFor(heldZ, {2, 0}, {3, 0});
+    auto realProblem = std::make_shared<const ComplexRegressionProblem>(realRows);
+    TrainingObjective realObjective(realProblem, 5000);
+    auto realControl = fitConstants(start, realObjective, realConfig);
+    auto realControlHeld = ComplexRegressionProblem(realHeldRows)
+                               .assess(ComplexExpression::fromScalarGenome(realControl.expression));
+    check(realControl.loss.state() == FitnessState::Valid && realControl.loss.score() < 1e-12 &&
+              realControlHeld.loss && *realControlHeld.loss < 1e-12,
+          "existing real coefficient fitting remains correct on real target");
+    near(realControl.expression.nodes()[0].constantValue(), 2);
+    near(realControl.expression.nodes()[3].constantValue(), 3);
+    std::cout << "Real control: " << realControl.expression.toString()
+              << " train_mse=" << realControl.loss.score()
+              << " heldout_mse=" << *realControlHeld.loss
+              << " loss_evaluations=" << realControl.lossAttempts
+              << " prediction_evaluations=" << realControl.lossAttempts * realRows.size()
+              << " math_ops=" << realObjective.supplementalWork().mathematicalOperations << '\n';
+}
 void statistics() {
   std::array<double, 10> repeated;
   repeated.fill(.1);
@@ -616,8 +697,7 @@ void publicationFailure() {
     run.step();
   } catch (const std::exception &e) {
     failed = true;
-    check(std::string(e.what()).size() > 0,
-          "original nested operation context retained");
+    check(!std::string(e.what()).empty(), "original nested operation context retained");
   }
   check(failed, "operational preparation failure propagated");
   auto after = RunCheckpointAccess::population(run.population());
@@ -679,6 +759,7 @@ int main(int argc, char **argv) {
       differential();
       tensors();
       complexMath();
+      complexCoefficientFitting();
       statistics();
       linear();
       if (argc > 1)

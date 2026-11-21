@@ -101,6 +101,13 @@ public:
   std::size_t variableCount() const noexcept { return variables_; }
   std::size_t depth() const noexcept { return depth_; }
   ExpressionLimits limits() const noexcept { return limits_; }
+  ComplexExpression withConstant(std::size_t index, std::complex<double> value) const {
+      if (index >= nodes_.size() || nodes_[index].kind != ComplexKind::Constant)
+          throw std::invalid_argument("complex constant index");
+      auto nodes = nodes_;
+      nodes[index].value = value;
+      return {nodes, variables_, limits_};
+  }
   ScientificResult<std::complex<double>>
   evaluate(std::span<const std::complex<double>> inputs,
            ScientificLimits limits = {},

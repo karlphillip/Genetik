@@ -35,6 +35,12 @@ public:
   }
   bool parallelEvaluationSafe() const noexcept override { return true; }
   std::size_t sampleCount() const noexcept override { return rows_.size(); }
+  const std::vector<ComplexObservation>& observations() const noexcept {
+      return rows_;
+  }
+  ScientificLimits scientificLimits() const noexcept {
+      return limits_;
+  }
   RegressionMetrics measure(const Expression &genome,
                             std::uint64_t *rows = nullptr) const override {
     RegressionSupplementalWork ignored;
@@ -112,6 +118,165 @@ private:
   std::vector<ComplexObservation> rows_;
   ScientificLimits limits_;
 };
+// Explicit opt-in fitting for the complex regression adapter. Each executable
+// complex constant contributes independent real and imaginary LM coordinates.
+// The ordinary scalar constant fitter remains real-only and unchanged.
+struct ComplexCoefficientFitConfig {
+    double lower = -1e6;
+    double upper = 1e6;
+    LMConfig optimizer{};
+};
+struct ComplexCoefficientFitResult {
+    ComplexExpression expression;
+    Fitness trainingLoss;
+    Fitness startingLoss;
+    LMWork work{};
+    LMStop stop = LMStop::InvalidStart;
+    std::size_t objectiveEvaluations = 0;
+};
+
+inline ComplexCoefficientFitResult
+fitComplexCoefficients(const ComplexRegressionProblem& problem, const ComplexExpression& input,
+                       const ComplexCoefficientFitConfig& config = {}) {
+    if (!std::isfinite(config.lower) || !std::isfinite(config.upper) ||
+        config.lower > config.upper || std::abs(config.lower) > input.limits().maxAbsConstant ||
+        std::abs(config.upper) > input.limits().maxAbsConstant)
+        throw std::invalid_argument("invalid complex coefficient bounds");
+    if (input.variableCount() != problem.dimensions())
+        throw std::invalid_argument("complex fit schema");
+    std::vector<std::size_t> constants;
+    std::vector<double> initial, lower, upper;
+    for (std::size_t i = 0; i < input.nodes().size(); ++i) {
+        const auto& node = input.nodes()[i];
+        if (node.kind != ComplexKind::Constant)
+            continue;
+        for (double value : {node.value.real(), node.value.imag()}) {
+            if (value < config.lower || value > config.upper)
+                throw std::invalid_argument("complex fit starting coefficient outside bounds");
+            initial.push_back(value);
+            lower.push_back(config.lower);
+            upper.push_back(config.upper);
+        }
+        constants.push_back(i);
+    }
+    if (constants.empty())
+        throw std::invalid_argument("complex fit requires at least one coefficient");
+    if (initial.size() > config.optimizer.maxParameters)
+        throw std::length_error("complex fit parameter limit");
+
+    auto expressionAt = [&](std::span<const double> theta) {
+        auto expression = input;
+        for (std::size_t i = 0; i < constants.size(); ++i)
+            expression = expression.withConstant(constants[i], {theta[2 * i], theta[2 * i + 1]});
+        return expression;
+    };
+    const auto& rows = problem.observations();
+    if (rows.size() > std::numeric_limits<std::size_t>::max() / 2)
+        throw std::length_error("complex fit residual count");
+    const auto residualCount = rows.size() * 2;
+    if (residualCount > config.optimizer.maxResiduals ||
+        residualCount > config.optimizer.maxWorkspaceBytes / sizeof(double))
+        throw std::length_error("complex fit residual workspace limit");
+    std::size_t peakExpressionWorkspace = 0;
+    auto residualsAt = [&](std::span<const double> theta, std::vector<double>& residuals,
+                           std::size_t& operations, std::size_t allowance,
+                           std::size_t& forwardEvaluations, std::size_t& rowsProcessed) {
+        auto expression = expressionAt(theta);
+        residuals.clear();
+        residuals.reserve(rows.size() * 2);
+        for (const auto& row : rows) {
+            auto limits = problem.scientificLimits();
+            if (operations >= allowance)
+                return false;
+            limits.maxOperations = std::min(limits.maxOperations, allowance - operations);
+            auto value = expression.evaluate(row.inputs, limits);
+            if (forwardEvaluations == std::numeric_limits<std::size_t>::max() ||
+                rowsProcessed == std::numeric_limits<std::size_t>::max())
+                return false;
+            ++forwardEvaluations;
+            ++rowsProcessed;
+            peakExpressionWorkspace = std::max(peakExpressionWorkspace, value.work.workspaceBytes);
+            if (value.work.operations > std::numeric_limits<std::size_t>::max() - operations)
+                return false;
+            operations += value.work.operations;
+            if (!value.success())
+                return false;
+            const double real = value.value->real() - row.target.real();
+            const double imaginary = value.value->imag() - row.target.imag();
+            if (!std::isfinite(real) || !std::isfinite(imaginary) || operations > allowance ||
+                allowance - operations < 2)
+                return false;
+            operations += 2;
+            residuals.push_back(real);
+            residuals.push_back(imaginary);
+        }
+        return true;
+    };
+    std::size_t callbacks = 0;
+    Fitness starting = Fitness::invalid();
+    LMResidualFunction evaluator = [&](std::span<const double> theta, bool jac,
+                                       std::size_t allowance) {
+        LMResidualEvaluation out;
+        ++callbacks;
+        std::vector<double> base;
+        if (!residualsAt(theta, base, out.mathematicalOperations, allowance, out.forwardEvaluations,
+                         out.rowsProcessed))
+            return out;
+        out.workspaceBytes = residualCount * sizeof(double);
+        out.residuals = base;
+        if (callbacks == 1) {
+            const auto sum = genetik_detail::checkedSSE(base);
+            if (std::isfinite(sum))
+                starting = Fitness::fromScore(sum / static_cast<double>(rows.size()));
+        }
+        if (jac) {
+            const std::size_t p = theta.size();
+            if (base.size() > std::numeric_limits<std::size_t>::max() / p)
+                return out;
+            out.jacobian.resize(base.size() * p);
+            std::vector<double> plus, minus;
+            auto trial = std::vector<double>(theta.begin(), theta.end());
+            for (std::size_t j = 0; j < p; ++j) {
+                const double h = std::cbrt(std::numeric_limits<double>::epsilon()) *
+                                 std::max(1.0, std::abs(theta[j]));
+                const double lo = std::max(config.lower, theta[j] - h);
+                const double hi = std::min(config.upper, theta[j] + h);
+                if (!(lo < hi))
+                    return LMResidualEvaluation{};
+                trial[j] = hi;
+                if (!residualsAt(trial, plus, out.mathematicalOperations, allowance,
+                                 out.forwardEvaluations, out.rowsProcessed))
+                    return out;
+                trial[j] = lo;
+                if (!residualsAt(trial, minus, out.mathematicalOperations, allowance,
+                                 out.forwardEvaluations, out.rowsProcessed))
+                    return out;
+                trial[j] = theta[j];
+                const double scale = hi - lo;
+                for (std::size_t r = 0; r < base.size(); ++r)
+                    out.jacobian[r * p + j] = (plus[r] - minus[r]) / scale;
+            }
+            out.derivativeEvaluations = p;
+            if (p == std::numeric_limits<std::size_t>::max() ||
+                base.size() > std::numeric_limits<std::size_t>::max() / (p + 1) / sizeof(double))
+                return out;
+            out.workspaceBytes = base.size() * (p + 1) * sizeof(double);
+        }
+        if (peakExpressionWorkspace > std::numeric_limits<std::size_t>::max() - out.workspaceBytes)
+            out.workspaceBytes = std::numeric_limits<std::size_t>::max();
+        else
+            out.workspaceBytes += peakExpressionWorkspace;
+        out.valid = true;
+        return out;
+    };
+    auto lm = levenbergMarquardt(initial, lower, upper, evaluator, config.optimizer);
+    auto fitted = expressionAt(lm.parameters);
+    Fitness training =
+        lm.sumSquaredResiduals
+            ? Fitness::fromScore(*lm.sumSquaredResiduals / static_cast<double>(rows.size()))
+            : Fitness::invalid();
+    return {std::move(fitted), training, starting, lm.work, lm.stop, callbacks};
+}
 inline ScalarMathematicsProblem
 complexRegressionProblem(const std::vector<ComplexObservation> &rows,
                          ExpressionLimits expressionLimits = {},

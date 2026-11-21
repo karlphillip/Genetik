@@ -29,5 +29,8 @@ struct CustomScalarOperator {
             if (builtin.arity && id == builtin.name)
                 throw std::invalid_argument(
                     "custom scalar operator ID conflicts with built-in operator: " + id);
+        if (id == "ln" || id == "npowi")
+            throw std::invalid_argument(
+                "custom scalar operator ID conflicts with a built-in operator alias: " + id);
     }
 };

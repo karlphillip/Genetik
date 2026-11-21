@@ -75,6 +75,15 @@ int main() {
         }
         check(ambiguousRejected,
               "custom ID cannot shadow built-in sin and re-export as ordinary sine");
+        auto ambiguousAlias = squareNamedSin;
+        ambiguousAlias.id = "ln";
+        bool aliasRejected = false;
+        try {
+            (void)ExpressionNode::custom(ambiguousAlias);
+        } catch (const std::invalid_argument&) {
+            aliasRejected = true;
+        }
+        check(aliasRejected, "custom ID cannot shadow formatted built-in aliases");
         for (auto [a, b, expected] :
              {std::tuple{0., 0., std::log(2.)}, std::tuple{1000., 1000., 1000. + std::log(2.)},
               std::tuple{-1000., -1000., -1000. + std::log(2.)},

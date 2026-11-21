@@ -30,7 +30,7 @@ import uuid
 # The admission tool is sibling research tooling, not a library dependency.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from scientific_pipeline_preflight import (PreflightError, effective_coordinator_address_space_limit,
-                                           verify_admission)
+                                           validate_runtime_limits, verify_admission)
 from bounded_process import run_bounded_process
 from research_pipeline import PipelineDescriptorError, validate_descriptor as validate_pipeline_descriptor, expand_argv as expand_pipeline_argv
 
@@ -2640,6 +2640,19 @@ def freeze_program_protocol(source: Path, destination: Path) -> str:
             raise GateError(
                 f"bounded program requests {requested} bytes of address space, "
                 f"above the effective {effective}-byte scientific preflight coordinator ceiling")
+        qualification = config["preflight_qualification"]
+        spec_artifact = config["artifacts"][qualification["spec_artifact_id"]]
+        try:
+            spec_bytes = Path(spec_artifact["path"]).read_bytes()
+        except OSError as error:
+            raise GateError(f"pinned synthetic preflight specification cannot be read: {error}") from error
+        if sha256_bytes(spec_bytes) != spec_artifact["sha256"]:
+            raise GateError("pinned synthetic preflight specification changed during freeze validation")
+        try:
+            spec = json.loads(spec_bytes)
+            validate_runtime_limits(spec)
+        except (ValueError, PreflightError) as error:
+            raise GateError(f"pinned synthetic preflight specification has invalid runtime limits: {error}") from error
     if (config["ledger_dir"] / "protocol-successor.json").exists():
         raise GateError("program ledger already has an active successor; use its registered frozen package")
     _initialize_process_ledger(config)

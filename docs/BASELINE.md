@@ -1277,3 +1277,12 @@ consumer first-search example. It makes no runtime, numerical, GA, RNG,
 checkpoint, or default-search changes. The existing performance executables
 remain opt-in measurement targets outside ordinary CTest runs. The full test
 inventory is preserved, with one additional bounded quickstart smoke test.
+
+## Freeze-time synthetic preflight limits
+
+Descriptor-backed bounded-program freezes now apply the synthetic preflight's
+existing runtime-limit rules to the hash-verified bytes of the pinned spec
+before initializing the process ledger or writing a package. Runtime preflight
+continues to validate the spec, and historical package read/verification
+behavior is unchanged. This closes the gap where a successful rehearsal spec
+and a different frozen spec could have different hashes and limits contracts.

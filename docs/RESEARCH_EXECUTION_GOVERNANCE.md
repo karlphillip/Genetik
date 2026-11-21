@@ -186,6 +186,11 @@ protocol or ledger. Assessment-role data is identity-bound during freeze and
 preflight, but opened only by the separately admitted scoring phase. Runner
 and verification stages must not receive it.
 
+For descriptor-backed programs, `freeze-program` validates the runtime limits
+from the exact hash-pinned synthetic preflight specification before writing the
+package or initializing its ledger. The same validation rules run again during
+preflight; reading and verifying historical frozen packages is unchanged.
+
 A bounded-program protocol is write-once. A reviewed software-only correction
 to an unused study must use `successor-program`, which appends one hash-chained
 activation record to the existing lifetime ledger and preserves its counters.

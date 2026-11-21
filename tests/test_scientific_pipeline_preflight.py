@@ -802,6 +802,83 @@ pathlib.Path(a.report_output).write_text(json.dumps(report,sort_keys=True))
         return subprocess.run([sys.executable, str(PREFLIGHT), "--protocol", str(self.protocol_path),
             "--spec", str(self.spec_path), "--receipt", str(self.receipt_path)], env=env, capture_output=True, text=True, timeout=30)
 
+    def freeze_with_spec(self, spec, suffix):
+        destination = self.root / f"freeze-{suffix}"
+        self.execution_dir = destination
+        self.protocol["execution_program_dir"] = str(destination)
+        self.spec = json.loads(json.dumps(spec))
+        self.write_inputs()
+
+        process_protocol = json.loads(self.process_protocol_path.read_text())
+        program_id = f"freeze-{suffix}"
+        process_protocol["protocol_id"] = program_id
+        process_protocol["program_budget"]["program_id"] = program_id
+        ledger_dir = self.process_ledger / program_id
+        process_protocol["program_budget"]["ledger_dir"] = str(ledger_dir.resolve())
+        artifact = next(item for item in process_protocol["artifacts"] if item["id"] == "preflight-spec")
+        artifact["path"] = str(self.spec_path)
+        artifact["sha256"] = sha(self.spec_path.read_bytes())
+        source = self.root / f"freeze-{suffix}.json"
+        source.write_text(json.dumps(process_protocol, sort_keys=True))
+        env = os.environ.copy()
+        env["GENETIK_RESEARCH_PROCESS_LEDGER_ROOT"] = str(self.process_ledger)
+        result = subprocess.run(
+            [sys.executable, str(HARNESS), "freeze-program", "--protocol", str(source),
+             "--destination", str(destination)], env=env, capture_output=True, text=True, timeout=20)
+        return result, destination, ledger_dir
+
+    def test_freeze_rejects_missing_and_malformed_spec_limits_before_any_persistent_write(self):
+        missing = json.loads(json.dumps(self.spec))
+        missing.pop("limits")
+        malformed = json.loads(json.dumps(self.spec))
+        malformed["limits"]["cpu_seconds"] = True
+        unrepresentable = json.loads(json.dumps(self.spec))
+        unrepresentable["limits"]["wall_seconds"] = 10**1000
+        for suffix, candidate, diagnostic in (
+            ("missing-limits", missing, "preflight resource limits are required"),
+            ("malformed-limits", malformed, "cpu_seconds must be an integer"),
+            ("unrepresentable-wall-limit", unrepresentable, "positive finite wall_seconds limit is required"),
+        ):
+            with self.subTest(suffix=suffix):
+                result, destination, ledger_dir = self.freeze_with_spec(candidate, suffix)
+                self.assertEqual(result.returncode, 3, result.stderr)
+                self.assertIn(diagnostic, result.stderr)
+                self.assertFalse(destination.exists())
+                self.assertFalse(ledger_dir.exists())
+
+    def test_valid_freeze_pins_the_validated_spec_bytes_used_by_outer_preflight(self):
+        result, destination, ledger_dir = self.freeze_with_spec(self.spec, "valid-limits")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(destination.is_dir())
+        self.assertTrue(ledger_dir.is_dir())
+        frozen = json.loads((destination / "program.json").read_text())
+        spec_artifact = next(item for item in frozen["artifacts"] if item["id"] == "preflight-spec")
+        pinned_hash = sha(self.spec_path.read_bytes())
+        self.assertEqual(spec_artifact["sha256"], pinned_hash)
+        preflight = self.invoke()
+        self.assertEqual(preflight.returncode, 0, preflight.stderr)
+        receipt = json.loads(self.receipt_path.read_text())
+        self.assertEqual(receipt["status"], "passed")
+        self.assertEqual(receipt["spec_sha256"], pinned_hash)
+        self.assertEqual(sha(self.spec_path.read_bytes()), pinned_hash)
+        frozen_artifacts = json.loads((destination / "program.json").read_text())["artifacts"]
+        self.assertEqual(next(item["sha256"] for item in frozen_artifacts if item["id"] == "preflight-spec"),
+                         pinned_hash)
+
+    def test_valid_rehearsal_does_not_admit_a_different_spec_missing_limits(self):
+        self.assertIn("limits", self.spec)
+        rehearsal = self.invoke()
+        self.assertEqual(rehearsal.returncode, 0, rehearsal.stderr)
+        self.assertEqual(json.loads(self.receipt_path.read_text())["status"], "passed")
+
+        omitted = json.loads(json.dumps(self.spec))
+        omitted.pop("limits")
+        result, destination, ledger_dir = self.freeze_with_spec(omitted, "rehearsal-versus-freeze")
+        self.assertEqual(result.returncode, 3, result.stderr)
+        self.assertIn("preflight resource limits are required", result.stderr)
+        self.assertFalse(destination.exists())
+        self.assertFalse(ledger_dir.exists())
+
     def test_distinct_production_commands_use_descriptor_and_runner_sees_training_only(self):
         self.write_inputs()
         result = self.invoke()

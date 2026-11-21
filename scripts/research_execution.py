@@ -2841,6 +2841,19 @@ def _preflight_limits_recovery_from_event(event: dict | None) -> dict | None:
     }
 
 
+def _same_json_value_with_types(left: object, right: object) -> bool:
+    """Compare decoded JSON values without treating bool/int/float as aliases."""
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return (left.keys() == right.keys()
+                and all(_same_json_value_with_types(left[key], right[key]) for key in left))
+    if isinstance(left, list):
+        return (len(left) == len(right)
+                and all(_same_json_value_with_types(a, b) for a, b in zip(left, right)))
+    return left == right
+
+
 def _successor_amendments_from_event(event: dict) -> tuple[dict | None, dict | None]:
     kind = event.get("amendment_kind")
     if kind is None:
@@ -2902,7 +2915,7 @@ def _validate_preflight_limits_recovery(predecessor: dict, successor: dict, amen
     except (ValueError, UnicodeDecodeError) as error:
         raise GateError("passing rehearsal limits source is malformed") from error
     limits = limits_source.get("limits") if isinstance(limits_source, dict) else None
-    if limits != RATIONAL_SEEDED_LIMITS:
+    if not _same_json_value_with_types(limits, RATIONAL_SEEDED_LIMITS):
         raise GateError("passing rehearsal limits differ from the recorded four-value authorization")
     authorized_limits = predecessor.get("limits", {})
     authorized_pairs = (
@@ -2942,21 +2955,27 @@ def _validate_preflight_limits_recovery(predecessor: dict, successor: dict, amen
         raise GateError("rational-seeded predecessor already contains preflight limits")
     expected_spec = dict(old_spec)
     expected_spec["limits"] = RATIONAL_SEEDED_LIMITS
-    if candidate_spec != expected_spec:
+    try:
+        validate_runtime_limits(candidate_spec)
+    except (PreflightError, TypeError, ValueError) as error:
+        raise GateError(f"successor preflight specification has invalid runtime limits: {error}") from error
+    if not _same_json_value_with_types(candidate_spec, expected_spec):
         raise GateError("rational-seeded recovery may add only the four limits from the passing rehearsal")
     if (new_artifact.get("id") != old_artifact.get("id")
             or new_artifact.get("role") != old_artifact.get("role")):
         raise GateError("rational-seeded recovery must preserve the preflight-spec artifact identity")
 
     # After restoring only the corrected preflight artifact and version metadata,
-    # all scientific fields, artifacts, runs, budgets and stage bindings must match.
+    # every protocol field, including each executable and software pin, must match.
     adjusted = copy.deepcopy(successor)
     adjusted["protocol_id"] = predecessor["protocol_id"]
     adjusted["source_commit"] = predecessor["source_commit"]
-    adjusted_artifacts = {item["id"]: item for item in adjusted.get("artifacts", [])}
-    adjusted_artifacts[spec_id] = copy.deepcopy(old_artifact)
-    adjusted["artifacts"] = list(adjusted_artifacts.values())
-    if _successor_projection(predecessor) != _successor_projection(adjusted):
+    for artifact in adjusted.get("artifacts", []):
+        if artifact.get("id") == spec_id:
+            artifact["path"] = old_artifact["path"]
+            artifact["sha256"] = old_artifact["sha256"]
+            break
+    if not _same_json_value_with_types(predecessor, adjusted):
         raise GateError("rational-seeded preflight recovery changes fields beyond the limits-only specification correction")
 
 

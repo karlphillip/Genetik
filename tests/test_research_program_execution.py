@@ -381,7 +381,6 @@ class BoundedProgramExecutionTests(unittest.TestCase):
 
     def _rational_limits_recovery_fixture(self, suffix=""):
         """Create a disposable old-format package and its one-field recovery inputs."""
-        import shutil
         import research_execution
 
         protocol, predecessor, _ = self._descriptor_pr56_fixture(f"-rational{suffix}")
@@ -480,6 +479,73 @@ class BoundedProgramExecutionTests(unittest.TestCase):
         self.assertFalse((self.root / "rational-changed-science").exists())
         self.assertEqual((ledger / "process-events.jsonl").read_bytes(), original_events)
         self.assertEqual((ledger / "process-budget.json").read_bytes(), original_state)
+
+        # JSON numeric equality must not let a float stand in for the pinned
+        # integer cpu_seconds value. Reject it before writing a package or
+        # changing the existing lifetime ledger.
+        candidate = json.loads(candidate_path.read_text())
+        candidate["limits"]["cpu_seconds"] = 8.0
+        candidate_path.write_text(json.dumps(candidate, sort_keys=True))
+        float_successor = json.loads(json.dumps(successor))
+        spec_artifact = next(item for item in float_successor["artifacts"]
+                             if item["id"] == "preflight-spec")
+        spec_artifact["sha256"] = sha(candidate_path)
+        float_source = self._write_source(float_successor)
+        float_destination = self.root / "rational-float-limits"
+        float_stderr = io.StringIO()
+        with contextlib.ExitStack() as stack, contextlib.redirect_stderr(float_stderr):
+            for patcher in identities:
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()))
+            self.assertEqual(research_execution.main([
+                "successor-program", "--predecessor-dir", str(predecessor), "--protocol", str(float_source),
+                "--destination", str(float_destination), "--preflight-limits-refusal", str(refusal),
+                "--preflight-limits-source", str(limits_source)]), 3)
+        self.assertIn("cpu_seconds must be an integer", float_stderr.getvalue())
+        self.assertFalse(float_destination.exists())
+        self.assertFalse((ledger / "protocol-successor.json").exists())
+        self.assertEqual((ledger / "process-events.jsonl").read_bytes(), original_events)
+        self.assertEqual((ledger / "process-budget.json").read_bytes(), original_state)
+
+        # Keep the pipeline descriptor valid while changing one pinned stage
+        # entrypoint path. Limits recovery must reject this unrelated software
+        # pin even though the substitute file has identical bytes.
+        candidate["limits"]["cpu_seconds"] = 8
+        candidate_path.write_text(json.dumps(candidate, sort_keys=True))
+        unchanged_successor = json.loads(json.dumps(successor))
+        software_pin = next(item for item in unchanged_successor["artifacts"] if item["id"] == "python")
+        alternate_runtime = self.root / "alternate-python"
+        alternate_runtime.write_bytes(Path(software_pin["path"]).read_bytes())
+        alternate_runtime.chmod(0o755)
+        software_pin["path"] = str(alternate_runtime)
+        software_pin["sha256"] = sha(alternate_runtime)
+        for stage in unchanged_successor["pipeline_descriptor"]["stages"].values():
+            stage["argv"][0] = str(alternate_runtime)
+        from research_pipeline import descriptor_digest
+        unchanged_successor["pipeline_descriptor"]["sha256"] = descriptor_digest(
+            unchanged_successor["pipeline_descriptor"])
+        pin_source = self._write_source(unchanged_successor)
+        pin_destination = self.root / "rational-changed-software-pin"
+        pin_stderr = io.StringIO()
+        with contextlib.ExitStack() as stack, contextlib.redirect_stderr(pin_stderr):
+            for patcher in identities:
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(research_execution, "PROCESS_LEDGER_ROOT", self.ledger.resolve()))
+            self.assertEqual(research_execution.main([
+                "successor-program", "--predecessor-dir", str(predecessor), "--protocol", str(pin_source),
+                "--destination", str(pin_destination), "--preflight-limits-refusal", str(refusal),
+                "--preflight-limits-source", str(limits_source)]), 3)
+        self.assertIn("beyond the limits-only", pin_stderr.getvalue())
+        self.assertFalse(pin_destination.exists())
+        self.assertFalse((ledger / "protocol-successor.json").exists())
+        self.assertEqual((ledger / "process-events.jsonl").read_bytes(), original_events)
+        self.assertEqual((ledger / "process-budget.json").read_bytes(), original_state)
+
+        # Restore exact candidate bytes and pins for the positive successor.
+        candidate["limits"]["cpu_seconds"] = 8
+        candidate_path.write_text(json.dumps(candidate, sort_keys=True))
+        next(item for item in successor["artifacts"] if item["id"] == "preflight-spec")["sha256"] = sha(candidate_path)
+        source.write_bytes(research_execution.canonical_json(successor))
 
         destination = self.root / "rational-successor-package"
         args = ["successor-program", "--predecessor-dir", str(predecessor),

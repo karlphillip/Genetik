@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "detail/ScalarOperators.hpp"
 
 // Immutable application supplied scalar operation. IDs are stable checkpoint keys;
 // the application must register the same ID and semantics when restoring a run.
@@ -24,5 +25,9 @@ struct CustomScalarOperator {
                   c == '_' || c == '.' || c == ':' || c == '/' || c == '-'))
                 throw std::invalid_argument(
                     "custom scalar operator ID contains non-token characters");
+        for (const auto& builtin : scalarOperators)
+            if (builtin.arity && id == builtin.name)
+                throw std::invalid_argument(
+                    "custom scalar operator ID conflicts with built-in operator: " + id);
     }
 };

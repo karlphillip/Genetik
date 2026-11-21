@@ -14,8 +14,14 @@ int main() {
             return m + std::log1p(std::exp(-std::abs(x[0] - x[1])));
         },
         [](std::span<const double> x) -> std::optional<std::vector<double>> {
-            const double p = 1.0 / (1.0 + std::exp(-(x[0] - x[1])));
-            return std::vector<double>{p, 1.0 - p};
+            const double difference = x[0] - x[1];
+            const double small = std::exp(-std::abs(difference));
+            if (difference >= 0.0) {
+                const double denominator = 1.0 + small;
+                return std::vector<double>{1.0 / denominator, small / denominator};
+            }
+            const double denominator = 1.0 + small;
+            return std::vector<double>{small / denominator, 1.0 / denominator};
         }};
     const std::vector<RegressionRow> training{{{0, 0}, std::log(2.0)},
                                               {{1, 0}, 1.3132616875182228}};

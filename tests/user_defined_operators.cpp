@@ -1,5 +1,8 @@
 #include <SymbolicRegression.hpp>
 #include <ScalarExpressionCheckpoint.hpp>
+#include <ScalarMathematicsRun.hpp>
+#include <ExpressionFormatting.hpp>
+#include <ExpressionSecondDerivative.hpp>
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -21,8 +24,10 @@ static CustomScalarOperator logaddexp() {
             },
             [](std::span<const double> x) -> std::optional<std::vector<double>> {
                 const double d = x[0] - x[1];
-                const double p = 1 / (1 + std::exp(-d));
-                return std::vector<double>{p, 1 - p};
+                const double small = std::exp(-std::abs(d));
+                const double denominator = 1 + small;
+                return d >= 0 ? std::vector<double>{1 / denominator, small / denominator}
+                              : std::vector<double>{small / denominator, 1 / denominator};
             }};
 }
 int main() {
@@ -54,6 +59,22 @@ int main() {
         check(direct.nodeCount() == 6 && stable.nodeCount() == 12 && e.nodeCount() == 3,
               "operator-node complexity comparison");
         check(e.toString().find(op.id) != std::string::npos, "custom operator export identity");
+        const auto squareNamedSin = CustomScalarOperator{
+            "sin",
+            1,
+            [](std::span<const double> a) -> std::optional<double> { return a[0] * a[0]; },
+            {}};
+        const auto squareValue = squareNamedSin.evaluate(std::array{2.0});
+        check(squareValue && *squareValue == 4.0,
+              "collision regression's custom square callback is 4 at x=2");
+        bool ambiguousRejected = false;
+        try {
+            (void)ExpressionNode::custom(squareNamedSin);
+        } catch (const std::invalid_argument&) {
+            ambiguousRejected = true;
+        }
+        check(ambiguousRejected,
+              "custom ID cannot shadow built-in sin and re-export as ordinary sine");
         for (auto [a, b, expected] :
              {std::tuple{0., 0., std::log(2.)}, std::tuple{1000., 1000., 1000. + std::log(2.)},
               std::tuple{-1000., -1000., -1000. + std::log(2.)},
@@ -86,6 +107,20 @@ int main() {
         auto deriv = evaluatePartial(e, std::array{0., 0.}, 0);
         check(deriv.derivativeAvailable() && std::abs(deriv.derivative() - .5) < 1e-15,
               "custom analytic derivative");
+        for (const auto& [a, b, smallIndex] :
+             {std::tuple{40.0, 0.0, std::size_t{1}}, std::tuple{0.0, 40.0, std::size_t{0}}}) {
+            const auto partial = evaluatePartial(e, std::array{a, b}, smallIndex);
+            const double actual = partial.derivative();
+            const double expected = std::exp(-40.0) / (1.0 + std::exp(-40.0));
+            check(partial.derivativeAvailable() && actual != 0.0 &&
+                      std::abs((actual - expected) / expected) < 1e-14,
+                  "small logaddexp partial retained without cancellation");
+        }
+        const auto pretty = formatExpression(e, ExpressionTextFormat::Unicode);
+        const auto latex = formatExpression(e, ExpressionTextFormat::LaTeX);
+        check(pretty.find(op.id) != std::string::npos && latex.find(op.id) != std::string::npos &&
+                  latex.find("\\operatorname{") != std::string::npos,
+              "custom identity is preserved in Unicode and LaTeX");
         CustomScalarOperator unary{
             "example.softplus/1", 1,
             [](std::span<const double> a) -> std::optional<double> {
@@ -111,6 +146,37 @@ int main() {
         check(unavailable.valueAvailable() && !unavailable.derivativeAvailable() &&
                   unavailable.derivativeFailure() == DerivativeFailure::UnsupportedRule,
               "missing custom partials preserve primal value and report unavailable derivative");
+        const Expression constantUnary(
+            std::array{ExpressionNode::constant(2), ExpressionNode::custom(primalOnly)}, 1);
+        const auto unaryConstantSecond =
+            evaluateSecondPartial(constantUnary, std::array{0.0}, 0, 0);
+        check(unaryConstantSecond.status == ScientificStatus::Success &&
+                  unaryConstantSecond.derivatives->second == 0.0,
+              "variable-independent custom unary subtree has zero second partial");
+        const auto unaryActiveSecond = evaluateSecondPartial(primalOnlyExpr, std::array{2.0}, 0, 0);
+        check(unaryActiveSecond.status == ScientificStatus::Unavailable,
+              "active custom unary second partial reports unavailable rule");
+        CustomScalarOperator binaryPrimalOnly{
+            "example.binary_primal_only/1",
+            2,
+            [](std::span<const double> a) -> std::optional<double> { return a[0] + a[1]; },
+            {}};
+        const Expression binaryConstant(std::array{ExpressionNode::constant(2),
+                                                   ExpressionNode::constant(3),
+                                                   ExpressionNode::custom(binaryPrimalOnly)},
+                                        1);
+        const auto binaryConstantSecond =
+            evaluateSecondPartial(binaryConstant, std::array{0.0}, 0, 0);
+        check(binaryConstantSecond.status == ScientificStatus::Success &&
+                  binaryConstantSecond.derivatives->second == 0.0,
+              "variable-independent custom binary subtree has zero second partial");
+        const Expression binaryActive(std::array{ExpressionNode::variable(0),
+                                                 ExpressionNode::constant(3),
+                                                 ExpressionNode::custom(binaryPrimalOnly)},
+                                      1);
+        const auto binaryActiveSecond = evaluateSecondPartial(binaryActive, std::array{2.0}, 0, 0);
+        check(binaryActiveSecond.status == ScientificStatus::Unavailable,
+              "active custom binary second partial reports unavailable rule");
         Expression fitExpr(std::array{ExpressionNode::variable(0), ExpressionNode::constant(.5),
                                       ExpressionNode::custom(op)},
                            1);
@@ -163,6 +229,102 @@ int main() {
             if (text.find(unary.id) != std::string::npos)
                 unarySeen = true;
         check(unarySeen, "search generated and scored a custom unary operator");
+        auto customRunConfig = cfg;
+        customRunConfig.maxGenerationAttempts = 0;
+        customRunConfig.maxTrainingLossAttempts = 1000;
+        auto customRunProblem = ScalarMathematicsProblem::scientific(rows, {7, 4, 4});
+        ExecutionContext customExecution({1});
+        RandomContext customRunRandom(29, customExecution);
+        ScalarMathematicsRun customRun(customRunProblem, customRunConfig, customRunRandom);
+        bool runContainsCustom = false;
+        const auto customRunMembers = customRun.population().creatures();
+        for (const auto& member : *customRunMembers)
+            for (const auto& node : member.expression().nodes())
+                runContainsCustom |= node.kind() == ExpressionKind::CustomBinary &&
+                                     node.customOperator().id == op.id;
+        check(runContainsCustom, "full-run checkpoint fixture contains a custom candidate");
+        RandomContext customResumeRandom(29, customExecution);
+        auto customResumed = ScalarMathematicsRun::restore(customRun.checkpoint(), customRunProblem,
+                                                           customRunConfig, customResumeRandom);
+        check(customResumed->population().creatures()->size() ==
+                  customRun.population().creatures()->size(),
+              "full-run checkpoint restores custom expression candidates");
+        // Full-run restore carries the application registry. Depth one ensures
+        // this checkpoint's population contains terminals only, so the grammar
+        // compatibility guard cannot rely on inspecting stored expressions.
+        auto runRows = std::vector<RegressionRow>{{{0}, 0.3}, {{1}, 2.3}};
+        auto runProblem = ScalarMathematicsProblem::scientific(runRows, {12, 4, 4});
+        SymbolicRegressionConfig runConfig;
+        runConfig.population = 6;
+        runConfig.maxEvaluations = 30;
+        runConfig.maxTrainingLossAttempts = 100;
+        runConfig.maxGenerationAttempts = 1;
+        runConfig.crossoverRate = 0;
+        runConfig.mutationRate = 0;
+        runConfig.grammar.operators.clear();
+        runConfig.grammar.constants = {0};
+        runConfig.grammar.initialMaxDepth = 1;
+        runConfig.grammar.mutationMaxDepth = 1;
+        runConfig.grammar.customOperators = {op, unary};
+        ExecutionContext runExecution({1});
+        RandomContext runRandom(177, runExecution);
+        ScalarMathematicsRun scalarRun(runProblem, runConfig, runRandom);
+        const auto terminalMembers = scalarRun.population().creatures();
+        for (const auto& member : *terminalMembers)
+            check(member.expression().nodeCount() == 1,
+                  "custom-grammar checkpoint fixture has terminal-only population");
+        const auto runCheckpoint = scalarRun.checkpoint();
+        RandomContext resumedRandom(177, runExecution);
+        auto resumedRun =
+            ScalarMathematicsRun::restore(runCheckpoint, runProblem, runConfig, resumedRandom);
+        (void)scalarRun.step();
+        (void)resumedRun->step();
+        const auto uninterrupted = scalarRun.population().creatures();
+        const auto resumedMembers = resumedRun->population().creatures();
+        check(uninterrupted->size() == resumedMembers->size(),
+              "full custom-grammar run resumed population size");
+        for (std::size_t i = 0; i < uninterrupted->size(); ++i)
+            check((*uninterrupted)[i].text() == (*resumedMembers)[i].text() &&
+                      (*uninterrupted)[i].fitness() == (*resumedMembers)[i].fitness(),
+                  "full custom-grammar run checkpoint/resume equivalence");
+        auto changedGrammar = runConfig;
+        auto changedOperator = op;
+        changedOperator.id = "example.logaddexp/changed";
+        changedGrammar.grammar.customOperators = {changedOperator, unary};
+        bool grammarRejected = false;
+        try {
+            RandomContext changedRandom(177, runExecution);
+            (void)ScalarMathematicsRun::restore(runCheckpoint, runProblem, changedGrammar,
+                                                changedRandom);
+        } catch (const CheckpointError&) {
+            grammarRejected = true;
+        }
+        check(grammarRejected,
+              "run checkpoint rejects changed custom grammar with terminal-only population");
+        auto reorderedGrammar = runConfig;
+        reorderedGrammar.grammar.customOperators = {unary, op};
+        bool orderRejected = false;
+        try {
+            RandomContext orderRandom(177, runExecution);
+            (void)ScalarMathematicsRun::restore(runCheckpoint, runProblem, reorderedGrammar,
+                                                orderRandom);
+        } catch (const CheckpointError&) {
+            orderRejected = true;
+        }
+        check(orderRejected, "run checkpoint binds custom operator registration order");
+        auto changedArityGrammar = runConfig;
+        auto changedArityOperator = op;
+        changedArityOperator.arity = 1;
+        changedArityGrammar.grammar.customOperators[0] = changedArityOperator;
+        bool arityRejected = false;
+        try {
+            RandomContext arityRandom(177, runExecution);
+            (void)ScalarMathematicsRun::restore(runCheckpoint, runProblem, changedArityGrammar,
+                                                arityRandom);
+        } catch (const CheckpointError&) {
+            arityRejected = true;
+        }
+        check(arityRejected, "run checkpoint binds each custom operator arity");
         ExpressionCandidate candidate(e, problem);
         candidate.calculateFitness();
         CheckpointWriter writer;

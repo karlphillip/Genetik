@@ -262,7 +262,8 @@ class ScalarMathematicsRun {
             initial = r.real();
         auto variation = readVariationStatistics(r);
         auto state = readCommittedPopulation<ExpressionCandidate>(
-            r, ScalarCheckpointContext{p.problem(), result->preparation_});
+            r,
+            ScalarCheckpointContext{p.problem(), result->preparation_, c.grammar.customOperators});
         r.finish();
         if (!d.generation || *d.generation != state.generation || state.generation != a.published ||
             a.attempts > c.maxGenerationAttempts || a.published > a.attempts ||
@@ -336,6 +337,16 @@ class ScalarMathematicsRun {
             w.integer(v->size());
             for (auto x : *v)
                 w.integer(x);
+        }
+        // Preserve the historical built-in-only identity byte-for-byte. Custom
+        // grammars additionally bind the ordered stable IDs and arities.
+        if (!g.customOperators.empty()) {
+            w.text("custom-scalar-grammar/1");
+            w.integer(g.customOperators.size());
+            for (const auto& op : g.customOperators) {
+                w.text(op.id);
+                w.integer(op.arity);
+            }
         }
         w.integer(g.powerExponentsAreConstants);
         for (auto n : {g.initialMaxDepth, g.mutationMaxDepth, g.proposalLimit})

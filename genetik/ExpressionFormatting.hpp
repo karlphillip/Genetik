@@ -19,6 +19,17 @@ inline std::string formatExpression(const Expression& e,ExpressionTextFormat for
     struct Item{std::string text;unsigned precedence;ExpressionKind kind;};std::vector<Item> stack;std::size_t payload=0;
     const auto wrap=[&](std::string t){return tex?"\\left("+t+"\\right)":"("+t+")";};
     const auto bounded=[&](const std::string& s){if(s.size()>limits.maxOutputBytes)throw std::length_error("expression format output limit");};
+    const auto latexOperatorName = [](std::string_view id) {
+        std::string escaped;
+        escaped.reserve(id.size());
+        for (char c : id) {
+            if (c == '_')
+                escaped += "\\_";
+            else
+                escaped += c;
+        }
+        return "\\operatorname{" + escaped + "}";
+    };
     for(const auto& n:e.nodes()) {
         std::string text;unsigned precedence=5;const auto k=n.kind();
         if(k==ExpressionKind::Variable){text=variable?wrap(variable(n.variableIndex(),format)):(tex?"x_{"+std::to_string(n.variableIndex())+"}":"x"+std::to_string(n.variableIndex()));}
@@ -28,8 +39,22 @@ inline std::string formatExpression(const Expression& e,ExpressionTextFormat for
             if(k>=ExpressionKind::NegativePowi){
                 precedence=4;std::vector<Item> args;args.push_back(std::move(right));
                 for(std::size_t j=1;j<expressionArity(k);++j){auto item=std::move(stack.back());stack.pop_back();payload-=item.text.size();args.push_back(std::move(item));}std::reverse(args.begin(),args.end());
-                if(k==ExpressionKind::NegativePowi){precedence=3;constexpr std::array digits{"⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸"};text=wrap(args[0].text)+(tex?"^{-"+std::to_string(n.exponent())+"}":"⁻"+std::string(digits[n.exponent()]));}
-                else if(k==ExpressionKind::Cbrt)text=tex?"\\sqrt[3]{"+args[0].text+"}":"∛"+wrap(args[0].text);
+                if (k == ExpressionKind::CustomUnary || k == ExpressionKind::CustomBinary) {
+                    text = tex ? latexOperatorName(n.customOperator().id) : n.customOperator().id;
+                    text += tex ? "\\left(" : "(";
+                    for (std::size_t j = 0; j < args.size(); ++j) {
+                        if (j)
+                            text += ", ";
+                        text += args[j].text;
+                    }
+                    text += tex ? "\\right)" : ")";
+                } else if (k == ExpressionKind::NegativePowi) {
+                    precedence = 3;
+                    constexpr std::array digits{"⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸"};
+                    text = wrap(args[0].text) + (tex ? "^{-" + std::to_string(n.exponent()) + "}"
+                                                     : "⁻" + std::string(digits[n.exponent()]));
+                } else if (k == ExpressionKind::Cbrt)
+                    text = tex ? "\\sqrt[3]{" + args[0].text + "}" : "∛" + wrap(args[0].text);
                 else if(k==ExpressionKind::Abs)text=tex?"\\left|"+args[0].text+"\\right|":"|"+args[0].text+"|";
                 else if(k==ExpressionKind::Pow){precedence=3;text=wrap(args[0].text)+(tex?"^{"+args[1].text+"}":"^"+wrap(args[1].text));}
                 else{auto name=std::string(scalarOperatorDescription(k).name);text=tex?(k==ExpressionKind::Log2?"\\log_{2}":k==ExpressionKind::Log10?"\\log_{10}":"\\operatorname{"+name+"}"):name;text+=tex?"\\left(":"(";for(std::size_t j=0;j<args.size();++j){if(j)text+=", ";text+=args[j].text;}text+=tex?"\\right)":")";}

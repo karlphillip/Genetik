@@ -19,6 +19,7 @@ PORTABLE = {
     "genetik_d6_budget_cli", "genetik_d6_scientific_contracts", "genetik_d6_continuation", "genetik_d6_overlap", "genetik_scientific_discovery_quickstart",
     'genetik_d5_iteration_contracts', 'genetik_d5_iteration_overlap', 'genetik_d5_integer_contracts', 'genetik_d5_recurrence_contracts', 'genetik_d5_recurrence_overlap', 'genetik_d5_scientific_contracts', 'genetik_d5_scientific_overlap', 'genetik_d5_symbolic_contracts', 'genetik_d5_symbolic_overlap', 'genetik_d5_dimension_contracts', 'genetik_d5_dimension_overlap', 'genetik_advanced_mathematics_quickstart',
     "genetik_checkpoint_compatibility",
+    "genetik_user_defined_operator_contracts",
     "genetik_discrete_contracts", "genetik_discrete_overlap", "genetik_discrete_quickstart",
     "genetik_discrete_iteration_contracts", "genetik_discrete_iteration_overlap", "genetik_discrete_iteration_quickstart",
     "genetik_discrete_specification_contracts", "genetik_discrete_specification_quickstart",

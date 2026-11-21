@@ -338,6 +338,10 @@ class ScalarMathematicsRun {
                 w.integer(x);
         }
         w.integer(g.powerExponentsAreConstants);
+        // Preserve historical default run identities; the opt-in behavior must
+        // still prevent a checkpoint from resuming under a different mutation policy.
+        if (g.foldConstantSubtrees)
+            w.text("constant-folding-mutation/1");
         for (auto n : {g.initialMaxDepth, g.mutationMaxDepth, g.proposalLimit})
             w.integer(n);
         for (double n :

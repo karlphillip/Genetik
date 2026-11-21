@@ -258,8 +258,99 @@ static void budgetsAndRepeatability() {
     const auto noValid=symbolicRegression(invalidData,config,invalid);
     check(noValid.stoppingReason==SearchStop::NoViableCandidates && !noValid.best && noValid.candidateEvaluations==6,"all-invalid search initialization terminates");
 }
+static void constantFoldingMutation() {
+    using K = ExpressionKind;
+    const auto x = Expression::variable(0);
+    const auto sum = Expression::binary(K::Add, Expression::constant(2,1), Expression::constant(3,1));
+    const auto parentExpression = Expression::binary(K::Multiply, sum, x);
+    auto problem = RegressionProblem::create({{{-2},-9.75},{{-0.5},-2.25},{{1.25},6.5}},
+                                              {31,8,10});
+    ExpressionGrammar grammar; grammar.operators={K::Add,K::Multiply}; grammar.foldConstantSubtrees=true;
+    ExpressionVariation variation(problem,grammar);
+    ExpressionCandidate parent(parentExpression,problem);
+    std::optional<ExpressionCandidate> folded;
+    // Deterministically locate an engine seed whose selected subtree is the sum.
+    for (std::uint32_t seed=0;seed<512 && !folded;++seed) {
+        std::mt19937 engine(seed);
+        auto child=variation.mutation(parent,1,engine);
+        if(child.expression().sameRepresentation(Expression::binary(K::Multiply,Expression::constant(5,1),x)))
+            folded=std::move(child);
+    }
+    check(folded.has_value(),"opt-in mutation folds a selected constant subtree");
+    check(parent.text()=="((2.0 + 3.0) * x0)" && folded->text()=="(5.0 * x0)" &&
+          parent.expression().nodeCount()==5 && folded->expression().nodeCount()==3,
+          "constant folding preserves parent and reduces the offspring tree");
+    for(double input:{-2.0,-0.5,0.0,1.25,8.0}) {
+        const auto before=parent.expression().evaluate(std::array{input});
+        const auto after=folded->expression().evaluate(std::array{input});
+        check(before.valid() && after.valid() && std::bit_cast<std::uint64_t>(before.value())==
+              std::bit_cast<std::uint64_t>(after.value()),"folded predictions are bit-identical before fitting");
+    }
+
+    const auto negativeZero=Expression::binary(K::Add,Expression::constant(-0.0,1),Expression::constant(-0.0,1));
+    auto zeroProblem=RegressionProblem::create({{{0},0}});
+    ExpressionGrammar zeroGrammar; zeroGrammar.operators={K::Add}; zeroGrammar.foldConstantSubtrees=true;
+    ExpressionVariation zeroVariation(zeroProblem,zeroGrammar);
+    ExpressionCandidate zeroParent(negativeZero,zeroProblem);
+    std::optional<ExpressionCandidate> zeroChild;
+    for(std::uint32_t seed=0;seed<128&&!zeroChild;++seed){std::mt19937 engine(seed);auto child=zeroVariation.mutation(zeroParent,1,engine);
+        if(child.expression().nodeCount()==1&&std::signbit(child.expression().nodes()[0].constantValue()))zeroChild=std::move(child);}
+    check(zeroChild.has_value(),"fold preserves negative zero");
+
+    const auto invalid=Expression::binary(K::Divide,Expression::constant(1,1),Expression::constant(-0.0,1));
+    ExpressionGrammar invalidGrammar; invalidGrammar.operators={K::Divide}; invalidGrammar.foldConstantSubtrees=true;
+    ExpressionVariation invalidVariation(zeroProblem,invalidGrammar);
+    ExpressionCandidate invalidParent(invalid,zeroProblem);
+    const auto selectsRoot=[](std::uint32_t seed,std::size_t nodeCount,std::size_t root){
+        std::mt19937 probe(seed);
+        (void)std::uniform_real_distribution<float>(0,1)(probe);
+        return std::uniform_int_distribution<std::size_t>(0,nodeCount-1)(probe)==root;
+    };
+    bool exercisedInvalidRoot=false;
+    for(std::uint32_t seed=0;seed<64;++seed){if(!selectsRoot(seed,invalid.nodeCount(),invalid.nodeCount()-1))continue;
+        exercisedInvalidRoot=true;std::mt19937 engine(seed);auto child=invalidVariation.mutation(invalidParent,1,engine);
+        for(const auto& node:child.expression().nodes())if(node.kind()==K::Constant)
+            check(std::isfinite(node.constantValue())&&std::abs(node.constantValue())<=zeroProblem->limits().maxAbsConstant,
+                  "invalid quotient does not emit an invalid folded literal");}
+    check(exercisedInvalidRoot,"invalid fold rejection fixture selects its constant-only root");
+
+    const Expression overflowing=Expression::binary(K::Multiply,Expression::constant(1e30,1),Expression::constant(1e30,1));
+    auto boundedProblem=RegressionProblem::create({{{0},0}},{31,8,1e50});
+    ExpressionGrammar boundedGrammar; boundedGrammar.operators={K::Multiply}; boundedGrammar.foldConstantSubtrees=true;
+    ExpressionVariation boundedVariation(boundedProblem,boundedGrammar);
+    ExpressionCandidate boundedParent(overflowing,boundedProblem);
+    bool exercisedOutOfRangeRoot=false;
+    for(std::uint32_t seed=0;seed<64;++seed){if(!selectsRoot(seed,overflowing.nodeCount(),overflowing.nodeCount()-1))continue;
+        exercisedOutOfRangeRoot=true;std::mt19937 engine(seed);auto child=boundedVariation.mutation(boundedParent,1,engine);
+        for(const auto& node:child.expression().nodes())if(node.kind()==K::Constant)
+            check(std::abs(node.constantValue())<=boundedProblem->limits().maxAbsConstant,
+                  "out-of-range fold is rejected");}
+    check(exercisedOutOfRangeRoot,"out-of-range fixture selects its constant-only root");
+
+    SymbolicRegressionConfig config;config.population=4;config.elites=1;config.maxGenerationAttempts=2;
+    config.maxEvaluations=12;config.grammar=grammar;config.mutationRate=1;config.crossoverRate=0;
+    config.initialExpressionSlots=1;config.maximumInitializerWorkUnits=1;
+    const InitialExpressionProvider provider=[parentExpression](const RegressionProblem&,std::size_t,std::uint64_t){
+        return InitialExpressionBatch{{parentExpression},1,"success",{}};};
+    RandomContext firstRandom(71),secondRandom(71);
+    const auto first=symbolicRegression(problem,config,firstRandom,{},provider);
+    const auto second=symbolicRegression(problem,config,secondRandom,{},provider);
+    check(first.best&&second.best&&first.best->text()==second.best->text()&&
+          first.best->evaluation()==second.best->evaluation()&&firstRandom.engine()==secondRandom.engine()&&
+          first.variation==second.variation,"normal symbolic-regression entry point repeats with folding enabled");
+
+    ExpressionGrammar defaultGrammar;
+    ExpressionVariation defaultVariation(problem,defaultGrammar),explicitOffVariation(problem,ExpressionGrammar{});
+    std::mt19937 defaultRng(991),offRng(991);
+    for(int i=0;i<20;++i){auto a=defaultVariation.initialize(defaultRng),b=explicitOffVariation.initialize(offRng);
+        check(a.text()==b.text(),"disabled default initialization remains identical");
+        auto ma=defaultVariation.mutation(a,1,defaultRng),mb=explicitOffVariation.mutation(b,1,offRng);
+        check(ma.text()==mb.text(),"disabled default mutation remains identical");}
+    check(defaultRng==offRng,"disabled mode preserves RNG draw order");
+}
 int main() {
     try { lossesAndOwnership(); structureAndLimits(); failuresAndOrdering(); budgetsAndRepeatability();
+        constantFoldingMutation();
         std::cout<<"Symbolic regression integration/loss/variation/publication/budget contracts passed\n";
     } catch(const std::exception& e) { std::cerr<<"FAILED: "<<e.what()<<'\n'; return 1; }
 }

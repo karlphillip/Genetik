@@ -408,6 +408,97 @@ void complexCoefficientFitting() {
               << " prediction_evaluations=" << realControl.lossAttempts * realRows.size()
               << " math_ops=" << realObjective.supplementalWork().mathematicalOperations << '\n';
 }
+void complexCoefficientFitLimitsAndBudgets() {
+    const std::vector<ComplexObservation> largeTarget{{{{1, 0}}, {1e12, 1e12}},
+                                                      {{{-1, 0}}, {1e12, 1e12}}};
+    ComplexRegressionProblem largeProblem(largeTarget, ExpressionLimits{15, 8, 2e12});
+    const std::array<ComplexNode, 1> zeroNode{ComplexNode::constant({0, 0})};
+    ComplexExpression zero(zeroNode, 1, ExpressionLimits{15, 8, 2e12});
+    ComplexCoefficientFitConfig broad;
+    broad.lower = -2e12;
+    broad.upper = 2e12;
+    broad.optimizer.maxMathematicalOperations = 10000;
+    broad.optimizer.lossTolerance = 1e-24;
+    const auto largeFit = fitComplexCoefficients(largeProblem, zero, broad);
+    const auto largeCoefficient = largeFit.expression.nodes().front().value;
+    check(largeFit.trainingLoss.state() == FitnessState::Valid &&
+              std::abs(largeCoefficient - std::complex<double>{1e12, 1e12}) /
+                      std::abs(std::complex<double>{1e12, 1e12}) <
+                  1e-10,
+          "complex numerical Jacobian is stable when target dominates residual differences");
+
+    const auto boundedRows =
+        std::vector<ComplexObservation>{{{{1, 0}}, {2, 0}}, {{{-1, 0}}, {4, 0}}};
+    ComplexRegressionProblem boundedProblem(boundedRows, ExpressionLimits{15, 8, 1});
+    const auto looseScalar = parse("0.5*x0+0.5", 1);
+    const auto looseInput = ComplexExpression::fromScalarGenome(looseScalar);
+    ComplexCoefficientFitConfig looseConfig;
+    looseConfig.lower = -10;
+    looseConfig.upper = 10;
+    looseConfig.optimizer.maxMathematicalOperations = 10000;
+    const auto boundedFit = fitComplexCoefficients(boundedProblem, looseInput, looseConfig);
+    check(boundedFit.expression.limits().maxAbsConstant == 1,
+          "fitted complex expression adopts problem coefficient limit");
+    for (const auto& node : boundedFit.expression.nodes())
+        if (node.kind == ComplexKind::Constant)
+            check(std::abs(node.value.real()) <= 1 && std::abs(node.value.imag()) <= 1,
+                  "complex coefficients remain inside problem bounds");
+    check(boundedFit.expression.nodes().size() <= boundedProblem.limits().maxNodes &&
+              boundedFit.expression.depth() <= boundedProblem.limits().maxDepth,
+          "fitted expression remains inside problem structure limits");
+
+    ComplexCoefficientFitConfig workspaceLimited;
+    workspaceLimited.lower = -10;
+    workspaceLimited.upper = 10;
+    workspaceLimited.optimizer.maxWorkspaceBytes = 64;
+    workspaceLimited.optimizer.maxMathematicalOperations = 10000;
+    const auto workspaceFit =
+        fitComplexCoefficients(ComplexRegressionProblem(boundedRows), looseInput, workspaceLimited);
+    check(
+        workspaceFit.stop == LMStop::WorkspaceLimit &&
+            workspaceFit.trainingLoss.state() == FitnessState::Valid &&
+            workspaceFit.trainingLoss == workspaceFit.startingLoss &&
+            workspaceFit.work.forwardEvaluations == boundedRows.size(),
+        "64-byte Jacobian workspace rejects before finite-difference probes and retains base loss");
+
+    ComplexCoefficientFitConfig operationLimited;
+    operationLimited.lower = -10;
+    operationLimited.upper = 10;
+    operationLimited.optimizer.maxMathematicalOperations = 40;
+    operationLimited.optimizer.maxWorkspaceBytes = 1024 * 1024;
+    const auto operationFit =
+        fitComplexCoefficients(ComplexRegressionProblem(boundedRows), looseInput, operationLimited);
+    check(operationFit.stop == LMStop::EvaluationLimit &&
+              operationFit.work.mathematicalOperations == 40 &&
+              operationFit.trainingLoss.state() == FitnessState::Valid,
+          "40-operation exhaustion is distinct from invalid start and preserves a valid loss");
+
+    const std::array<ComplexNode, 3> singularNodes{ComplexNode::constant({1, 0}),
+                                                   ComplexNode::variable(0),
+                                                   ComplexNode::operation(ComplexKind::Divide)};
+    ComplexExpression singular(singularNodes, 1);
+    ComplexCoefficientFitConfig singularConfig;
+    singularConfig.lower = -10;
+    singularConfig.upper = 10;
+    const auto singularFit = fitComplexCoefficients(ComplexRegressionProblem({{{{0, 0}}, {0, 0}}}),
+                                                    singular, singularConfig);
+    check(singularFit.stop == LMStop::InvalidStart &&
+              singularFit.trainingLoss.state() == FitnessState::Invalid &&
+              singularFit.work.mathematicalOperations <
+                  singularConfig.optimizer.maxMathematicalOperations,
+          "mathematically invalid initial prediction remains distinct from budget exhaustion");
+
+    ComplexCoefficientFitConfig fixedZero;
+    fixedZero.lower = 0;
+    fixedZero.upper = 0;
+    fixedZero.optimizer.maxMathematicalOperations = 100;
+    const auto zeroFit =
+        fitComplexCoefficients(ComplexRegressionProblem({{{{1, 0}}, {0, 0}}}), zero, fixedZero);
+    check(zeroFit.stop == LMStop::GradientTolerance &&
+              zeroFit.trainingLoss.state() == FitnessState::Valid &&
+              zeroFit.trainingLoss.score() == 0 && zeroFit.work.objectiveEvaluations == 1,
+          "equal zero bounds score the fixed model without a spurious invalid Jacobian");
+}
 void statistics() {
   std::array<double, 10> repeated;
   repeated.fill(.1);
@@ -760,6 +851,7 @@ int main(int argc, char **argv) {
       tensors();
       complexMath();
       complexCoefficientFitting();
+      complexCoefficientFitLimitsAndBudgets();
       statistics();
       linear();
       if (argc > 1)

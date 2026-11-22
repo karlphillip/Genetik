@@ -38,6 +38,9 @@ struct LMResidualEvaluation {
     std::vector<double> jacobian;
     std::size_t forwardEvaluations=0, derivativeEvaluations=0,
         rowsProcessed=0, mathematicalOperations=0, workspaceBytes=0;
+    // Lets an evaluator report exhausted mathematical work without inventing
+    // an extra operation merely to make the counter exceed its allowance.
+    bool operationLimitReached = false;
 };
 struct LMResult {
     std::vector<double> parameters;
@@ -92,7 +95,41 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
     if(initial.empty()||initial.size()>c.maxParameters||lower.size()!=initial.size()||upper.size()!=initial.size()||!evaluate||!c.maxIterations||!c.maxObjectiveEvaluations||!c.maxJacobianEvaluations||!c.maxResiduals||!c.maxMathematicalOperations||!c.maxWorkspaceBytes||!std::isfinite(c.initialDamping)||c.initialDamping<=0||!std::isfinite(c.minimumDamping)||!std::isfinite(c.maximumDamping)||c.minimumDamping<=0||c.minimumDamping>c.initialDamping||c.initialDamping>c.maximumDamping||!std::isfinite(c.gradientTolerance)||c.gradientTolerance<=0||!std::isfinite(c.stepTolerance)||c.stepTolerance<=0||!std::isfinite(c.lossTolerance)||c.lossTolerance<0)throw std::invalid_argument("invalid Levenberg-Marquardt configuration");
     for(std::size_t i=0;i<initial.size();++i)if(!std::isfinite(initial[i])||!std::isfinite(lower[i])||!std::isfinite(upper[i])||lower[i]>initial[i]||initial[i]>upper[i])throw std::invalid_argument("invalid bounded LM start");
     LMResult out;out.parameters.assign(initial.begin(),initial.end());double lambda=c.initialDamping;
-    auto call=[&](std::span<const double> parameters,bool jac){if(cancelled&&cancelled->load(std::memory_order_relaxed)){out.stop=LMStop::Cancelled;return LMResidualEvaluation{};}if(out.work.objectiveEvaluations>=c.maxObjectiveEvaluations){out.stop=LMStop::EvaluationLimit;return LMResidualEvaluation{};}if(jac&&out.work.jacobianEvaluations>=c.maxJacobianEvaluations){out.stop=LMStop::DerivativeLimit;return LMResidualEvaluation{};}const auto allowance=c.maxMathematicalOperations-out.work.mathematicalOperations;auto e=evaluate(parameters,jac,allowance);++out.work.objectiveEvaluations;if(jac)++out.work.jacobianEvaluations;out.work.forwardEvaluations+=std::max<std::size_t>(1,e.forwardEvaluations);out.work.derivativeEvaluations+=e.derivativeEvaluations;out.work.rowsProcessed+=e.rowsProcessed;out.work.peakWorkspaceBytes=std::max(out.work.peakWorkspaceBytes,e.workspaceBytes);out.work.mathematicalOperations=e.mathematicalOperations>std::numeric_limits<std::size_t>::max()-out.work.mathematicalOperations?std::numeric_limits<std::size_t>::max():out.work.mathematicalOperations+e.mathematicalOperations;if(e.workspaceBytes>c.maxWorkspaceBytes){out.stop=LMStop::WorkspaceLimit;return e;}if(e.mathematicalOperations>allowance)out.stop=LMStop::EvaluationLimit;return e;};
+    auto call = [&](std::span<const double> parameters, bool jac) {
+        if (cancelled && cancelled->load(std::memory_order_relaxed)) {
+            out.stop = LMStop::Cancelled;
+            return LMResidualEvaluation{};
+        }
+        if (out.work.objectiveEvaluations >= c.maxObjectiveEvaluations) {
+            out.stop = LMStop::EvaluationLimit;
+            return LMResidualEvaluation{};
+        }
+        if (jac && out.work.jacobianEvaluations >= c.maxJacobianEvaluations) {
+            out.stop = LMStop::DerivativeLimit;
+            return LMResidualEvaluation{};
+        }
+        const auto allowance = c.maxMathematicalOperations - out.work.mathematicalOperations;
+        auto e = evaluate(parameters, jac, allowance);
+        ++out.work.objectiveEvaluations;
+        if (jac)
+            ++out.work.jacobianEvaluations;
+        out.work.forwardEvaluations += std::max<std::size_t>(1, e.forwardEvaluations);
+        out.work.derivativeEvaluations += e.derivativeEvaluations;
+        out.work.rowsProcessed += e.rowsProcessed;
+        out.work.peakWorkspaceBytes = std::max(out.work.peakWorkspaceBytes, e.workspaceBytes);
+        out.work.mathematicalOperations =
+            e.mathematicalOperations >
+                    std::numeric_limits<std::size_t>::max() - out.work.mathematicalOperations
+                ? std::numeric_limits<std::size_t>::max()
+                : out.work.mathematicalOperations + e.mathematicalOperations;
+        if (e.workspaceBytes > c.maxWorkspaceBytes) {
+            out.stop = LMStop::WorkspaceLimit;
+            return e;
+        }
+        if (e.operationLimitReached || e.mathematicalOperations > allowance)
+            out.stop = LMStop::EvaluationLimit;
+        return e;
+    };
     auto current=call(out.parameters,true);if(out.stop==LMStop::Cancelled||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::WorkspaceLimit){out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
     auto validShape=[&](const LMResidualEvaluation&e,bool jac){if(!e.valid||e.residuals.empty()||e.residuals.size()>c.maxResiduals)return false;if(jac&&e.jacobian.size()!=e.residuals.size()*initial.size())return false;for(double v:e.residuals)if(!std::isfinite(v))return false;for(double v:e.jacobian)if(!std::isfinite(v))return false;return true;};
     if(out.stop==LMStop::WorkspaceLimit){out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}if(!validShape(current,true)){out.stop=LMStop::InvalidStart;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}

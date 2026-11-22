@@ -93,7 +93,7 @@ void scalarFit(){
 }
 void weightedScalarFit(){
     auto fitConfig=[] { ConstantFitConfig c;c.method=ConstantFitMethod::LevenbergMarquardt;c.lower=-20;c.upper=20;c.maxLossAttempts=100;c.levenbergMarquardt.maxIterations=100;c.levenbergMarquardt.lossTolerance=1e-24;return c; };
-    auto weightedProblem=[](std::vector<RegressionRow> rows,std::vector<double> weights){RegressionObjectiveConfig o;o.loss=RegressionLoss::WeightedMeanSquaredError;o.observationWeights=std::move(weights);return RegressionProblem::createWithObjective(rows,std::move(o),{64,16,100});};
+    auto weightedProblem=[](const std::vector<RegressionRow>& rows,std::vector<double> weights){RegressionObjectiveConfig o;o.loss=RegressionLoss::WeightedMeanSquaredError;o.observationWeights=std::move(weights);return RegressionProblem::createWithObjective(rows,std::move(o),{64,16,100});};
     auto constant=Expression::constant(0,1);
     auto runConstant=[&](std::vector<double> weights){auto p=weightedProblem({{{0},0},{{0},10}},std::move(weights));TrainingObjective objective(p,1000);return fitConstants(constant,objective,fitConfig());};
     const auto equal=runConstant({1,1}), weighted=runConstant({9,1}), scaled=runConstant({90,10});

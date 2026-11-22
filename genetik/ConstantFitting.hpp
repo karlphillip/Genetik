@@ -344,10 +344,12 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
     Expression parameterExpression(nodes,input.variableCount()+selected.size(),input.limits());
     std::vector<LMExpressionObservation> observations;observations.reserve(rows.size());for(const auto& r:rows){auto x=r.inputs;x.resize(input.variableCount()+selected.size(),0);observations.push_back({std::move(x),r.target});}
     std::vector<std::size_t> bindings(selected.size());std::vector<double> lower(selected.size(),config.lower),upper(selected.size(),config.upper);for(std::size_t i=0;i<selected.size();++i)bindings[i]=input.variableCount()+i;
-    const auto& fitObjective=objective.problem()->objective();
-    auto raw=expressionLeastSquares(parameterExpression,std::move(observations),bindings,
-        10000000, fitObjective.loss==RegressionLoss::WeightedMeanSquaredError
-            ? fitObjective.observationWeights : std::vector<double>{});
+    const auto& fitObjective = objective.problem()->objective();
+    auto raw =
+        expressionLeastSquares(parameterExpression, std::move(observations), bindings, 10000000,
+                               fitObjective.loss == RegressionLoss::WeightedMeanSquaredError
+                                   ? fitObjective.observationWeights
+                                   : std::vector<double>{});
     Fitness starting=Fitness::invalid(),last=Fitness::invalid();std::vector<double> lastTheta;std::uint64_t calls=0;
     LMResidualFunction measured=[&](std::span<const double> theta,bool jac,std::size_t allowance){Expression candidate=input;for(std::size_t i=0;i<selected.size();++i)candidate=candidate.withConstant(selected[i],theta[i]);const auto before=objective.supplementalWork();auto score=objective.measure(candidate,calls?TrainingLossKind::FittingProbe:TrainingLossKind::FittingBaseline);const auto after=objective.supplementalWork();if(calls==std::numeric_limits<std::uint64_t>::max())throw std::overflow_error("LM objective call count overflow");++calls;if(score.loss.state()!=FitnessState::Valid)return LMResidualEvaluation{};if(calls==1)starting=score.loss;auto eval=raw(theta,jac,allowance);if(rows.size()>std::numeric_limits<std::size_t>::max()-eval.forwardEvaluations||rows.size()>std::numeric_limits<std::size_t>::max()-eval.rowsProcessed)throw std::overflow_error("LM row accounting overflow");eval.forwardEvaluations+=rows.size();eval.rowsProcessed+=rows.size();eval.mathematicalOperations+=after.mathematicalOperations-before.mathematicalOperations;objective.addSupplementalWork({eval.mathematicalOperations-(after.mathematicalOperations-before.mathematicalOperations),eval.rowsProcessed-rows.size()});if(eval.valid){last=score.loss;lastTheta.assign(theta.begin(),theta.end());}return eval;};
     auto lm=config.levenbergMarquardt;lm.maxObjectiveEvaluations=std::min<std::uint64_t>(lm.maxObjectiveEvaluations,std::min(config.maxLossAttempts,objective.remaining()));
@@ -360,7 +362,7 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
     // weighted MSE each row has already been scaled by sqrt(w / sum(w)).
     result.loss =
         fit.sumSquaredResiduals
-            ? Fitness::fromScore(fitObjective.loss==RegressionLoss::WeightedMeanSquaredError
+            ? Fitness::fromScore(fitObjective.loss == RegressionLoss::WeightedMeanSquaredError
                                      ? *fit.sumSquaredResiduals
                                      : *fit.sumSquaredResiduals / static_cast<double>(rows.size()))
             : (lastTheta == fit.parameters ? last : starting);

@@ -211,37 +211,34 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
         out.work.seconds = std::chrono::duration<double>(clock::now() - started).count();
         return out;
     }
-    // The callback's reported peak includes the retained current residual and
-    // Jacobian. Add the owned parameter vector, normal matrix and gradient.
-    // Rank validation takes its matrix by value, so its copy is live alongside
-    // the original matrix. Reject before allocating the normal-system buffers.
-    std::size_t outputCapacityBytes = vectorBytes(current.residuals);
-    if (!genetik_detail::checkedWorkspaceAdd(outputCapacityBytes, vectorBytes(current.jacobian), 1))
-        outputCapacityBytes = std::numeric_limits<std::size_t>::max();
-    std::size_t persistentWorkspace = std::max(current.workspaceBytes, outputCapacityBytes);
     const auto parameterCapacityBytes = vectorBytes(out.parameters);
-    bool workspaceRepresentable =
-        genetik_detail::checkedWorkspaceAdd(persistentWorkspace, parameterCapacityBytes, 1);
-    std::size_t rankWorkspace = persistentWorkspace;
-    workspaceRepresentable =
-        workspaceRepresentable &&
-        genetik_detail::checkedWorkspaceAdd(rankWorkspace, matrixBytes, 1) &&
-        genetik_detail::checkedWorkspaceAdd(rankWorkspace, p, sizeof(double)) &&
-        genetik_detail::checkedWorkspaceAdd(rankWorkspace, matrixBytes, 1);
-    if (!workspaceRepresentable) {
-        out.stop = LMStop::WorkspaceLimit;
-        out.work.peakWorkspaceBytes = std::numeric_limits<std::size_t>::max();
-        out.work.seconds = std::chrono::duration<double>(clock::now() - started).count();
-        return out;
-    }
-    out.work.peakWorkspaceBytes = std::max(out.work.peakWorkspaceBytes, rankWorkspace);
-    if (rankWorkspace > c.maxWorkspaceBytes) {
-        out.stop = LMStop::WorkspaceLimit;
-        out.work.seconds = std::chrono::duration<double>(clock::now() - started).count();
-        return out;
-    }
+    std::size_t persistentWorkspace = parameterCapacityBytes;
     out.stop=LMStop::IterationLimit;
     for(std::size_t iter=0;iter<c.maxIterations;++iter){if(cancelled&&cancelled->load(std::memory_order_relaxed)){out.stop=LMStop::Cancelled;break;}if(loss<=c.lossTolerance){out.stop=LMStop::LossTolerance;break;}
+        // The callback may return larger capacities on later iterations.
+        // Account for its current outputs, parameter storage, normal matrix,
+        // gradient, and rank-check copy before allocating any normal-system
+        // buffers. Rank validation accepts the matrix by value.
+        std::size_t outputCapacityBytes = vectorBytes(current.residuals);
+        bool rankWorkspaceRepresentable = genetik_detail::checkedWorkspaceAdd(
+            outputCapacityBytes, vectorBytes(current.jacobian), 1);
+        std::size_t rankWorkspace = std::max(current.workspaceBytes, outputCapacityBytes);
+        rankWorkspaceRepresentable =
+            rankWorkspaceRepresentable &&
+            genetik_detail::checkedWorkspaceAdd(rankWorkspace, parameterCapacityBytes, 1) &&
+            genetik_detail::checkedWorkspaceAdd(rankWorkspace, matrixBytes, 1) &&
+            genetik_detail::checkedWorkspaceAdd(rankWorkspace, p, sizeof(double)) &&
+            genetik_detail::checkedWorkspaceAdd(rankWorkspace, matrixBytes, 1);
+        if (!rankWorkspaceRepresentable) {
+            out.stop = LMStop::WorkspaceLimit;
+            out.work.peakWorkspaceBytes = std::numeric_limits<std::size_t>::max();
+            break;
+        }
+        out.work.peakWorkspaceBytes = std::max(out.work.peakWorkspaceBytes, rankWorkspace);
+        if (rankWorkspace > c.maxWorkspaceBytes) {
+            out.stop = LMStop::WorkspaceLimit;
+            break;
+        }
         std::vector<double> a(p*p,0),g(p,0);for(std::size_t i=0;i<m;++i)for(std::size_t j=0;j<p;++j){double ji=current.jacobian[i*p+j];g[j]+=ji*current.residuals[i];out.work.linearAlgebraOperations+=2;for(std::size_t k=0;k<p;++k){a[j*p+k]+=ji*current.jacobian[i*p+k];out.work.linearAlgebraOperations+=2;}}
         if(!genetik_detail::fullRankAndConditioned(a,p,out.work.linearAlgebraOperations)){out.stop=LMStop::SingularSystem;break;}
         current = LMResidualEvaluation{};

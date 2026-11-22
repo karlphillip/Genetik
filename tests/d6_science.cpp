@@ -727,7 +727,8 @@ void boundedComplexCoefficientProjection() {
 }
 void projectedLMWorkspace() {
     constexpr std::size_t parameters = 16;
-    auto run = [](std::size_t rowRepeats, std::size_t cap, bool shouldFit) {
+    auto run = [](std::size_t rowRepeats, std::size_t cap, bool shouldFit,
+                  bool oversizedLaterJacobian = false) {
         std::array<double, parameters> initial{}, lower{}, upper{}, target{};
         initial[0] = 1;
         lower.fill(-1);
@@ -735,8 +736,11 @@ void projectedLMWorkspace() {
         target[0] = 2;
         for (std::size_t i = 1; i < parameters; ++i)
             target[i] = .5;
-        const LMResidualFunction identity = [=](std::span<const double> values, bool withJacobian,
-                                                std::size_t) {
+        std::size_t jacobianCalls = 0;
+        std::size_t residualCapacity = 0, jacobianCapacity = 0;
+        const LMResidualFunction identity = [=, &jacobianCalls, &residualCapacity,
+                                             &jacobianCapacity](std::span<const double> values,
+                                                                bool withJacobian, std::size_t) {
             LMResidualEvaluation evaluation;
             evaluation.valid = values.size() == parameters;
             if (!evaluation.valid)
@@ -747,12 +751,17 @@ void projectedLMWorkspace() {
                     evaluation.residuals[row * parameters + i] = values[i] - target[i];
             evaluation.workspaceBytes = evaluation.residuals.capacity() * sizeof(double);
             if (withJacobian) {
+                ++jacobianCalls;
+                if (oversizedLaterJacobian && jacobianCalls >= 2)
+                    evaluation.jacobian.reserve(512);
                 evaluation.jacobian.assign(parameters * rowRepeats * parameters, 0);
                 for (std::size_t row = 0; row < rowRepeats; ++row)
                     for (std::size_t i = 0; i < parameters; ++i)
                         evaluation.jacobian[(row * parameters + i) * parameters + i] = 1;
                 evaluation.workspaceBytes += evaluation.jacobian.capacity() * sizeof(double);
             }
+            residualCapacity = std::max(residualCapacity, evaluation.residuals.capacity());
+            jacobianCapacity = std::max(jacobianCapacity, evaluation.jacobian.capacity());
             return evaluation;
         };
         LMConfig config;
@@ -764,16 +773,32 @@ void projectedLMWorkspace() {
         const auto actualPeak = lm_allocation_probe::peakBytes;
         check(actualPeak <= cap, "projected LM live allocations stay within workspace cap");
         if (!shouldFit) {
+            const bool acceptedBeforeStop = oversizedLaterJacobian;
+            std::vector<double> expected(initial.begin(), initial.end());
+            if (acceptedBeforeStop) {
+                expected[0] = 1;
+                std::copy(result.parameters.begin() + 1, result.parameters.end(),
+                          expected.begin() + 1);
+            }
+            const bool retainedImprovement =
+                acceptedBeforeStop && result.parameters[0] == 1 &&
+                std::all_of(result.parameters.begin() + 1, result.parameters.end(),
+                            [](double value) { return value > 0 && value < .5; });
             check(result.stop == LMStop::WorkspaceLimit && result.sumSquaredResiduals &&
-                      *result.sumSquaredResiduals == 4.75 * rowRepeats &&
-                      result.parameters == std::vector<double>(initial.begin(), initial.end()) &&
-                      result.work.peakWorkspaceBytes > cap,
+                      (acceptedBeforeStop
+                           ? result.work.acceptedSteps > 0 && *result.sumSquaredResiduals < 4.75 &&
+                                 retainedImprovement
+                           : *result.sumSquaredResiduals == 4.75 * rowRepeats) &&
+                      result.parameters == expected && result.work.peakWorkspaceBytes > cap,
                   "projected LM refuses a solve that cannot fit and retains the valid fit");
             std::cout << "Projected LM workspace: rows=" << parameters * rowRepeats
                       << " cap=" << cap << " actual_peak=" << actualPeak
                       << " required_peak=" << result.work.peakWorkspaceBytes
-                      << " stop=workspace_limit retained_sse=" << *result.sumSquaredResiduals
-                      << '\n';
+                      << " stop=workspace_limit retained_sse=" << *result.sumSquaredResiduals;
+            if (oversizedLaterJacobian)
+                std::cout << " residual_capacity=" << residualCapacity
+                          << " jacobian_capacity=" << jacobianCapacity;
+            std::cout << '\n';
             return;
         }
         check(result.sumSquaredResiduals &&
@@ -784,18 +809,24 @@ void projectedLMWorkspace() {
         for (std::size_t i = 1; i < parameters; ++i)
             near(result.parameters[i], .5, 1e-7);
         near(*result.sumSquaredResiduals, static_cast<double>(rowRepeats), 1e-12);
-        check(result.work.peakWorkspaceBytes <= cap,
-              "projected LM reports peak within successful workspace cap");
+        check(result.work.peakWorkspaceBytes <= cap && result.work.peakWorkspaceBytes >= actualPeak,
+              "projected LM reported peak covers measured allocations within cap");
         std::cout << "Projected LM workspace: rows=" << parameters * rowRepeats << " cap=" << cap
                   << " actual_peak=" << actualPeak
                   << " reported_peak=" << result.work.peakWorkspaceBytes
                   << " stop=" << static_cast<int>(result.stop)
-                  << " sse=" << *result.sumSquaredResiduals << '\n';
+                  << " sse=" << *result.sumSquaredResiduals;
+        if (oversizedLaterJacobian)
+            std::cout << " residual_capacity=" << residualCapacity
+                      << " jacobian_capacity=" << jacobianCapacity;
+        std::cout << '\n';
     };
     run(1, 6527, false);
     run(1, 6760, true);
     run(8, 21759, false);
     run(8, 22000, true);
+    run(1, 6760, false, true);
+    run(1, 9000, true, true);
 }
 void statistics() {
   std::array<double, 10> repeated;

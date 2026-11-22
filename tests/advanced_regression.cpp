@@ -91,6 +91,40 @@ void scalarFit(){
     LMResidualFunction deficient=[](std::span<const double> t,bool jac,std::size_t){LMResidualEvaluation e;e.valid=true;for(double x:{1.,2.,3.}){e.residuals.push_back((t[0]+t[1])*x-2*x);if(jac){e.jacobian.push_back(x);e.jacobian.push_back(x);}}e.rowsProcessed=3;e.forwardEvaluations=3;return e;};std::array<double,2> q0{.5,.5},lo2{-4,-4},hi2{4,4};auto singular=levenbergMarquardt(q0,lo2,hi2,deficient);check(singular.stop==LMStop::SingularSystem&&singular.work.linearAlgebraOperations>0,"rank-deficient parameters rejected explicitly before damping");
     LMResidualFunction oversized=[](std::span<const double>,bool jac,std::size_t){LMResidualEvaluation e;e.valid=true;e.residuals={1};if(jac)e.jacobian={1};e.workspaceBytes=4096;return e;};auto memoryConfig=LMConfig{};memoryConfig.maxWorkspaceBytes=128;auto bounded=levenbergMarquardt(std::array{1.},std::array{-2.},std::array{2.},oversized,memoryConfig);check(bounded.stop==LMStop::WorkspaceLimit,"workspace ceiling is an explicit LM stop");
 }
+void weightedScalarFit(){
+    auto fitConfig=[] { ConstantFitConfig c;c.method=ConstantFitMethod::LevenbergMarquardt;c.lower=-20;c.upper=20;c.maxLossAttempts=100;c.levenbergMarquardt.maxIterations=100;c.levenbergMarquardt.lossTolerance=1e-24;return c; };
+    auto weightedProblem=[](std::vector<RegressionRow> rows,std::vector<double> weights){RegressionObjectiveConfig o;o.loss=RegressionLoss::WeightedMeanSquaredError;o.observationWeights=std::move(weights);return RegressionProblem::createWithObjective(rows,std::move(o),{64,16,100});};
+    auto constant=Expression::constant(0,1);
+    auto runConstant=[&](std::vector<double> weights){auto p=weightedProblem({{{0},0},{{0},10}},std::move(weights));TrainingObjective objective(p,1000);return fitConstants(constant,objective,fitConfig());};
+    const auto equal=runConstant({1,1}), weighted=runConstant({9,1}), scaled=runConstant({90,10});
+    near(equal.expression.nodes()[0].constantValue(),5);near(weighted.expression.nodes()[0].constantValue(),1);near(weighted.loss.score(),9);near(scaled.expression.nodes()[0].constantValue(),1);near(scaled.loss.score(),9);
+    auto comparisonProblem=weightedProblem({{{0},0},{{0},10}},{9,1});auto coordinateConfig=fitConfig();coordinateConfig.method=ConstantFitMethod::Coordinate;TrainingObjective coordinateObjective(comparisonProblem,1000);auto coordinate=fitConstants(constant,coordinateObjective,coordinateConfig);
+    near(coordinate.expression.nodes()[0].constantValue(),1,1e-6);near(coordinate.loss.score(),9,1e-10);
+    std::cout<<"weighted constant comparison: coordinate c="<<coordinate.expression.nodes()[0].constantValue()<<" mse="<<coordinate.loss.score()<<" loss_attempts="<<coordinate.lossAttempts<<" proposals="<<coordinate.proposals<<"; LM c="<<weighted.expression.nodes()[0].constantValue()<<" mse="<<weighted.loss.score()<<" objective_evaluations="<<weighted.optimizerWork.objectiveEvaluations<<" rows="<<weighted.optimizerWork.rowsProcessed<<'\n';
+
+    auto affine=Expression::binary(ExpressionKind::Add,
+        Expression::binary(ExpressionKind::Multiply,Expression::constant(0,1),Expression::variable(0,1)),Expression::constant(0,1));
+    auto affineProblem=weightedProblem({{{0},0},{{1},0},{{2},6}},{1,2,3});TrainingObjective affineObjective(affineProblem,1000);
+    auto affineFit=fitConstants(affine,affineObjective,fitConfig());near(affineFit.expression.nodes()[0].constantValue(),3.6);near(affineFit.expression.nodes()[3].constantValue(),-1.8);near(affineFit.loss.score(),1.8);
+    double independent=0;const auto weights=affineProblem->objective().observationWeights;const std::array<double,3> xs{0,1,2},ys{0,0,6};double total=0;
+    for(std::size_t i=0;i<xs.size();++i){const auto prediction=affineFit.expression.evaluate(std::array{xs[i]});check(prediction.valid(),"weighted affine returned prediction valid");const double r=prediction.value()-ys[i];independent+=weights[i]*r*r;total+=weights[i];}near(independent/total,affineFit.loss.score());
+
+    // Nonlinear dependence on the fitted exponent exercises the public fitting API.
+    auto exponent=Expression::binary(ExpressionKind::Pow,Expression::variable(0,1),Expression::constant(1,1));
+    auto nonlinearProblem=weightedProblem({{{1},1},{{2},4},{{3},9}},{1,2,3});TrainingObjective nonlinearObjective(nonlinearProblem,1000);
+    auto nonlinear=fitConstants(exponent,nonlinearObjective,fitConfig());near(nonlinear.expression.nodes()[1].constantValue(),2,1e-6);check(nonlinear.loss.score()<1e-12,"nonlinear weighted coefficient fit");
+
+    // Weighted scoring still requires every row to have a valid prediction.
+    auto invalidZeroRow=Expression::binary(ExpressionKind::Pow,Expression::variable(0,1),Expression::constant(.5,1));
+    auto zeroProblem=weightedProblem({{{-1},1},{{4},2}},{0,1});check(zeroProblem->measure(invalidZeroRow).loss.state()==FitnessState::Invalid,"zero weight does not waive prediction validity");
+    TrainingObjective zeroObjective(zeroProblem,100);auto invalidFit=fitConstants(invalidZeroRow,zeroObjective,fitConfig());check(invalidFit.stop==ConstantFitStop::InvalidStart,"LM preserves invalid zero-weight prediction contract");
+
+    // The ordinary symbolic-regression preparation path uses the same weighted LM objective.
+    SymbolicRegressionConfig search;search.population=4;search.elites=1;search.maxGenerationAttempts=1;search.maxEvaluations=8;search.maxTrainingLossAttempts=1000;search.initialExpressionSlots=1;search.maximumInitializerWorkUnits=1;search.fitting=fitConfig();search.fitting->levenbergMarquardt.maxObjectiveEvaluations=20;search.fitting->levenbergMarquardt.maxJacobianEvaluations=20;
+    auto symbolicProblem=weightedProblem({{{0},0},{{1},2},{{2},4}},{1,2,1});RandomContext random(782);
+    auto symbolic=symbolicRegression(symbolicProblem,search,random,{},[](const RegressionProblem&,std::size_t,std::uint64_t){InitialExpressionBatch b;b.expressions={Expression::binary(ExpressionKind::Multiply,Expression::constant(0,1),Expression::variable(0,1))};b.workUnits=1;return b;});
+    check(symbolic.best&&symbolic.optimizerWork.objectiveEvaluations>0,"symbolic regression invokes weighted LM refinement");
+}
 void coupled(){
     auto xdot=parse("x2",5),vdot=parse("((-1)*x3*x2)-x4*x1",5);std::vector<ScientificObservation> dx,dv;for(double x:{-2.,-.5,1.,2.})for(double v:{-1.,0.,1.}){dx.push_back({{0,x,v},v});dv.push_back({{0,x,v},-.25*v-2*x});}
     ScientificEquationSystem s(3,{xdot,vdot},{{0,1,1,dx},{1,2,1,dv}},{{1,0,4},{1.4,0,4}});LMConfig c;c.maxIterations=100;c.maxObjectiveEvaluations=500;c.maxJacobianEvaluations=500;c.lossTolerance=1e-22;auto r=fitScientificParametersLevenbergMarquardt(s,c);check(r.sumSquaredResiduals&&*r.sumSquaredResiduals<1e-16,"D6 coupled-system LM loss");near(r.parameters[0],.25,1e-7);near(r.parameters[1],2,1e-7);
@@ -133,4 +167,4 @@ void continuation(){
     check(rejected, "checkpoint rejects default-to-projected policy change");
 }
 }
-int main(){try{derivatives();scalarFit();coupled();continuation();std::cout<<"S1 parameter derivatives and LM contracts passed\n";}catch(const std::exception&e){std::cerr<<e.what()<<'\n';return 1;}}
+int main(){try{derivatives();scalarFit();weightedScalarFit();coupled();continuation();std::cout<<"S1 parameter derivatives and LM contracts passed\n";}catch(const std::exception&e){std::cerr<<e.what()<<'\n';return 1;}}

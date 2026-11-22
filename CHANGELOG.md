@@ -1,5 +1,9 @@
 # Changelog
 
+- Scalar Levenberg–Marquardt coefficient fitting now supports the existing
+  weighted-MSE objective. Residuals and Jacobian rows use the same normalized
+  square-root weight; MAE and Huber remain outside LM support.
+
 ## 0.7.0 — Advanced Scientific Regression Development Pre-release
 
 - Add optional shared-parameter derivatives and Levenberg–Marquardt fitting;

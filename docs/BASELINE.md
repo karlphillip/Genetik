@@ -1298,3 +1298,15 @@ same ID and arity; callback code is never serialized. `logaddexp` demonstrates
 the 3-node primitive versus a 12-node stable built-in composition and the
 strict-domain failure of its 6-node direct exponential formula at extreme
 inputs. See `USER_DEFINED_SCALAR_OPERATORS.md`.
+
+## Weighted scalar Levenberg–Marquardt fitting
+
+Scalar LM coefficient fitting now accepts the existing immutable weighted-MSE
+objective. Residuals and Jacobian rows share `sqrt(w / sum(w))` scaling, making
+the solver's residual sum the normalized score returned for its fitted model.
+Every row is evaluated, so zero weight does not hide an invalid prediction.
+Unweighted LM retains its original residual and Jacobian values; coordinate
+fitting, MAE and Huber behavior are unchanged. Deterministic fixtures cover
+constant, affine, nonlinear-coefficient and symbolic-preparation paths; the
+weighted constant comparison returns c=1 and weighted MSE=9 with LM in 7
+objective evaluations versus coordinate fitting in 56 loss attempts.

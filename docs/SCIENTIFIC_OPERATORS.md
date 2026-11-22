@@ -133,6 +133,34 @@ The general grammar still defaults to addition, subtraction, and multiplication;
 this explicit list replaces that default for this run. Autonomous discovery
 quality is not established by the evaluator robustness tests.
 
+## Opt-in complex coefficient fitting
+
+Complex regression continues to interpret an ordinary scalar expression as a
+complex-valued topology with real coefficients by default. For a fixed
+`ComplexExpression`, `fitComplexCoefficients` is an explicit opt-in entry point:
+each complex constant becomes two bounded LM coordinates, real then imaginary.
+It reuses Genetik's existing Levenberg–Marquardt solver; the complex adapter
+forms a bounded central-difference Jacobian from checked complex predictions.
+Expression evaluations, including Jacobian probes, consume the optimizer's
+mathematical-operation allowance. This helper does not change symbolic-search
+defaults or checkpoint identity.
+
+```cpp
+auto problem = ComplexRegressionProblem(trainingRows);
+auto initial = ComplexExpression::fromScalarGenome(
+    parseExpression("0.5*x0+0.5", 1)); // imaginary coefficients start at zero
+ComplexCoefficientFitConfig fit;
+fit.lower = -10;
+fit.upper = 10;
+fit.optimizer.maxMathematicalOperations = 1'000'000;
+auto result = fitComplexCoefficients(problem, initial, fit);
+```
+
+The finite-difference Jacobian is numerical, so this opt-in fitter has higher
+evaluation cost than an analytic derivative path and can be less reliable near
+domain boundaries. Invalid complex predictions retain the existing strict
+domain behavior. The ordinary `fitConstants` path remains real-only.
+
 Existing enum values are preserved, with new kinds appended. Consumer code using
 exhaustive enum switches must handle the added kinds when updating. Existing
 ExpressionLimits aggregate initializers keep their meanings; the added final work

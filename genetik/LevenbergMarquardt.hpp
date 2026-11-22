@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <type_traits>
 #include <vector>
 
 enum class LMStop { GradientTolerance, StepTolerance, LossTolerance, IterationLimit,
@@ -22,6 +23,9 @@ struct LMConfig {
     double initialDamping=1e-3;
     double gradientTolerance=1e-10, stepTolerance=1e-12, lossTolerance=0;
     double minimumDamping=1e-15, maximumDamping=1e15;
+    // Off by default to preserve existing callers. When enabled, each trial
+    // coordinate is projected independently onto its feasible interval.
+    bool projectStepsToBounds = false;
 };
 struct LMWork {
     std::size_t objectiveEvaluations=0, jacobianEvaluations=0,
@@ -38,6 +42,10 @@ struct LMResidualEvaluation {
     std::vector<double> jacobian;
     std::size_t forwardEvaluations=0, derivativeEvaluations=0,
         rowsProcessed=0, mathematicalOperations=0, workspaceBytes=0;
+    // Lets an evaluator report exhausted mathematical work without inventing
+    // an extra operation merely to make the counter exceed its allowance.
+    bool operationLimitReached = false;
+    bool workspaceLimitReached = false;
 };
 struct LMResult {
     std::vector<double> parameters;
@@ -48,6 +56,17 @@ struct LMResult {
 using LMResidualFunction = std::function<LMResidualEvaluation(std::span<const double>,bool,std::size_t)>;
 
 namespace genetik_detail {
+inline void validateLevenbergMarquardtConfig(const LMConfig& c) {
+    if (!c.maxIterations || !c.maxObjectiveEvaluations || !c.maxJacobianEvaluations ||
+        !c.maxParameters || !c.maxResiduals || !c.maxMathematicalOperations ||
+        !c.maxWorkspaceBytes || !std::isfinite(c.initialDamping) || c.initialDamping <= 0 ||
+        !std::isfinite(c.minimumDamping) || !std::isfinite(c.maximumDamping) ||
+        c.minimumDamping <= 0 || c.minimumDamping > c.initialDamping ||
+        c.initialDamping > c.maximumDamping || !std::isfinite(c.gradientTolerance) ||
+        c.gradientTolerance <= 0 || !std::isfinite(c.stepTolerance) || c.stepTolerance <= 0 ||
+        !std::isfinite(c.lossTolerance) || c.lossTolerance < 0)
+        throw std::invalid_argument("invalid Levenberg-Marquardt configuration");
+}
 inline bool solveDampedSystem(std::vector<double> a,std::vector<double> b,
                               std::vector<double>& x,std::size_t n) {
     // Partial-pivot Gaussian elimination on the small symmetric damped normal
@@ -83,41 +102,330 @@ inline bool fullRankAndConditioned(std::vector<double> a,std::size_t n,
     return smallest>largest*std::numeric_limits<double>::epsilon()*128.0;
 }
 inline double checkedSSE(std::span<const double> r){double s=0;for(double v:r){if(!std::isfinite(v))return std::numeric_limits<double>::infinity();volatile double q=v*v;volatile double t=s+q;if(!std::isfinite(t))return std::numeric_limits<double>::infinity();s=t;}return s;}
+inline bool checkedWorkspaceAdd(std::size_t& total, std::size_t count, std::size_t elementBytes) {
+    if (count && elementBytes > (std::numeric_limits<std::size_t>::max() - total) / count)
+        return false;
+    total += count * elementBytes;
+    return true;
+}
+inline bool checkedWorkspaceProduct(std::size_t a, std::size_t b, std::size_t elementBytes,
+                                    std::size_t& bytes) {
+    if (a && b > std::numeric_limits<std::size_t>::max() / a)
+        return false;
+    const auto count = a * b;
+    if (count && elementBytes > std::numeric_limits<std::size_t>::max() / count)
+        return false;
+    bytes = count * elementBytes;
+    return true;
+}
 }
 inline LMResult levenbergMarquardt(std::span<const double> initial,
     std::span<const double> lower,std::span<const double> upper,
     const LMResidualFunction& evaluate,const LMConfig& c={},
     const std::atomic<bool>* cancelled=nullptr) {
     using clock=std::chrono::steady_clock;const auto started=clock::now();
-    if(initial.empty()||initial.size()>c.maxParameters||lower.size()!=initial.size()||upper.size()!=initial.size()||!evaluate||!c.maxIterations||!c.maxObjectiveEvaluations||!c.maxJacobianEvaluations||!c.maxResiduals||!c.maxMathematicalOperations||!c.maxWorkspaceBytes||!std::isfinite(c.initialDamping)||c.initialDamping<=0||!std::isfinite(c.minimumDamping)||!std::isfinite(c.maximumDamping)||c.minimumDamping<=0||c.minimumDamping>c.initialDamping||c.initialDamping>c.maximumDamping||!std::isfinite(c.gradientTolerance)||c.gradientTolerance<=0||!std::isfinite(c.stepTolerance)||c.stepTolerance<=0||!std::isfinite(c.lossTolerance)||c.lossTolerance<0)throw std::invalid_argument("invalid Levenberg-Marquardt configuration");
+    genetik_detail::validateLevenbergMarquardtConfig(c);
+    if (initial.empty() || initial.size() > c.maxParameters || lower.size() != initial.size() ||
+        upper.size() != initial.size() || !evaluate)
+        throw std::invalid_argument("invalid Levenberg-Marquardt configuration");
     for(std::size_t i=0;i<initial.size();++i)if(!std::isfinite(initial[i])||!std::isfinite(lower[i])||!std::isfinite(upper[i])||lower[i]>initial[i]||initial[i]>upper[i])throw std::invalid_argument("invalid bounded LM start");
     LMResult out;out.parameters.assign(initial.begin(),initial.end());double lambda=c.initialDamping;
-    auto call=[&](std::span<const double> parameters,bool jac){if(cancelled&&cancelled->load(std::memory_order_relaxed)){out.stop=LMStop::Cancelled;return LMResidualEvaluation{};}if(out.work.objectiveEvaluations>=c.maxObjectiveEvaluations){out.stop=LMStop::EvaluationLimit;return LMResidualEvaluation{};}if(jac&&out.work.jacobianEvaluations>=c.maxJacobianEvaluations){out.stop=LMStop::DerivativeLimit;return LMResidualEvaluation{};}const auto allowance=c.maxMathematicalOperations-out.work.mathematicalOperations;auto e=evaluate(parameters,jac,allowance);++out.work.objectiveEvaluations;if(jac)++out.work.jacobianEvaluations;out.work.forwardEvaluations+=std::max<std::size_t>(1,e.forwardEvaluations);out.work.derivativeEvaluations+=e.derivativeEvaluations;out.work.rowsProcessed+=e.rowsProcessed;out.work.peakWorkspaceBytes=std::max(out.work.peakWorkspaceBytes,e.workspaceBytes);out.work.mathematicalOperations=e.mathematicalOperations>std::numeric_limits<std::size_t>::max()-out.work.mathematicalOperations?std::numeric_limits<std::size_t>::max():out.work.mathematicalOperations+e.mathematicalOperations;if(e.workspaceBytes>c.maxWorkspaceBytes){out.stop=LMStop::WorkspaceLimit;return e;}if(e.mathematicalOperations>allowance)out.stop=LMStop::EvaluationLimit;return e;};
-    auto current=call(out.parameters,true);if(out.stop==LMStop::Cancelled||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::WorkspaceLimit){out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
+    auto vectorBytes = [](const auto& values) {
+        std::size_t bytes = 0;
+        using Vector = std::decay_t<decltype(values)>;
+        if (!genetik_detail::checkedWorkspaceProduct(values.capacity(), 1,
+                                                     sizeof(typename Vector::value_type), bytes))
+            return std::numeric_limits<std::size_t>::max();
+        return bytes;
+    };
+    std::size_t callbackWorkspaceBound = 0;
+    auto call = [&](std::span<const double> parameters, bool jac, std::size_t liveBytes) {
+        if (cancelled && cancelled->load(std::memory_order_relaxed)) {
+            out.stop = LMStop::Cancelled;
+            return LMResidualEvaluation{};
+        }
+        if (out.work.objectiveEvaluations >= c.maxObjectiveEvaluations) {
+            out.stop = LMStop::EvaluationLimit;
+            return LMResidualEvaluation{};
+        }
+        if (jac && out.work.jacobianEvaluations >= c.maxJacobianEvaluations) {
+            out.stop = LMStop::DerivativeLimit;
+            return LMResidualEvaluation{};
+        }
+        std::size_t expectedWorkspace = liveBytes;
+        if (!genetik_detail::checkedWorkspaceAdd(expectedWorkspace, callbackWorkspaceBound, 1)) {
+            out.work.peakWorkspaceBytes = std::numeric_limits<std::size_t>::max();
+            out.stop = LMStop::WorkspaceLimit;
+            return LMResidualEvaluation{};
+        }
+        out.work.peakWorkspaceBytes = std::max(out.work.peakWorkspaceBytes, expectedWorkspace);
+        if (expectedWorkspace > c.maxWorkspaceBytes) {
+            out.stop = LMStop::WorkspaceLimit;
+            return LMResidualEvaluation{};
+        }
+        const auto allowance = c.maxMathematicalOperations - out.work.mathematicalOperations;
+        auto e = evaluate(parameters, jac, allowance);
+        ++out.work.objectiveEvaluations;
+        if (jac)
+            ++out.work.jacobianEvaluations;
+        out.work.forwardEvaluations += std::max<std::size_t>(1, e.forwardEvaluations);
+        out.work.derivativeEvaluations += e.derivativeEvaluations;
+        out.work.rowsProcessed += e.rowsProcessed;
+        std::size_t callbackBytes = vectorBytes(e.residuals);
+        if (!genetik_detail::checkedWorkspaceAdd(callbackBytes, vectorBytes(e.jacobian), 1))
+            callbackBytes = std::numeric_limits<std::size_t>::max();
+        callbackBytes = std::max(callbackBytes, e.workspaceBytes);
+        callbackWorkspaceBound = std::max(callbackWorkspaceBound, callbackBytes);
+        std::size_t totalWorkspace = liveBytes;
+        if (!genetik_detail::checkedWorkspaceAdd(totalWorkspace, callbackBytes, 1))
+            totalWorkspace = std::numeric_limits<std::size_t>::max();
+        out.work.peakWorkspaceBytes = std::max(out.work.peakWorkspaceBytes, totalWorkspace);
+        out.work.mathematicalOperations =
+            e.mathematicalOperations >
+                    std::numeric_limits<std::size_t>::max() - out.work.mathematicalOperations
+                ? std::numeric_limits<std::size_t>::max()
+                : out.work.mathematicalOperations + e.mathematicalOperations;
+        if (e.workspaceLimitReached || totalWorkspace > c.maxWorkspaceBytes) {
+            out.stop = LMStop::WorkspaceLimit;
+            return e;
+        }
+        if (e.operationLimitReached || e.mathematicalOperations > allowance)
+            out.stop = LMStop::EvaluationLimit;
+        return e;
+    };
+    auto current = call(out.parameters, true, vectorBytes(out.parameters));
+    if (out.stop == LMStop::Cancelled || out.stop == LMStop::DerivativeLimit ||
+        out.stop == LMStop::EvaluationLimit || out.stop == LMStop::WorkspaceLimit) {
+        out.work.seconds = std::chrono::duration<double>(clock::now() - started).count();
+        return out;
+    }
     auto validShape=[&](const LMResidualEvaluation&e,bool jac){if(!e.valid||e.residuals.empty()||e.residuals.size()>c.maxResiduals)return false;if(jac&&e.jacobian.size()!=e.residuals.size()*initial.size())return false;for(double v:e.residuals)if(!std::isfinite(v))return false;for(double v:e.jacobian)if(!std::isfinite(v))return false;return true;};
     if(out.stop==LMStop::WorkspaceLimit){out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}if(!validShape(current,true)){out.stop=LMStop::InvalidStart;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
     double loss=genetik_detail::checkedSSE(current.residuals);if(!std::isfinite(loss)){out.stop=LMStop::InvalidStart;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
     out.sumSquaredResiduals=loss;const std::size_t p=initial.size(),m=current.residuals.size();
-    if(p>std::numeric_limits<std::size_t>::max()/p/sizeof(double)){out.stop=LMStop::EvaluationLimit;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
-    const auto solverWorkspace=p*p*sizeof(double)+p*4*sizeof(double)+m*sizeof(double);
-    if(solverWorkspace>c.maxWorkspaceBytes||current.workspaceBytes>c.maxWorkspaceBytes-solverWorkspace){out.stop=LMStop::WorkspaceLimit;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
-    out.work.peakWorkspaceBytes=std::max(out.work.peakWorkspaceBytes,current.workspaceBytes+solverWorkspace);
+    std::size_t matrixBytes = 0;
+    std::size_t parameterBytes = 0;
+    if (!genetik_detail::checkedWorkspaceProduct(p, p, sizeof(double), matrixBytes) ||
+        !genetik_detail::checkedWorkspaceProduct(p, 1, sizeof(double), parameterBytes)) {
+        out.stop = LMStop::WorkspaceLimit;
+        out.work.seconds = std::chrono::duration<double>(clock::now() - started).count();
+        return out;
+    }
+    const auto parameterCapacityBytes = vectorBytes(out.parameters);
+    std::size_t persistentWorkspace = parameterCapacityBytes;
     out.stop=LMStop::IterationLimit;
     for(std::size_t iter=0;iter<c.maxIterations;++iter){if(cancelled&&cancelled->load(std::memory_order_relaxed)){out.stop=LMStop::Cancelled;break;}if(loss<=c.lossTolerance){out.stop=LMStop::LossTolerance;break;}
+        // The callback may return larger capacities on later iterations.
+        // Account for its current outputs, parameter storage, normal matrix,
+        // gradient, and rank-check copy before allocating any normal-system
+        // buffers. Rank validation accepts the matrix by value.
+        std::size_t outputCapacityBytes = vectorBytes(current.residuals);
+        bool rankWorkspaceRepresentable = genetik_detail::checkedWorkspaceAdd(
+            outputCapacityBytes, vectorBytes(current.jacobian), 1);
+        std::size_t rankWorkspace = std::max(current.workspaceBytes, outputCapacityBytes);
+        rankWorkspaceRepresentable =
+            rankWorkspaceRepresentable &&
+            genetik_detail::checkedWorkspaceAdd(rankWorkspace, parameterCapacityBytes, 1) &&
+            genetik_detail::checkedWorkspaceAdd(rankWorkspace, matrixBytes, 1) &&
+            genetik_detail::checkedWorkspaceAdd(rankWorkspace, p, sizeof(double)) &&
+            genetik_detail::checkedWorkspaceAdd(rankWorkspace, matrixBytes, 1);
+        if (!rankWorkspaceRepresentable) {
+            out.stop = LMStop::WorkspaceLimit;
+            out.work.peakWorkspaceBytes = std::numeric_limits<std::size_t>::max();
+            break;
+        }
+        out.work.peakWorkspaceBytes = std::max(out.work.peakWorkspaceBytes, rankWorkspace);
+        if (rankWorkspace > c.maxWorkspaceBytes) {
+            out.stop = LMStop::WorkspaceLimit;
+            break;
+        }
         std::vector<double> a(p*p,0),g(p,0);for(std::size_t i=0;i<m;++i)for(std::size_t j=0;j<p;++j){double ji=current.jacobian[i*p+j];g[j]+=ji*current.residuals[i];out.work.linearAlgebraOperations+=2;for(std::size_t k=0;k<p;++k){a[j*p+k]+=ji*current.jacobian[i*p+k];out.work.linearAlgebraOperations+=2;}}
         if(!genetik_detail::fullRankAndConditioned(a,p,out.work.linearAlgebraOperations)){out.stop=LMStop::SingularSystem;break;}
+        current = LMResidualEvaluation{};
+        persistentWorkspace = parameterCapacityBytes;
         double norm=0;for(double x:g)norm=std::max(norm,std::abs(x));if(norm<=c.gradientTolerance){out.stop=LMStop::GradientTolerance;break;}
-        bool madeStep=false;for(unsigned retry=0;retry<16;++retry){auto damped=a;for(std::size_t j=0;j<p;++j){damped[j*p+j]+=lambda*std::max(1.0,a[j*p+j]);out.work.linearAlgebraOperations+=2;}std::vector<double> delta;++out.work.linearSolves;if(!genetik_detail::solveDampedSystem(std::move(damped),g,delta,p)){out.work.linearAlgebraOperations+=p*p*p;lambda*=10;if(lambda>c.maximumDamping){out.stop=LMStop::SingularSystem;break;}continue;}out.work.linearAlgebraOperations+=p*p*p;
-            std::vector<double> trial=out.parameters;double stepNorm=0,parameterNorm=0;bool inside=true;for(std::size_t j=0;j<p;++j){trial[j]-=delta[j];stepNorm=std::max(stepNorm,std::abs(delta[j]));parameterNorm=std::max(parameterNorm,std::abs(out.parameters[j]));if(!std::isfinite(trial[j])||trial[j]<lower[j]||trial[j]>upper[j])inside=false;}
+        bool madeStep = false;
+        for (unsigned retry = 0; retry < 16; ++retry) {
+            std::size_t freeCount = 0;
+            if (c.projectStepsToBounds) {
+                for (std::size_t j = 0; j < p; ++j) {
+                    const bool blocksDescent = (out.parameters[j] <= lower[j] && g[j] > 0) ||
+                                               (out.parameters[j] >= upper[j] && g[j] < 0);
+                    if (!blocksDescent)
+                        ++freeCount;
+                }
+            }
+            const bool useReduced = c.projectStepsToBounds && freeCount > 0 && freeCount < p;
+            std::size_t solveWorkspace = persistentWorkspace;
+            std::size_t normalWorkspace = vectorBytes(a);
+            bool solveWorkspaceRepresentable =
+                genetik_detail::checkedWorkspaceAdd(normalWorkspace, vectorBytes(g), 1) &&
+                genetik_detail::checkedWorkspaceAdd(solveWorkspace, normalWorkspace, 1);
+            std::size_t trialBytes = 0;
+            solveWorkspaceRepresentable =
+                solveWorkspaceRepresentable &&
+                genetik_detail::checkedWorkspaceProduct(p, 1, sizeof(double), trialBytes);
+            if (solveWorkspaceRepresentable && useReduced) {
+                std::size_t reducedMatrixBytes = 0;
+                solveWorkspaceRepresentable =
+                    genetik_detail::checkedWorkspaceProduct(freeCount, freeCount, sizeof(double),
+                                                            reducedMatrixBytes) &&
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, freeCount,
+                                                        sizeof(std::size_t)) &&
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, trialBytes, 1) &&
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, freeCount,
+                                                        sizeof(std::size_t)) &&
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, reducedMatrixBytes, 1) &&
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, freeCount,
+                                                        3 * sizeof(double));
+            } else if (solveWorkspaceRepresentable) {
+                // Normal system plus damped matrix, copied RHS, and solution.
+                solveWorkspaceRepresentable =
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, matrixBytes, 1) &&
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, p, 2 * sizeof(double));
+                auto postSolveWorkspace = persistentWorkspace;
+                solveWorkspaceRepresentable =
+                    solveWorkspaceRepresentable &&
+                    genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, normalWorkspace, 1) &&
+                    genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, p,
+                                                        2 * sizeof(double)) &&
+                    genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, trialBytes, 1);
+                if (solveWorkspaceRepresentable)
+                    solveWorkspace = std::max(solveWorkspace, postSolveWorkspace);
+            }
+            if (!solveWorkspaceRepresentable) {
+                out.work.peakWorkspaceBytes = std::numeric_limits<std::size_t>::max();
+                out.stop = LMStop::WorkspaceLimit;
+                break;
+            }
+            out.work.peakWorkspaceBytes = std::max(out.work.peakWorkspaceBytes, solveWorkspace);
+            if (solveWorkspace > c.maxWorkspaceBytes) {
+                out.stop = LMStop::WorkspaceLimit;
+                break;
+            }
+            std::vector<double> delta;
+            ++out.work.linearSolves;
+            if (!useReduced) {
+                auto damped = a;
+                for (std::size_t j = 0; j < p; ++j) {
+                    damped[j * p + j] += lambda * std::max(1.0, a[j * p + j]);
+                    out.work.linearAlgebraOperations += 2;
+                }
+                if (!genetik_detail::solveDampedSystem(std::move(damped), g, delta, p)) {
+                    out.work.linearAlgebraOperations += p * p * p;
+                    lambda *= 10;
+                    if (lambda > c.maximumDamping) {
+                        out.stop = LMStop::SingularSystem;
+                        break;
+                    }
+                    continue;
+                }
+                out.work.linearAlgebraOperations += p * p * p;
+            }
+            std::vector<double> trial = out.parameters;
+            double stepNorm = 0, parameterNorm = 0;
+            bool inside = true;
+            for (std::size_t j = 0; j < p; ++j) {
+                const double proposed =
+                    useReduced ? out.parameters[j] : out.parameters[j] - delta[j];
+                parameterNorm = std::max(parameterNorm, std::abs(out.parameters[j]));
+                if (c.projectStepsToBounds) {
+                    if (!std::isfinite(proposed)) {
+                        inside = false;
+                        continue;
+                    }
+                    trial[j] = std::clamp(proposed, lower[j], upper[j]);
+                    stepNorm = std::max(stepNorm, std::abs(trial[j] - out.parameters[j]));
+                } else {
+                    trial[j] = proposed;
+                    stepNorm = std::max(stepNorm, std::abs(delta[j]));
+                    if (!std::isfinite(trial[j]) || trial[j] < lower[j] || trial[j] > upper[j])
+                        inside = false;
+                }
+            }
+            if (useReduced && inside) {
+                std::vector<std::size_t> free;
+                for (std::size_t j = 0; j < p; ++j) {
+                    const bool blocksDescent = (out.parameters[j] <= lower[j] && g[j] > 0) ||
+                                               (out.parameters[j] >= upper[j] && g[j] < 0);
+                    if (!blocksDescent)
+                        free.push_back(j);
+                }
+                if (!free.empty() && free.size() < p) {
+                    std::vector<double> reduced(free.size() * free.size());
+                    std::vector<double> reducedGradient(free.size());
+                    for (std::size_t j = 0; j < free.size(); ++j) {
+                        reducedGradient[j] = g[free[j]];
+                        for (std::size_t k = 0; k < free.size(); ++k)
+                            reduced[j * free.size() + k] = a[free[j] * p + free[k]];
+                        reduced[j * free.size() + j] +=
+                            lambda * std::max(1.0, a[free[j] * p + free[j]]);
+                    }
+                    std::vector<double> reducedDelta;
+                    if (genetik_detail::solveDampedSystem(std::move(reduced), reducedGradient,
+                                                          reducedDelta, free.size())) {
+                        out.work.linearAlgebraOperations += free.size() * free.size() * free.size();
+                        trial = out.parameters;
+                        stepNorm = 0;
+                        for (std::size_t j = 0; j < free.size(); ++j) {
+                            const auto coordinate = free[j];
+                            trial[coordinate] =
+                                std::clamp(out.parameters[coordinate] - reducedDelta[j],
+                                           lower[coordinate], upper[coordinate]);
+                            stepNorm = std::max(
+                                stepNorm, std::abs(trial[coordinate] - out.parameters[coordinate]));
+                        }
+                    } else {
+                        out.work.linearAlgebraOperations += free.size() * free.size() * free.size();
+                        ++out.work.rejectedSteps;
+                        lambda *= 10;
+                        if (lambda > c.maximumDamping) {
+                            out.stop = LMStop::DampingLimit;
+                            break;
+                        }
+                        continue;
+                    }
+                }
+            }
             if(!inside){++out.work.rejectedSteps;lambda*=10;if(lambda>c.maximumDamping){out.stop=LMStop::DampingLimit;break;}continue;}
             if(stepNorm<=c.stepTolerance*(parameterNorm+c.stepTolerance)){out.stop=LMStop::StepTolerance;madeStep=true;break;}
-            if(cancelled&&cancelled->load(std::memory_order_relaxed)){out.stop=LMStop::Cancelled;break;}if(out.work.mathematicalOperations>=c.maxMathematicalOperations){out.stop=LMStop::EvaluationLimit;break;}auto trialEval=call(trial,false);if(out.stop==LMStop::Cancelled||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::WorkspaceLimit)break;
+            if (cancelled && cancelled->load(std::memory_order_relaxed)) {
+                out.stop = LMStop::Cancelled;
+                break;
+            }
+            if (out.work.mathematicalOperations >= c.maxMathematicalOperations) {
+                out.stop = LMStop::EvaluationLimit;
+                break;
+            }
+            std::size_t trialLiveWorkspace = persistentWorkspace;
+            solveWorkspaceRepresentable =
+                genetik_detail::checkedWorkspaceAdd(trialLiveWorkspace, normalWorkspace, 1) &&
+                genetik_detail::checkedWorkspaceAdd(trialLiveWorkspace, vectorBytes(trial), 1) &&
+                genetik_detail::checkedWorkspaceAdd(trialLiveWorkspace, vectorBytes(delta), 1);
+            if (!solveWorkspaceRepresentable) {
+                out.stop = LMStop::WorkspaceLimit;
+                out.work.peakWorkspaceBytes = std::numeric_limits<std::size_t>::max();
+                break;
+            }
+            auto trialEval = call(trial, false, trialLiveWorkspace);
+            if (out.stop == LMStop::Cancelled || out.stop == LMStop::EvaluationLimit ||
+                out.stop == LMStop::DerivativeLimit || out.stop == LMStop::WorkspaceLimit)
+                break;
             if(validShape(trialEval,false)&&trialEval.residuals.size()==m){double trialLoss=genetik_detail::checkedSSE(trialEval.residuals);if(trialLoss<loss){out.parameters.swap(trial);loss=trialLoss;out.sumSquaredResiduals=loss;++out.work.acceptedSteps;++out.work.parameterUpdates;lambda=std::max(c.minimumDamping,lambda*.3);madeStep=true;if(loss<=c.lossTolerance)out.stop=LMStop::LossTolerance;break;}}
             ++out.work.rejectedSteps;lambda*=10;if(lambda>c.maximumDamping){out.stop=LMStop::DampingLimit;break;}
         }
         if(out.stop==LMStop::LossTolerance||out.stop==LMStop::SingularSystem||out.stop==LMStop::DampingLimit||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::WorkspaceLimit||out.stop==LMStop::Cancelled)break;
         if(!madeStep){out.stop=LMStop::DampingLimit;break;}if(out.stop==LMStop::StepTolerance)break;
-        current=call(out.parameters,true);if(out.stop==LMStop::Cancelled||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::WorkspaceLimit)break;if(!validShape(current,true)||current.residuals.size()!=m){out.stop=LMStop::InvalidStart;break;}
+        std::vector<double>().swap(a);
+        std::vector<double>().swap(g);
+        current = call(out.parameters, true, parameterCapacityBytes);
+        if (out.stop == LMStop::Cancelled || out.stop == LMStop::EvaluationLimit ||
+            out.stop == LMStop::DerivativeLimit || out.stop == LMStop::WorkspaceLimit)
+            break;
+        if (!validShape(current, true) || current.residuals.size() != m) {
+            out.stop = LMStop::InvalidStart;
+            break;
+        }
     }
     out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();
     return out;

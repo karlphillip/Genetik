@@ -26,6 +26,25 @@ void derivatives(){
     check(evaluateParameterJacobian(parse("log(x0)",1),std::array{-1.},std::array<std::size_t,1>{0}).status==ParameterJacobianStatus::PrimalInvalidity,"invalid domain is primal invalidity");
 }
 void scalarFit(){
+    LMResidualFunction outward = [](std::span<const double> t, bool jac, std::size_t) {
+        LMResidualEvaluation e;
+        e.valid = true;
+        e.residuals = {t[0] - 2};
+        if (jac)
+            e.jacobian = {1};
+        return e;
+    };
+    LMConfig legacyConfig;
+    auto legacyBoundary =
+        levenbergMarquardt(std::array{0.}, std::array{-1.}, std::array{1.}, outward, legacyConfig);
+    auto projectedConfig = legacyConfig;
+    projectedConfig.projectStepsToBounds = true;
+    auto projectedBoundary = levenbergMarquardt(std::array{0.}, std::array{-1.}, std::array{1.},
+                                                outward, projectedConfig);
+    check(legacyBoundary.work.rejectedSteps > 0 && projectedBoundary.work.rejectedSteps == 0 &&
+              std::abs(projectedBoundary.parameters[0] - 1) < 1e-12,
+          "bounded-step projection is opt-in and legacy LM retains rejected-trial behavior");
+
     // Reproduces the post-acceptance Jacobian budget hole: the initial
     // Jacobian and successful trial consume the entire objective allowance.
     std::size_t boundedCalls=0;
@@ -82,6 +101,36 @@ void continuation(){
     ExecutionContext execution({2});RandomContext random(991,execution);ScalarMathematicsRun run(problem,config,random);check(run.step()==GenerationOutcome::Committed,"two-worker LM run commits generation before checkpoint");auto checkpoint=decodeCheckpoint(encodeCheckpoint(run.checkpoint()));check(checkpoint.codec=="genetik.scalar-mathematics-evolution/2","LM run uses extended accounting checkpoint codec");while(!run.stoppingReason())check(run.step()==GenerationOutcome::Committed,"continuous two-worker LM generation committed");
     RandomContext resumedRandom(991,execution);auto resumed=ScalarMathematicsRun::restore(checkpoint,problem,config,resumedRandom);while(!resumed->stoppingReason())check(resumed->step()==GenerationOutcome::Committed,"resumed two-worker LM generation committed");auto left=run.population().creatures(),right=resumed->population().creatures();check(left->size()==right->size(),"continuous/resumed LM population size");for(std::size_t i=0;i<left->size();++i)check((*left)[i].text()==(*right)[i].text()&&(*left)[i].evaluation()==(*right)[i].evaluation(),"continuous/resumed LM candidate equality");check(run.work()==resumed->work()&&run.supplementalWork()==resumed->supplementalWork()&&run.preparationWork()==resumed->preparationWork(),"continuous/resumed LM work equality");const auto& lw=run.optimizerWork();const auto& rw=resumed->optimizerWork();check(lw.objectiveEvaluations==rw.objectiveEvaluations&&lw.jacobianEvaluations==rw.jacobianEvaluations&&lw.forwardEvaluations==rw.forwardEvaluations&&lw.derivativeEvaluations==rw.derivativeEvaluations&&lw.rowsProcessed==rw.rowsProcessed&&lw.parameterUpdates==rw.parameterUpdates&&lw.linearSolves==rw.linearSolves&&lw.acceptedSteps==rw.acceptedSteps&&lw.rejectedSteps==rw.rejectedSteps&&lw.mathematicalOperations==rw.mathematicalOperations&&lw.linearAlgebraOperations==rw.linearAlgebraOperations&&lw.peakWorkspaceBytes==rw.peakWorkspaceBytes,"continuous/resumed LM optimizer counters");
     auto wrong=config;wrong.fitting->method=ConstantFitMethod::Coordinate;RandomContext wrongRandom(991,execution);bool rejected=false;try{(void)ScalarMathematicsRun::restore(checkpoint,problem,wrong,wrongRandom);}catch(const CheckpointError&){rejected=true;}check(rejected,"checkpoint rejects optimizer-policy change");
+    auto projectedConfig = config;
+    projectedConfig.fitting->levenbergMarquardt.projectStepsToBounds = true;
+    RandomContext projectedRandom(991, execution);
+    ScalarMathematicsRun projectedRun(problem, projectedConfig, projectedRandom);
+    check(projectedRun.step() == GenerationOutcome::Committed,
+          "projected LM run commits before checkpoint");
+    auto projectedCheckpoint = decodeCheckpoint(encodeCheckpoint(projectedRun.checkpoint()));
+    RandomContext projectedResumeRandom(991, execution);
+    auto projectedResume = ScalarMathematicsRun::restore(projectedCheckpoint, problem,
+                                                         projectedConfig, projectedResumeRandom);
+    check(projectedResume->checkpoint().identity == projectedCheckpoint.identity,
+          "projected LM checkpoint resumes with the same policy");
+    RandomContext changedToDefaultRandom(991, execution);
+    rejected = false;
+    try {
+        (void)ScalarMathematicsRun::restore(projectedCheckpoint, problem, config,
+                                            changedToDefaultRandom);
+    } catch (const CheckpointError&) {
+        rejected = true;
+    }
+    check(rejected, "checkpoint rejects projected-to-default policy change");
+    RandomContext changedToProjectedRandom(991, execution);
+    rejected = false;
+    try {
+        (void)ScalarMathematicsRun::restore(checkpoint, problem, projectedConfig,
+                                            changedToProjectedRandom);
+    } catch (const CheckpointError&) {
+        rejected = true;
+    }
+    check(rejected, "checkpoint rejects default-to-projected policy change");
 }
 }
 int main(){try{derivatives();scalarFit();coupled();continuation();std::cout<<"S1 parameter derivatives and LM contracts passed\n";}catch(const std::exception&e){std::cerr<<e.what()<<'\n';return 1;}}

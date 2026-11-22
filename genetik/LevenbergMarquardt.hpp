@@ -183,6 +183,44 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
                         inside = false;
                 }
             }
+            if (c.projectStepsToBounds && inside) {
+                std::vector<std::size_t> free;
+                for (std::size_t j = 0; j < p; ++j) {
+                    const bool blocksDescent = (out.parameters[j] <= lower[j] && g[j] > 0) ||
+                                               (out.parameters[j] >= upper[j] && g[j] < 0);
+                    if (!blocksDescent)
+                        free.push_back(j);
+                }
+                if (!free.empty() && free.size() < p) {
+                    std::vector<double> reduced(free.size() * free.size());
+                    std::vector<double> reducedGradient(free.size());
+                    for (std::size_t j = 0; j < free.size(); ++j) {
+                        reducedGradient[j] = g[free[j]];
+                        for (std::size_t k = 0; k < free.size(); ++k)
+                            reduced[j * free.size() + k] = a[free[j] * p + free[k]];
+                        reduced[j * free.size() + j] +=
+                            lambda * std::max(1.0, a[free[j] * p + free[j]]);
+                    }
+                    std::vector<double> reducedDelta;
+                    ++out.work.linearSolves;
+                    if (genetik_detail::solveDampedSystem(std::move(reduced), reducedGradient,
+                                                          reducedDelta, free.size())) {
+                        out.work.linearAlgebraOperations += free.size() * free.size() * free.size();
+                        trial = out.parameters;
+                        stepNorm = 0;
+                        for (std::size_t j = 0; j < free.size(); ++j) {
+                            const auto coordinate = free[j];
+                            trial[coordinate] =
+                                std::clamp(out.parameters[coordinate] - reducedDelta[j],
+                                           lower[coordinate], upper[coordinate]);
+                            stepNorm = std::max(
+                                stepNorm, std::abs(trial[coordinate] - out.parameters[coordinate]));
+                        }
+                    } else {
+                        out.work.linearAlgebraOperations += free.size() * free.size() * free.size();
+                    }
+                }
+            }
             if(!inside){++out.work.rejectedSteps;lambda*=10;if(lambda>c.maximumDamping){out.stop=LMStop::DampingLimit;break;}continue;}
             if(stepNorm<=c.stepTolerance*(parameterNorm+c.stepTolerance)){out.stop=LMStop::StepTolerance;madeStep=true;break;}
             if(cancelled&&cancelled->load(std::memory_order_relaxed)){out.stop=LMStop::Cancelled;break;}if(out.work.mathematicalOperations>=c.maxMathematicalOperations){out.stop=LMStop::EvaluationLimit;break;}auto trialEval=call(trial,false);if(out.stop==LMStop::Cancelled||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::WorkspaceLimit)break;

@@ -597,6 +597,41 @@ void boundedComplexCoefficientProjection() {
                   << " c=" << result.expression.nodes().front().value
                   << " mse=" << result.trainingLoss.score() << '\n';
     }
+
+    const auto affine = [](std::complex<double> a, std::complex<double> b) {
+        const std::array<ComplexNode, 5> nodes{ComplexNode::constant(a), ComplexNode::variable(0),
+                                               ComplexNode::operation(ComplexKind::Multiply),
+                                               ComplexNode::constant(b),
+                                               ComplexNode::operation(ComplexKind::Add)};
+        return ComplexExpression(nodes, 1);
+    };
+    const auto coupledRun = [&](double scale, double start) {
+        ComplexRegressionProblem problem({{{{-2, 0}}, {2 * scale * -2 + scale * 1.25, 0}},
+                                          {{{-1, 0}}, {2 * scale * -1 + scale * 1.25, 0}}});
+        ComplexCoefficientFitConfig config;
+        config.lower = -1;
+        config.upper = 1;
+        config.optimizer.maxIterations = 100;
+        config.optimizer.maxObjectiveEvaluations = 100;
+        config.optimizer.maxJacobianEvaluations = 100;
+        config.optimizer.lossTolerance = 1e-24;
+        const auto result = fitComplexCoefficients(problem, affine({start, 0}, {start, 0}), config);
+        check(result.trainingLoss.state() == FitnessState::Valid,
+              "coupled projected affine fit produces a valid loss");
+        near(result.expression.nodes()[0].value.real(), scale, 1e-8);
+        near(result.expression.nodes()[3].value.real(), -scale * .25, 1e-8);
+        near(result.expression.nodes()[0].value.imag(), 0, 1e-8);
+        near(result.expression.nodes()[3].value.imag(), 0, 1e-8);
+        near(result.trainingLoss.score(), .25, 1e-8);
+        std::cout << "Coupled-bound fit: scale=" << scale << " start=" << start
+                  << " a=" << result.expression.nodes()[0].value
+                  << " b=" << result.expression.nodes()[3].value
+                  << " mse=" << result.trainingLoss.score() << '\n';
+    };
+    for (double start : {1., 0.})
+        coupledRun(1., start);
+    for (double start : {-1., 0.})
+        coupledRun(-1., start);
 }
 void statistics() {
   std::array<double, 10> repeated;

@@ -375,6 +375,13 @@ class ScalarMathematicsRun {
                 const auto& m=f.levenbergMarquardt;
                 for(auto n:{m.maxIterations,m.maxObjectiveEvaluations,m.maxJacobianEvaluations,m.maxParameters,m.maxResiduals,m.maxMathematicalOperations,m.maxWorkspaceBytes})w.integer(n);
                 for(double x:{m.initialDamping,m.gradientTolerance,m.stepTolerance,m.lossTolerance,m.minimumDamping,m.maximumDamping})w.real(x);
+                // Preserve the historical identity for the default policy while
+                // making an explicitly enabled projected-step policy resumable
+                // only with the same setting.
+                if (m.projectStepsToBounds) {
+                    w.text("lm-projected-steps/1");
+                    w.integer(true);
+                }
             }
         }
         identity_ = w.data();

@@ -148,6 +148,35 @@ fitComplexCoefficients(const ComplexRegressionProblem& problem, const ComplexExp
     const double upperBound = std::min(config.upper, coefficientLimit);
     if (lowerBound > upperBound)
         throw std::invalid_argument("complex coefficient bounds do not intersect problem limits");
+    if (config.optimizer.maxObjectiveEvaluations == 0)
+        return {constrained, Fitness::invalid(),      Fitness::invalid(),
+                {},          LMStop::EvaluationLimit, 0};
+    genetik_detail::validateLevenbergMarquardtConfig(config.optimizer);
+
+    const auto& rows = problem.observations();
+    const auto checkedBytes = [](std::size_t n, std::size_t width) {
+        return width && n > std::numeric_limits<std::size_t>::max() / width
+                   ? std::numeric_limits<std::size_t>::max()
+                   : n * width;
+    };
+    const auto addBytes = [](std::size_t a, std::size_t b) {
+        return b > std::numeric_limits<std::size_t>::max() - a
+                   ? std::numeric_limits<std::size_t>::max()
+                   : a + b;
+    };
+    const auto predictionBytes = checkedBytes(rows.size(), sizeof(std::complex<double>));
+    const auto residualBytes = checkedBytes(rows.size(), 2 * sizeof(double));
+    const auto expressionBytes =
+        checkedBytes(constrained.nodes().size(), sizeof(std::complex<double>));
+    const auto baseWorkspace = addBytes(addBytes(predictionBytes, residualBytes), expressionBytes);
+    const auto effectiveWorkspace =
+        std::min(config.optimizer.maxWorkspaceBytes, problem.scientificLimits().maxWorkspaceBytes);
+    if (baseWorkspace > effectiveWorkspace) {
+        LMWork work;
+        work.peakWorkspaceBytes = baseWorkspace;
+        return {constrained, Fitness::invalid(),     Fitness::invalid(),
+                work,        LMStop::WorkspaceLimit, 0};
+    }
 
     std::vector<std::size_t> constants, freeCoordinates;
     std::vector<double> initial, lower, upper;
@@ -170,12 +199,10 @@ fitComplexCoefficients(const ComplexRegressionProblem& problem, const ComplexExp
         throw std::invalid_argument("complex fit requires at least one coefficient");
     if (initial.size() > config.optimizer.maxParameters)
         throw std::length_error("complex fit parameter limit");
-    const auto& rows = problem.observations();
     if (rows.size() > std::numeric_limits<std::size_t>::max() / 2)
         throw std::length_error("complex fit residual count");
     const std::size_t residualCount = rows.size() * 2;
-    if (residualCount > config.optimizer.maxResiduals ||
-        residualCount > config.optimizer.maxWorkspaceBytes / sizeof(double))
+    if (residualCount > config.optimizer.maxResiduals)
         throw std::length_error("complex fit residual workspace limit");
 
     auto fullParameters = [&](std::span<const double> theta) {
@@ -194,6 +221,7 @@ fitComplexCoefficients(const ComplexRegressionProblem& problem, const ComplexExp
 
     std::size_t peakExpressionWorkspace = 0;
     bool operationLimitReached = false;
+    bool workspaceLimitReached = false;
     auto predictionsAt = [&](std::span<const double> theta,
                              std::vector<std::complex<double>>& predictions,
                              std::size_t& operations, std::size_t allowance,
@@ -219,7 +247,10 @@ fitComplexCoefficients(const ComplexRegressionProblem& problem, const ComplexExp
                 return false;
             operations += value.work.operations;
             if (!value.success()) {
-                operationLimitReached = value.status == ScientificStatus::ResourceLimit;
+                if (value.status == ScientificStatus::ResourceLimit) {
+                    operationLimitReached = value.reason == "arithmetic allowance";
+                    workspaceLimitReached = value.reason == "storage allowance";
+                }
                 return false;
             }
             predictions.push_back(*value.value);
@@ -246,11 +277,6 @@ fitComplexCoefficients(const ComplexRegressionProblem& problem, const ComplexExp
         }
         return true;
     };
-    const auto checkedBytes = [](std::size_t n, std::size_t width) {
-        return width && n > std::numeric_limits<std::size_t>::max() / width
-                   ? std::numeric_limits<std::size_t>::max()
-                   : n * width;
-    };
     std::size_t jacobianWorkspace = checkedBytes(residualCount, sizeof(double));
     const auto addWorkspace = [&](std::size_t bytes) {
         if (bytes > std::numeric_limits<std::size_t>::max() - jacobianWorkspace)
@@ -270,14 +296,17 @@ fitComplexCoefficients(const ComplexRegressionProblem& problem, const ComplexExp
         LMResidualEvaluation out;
         ++callbacks;
         operationLimitReached = false;
+        workspaceLimitReached = false;
         std::vector<std::complex<double>> basePredictions;
         if (!predictionsAt(theta, basePredictions, out.mathematicalOperations, allowance,
                            out.forwardEvaluations, out.rowsProcessed)) {
             out.operationLimitReached = operationLimitReached;
+            out.workspaceLimitReached = workspaceLimitReached;
             return out;
         }
         if (!residualsFrom(basePredictions, out.residuals, out.mathematicalOperations, allowance)) {
             out.operationLimitReached = operationLimitReached;
+            out.workspaceLimitReached = workspaceLimitReached;
             return out;
         }
         out.workspaceBytes =
@@ -315,12 +344,14 @@ fitComplexCoefficients(const ComplexRegressionProblem& problem, const ComplexExp
                 if (!predictionsAt(trial, plus, out.mathematicalOperations, allowance,
                                    out.forwardEvaluations, out.rowsProcessed)) {
                     out.operationLimitReached = operationLimitReached;
+                    out.workspaceLimitReached = workspaceLimitReached;
                     return out;
                 }
                 trial[j] = lo;
                 if (!predictionsAt(trial, minus, out.mathematicalOperations, allowance,
                                    out.forwardEvaluations, out.rowsProcessed)) {
                     out.operationLimitReached = operationLimitReached;
+                    out.workspaceLimitReached = workspaceLimitReached;
                     return out;
                 }
                 trial[j] = theta[j];
@@ -354,6 +385,7 @@ fitComplexCoefficients(const ComplexRegressionProblem& problem, const ComplexExp
         freeUpper.push_back(upper[i]);
     }
     auto optimizer = config.optimizer;
+    optimizer.projectStepsToBounds = true;
     optimizer.maxWorkspaceBytes =
         std::min(optimizer.maxWorkspaceBytes, problem.scientificLimits().maxWorkspaceBytes);
     optimizer.maxMathematicalOperations =
@@ -363,17 +395,23 @@ fitComplexCoefficients(const ComplexRegressionProblem& problem, const ComplexExp
         lm = levenbergMarquardt(freeInitial, freeLower, freeUpper, evaluator, optimizer);
     } else {
         const auto one = evaluator({}, false, optimizer.maxMathematicalOperations);
-        lm.stop = one.operationLimitReached                          ? LMStop::EvaluationLimit
-                  : one.workspaceBytes > optimizer.maxWorkspaceBytes ? LMStop::WorkspaceLimit
-                  : one.valid                                        ? LMStop::GradientTolerance
-                                                                     : LMStop::InvalidStart;
+        lm.stop = one.operationLimitReached ? LMStop::EvaluationLimit
+                  : one.workspaceLimitReached || one.workspaceBytes > optimizer.maxWorkspaceBytes
+                      ? LMStop::WorkspaceLimit
+                  : one.valid ? LMStop::GradientTolerance
+                              : LMStop::InvalidStart;
         lm.work.objectiveEvaluations = 1;
         lm.work.forwardEvaluations = one.forwardEvaluations;
         lm.work.rowsProcessed = one.rowsProcessed;
         lm.work.mathematicalOperations = one.mathematicalOperations;
         lm.work.peakWorkspaceBytes = one.workspaceBytes;
-        if (one.valid)
-            lm.sumSquaredResiduals = genetik_detail::checkedSSE(one.residuals);
+        if (one.valid) {
+            const double sse = genetik_detail::checkedSSE(one.residuals);
+            if (std::isfinite(sse))
+                lm.sumSquaredResiduals = sse;
+            else
+                lm.stop = LMStop::InvalidStart;
+        }
     }
     auto fitted = expressionAt(lm.parameters);
     Fitness training =

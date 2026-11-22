@@ -22,6 +22,9 @@ struct LMConfig {
     double initialDamping=1e-3;
     double gradientTolerance=1e-10, stepTolerance=1e-12, lossTolerance=0;
     double minimumDamping=1e-15, maximumDamping=1e15;
+    // Off by default to preserve existing callers. When enabled, each trial
+    // coordinate is projected independently onto its feasible interval.
+    bool projectStepsToBounds = false;
 };
 struct LMWork {
     std::size_t objectiveEvaluations=0, jacobianEvaluations=0,
@@ -41,6 +44,7 @@ struct LMResidualEvaluation {
     // Lets an evaluator report exhausted mathematical work without inventing
     // an extra operation merely to make the counter exceed its allowance.
     bool operationLimitReached = false;
+    bool workspaceLimitReached = false;
 };
 struct LMResult {
     std::vector<double> parameters;
@@ -51,6 +55,17 @@ struct LMResult {
 using LMResidualFunction = std::function<LMResidualEvaluation(std::span<const double>,bool,std::size_t)>;
 
 namespace genetik_detail {
+inline void validateLevenbergMarquardtConfig(const LMConfig& c) {
+    if (!c.maxIterations || !c.maxObjectiveEvaluations || !c.maxJacobianEvaluations ||
+        !c.maxParameters || !c.maxResiduals || !c.maxMathematicalOperations ||
+        !c.maxWorkspaceBytes || !std::isfinite(c.initialDamping) || c.initialDamping <= 0 ||
+        !std::isfinite(c.minimumDamping) || !std::isfinite(c.maximumDamping) ||
+        c.minimumDamping <= 0 || c.minimumDamping > c.initialDamping ||
+        c.initialDamping > c.maximumDamping || !std::isfinite(c.gradientTolerance) ||
+        c.gradientTolerance <= 0 || !std::isfinite(c.stepTolerance) || c.stepTolerance <= 0 ||
+        !std::isfinite(c.lossTolerance) || c.lossTolerance < 0)
+        throw std::invalid_argument("invalid Levenberg-Marquardt configuration");
+}
 inline bool solveDampedSystem(std::vector<double> a,std::vector<double> b,
                               std::vector<double>& x,std::size_t n) {
     // Partial-pivot Gaussian elimination on the small symmetric damped normal
@@ -92,7 +107,10 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
     const LMResidualFunction& evaluate,const LMConfig& c={},
     const std::atomic<bool>* cancelled=nullptr) {
     using clock=std::chrono::steady_clock;const auto started=clock::now();
-    if(initial.empty()||initial.size()>c.maxParameters||lower.size()!=initial.size()||upper.size()!=initial.size()||!evaluate||!c.maxIterations||!c.maxObjectiveEvaluations||!c.maxJacobianEvaluations||!c.maxResiduals||!c.maxMathematicalOperations||!c.maxWorkspaceBytes||!std::isfinite(c.initialDamping)||c.initialDamping<=0||!std::isfinite(c.minimumDamping)||!std::isfinite(c.maximumDamping)||c.minimumDamping<=0||c.minimumDamping>c.initialDamping||c.initialDamping>c.maximumDamping||!std::isfinite(c.gradientTolerance)||c.gradientTolerance<=0||!std::isfinite(c.stepTolerance)||c.stepTolerance<=0||!std::isfinite(c.lossTolerance)||c.lossTolerance<0)throw std::invalid_argument("invalid Levenberg-Marquardt configuration");
+    genetik_detail::validateLevenbergMarquardtConfig(c);
+    if (initial.empty() || initial.size() > c.maxParameters || lower.size() != initial.size() ||
+        upper.size() != initial.size() || !evaluate)
+        throw std::invalid_argument("invalid Levenberg-Marquardt configuration");
     for(std::size_t i=0;i<initial.size();++i)if(!std::isfinite(initial[i])||!std::isfinite(lower[i])||!std::isfinite(upper[i])||lower[i]>initial[i]||initial[i]>upper[i])throw std::invalid_argument("invalid bounded LM start");
     LMResult out;out.parameters.assign(initial.begin(),initial.end());double lambda=c.initialDamping;
     auto call = [&](std::span<const double> parameters, bool jac) {
@@ -122,7 +140,7 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
                     std::numeric_limits<std::size_t>::max() - out.work.mathematicalOperations
                 ? std::numeric_limits<std::size_t>::max()
                 : out.work.mathematicalOperations + e.mathematicalOperations;
-        if (e.workspaceBytes > c.maxWorkspaceBytes) {
+        if (e.workspaceLimitReached || e.workspaceBytes > c.maxWorkspaceBytes) {
             out.stop = LMStop::WorkspaceLimit;
             return e;
         }
@@ -145,7 +163,26 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
         if(!genetik_detail::fullRankAndConditioned(a,p,out.work.linearAlgebraOperations)){out.stop=LMStop::SingularSystem;break;}
         double norm=0;for(double x:g)norm=std::max(norm,std::abs(x));if(norm<=c.gradientTolerance){out.stop=LMStop::GradientTolerance;break;}
         bool madeStep=false;for(unsigned retry=0;retry<16;++retry){auto damped=a;for(std::size_t j=0;j<p;++j){damped[j*p+j]+=lambda*std::max(1.0,a[j*p+j]);out.work.linearAlgebraOperations+=2;}std::vector<double> delta;++out.work.linearSolves;if(!genetik_detail::solveDampedSystem(std::move(damped),g,delta,p)){out.work.linearAlgebraOperations+=p*p*p;lambda*=10;if(lambda>c.maximumDamping){out.stop=LMStop::SingularSystem;break;}continue;}out.work.linearAlgebraOperations+=p*p*p;
-            std::vector<double> trial=out.parameters;double stepNorm=0,parameterNorm=0;bool inside=true;for(std::size_t j=0;j<p;++j){trial[j]-=delta[j];stepNorm=std::max(stepNorm,std::abs(delta[j]));parameterNorm=std::max(parameterNorm,std::abs(out.parameters[j]));if(!std::isfinite(trial[j])||trial[j]<lower[j]||trial[j]>upper[j])inside=false;}
+            std::vector<double> trial = out.parameters;
+            double stepNorm = 0, parameterNorm = 0;
+            bool inside = true;
+            for (std::size_t j = 0; j < p; ++j) {
+                const double proposed = out.parameters[j] - delta[j];
+                parameterNorm = std::max(parameterNorm, std::abs(out.parameters[j]));
+                if (c.projectStepsToBounds) {
+                    if (!std::isfinite(proposed)) {
+                        inside = false;
+                        continue;
+                    }
+                    trial[j] = std::clamp(proposed, lower[j], upper[j]);
+                    stepNorm = std::max(stepNorm, std::abs(trial[j] - out.parameters[j]));
+                } else {
+                    trial[j] = proposed;
+                    stepNorm = std::max(stepNorm, std::abs(delta[j]));
+                    if (!std::isfinite(trial[j]) || trial[j] < lower[j] || trial[j] > upper[j])
+                        inside = false;
+                }
+            }
             if(!inside){++out.work.rejectedSteps;lambda*=10;if(lambda>c.maximumDamping){out.stop=LMStop::DampingLimit;break;}continue;}
             if(stepNorm<=c.stepTolerance*(parameterNorm+c.stepTolerance)){out.stop=LMStop::StepTolerance;madeStep=true;break;}
             if(cancelled&&cancelled->load(std::memory_order_relaxed)){out.stop=LMStop::Cancelled;break;}if(out.work.mathematicalOperations>=c.maxMathematicalOperations){out.stop=LMStop::EvaluationLimit;break;}auto trialEval=call(trial,false);if(out.stop==LMStop::Cancelled||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::WorkspaceLimit)break;

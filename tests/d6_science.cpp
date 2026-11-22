@@ -454,12 +454,21 @@ void complexCoefficientFitLimitsAndBudgets() {
     workspaceLimited.optimizer.maxMathematicalOperations = 10000;
     const auto workspaceFit =
         fitComplexCoefficients(ComplexRegressionProblem(boundedRows), looseInput, workspaceLimited);
-    check(
-        workspaceFit.stop == LMStop::WorkspaceLimit &&
-            workspaceFit.trainingLoss.state() == FitnessState::Valid &&
-            workspaceFit.trainingLoss == workspaceFit.startingLoss &&
-            workspaceFit.work.forwardEvaluations == boundedRows.size(),
-        "64-byte Jacobian workspace rejects before finite-difference probes and retains base loss");
+    check(workspaceFit.stop == LMStop::WorkspaceLimit &&
+              workspaceFit.trainingLoss.state() == FitnessState::Invalid &&
+              workspaceFit.work.objectiveEvaluations == 0 &&
+              workspaceFit.work.forwardEvaluations == 0,
+          "64-byte base workspace rejects before objective buffers and evaluation");
+
+    auto jacobianLimited = workspaceLimited;
+    jacobianLimited.optimizer.maxWorkspaceBytes = 200;
+    const auto jacobianFit =
+        fitComplexCoefficients(ComplexRegressionProblem(boundedRows), looseInput, jacobianLimited);
+    check(jacobianFit.stop == LMStop::WorkspaceLimit &&
+              jacobianFit.trainingLoss.state() == FitnessState::Valid &&
+              jacobianFit.trainingLoss == jacobianFit.startingLoss &&
+              jacobianFit.work.forwardEvaluations == boundedRows.size(),
+          "Jacobian workspace rejects before probes and retains an obtained base loss");
 
     ComplexCoefficientFitConfig operationLimited;
     operationLimited.lower = -10;
@@ -498,6 +507,96 @@ void complexCoefficientFitLimitsAndBudgets() {
               zeroFit.trainingLoss.state() == FitnessState::Valid &&
               zeroFit.trainingLoss.score() == 0 && zeroFit.work.objectiveEvaluations == 1,
           "equal zero bounds score the fixed model without a spurious invalid Jacobian");
+
+    ComplexCoefficientFitConfig noObjective = broad;
+    noObjective.optimizer.maxObjectiveEvaluations = 0;
+    const auto freeNoObjective =
+        fitComplexCoefficients(ComplexRegressionProblem(boundedRows), looseInput, noObjective);
+    const auto fixedNoObjective =
+        fitComplexCoefficients(ComplexRegressionProblem({{{{1, 0}}, {0, 0}}}), zero, noObjective);
+    check(freeNoObjective.stop == LMStop::EvaluationLimit &&
+              fixedNoObjective.stop == LMStop::EvaluationLimit &&
+              freeNoObjective.work.objectiveEvaluations == 0 &&
+              fixedNoObjective.work.objectiveEvaluations == 0 &&
+              freeNoObjective.objectiveEvaluations == 0 &&
+              fixedNoObjective.objectiveEvaluations == 0,
+          "zero objective budget stops fixed and free fitting before any evaluation");
+
+    ScientificLimits smallWorkspace;
+    smallWorkspace.maxWorkspaceBytes = 32;
+    ComplexCoefficientFitConfig fixedWorkspace;
+    fixedWorkspace.lower = 0;
+    fixedWorkspace.upper = 0;
+    const auto fixedWorkspaceFit = fitComplexCoefficients(
+        ComplexRegressionProblem({{{{1, 0}}, {0, 0}}}, {}, smallWorkspace), zero, fixedWorkspace);
+    check(fixedWorkspaceFit.stop == LMStop::WorkspaceLimit &&
+              fixedWorkspaceFit.work.objectiveEvaluations == 0 &&
+              fixedWorkspaceFit.work.forwardEvaluations == 0,
+          "fixed fit checks base workspace before objective buffers");
+
+    ScientificLimits expressionWorkspace;
+    expressionWorkspace.maxWorkspaceBytes = 64;
+    const auto expressionLimitedProblem = ComplexRegressionProblem(
+        {{{{1, 0}}, {0, 0}}}, ExpressionLimits{15, 8, 10}, expressionWorkspace);
+    const auto expressionWorkspaceFit =
+        fitComplexCoefficients(expressionLimitedProblem, looseInput, looseConfig);
+    check(expressionWorkspaceFit.stop == LMStop::WorkspaceLimit &&
+              expressionWorkspaceFit.work.objectiveEvaluations == 0 &&
+              expressionWorkspaceFit.work.mathematicalOperations == 0,
+          "expression evaluator workspace exhaustion is not charged as operation work");
+
+    const auto unrepresentableProblem =
+        ComplexRegressionProblem({{{{0, 0}}, {0, 0}}}, ExpressionLimits{15, 8, 1e300});
+    const std::array<ComplexNode, 1> hugeNode{ComplexNode::constant({1e200, 1e200})};
+    ComplexExpression hugeConstant(hugeNode, 1, ExpressionLimits{15, 8, 1e300});
+    ComplexCoefficientFitConfig fixedHuge;
+    fixedHuge.lower = fixedHuge.upper = 1e200;
+    const auto unrepresentableFit =
+        fitComplexCoefficients(unrepresentableProblem, hugeConstant, fixedHuge);
+    check(unrepresentableFit.stop == LMStop::InvalidStart &&
+              unrepresentableFit.trainingLoss.state() == FitnessState::Invalid &&
+              unrepresentableFit.work.objectiveEvaluations == 1,
+          "fixed-model MSE overflow is reported as invalid loss");
+}
+void boundedComplexCoefficientProjection() {
+    const auto constantExpression = [](std::complex<double> coefficient) {
+        const std::array<ComplexNode, 1> nodes{ComplexNode::constant(coefficient)};
+        return ComplexExpression(nodes, 1);
+    };
+    const auto run = [&](std::complex<double> target, std::complex<double> start) {
+        ComplexRegressionProblem problem({{{{0, 0}}, target}});
+        ComplexCoefficientFitConfig config;
+        config.lower = -1;
+        config.upper = 1;
+        config.optimizer.maxIterations = 100;
+        config.optimizer.maxObjectiveEvaluations = 100;
+        config.optimizer.maxJacobianEvaluations = 100;
+        config.optimizer.lossTolerance = 1e-24;
+        const auto result = fitComplexCoefficients(problem, constantExpression(start), config);
+        check(result.trainingLoss.state() == FitnessState::Valid &&
+                  std::abs(result.expression.nodes().front().value.real()) <= 1 &&
+                  std::abs(result.expression.nodes().front().value.imag()) <= 1,
+              "projected boundary fit returns a feasible scored model");
+        return result;
+    };
+    for (const auto start : {std::complex<double>{1, 0}, std::complex<double>{0, 0}}) {
+        const auto result = run({2, .75}, start);
+        near(result.expression.nodes().front().value.real(), 1, 1e-8);
+        near(result.expression.nodes().front().value.imag(), .75, 1e-8);
+        near(result.trainingLoss.score(), 1, 1e-8);
+        std::cout << "Upper-bound fit: start=" << start
+                  << " c=" << result.expression.nodes().front().value
+                  << " mse=" << result.trainingLoss.score() << '\n';
+    }
+    for (const auto start : {std::complex<double>{-1, 0}, std::complex<double>{0, 0}}) {
+        const auto result = run({-2, -.75}, start);
+        near(result.expression.nodes().front().value.real(), -1, 1e-8);
+        near(result.expression.nodes().front().value.imag(), -.75, 1e-8);
+        near(result.trainingLoss.score(), 1, 1e-8);
+        std::cout << "Lower-bound fit: start=" << start
+                  << " c=" << result.expression.nodes().front().value
+                  << " mse=" << result.trainingLoss.score() << '\n';
+    }
 }
 void statistics() {
   std::array<double, 10> repeated;
@@ -852,6 +951,7 @@ int main(int argc, char **argv) {
       complexMath();
       complexCoefficientFitting();
       complexCoefficientFitLimitsAndBudgets();
+      boundedComplexCoefficientProjection();
       statistics();
       linear();
       if (argc > 1)

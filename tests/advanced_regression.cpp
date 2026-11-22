@@ -26,6 +26,25 @@ void derivatives(){
     check(evaluateParameterJacobian(parse("log(x0)",1),std::array{-1.},std::array<std::size_t,1>{0}).status==ParameterJacobianStatus::PrimalInvalidity,"invalid domain is primal invalidity");
 }
 void scalarFit(){
+    LMResidualFunction outward = [](std::span<const double> t, bool jac, std::size_t) {
+        LMResidualEvaluation e;
+        e.valid = true;
+        e.residuals = {t[0] - 2};
+        if (jac)
+            e.jacobian = {1};
+        return e;
+    };
+    LMConfig legacyConfig;
+    auto legacyBoundary =
+        levenbergMarquardt(std::array{0.}, std::array{-1.}, std::array{1.}, outward, legacyConfig);
+    auto projectedConfig = legacyConfig;
+    projectedConfig.projectStepsToBounds = true;
+    auto projectedBoundary = levenbergMarquardt(std::array{0.}, std::array{-1.}, std::array{1.},
+                                                outward, projectedConfig);
+    check(legacyBoundary.work.rejectedSteps > 0 && projectedBoundary.work.rejectedSteps == 0 &&
+              std::abs(projectedBoundary.parameters[0] - 1) < 1e-12,
+          "bounded-step projection is opt-in and legacy LM retains rejected-trial behavior");
+
     // Reproduces the post-acceptance Jacobian budget hole: the initial
     // Jacobian and successful trial consume the entire objective allowance.
     std::size_t boundedCalls=0;

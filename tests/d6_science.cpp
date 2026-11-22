@@ -6,9 +6,101 @@
 #include <ObservedDifferentialSystem.hpp>
 #include <ScientificRegression.hpp>
 #include <barrier>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <new>
 #include <sstream>
+
+namespace lm_allocation_probe {
+struct Entry {
+    void* pointer = nullptr;
+    std::size_t bytes = 0;
+};
+inline Entry entries[16384];
+inline bool enabled = false;
+inline std::size_t liveBytes = 0;
+inline std::size_t peakBytes = 0;
+inline void record(void* pointer, std::size_t bytes) noexcept {
+    if (!enabled)
+        return;
+    for (auto& entry : entries) {
+        if (!entry.pointer) {
+            entry = {pointer, bytes};
+            liveBytes += bytes;
+            peakBytes = std::max(peakBytes, liveBytes);
+            return;
+        }
+    }
+    std::abort();
+}
+inline void release(void* pointer) noexcept {
+    if (!pointer)
+        return;
+    for (auto& entry : entries) {
+        if (entry.pointer == pointer) {
+            liveBytes -= entry.bytes;
+            entry = {};
+            return;
+        }
+    }
+}
+inline void begin() noexcept {
+    for (auto& entry : entries)
+        entry = {};
+    liveBytes = peakBytes = 0;
+    enabled = true;
+}
+} // namespace lm_allocation_probe
+void* operator new(std::size_t size) {
+    if (void* pointer = std::malloc(size ? size : 1)) {
+        lm_allocation_probe::record(pointer, size);
+        return pointer;
+    }
+    throw std::bad_alloc();
+}
+void* operator new[](std::size_t size) {
+    return ::operator new(size);
+}
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((noinline))
+#endif
+void operator delete(void* pointer) noexcept {
+    lm_allocation_probe::release(pointer);
+    std::free(pointer);
+}
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((noinline))
+#endif
+void operator delete(void* pointer, std::size_t) noexcept {
+    ::operator delete(pointer);
+}
+void operator delete[](void* pointer) noexcept {
+    ::operator delete(pointer);
+}
+void operator delete[](void* pointer, std::size_t) noexcept {
+    ::operator delete(pointer);
+}
+void* operator new(std::size_t size, const std::nothrow_t&) noexcept {
+    try {
+        return ::operator new(size);
+    } catch (...) {
+        return nullptr;
+    }
+}
+void* operator new[](std::size_t size, const std::nothrow_t&) noexcept {
+    try {
+        return ::operator new[](size);
+    } catch (...) {
+        return nullptr;
+    }
+}
+void operator delete(void* pointer, const std::nothrow_t&) noexcept {
+    ::operator delete(pointer);
+}
+void operator delete[](void* pointer, const std::nothrow_t&) noexcept {
+    ::operator delete[](pointer);
+}
 
 namespace {
 void check(bool x, const char *why) {
@@ -635,60 +727,75 @@ void boundedComplexCoefficientProjection() {
 }
 void projectedLMWorkspace() {
     constexpr std::size_t parameters = 16;
-    std::array<double, parameters> initial{}, lower{}, upper{}, target{};
-    initial[0] = 1;
-    lower.fill(-1);
-    upper.fill(1);
-    target[0] = 2;
-    for (std::size_t i = 1; i < parameters; ++i)
-        target[i] = .5;
-    const LMResidualFunction identity = [&](std::span<const double> values, bool withJacobian,
-                                            std::size_t) {
-        LMResidualEvaluation evaluation;
-        evaluation.valid = values.size() == parameters;
-        if (!evaluation.valid)
+    auto run = [](std::size_t rowRepeats, std::size_t cap, bool shouldFit) {
+        std::array<double, parameters> initial{}, lower{}, upper{}, target{};
+        initial[0] = 1;
+        lower.fill(-1);
+        upper.fill(1);
+        target[0] = 2;
+        for (std::size_t i = 1; i < parameters; ++i)
+            target[i] = .5;
+        const LMResidualFunction identity = [=](std::span<const double> values, bool withJacobian,
+                                                std::size_t) {
+            LMResidualEvaluation evaluation;
+            evaluation.valid = values.size() == parameters;
+            if (!evaluation.valid)
+                return evaluation;
+            evaluation.residuals.resize(parameters * rowRepeats);
+            for (std::size_t row = 0; row < rowRepeats; ++row)
+                for (std::size_t i = 0; i < parameters; ++i)
+                    evaluation.residuals[row * parameters + i] = values[i] - target[i];
+            evaluation.workspaceBytes = evaluation.residuals.capacity() * sizeof(double);
+            if (withJacobian) {
+                evaluation.jacobian.assign(parameters * rowRepeats * parameters, 0);
+                for (std::size_t row = 0; row < rowRepeats; ++row)
+                    for (std::size_t i = 0; i < parameters; ++i)
+                        evaluation.jacobian[(row * parameters + i) * parameters + i] = 1;
+                evaluation.workspaceBytes += evaluation.jacobian.capacity() * sizeof(double);
+            }
             return evaluation;
-        evaluation.residuals.resize(parameters);
-        for (std::size_t i = 0; i < parameters; ++i)
-            evaluation.residuals[i] = values[i] - target[i];
-        evaluation.workspaceBytes = evaluation.residuals.size() * sizeof(double);
-        if (withJacobian) {
-            evaluation.jacobian.assign(parameters * parameters, 0);
-            for (std::size_t i = 0; i < parameters; ++i)
-                evaluation.jacobian[i * parameters + i] = 1;
-            evaluation.workspaceBytes += evaluation.jacobian.size() * sizeof(double);
+        };
+        LMConfig config;
+        config.projectStepsToBounds = true;
+        config.maxWorkspaceBytes = cap;
+        lm_allocation_probe::begin();
+        auto result = levenbergMarquardt(initial, lower, upper, identity, config);
+        lm_allocation_probe::enabled = false;
+        const auto actualPeak = lm_allocation_probe::peakBytes;
+        check(actualPeak <= cap, "projected LM live allocations stay within workspace cap");
+        if (!shouldFit) {
+            check(result.stop == LMStop::WorkspaceLimit && result.sumSquaredResiduals &&
+                      *result.sumSquaredResiduals == 4.75 * rowRepeats &&
+                      result.parameters == std::vector<double>(initial.begin(), initial.end()) &&
+                      result.work.peakWorkspaceBytes > cap,
+                  "projected LM refuses a solve that cannot fit and retains the valid fit");
+            std::cout << "Projected LM workspace: rows=" << parameters * rowRepeats
+                      << " cap=" << cap << " actual_peak=" << actualPeak
+                      << " required_peak=" << result.work.peakWorkspaceBytes
+                      << " stop=workspace_limit retained_sse=" << *result.sumSquaredResiduals
+                      << '\n';
+            return;
         }
-        return evaluation;
+        check(result.sumSquaredResiduals &&
+                  (result.stop == LMStop::GradientTolerance ||
+                   result.stop == LMStop::StepTolerance || result.stop == LMStop::LossTolerance),
+              "projected LM completes within sufficient workspace");
+        near(result.parameters[0], 1, 1e-8);
+        for (std::size_t i = 1; i < parameters; ++i)
+            near(result.parameters[i], .5, 1e-7);
+        near(*result.sumSquaredResiduals, static_cast<double>(rowRepeats), 1e-12);
+        check(result.work.peakWorkspaceBytes <= cap,
+              "projected LM reports peak within successful workspace cap");
+        std::cout << "Projected LM workspace: rows=" << parameters * rowRepeats << " cap=" << cap
+                  << " actual_peak=" << actualPeak
+                  << " reported_peak=" << result.work.peakWorkspaceBytes
+                  << " stop=" << static_cast<int>(result.stop)
+                  << " sse=" << *result.sumSquaredResiduals << '\n';
     };
-    LMConfig config;
-    config.projectStepsToBounds = true;
-    config.maxWorkspaceBytes = 4864;
-    const auto insufficient = levenbergMarquardt(initial, lower, upper, identity, config);
-    check(insufficient.stop == LMStop::WorkspaceLimit && insufficient.sumSquaredResiduals &&
-              *insufficient.sumSquaredResiduals == 4.75 &&
-              insufficient.parameters == std::vector<double>(initial.begin(), initial.end()) &&
-              insufficient.work.peakWorkspaceBytes > config.maxWorkspaceBytes,
-          "projected LM rejects a reduced solve that exceeds its simultaneous workspace budget");
-    std::cout << "Projected LM workspace: cap=" << config.maxWorkspaceBytes
-              << " required=" << insufficient.work.peakWorkspaceBytes
-              << " stop=workspace_limit retained_sse=" << *insufficient.sumSquaredResiduals << '\n';
-
-    config.maxWorkspaceBytes = 8192;
-    const auto sufficient = levenbergMarquardt(initial, lower, upper, identity, config);
-    check(sufficient.sumSquaredResiduals && (sufficient.stop == LMStop::GradientTolerance ||
-                                             sufficient.stop == LMStop::StepTolerance ||
-                                             sufficient.stop == LMStop::LossTolerance),
-          "projected LM completes within sufficient workspace");
-    near(sufficient.parameters[0], 1, 1e-8);
-    for (std::size_t i = 1; i < parameters; ++i)
-        near(sufficient.parameters[i], .5, 1e-7);
-    near(*sufficient.sumSquaredResiduals, 1, 1e-12);
-    check(sufficient.work.peakWorkspaceBytes <= config.maxWorkspaceBytes,
-          "projected LM reports a peak within the successful workspace cap");
-    std::cout << "Projected LM workspace: cap=" << config.maxWorkspaceBytes
-              << " peak=" << sufficient.work.peakWorkspaceBytes
-              << " stop=" << static_cast<int>(sufficient.stop)
-              << " sse=" << *sufficient.sumSquaredResiduals << '\n';
+    run(1, 6527, false);
+    run(1, 6760, true);
+    run(8, 21759, false);
+    run(8, 22000, true);
 }
 void statistics() {
   std::array<double, 10> repeated;

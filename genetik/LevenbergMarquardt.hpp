@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <type_traits>
 #include <vector>
 
 enum class LMStop { GradientTolerance, StepTolerance, LossTolerance, IterationLimit,
@@ -129,7 +130,16 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
         throw std::invalid_argument("invalid Levenberg-Marquardt configuration");
     for(std::size_t i=0;i<initial.size();++i)if(!std::isfinite(initial[i])||!std::isfinite(lower[i])||!std::isfinite(upper[i])||lower[i]>initial[i]||initial[i]>upper[i])throw std::invalid_argument("invalid bounded LM start");
     LMResult out;out.parameters.assign(initial.begin(),initial.end());double lambda=c.initialDamping;
-    auto call = [&](std::span<const double> parameters, bool jac) {
+    auto vectorBytes = [](const auto& values) {
+        std::size_t bytes = 0;
+        using Vector = std::decay_t<decltype(values)>;
+        if (!genetik_detail::checkedWorkspaceProduct(values.capacity(), 1,
+                                                     sizeof(typename Vector::value_type), bytes))
+            return std::numeric_limits<std::size_t>::max();
+        return bytes;
+    };
+    std::size_t callbackWorkspaceBound = 0;
+    auto call = [&](std::span<const double> parameters, bool jac, std::size_t liveBytes) {
         if (cancelled && cancelled->load(std::memory_order_relaxed)) {
             out.stop = LMStop::Cancelled;
             return LMResidualEvaluation{};
@@ -142,6 +152,17 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
             out.stop = LMStop::DerivativeLimit;
             return LMResidualEvaluation{};
         }
+        std::size_t expectedWorkspace = liveBytes;
+        if (!genetik_detail::checkedWorkspaceAdd(expectedWorkspace, callbackWorkspaceBound, 1)) {
+            out.work.peakWorkspaceBytes = std::numeric_limits<std::size_t>::max();
+            out.stop = LMStop::WorkspaceLimit;
+            return LMResidualEvaluation{};
+        }
+        out.work.peakWorkspaceBytes = std::max(out.work.peakWorkspaceBytes, expectedWorkspace);
+        if (expectedWorkspace > c.maxWorkspaceBytes) {
+            out.stop = LMStop::WorkspaceLimit;
+            return LMResidualEvaluation{};
+        }
         const auto allowance = c.maxMathematicalOperations - out.work.mathematicalOperations;
         auto e = evaluate(parameters, jac, allowance);
         ++out.work.objectiveEvaluations;
@@ -150,13 +171,21 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
         out.work.forwardEvaluations += std::max<std::size_t>(1, e.forwardEvaluations);
         out.work.derivativeEvaluations += e.derivativeEvaluations;
         out.work.rowsProcessed += e.rowsProcessed;
-        out.work.peakWorkspaceBytes = std::max(out.work.peakWorkspaceBytes, e.workspaceBytes);
+        std::size_t callbackBytes = vectorBytes(e.residuals);
+        if (!genetik_detail::checkedWorkspaceAdd(callbackBytes, vectorBytes(e.jacobian), 1))
+            callbackBytes = std::numeric_limits<std::size_t>::max();
+        callbackBytes = std::max(callbackBytes, e.workspaceBytes);
+        callbackWorkspaceBound = std::max(callbackWorkspaceBound, callbackBytes);
+        std::size_t totalWorkspace = liveBytes;
+        if (!genetik_detail::checkedWorkspaceAdd(totalWorkspace, callbackBytes, 1))
+            totalWorkspace = std::numeric_limits<std::size_t>::max();
+        out.work.peakWorkspaceBytes = std::max(out.work.peakWorkspaceBytes, totalWorkspace);
         out.work.mathematicalOperations =
             e.mathematicalOperations >
                     std::numeric_limits<std::size_t>::max() - out.work.mathematicalOperations
                 ? std::numeric_limits<std::size_t>::max()
                 : out.work.mathematicalOperations + e.mathematicalOperations;
-        if (e.workspaceLimitReached || e.workspaceBytes > c.maxWorkspaceBytes) {
+        if (e.workspaceLimitReached || totalWorkspace > c.maxWorkspaceBytes) {
             out.stop = LMStop::WorkspaceLimit;
             return e;
         }
@@ -164,7 +193,12 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
             out.stop = LMStop::EvaluationLimit;
         return e;
     };
-    auto current=call(out.parameters,true);if(out.stop==LMStop::Cancelled||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::WorkspaceLimit){out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
+    auto current = call(out.parameters, true, vectorBytes(out.parameters));
+    if (out.stop == LMStop::Cancelled || out.stop == LMStop::DerivativeLimit ||
+        out.stop == LMStop::EvaluationLimit || out.stop == LMStop::WorkspaceLimit) {
+        out.work.seconds = std::chrono::duration<double>(clock::now() - started).count();
+        return out;
+    }
     auto validShape=[&](const LMResidualEvaluation&e,bool jac){if(!e.valid||e.residuals.empty()||e.residuals.size()>c.maxResiduals)return false;if(jac&&e.jacobian.size()!=e.residuals.size()*initial.size())return false;for(double v:e.residuals)if(!std::isfinite(v))return false;for(double v:e.jacobian)if(!std::isfinite(v))return false;return true;};
     if(out.stop==LMStop::WorkspaceLimit){out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}if(!validShape(current,true)){out.stop=LMStop::InvalidStart;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
     double loss=genetik_detail::checkedSSE(current.residuals);if(!std::isfinite(loss)){out.stop=LMStop::InvalidStart;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
@@ -181,9 +215,13 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
     // Jacobian. Add the owned parameter vector, normal matrix and gradient.
     // Rank validation takes its matrix by value, so its copy is live alongside
     // the original matrix. Reject before allocating the normal-system buffers.
-    std::size_t persistentWorkspace = current.workspaceBytes;
+    std::size_t outputCapacityBytes = vectorBytes(current.residuals);
+    if (!genetik_detail::checkedWorkspaceAdd(outputCapacityBytes, vectorBytes(current.jacobian), 1))
+        outputCapacityBytes = std::numeric_limits<std::size_t>::max();
+    std::size_t persistentWorkspace = std::max(current.workspaceBytes, outputCapacityBytes);
+    const auto parameterCapacityBytes = vectorBytes(out.parameters);
     bool workspaceRepresentable =
-        genetik_detail::checkedWorkspaceAdd(persistentWorkspace, p, sizeof(double));
+        genetik_detail::checkedWorkspaceAdd(persistentWorkspace, parameterCapacityBytes, 1);
     std::size_t rankWorkspace = persistentWorkspace;
     workspaceRepresentable =
         workspaceRepresentable &&
@@ -206,6 +244,8 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
     for(std::size_t iter=0;iter<c.maxIterations;++iter){if(cancelled&&cancelled->load(std::memory_order_relaxed)){out.stop=LMStop::Cancelled;break;}if(loss<=c.lossTolerance){out.stop=LMStop::LossTolerance;break;}
         std::vector<double> a(p*p,0),g(p,0);for(std::size_t i=0;i<m;++i)for(std::size_t j=0;j<p;++j){double ji=current.jacobian[i*p+j];g[j]+=ji*current.residuals[i];out.work.linearAlgebraOperations+=2;for(std::size_t k=0;k<p;++k){a[j*p+k]+=ji*current.jacobian[i*p+k];out.work.linearAlgebraOperations+=2;}}
         if(!genetik_detail::fullRankAndConditioned(a,p,out.work.linearAlgebraOperations)){out.stop=LMStop::SingularSystem;break;}
+        current = LMResidualEvaluation{};
+        persistentWorkspace = parameterCapacityBytes;
         double norm=0;for(double x:g)norm=std::max(norm,std::abs(x));if(norm<=c.gradientTolerance){out.stop=LMStop::GradientTolerance;break;}
         bool madeStep = false;
         for (unsigned retry = 0; retry < 16; ++retry) {
@@ -220,9 +260,14 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
             }
             const bool useReduced = c.projectStepsToBounds && freeCount > 0 && freeCount < p;
             std::size_t solveWorkspace = persistentWorkspace;
+            std::size_t normalWorkspace = vectorBytes(a);
             bool solveWorkspaceRepresentable =
-                genetik_detail::checkedWorkspaceAdd(solveWorkspace, matrixBytes, 1) &&
-                genetik_detail::checkedWorkspaceAdd(solveWorkspace, p, sizeof(double));
+                genetik_detail::checkedWorkspaceAdd(normalWorkspace, vectorBytes(g), 1) &&
+                genetik_detail::checkedWorkspaceAdd(solveWorkspace, normalWorkspace, 1);
+            std::size_t trialBytes = 0;
+            solveWorkspaceRepresentable =
+                solveWorkspaceRepresentable &&
+                genetik_detail::checkedWorkspaceProduct(p, 1, sizeof(double), trialBytes);
             if (solveWorkspaceRepresentable && useReduced) {
                 std::size_t reducedMatrixBytes = 0;
                 solveWorkspaceRepresentable =
@@ -230,38 +275,26 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
                                                             reducedMatrixBytes) &&
                     genetik_detail::checkedWorkspaceAdd(solveWorkspace, freeCount,
                                                         sizeof(std::size_t)) &&
-                    // reduced gradient, the solver's by-value RHS, and solution
-                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, reducedMatrixBytes, 1);
-                if (solveWorkspaceRepresentable)
-                    solveWorkspaceRepresentable = genetik_detail::checkedWorkspaceAdd(
-                        solveWorkspace, freeCount, 3 * sizeof(double));
-                if (solveWorkspaceRepresentable) {
-                    auto postSolveWorkspace = persistentWorkspace;
-                    solveWorkspaceRepresentable =
-                        genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, matrixBytes, 1) &&
-                        genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, p,
-                                                            2 * sizeof(double)) &&
-                        genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, freeCount,
-                                                            sizeof(std::size_t)) &&
-                        genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, freeCount,
-                                                            2 * sizeof(double));
-                    if (solveWorkspaceRepresentable)
-                        solveWorkspace = std::max(solveWorkspace, postSolveWorkspace);
-                }
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, trialBytes, 1) &&
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, freeCount,
+                                                        sizeof(std::size_t)) &&
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, reducedMatrixBytes, 1) &&
+                    genetik_detail::checkedWorkspaceAdd(solveWorkspace, freeCount,
+                                                        3 * sizeof(double));
             } else if (solveWorkspaceRepresentable) {
-                // Original matrix plus damped copy, RHS copy and solution.
+                // Normal system plus damped matrix, copied RHS, and solution.
                 solveWorkspaceRepresentable =
                     genetik_detail::checkedWorkspaceAdd(solveWorkspace, matrixBytes, 1) &&
                     genetik_detail::checkedWorkspaceAdd(solveWorkspace, p, 2 * sizeof(double));
-                if (solveWorkspaceRepresentable) {
-                    auto postSolveWorkspace = persistentWorkspace;
-                    solveWorkspaceRepresentable =
-                        genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, matrixBytes, 1) &&
-                        genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, p,
-                                                            3 * sizeof(double));
-                    if (solveWorkspaceRepresentable)
-                        solveWorkspace = std::max(solveWorkspace, postSolveWorkspace);
-                }
+                auto postSolveWorkspace = persistentWorkspace;
+                solveWorkspaceRepresentable =
+                    solveWorkspaceRepresentable &&
+                    genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, normalWorkspace, 1) &&
+                    genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, p,
+                                                        2 * sizeof(double)) &&
+                    genetik_detail::checkedWorkspaceAdd(postSolveWorkspace, trialBytes, 1);
+                if (solveWorkspaceRepresentable)
+                    solveWorkspace = std::max(solveWorkspace, postSolveWorkspace);
             }
             if (!solveWorkspaceRepresentable) {
                 out.work.peakWorkspaceBytes = std::numeric_limits<std::size_t>::max();
@@ -359,13 +392,43 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
             }
             if(!inside){++out.work.rejectedSteps;lambda*=10;if(lambda>c.maximumDamping){out.stop=LMStop::DampingLimit;break;}continue;}
             if(stepNorm<=c.stepTolerance*(parameterNorm+c.stepTolerance)){out.stop=LMStop::StepTolerance;madeStep=true;break;}
-            if(cancelled&&cancelled->load(std::memory_order_relaxed)){out.stop=LMStop::Cancelled;break;}if(out.work.mathematicalOperations>=c.maxMathematicalOperations){out.stop=LMStop::EvaluationLimit;break;}auto trialEval=call(trial,false);if(out.stop==LMStop::Cancelled||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::WorkspaceLimit)break;
+            if (cancelled && cancelled->load(std::memory_order_relaxed)) {
+                out.stop = LMStop::Cancelled;
+                break;
+            }
+            if (out.work.mathematicalOperations >= c.maxMathematicalOperations) {
+                out.stop = LMStop::EvaluationLimit;
+                break;
+            }
+            std::size_t trialLiveWorkspace = persistentWorkspace;
+            solveWorkspaceRepresentable =
+                genetik_detail::checkedWorkspaceAdd(trialLiveWorkspace, normalWorkspace, 1) &&
+                genetik_detail::checkedWorkspaceAdd(trialLiveWorkspace, vectorBytes(trial), 1) &&
+                genetik_detail::checkedWorkspaceAdd(trialLiveWorkspace, vectorBytes(delta), 1);
+            if (!solveWorkspaceRepresentable) {
+                out.stop = LMStop::WorkspaceLimit;
+                out.work.peakWorkspaceBytes = std::numeric_limits<std::size_t>::max();
+                break;
+            }
+            auto trialEval = call(trial, false, trialLiveWorkspace);
+            if (out.stop == LMStop::Cancelled || out.stop == LMStop::EvaluationLimit ||
+                out.stop == LMStop::DerivativeLimit || out.stop == LMStop::WorkspaceLimit)
+                break;
             if(validShape(trialEval,false)&&trialEval.residuals.size()==m){double trialLoss=genetik_detail::checkedSSE(trialEval.residuals);if(trialLoss<loss){out.parameters.swap(trial);loss=trialLoss;out.sumSquaredResiduals=loss;++out.work.acceptedSteps;++out.work.parameterUpdates;lambda=std::max(c.minimumDamping,lambda*.3);madeStep=true;if(loss<=c.lossTolerance)out.stop=LMStop::LossTolerance;break;}}
             ++out.work.rejectedSteps;lambda*=10;if(lambda>c.maximumDamping){out.stop=LMStop::DampingLimit;break;}
         }
         if(out.stop==LMStop::LossTolerance||out.stop==LMStop::SingularSystem||out.stop==LMStop::DampingLimit||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::WorkspaceLimit||out.stop==LMStop::Cancelled)break;
         if(!madeStep){out.stop=LMStop::DampingLimit;break;}if(out.stop==LMStop::StepTolerance)break;
-        current=call(out.parameters,true);if(out.stop==LMStop::Cancelled||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::WorkspaceLimit)break;if(!validShape(current,true)||current.residuals.size()!=m){out.stop=LMStop::InvalidStart;break;}
+        std::vector<double>().swap(a);
+        std::vector<double>().swap(g);
+        current = call(out.parameters, true, parameterCapacityBytes);
+        if (out.stop == LMStop::Cancelled || out.stop == LMStop::EvaluationLimit ||
+            out.stop == LMStop::DerivativeLimit || out.stop == LMStop::WorkspaceLimit)
+            break;
+        if (!validShape(current, true) || current.residuals.size() != m) {
+            out.stop = LMStop::InvalidStart;
+            break;
+        }
     }
     out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();
     return out;

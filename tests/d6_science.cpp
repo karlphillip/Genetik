@@ -633,6 +633,63 @@ void boundedComplexCoefficientProjection() {
     for (double start : {-1., 0.})
         coupledRun(-1., start);
 }
+void projectedLMWorkspace() {
+    constexpr std::size_t parameters = 16;
+    std::array<double, parameters> initial{}, lower{}, upper{}, target{};
+    initial[0] = 1;
+    lower.fill(-1);
+    upper.fill(1);
+    target[0] = 2;
+    for (std::size_t i = 1; i < parameters; ++i)
+        target[i] = .5;
+    const LMResidualFunction identity = [&](std::span<const double> values, bool withJacobian,
+                                            std::size_t) {
+        LMResidualEvaluation evaluation;
+        evaluation.valid = values.size() == parameters;
+        if (!evaluation.valid)
+            return evaluation;
+        evaluation.residuals.resize(parameters);
+        for (std::size_t i = 0; i < parameters; ++i)
+            evaluation.residuals[i] = values[i] - target[i];
+        evaluation.workspaceBytes = evaluation.residuals.size() * sizeof(double);
+        if (withJacobian) {
+            evaluation.jacobian.assign(parameters * parameters, 0);
+            for (std::size_t i = 0; i < parameters; ++i)
+                evaluation.jacobian[i * parameters + i] = 1;
+            evaluation.workspaceBytes += evaluation.jacobian.size() * sizeof(double);
+        }
+        return evaluation;
+    };
+    LMConfig config;
+    config.projectStepsToBounds = true;
+    config.maxWorkspaceBytes = 4864;
+    const auto insufficient = levenbergMarquardt(initial, lower, upper, identity, config);
+    check(insufficient.stop == LMStop::WorkspaceLimit && insufficient.sumSquaredResiduals &&
+              *insufficient.sumSquaredResiduals == 4.75 &&
+              insufficient.parameters == std::vector<double>(initial.begin(), initial.end()) &&
+              insufficient.work.peakWorkspaceBytes > config.maxWorkspaceBytes,
+          "projected LM rejects a reduced solve that exceeds its simultaneous workspace budget");
+    std::cout << "Projected LM workspace: cap=" << config.maxWorkspaceBytes
+              << " required=" << insufficient.work.peakWorkspaceBytes
+              << " stop=workspace_limit retained_sse=" << *insufficient.sumSquaredResiduals << '\n';
+
+    config.maxWorkspaceBytes = 8192;
+    const auto sufficient = levenbergMarquardt(initial, lower, upper, identity, config);
+    check(sufficient.sumSquaredResiduals && (sufficient.stop == LMStop::GradientTolerance ||
+                                             sufficient.stop == LMStop::StepTolerance ||
+                                             sufficient.stop == LMStop::LossTolerance),
+          "projected LM completes within sufficient workspace");
+    near(sufficient.parameters[0], 1, 1e-8);
+    for (std::size_t i = 1; i < parameters; ++i)
+        near(sufficient.parameters[i], .5, 1e-7);
+    near(*sufficient.sumSquaredResiduals, 1, 1e-12);
+    check(sufficient.work.peakWorkspaceBytes <= config.maxWorkspaceBytes,
+          "projected LM reports a peak within the successful workspace cap");
+    std::cout << "Projected LM workspace: cap=" << config.maxWorkspaceBytes
+              << " peak=" << sufficient.work.peakWorkspaceBytes
+              << " stop=" << static_cast<int>(sufficient.stop)
+              << " sse=" << *sufficient.sumSquaredResiduals << '\n';
+}
 void statistics() {
   std::array<double, 10> repeated;
   repeated.fill(.1);
@@ -987,6 +1044,7 @@ int main(int argc, char **argv) {
       complexCoefficientFitting();
       complexCoefficientFitLimitsAndBudgets();
       boundedComplexCoefficientProjection();
+      projectedLMWorkspace();
       statistics();
       linear();
       if (argc > 1)

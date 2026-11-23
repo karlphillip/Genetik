@@ -447,7 +447,19 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
     return [expression=std::move(expression),rows=std::move(rows),parameterBindings=std::move(parameterBindings),maxWork,observationWeights=std::move(observationWeights)](std::span<const double> theta,bool jac,std::size_t allowance){LMResidualEvaluation out;const auto p=parameterBindings.size();if(rows.size()>std::numeric_limits<std::size_t>::max()/p||rows.size()*p>maxWork)return out;if(rows.size()>std::numeric_limits<std::size_t>::max()/(p+1)/sizeof(double))return out;out.workspaceBytes=rows.size()*(p+1)*sizeof(double)+expression.variableCount()*sizeof(double);const auto outputWorkspace=out.workspaceBytes;const auto workLimit=std::min(maxWork,allowance);out.residuals.reserve(rows.size());if(jac)out.jacobian.reserve(rows.size()*p);std::vector<double> bindings(expression.variableCount());double totalWeight=0;if(!observationWeights.empty())for(double weight:observationWeights)totalWeight+=weight;
         for(const auto& row:rows){std::copy(row.inputs.begin(),row.inputs.end(),bindings.begin());if(theta.size()!=p)return out;for(std::size_t j=0;j<p;++j)bindings[parameterBindings[j]]=theta[j];
             const auto rowIndex=out.rowsProcessed;
-            const double scale=observationWeights.empty()?1.0:std::sqrt(observationWeights[rowIndex]/totalWeight);
+            const double weight=observationWeights.empty()?1.0:observationWeights[rowIndex];
+            const double scale=observationWeights.empty()?1.0:std::sqrt(weight)/std::sqrt(totalWeight);
+            // Even a zero-weight observation must satisfy the normal scoring
+            // contract. Validate its primal prediction, then give it no influence
+            // on the least-squares system (and avoid requiring a derivative).
+            if(!observationWeights.empty()&&weight==0){
+                if(expression.arithmeticCost()>workLimit-out.mathematicalOperations)return out;
+                auto v=expression.evaluate(bindings);++out.forwardEvaluations;out.mathematicalOperations+=v.arithmeticOperations();
+                if(!v.valid())return out;
+                out.residuals.push_back(0.0);
+                if(jac)for(std::size_t j=0;j<p;++j)out.jacobian.push_back(0.0);
+                ++out.rowsProcessed;if(out.mathematicalOperations>workLimit)return out;continue;
+            }
             if(jac){DerivativeLimits dl;dl.maxOperations=workLimit-out.mathematicalOperations;auto d=evaluateParameterJacobian(expression,bindings,parameterBindings,dl);out.forwardEvaluations+=d.work.forwardEvaluations;out.derivativeEvaluations+=d.work.forwardEvaluations;out.mathematicalOperations+=d.work.primalOperations+d.work.derivativeOperations+d.work.derivativeMathCalls;out.workspaceBytes=std::max(out.workspaceBytes,outputWorkspace+d.work.workspaceBytes);if(d.status!=ParameterJacobianStatus::Success)return out;const double residual=d.value-row.target;out.residuals.push_back(observationWeights.empty()?residual:residual*scale);for(double derivative:d.derivatives)out.jacobian.push_back(observationWeights.empty()?derivative:derivative*scale);}
             else {if(expression.arithmeticCost()>workLimit-out.mathematicalOperations)return out;auto v=expression.evaluate(bindings);++out.forwardEvaluations;out.mathematicalOperations+=v.arithmeticOperations();if(!v.valid())return out;const double residual=v.value()-row.target;out.residuals.push_back(observationWeights.empty()?residual:residual*scale);}++out.rowsProcessed;if(out.mathematicalOperations>workLimit)return out;}
         out.valid=true;return out;};

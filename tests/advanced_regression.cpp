@@ -119,6 +119,21 @@ void weightedScalarFit(){
     auto zeroProblem=weightedProblem({{{-1},1},{{4},2}},{0,1});check(zeroProblem->measure(invalidZeroRow).loss.state()==FitnessState::Invalid,"zero weight does not waive prediction validity");
     TrainingObjective zeroObjective(zeroProblem,100);auto invalidFit=fitConstants(invalidZeroRow,zeroObjective,fitConfig());check(invalidFit.stop==ConstantFitStop::InvalidStart,"LM preserves invalid zero-weight prediction contract");
 
+    // A valid zero-weight row is still evaluated for scoring, but its derivative
+    // cannot constrain the fit (abs is nondifferentiable at the initial c=0 row).
+    auto absModel=Expression::unary(ExpressionKind::Abs,Expression::binary(ExpressionKind::Add,Expression::variable(0,1),Expression::constant(0,1)));
+    auto zeroWeightFitProblem=weightedProblem({{{0},0},{{1},3}},{0,1});TrainingObjective zeroWeightFitObjective(zeroWeightFitProblem,100);
+    auto zeroWeightFit=fitConstants(absModel,zeroWeightFitObjective,fitConfig());near(zeroWeightFit.expression.nodes()[1].constantValue(),2,1e-7);near(zeroWeightFit.loss.score(),0,1e-12);
+
+    // The small positive weight remains representable after square-root scaling,
+    // even though weight/total underflows to zero in binary64.
+    const double hugeTarget=std::ldexp(1.0,500),largeWeight=std::ldexp(1.0,600),smallWeight=std::ldexp(1.0,-600);
+    auto extremeProblem=weightedProblem({{{0},0},{{0},hugeTarget}},{largeWeight,smallWeight});auto extremeScore=extremeProblem->measure(constant).loss;
+    near(extremeScore.score(),std::ldexp(1.0,-200),1e-12);
+    TrainingObjective extremeObjective(extremeProblem,100);auto extremeFit=fitConstants(constant,extremeObjective,fitConfig());
+    near(extremeFit.loss.score(),extremeScore.score(),1e-12);near(extremeFit.loss.score(),extremeProblem->measure(extremeFit.expression).loss.score(),1e-12);
+    check(!extremeFit.improved&&extremeFit.expression.nodes()[0].constantValue()==0,"unchanged weighted LM model cannot report improvement");
+
     // The ordinary symbolic-regression preparation path uses the same weighted LM objective.
     SymbolicRegressionConfig search;search.population=4;search.elites=1;search.maxGenerationAttempts=1;search.maxEvaluations=8;search.maxTrainingLossAttempts=1000;search.initialExpressionSlots=1;search.maximumInitializerWorkUnits=1;search.fitting=fitConfig();search.fitting->levenbergMarquardt.maxObjectiveEvaluations=20;search.fitting->levenbergMarquardt.maxJacobianEvaluations=20;
     auto symbolicProblem=weightedProblem({{{0},0},{{1},2},{{2},4}},{1,2,1});RandomContext random(782);

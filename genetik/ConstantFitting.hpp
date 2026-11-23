@@ -351,7 +351,8 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
                                    ? fitObjective.observationWeights
                                    : std::vector<double>{});
     Fitness starting = Fitness::invalid();
-    std::vector<std::pair<std::vector<double>, Fitness>> scoredParameters;
+    Fitness latestScore = Fitness::invalid();
+    Fitness acceptedScore = Fitness::invalid();
     std::uint64_t calls = 0;
     LMResidualFunction measured = [&](std::span<const double> theta, bool jac,
                                       std::size_t allowance) {
@@ -367,9 +368,11 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
         ++calls;
         if (score.loss.state() != FitnessState::Valid)
             return LMResidualEvaluation{};
-        if (calls == 1)
+        latestScore = score.loss;
+        if (calls == 1) {
             starting = score.loss;
-        scoredParameters.emplace_back(std::vector<double>(theta.begin(), theta.end()), score.loss);
+            acceptedScore = score.loss;
+        }
         auto eval = raw(theta, jac, allowance);
         if (rows.size() > std::numeric_limits<std::size_t>::max() - eval.forwardEvaluations ||
             rows.size() > std::numeric_limits<std::size_t>::max() - eval.rowsProcessed)
@@ -385,16 +388,14 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
     };
     auto lm=config.levenbergMarquardt;lm.maxObjectiveEvaluations=std::min<std::uint64_t>(lm.maxObjectiveEvaluations,std::min(config.maxLossAttempts,objective.remaining()));
     if(!lm.maxObjectiveEvaluations)throw TrainingLossBudgetExceeded();
-    const auto fit=levenbergMarquardt(initial,lower,upper,measured,lm);
+    const auto fit =
+        levenbergMarquardt(initial, lower, upper, measured, lm, nullptr,
+                           [&](std::span<const double>) { acceptedScore = latestScore; });
     result.expression=input;for(std::size_t i=0;i<selected.size();++i)result.expression=result.expression.withConstant(selected[i],fit.parameters[i]);
     result.startingLoss = starting;
-    // Return the public scorer's result for the solver's accepted parameters.
-    // A final rejected trial may have been scored after the accepted point, so
-    // do not use the most recently evaluated loss here.
-    const auto acceptedScore =
-        std::find_if(scoredParameters.rbegin(), scoredParameters.rend(),
-                     [&](const auto& entry) { return entry.first == fit.parameters; });
-    result.loss = acceptedScore != scoredParameters.rend() ? acceptedScore->second : starting;
+    // The solver notifies us only after accepting a point, so a rejected final
+    // trial or budget stop leaves this score attached to the returned parameters.
+    result.loss = acceptedScore;
     result.improved = result.loss.state() == FitnessState::Valid &&
                       starting.state() == FitnessState::Valid &&
                       result.loss.score() < starting.score();

@@ -129,10 +129,23 @@ void weightedScalarFit(){
     // even though weight/total underflows to zero in binary64.
     const double hugeTarget=std::ldexp(1.0,500),largeWeight=std::ldexp(1.0,600),smallWeight=std::ldexp(1.0,-600);
     auto extremeProblem=weightedProblem({{{0},0},{{0},hugeTarget}},{largeWeight,smallWeight});auto extremeScore=extremeProblem->measure(constant).loss;
-    near(extremeScore.score(),std::ldexp(1.0,-200),1e-12);
+    check(extremeScore.score()==std::ldexp(1.0,-200),"extreme weighted public score is exact");
+    auto scaledRows=expressionLeastSquares(Expression::variable(0,1),{{{0},0},{{0},hugeTarget}},{0},100,{largeWeight,smallWeight});
+    auto scaledResiduals=scaledRows(std::array{0.0},false,100);
+    check(scaledResiduals.valid&&scaledResiduals.residuals.size()==2,"extreme weights produce valid scaled residuals");
+    const double tinyScaledResidual=-std::ldexp(1.0,-100);
+    check(std::abs(scaledResiduals.residuals[1]-tinyScaledResidual)<=std::abs(tinyScaledResidual)*1e-12,"tiny weighted residual remains nonzero at its expected scale");
     TrainingObjective extremeObjective(extremeProblem,100);auto extremeFit=fitConstants(constant,extremeObjective,fitConfig());
     near(extremeFit.loss.score(),extremeScore.score(),1e-12);near(extremeFit.loss.score(),extremeProblem->measure(extremeFit.expression).loss.score(),1e-12);
     check(!extremeFit.improved&&extremeFit.expression.nodes()[0].constantValue()==0,"unchanged weighted LM model cannot report improvement");
+
+    // Score tracking is bounded while objective calls grow, including a strict workspace cap.
+    auto square=Expression::binary(ExpressionKind::Pow,Expression::constant(1,1),Expression::constant(2,1));
+    auto runSquare=[&](bool weightedObjective){RegressionObjectiveConfig objectiveConfig;if(weightedObjective){objectiveConfig.loss=RegressionLoss::WeightedMeanSquaredError;objectiveConfig.observationWeights={1};}auto p=RegressionProblem::createWithObjective({{{0},0}},objectiveConfig,{64,16,100});TrainingObjective o(p,1000);auto c=fitConfig();c.levenbergMarquardt.maxWorkspaceBytes=1024;c.levenbergMarquardt.maxObjectiveEvaluations=200;c.levenbergMarquardt.maxIterations=100;c.levenbergMarquardt.lossTolerance=1e-24;return fitSelectedConstants(square,o,std::array<std::size_t,1>{0},c);};
+    auto unweightedSquare=runSquare(false),weightedSquare=runSquare(true);
+    for(const auto* fitted:{&unweightedSquare,&weightedSquare}){check(fitted->loss.state()==FitnessState::Valid&&fitted->optimizerWork.peakWorkspaceBytes<=1024,"c-squared fit respects 1,024-byte LM workspace cap");check(fitted->optimizerWork.objectiveEvaluations>2,"score tracking remains bounded across repeated objective evaluations");near(fitted->loss.score(),std::pow(fitted->expression.nodes()[0].constantValue()*fitted->expression.nodes()[0].constantValue(),2),1e-12);}
+    // The last trial is worse and exhausts the objective budget; returned loss stays with c=1.
+    auto rejectedProblem=RegressionProblem::create({{{0},10}},{64,16,100});TrainingObjective rejectedObjective(rejectedProblem,100);auto rejectedConfig=fitConfig();rejectedConfig.levenbergMarquardt.maxObjectiveEvaluations=2;rejectedConfig.levenbergMarquardt.maxIterations=10;auto rejectedFit=fitSelectedConstants(square,rejectedObjective,std::array<std::size_t,1>{0},rejectedConfig);check(rejectedFit.optimizerWork.objectiveEvaluations==2&&rejectedFit.optimizerWork.rejectedSteps==1,"final LM trial is rejected at the budget boundary");near(rejectedFit.loss.score(),rejectedProblem->measure(rejectedFit.expression).loss.score());near(rejectedFit.expression.nodes()[0].constantValue(),1);
 
     // The ordinary symbolic-regression preparation path uses the same weighted LM objective.
     SymbolicRegressionConfig search;search.population=4;search.elites=1;search.maxGenerationAttempts=1;search.maxEvaluations=8;search.maxTrainingLossAttempts=1000;search.initialExpressionSlots=1;search.maximumInitializerWorkUnits=1;search.fitting=fitConfig();search.fitting->levenbergMarquardt.maxObjectiveEvaluations=20;search.fitting->levenbergMarquardt.maxJacobianEvaluations=20;

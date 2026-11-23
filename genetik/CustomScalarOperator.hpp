@@ -26,7 +26,11 @@ struct CustomScalarOperator {
                 throw std::invalid_argument(
                     "custom scalar operator ID contains non-token characters");
         for (const auto& builtin : scalarOperators)
-            if (builtin.arity && id == builtin.name)
+            // Custom-kind names are codec/implementation tokens, not public
+            // operators. custom_unary and custom_binary were historically
+            // reserved; custom_ternary was not present in that contract.
+            if (builtin.arity && builtin.kind != ExpressionKind::CustomTernary &&
+                id == builtin.name)
                 throw std::invalid_argument(
                     "custom scalar operator ID conflicts with built-in operator: " + id);
         if (id == "ln" || id == "npowi")

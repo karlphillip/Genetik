@@ -356,10 +356,15 @@ int main() {
         const auto fmaSearch =
             symbolicRegression(fmaSearchProblem, fmaSearchConfig, fmaSearchRandom);
         bool fmaScored = false;
-        for (const auto& candidate : fmaSearch.rawInitialExpressions)
-            fmaScored |= candidate.find(fma.id) != std::string::npos;
-        check(fmaScored && fmaSearch.best.has_value(),
-              "deterministic symbolic search generates and scores custom ternary nodes");
+        for (std::size_t i = 0; i < fmaSearch.rawInitialExpressions.size(); ++i) {
+            const auto& generated = fmaSearch.rawInitialExpressions[i];
+            fmaScored |= generated.find(fma.id) != std::string::npos &&
+                         i < fmaSearch.preparedInitialExpressions.size() &&
+                         i < fmaSearch.preparedInitialFitness.size() &&
+                         fmaSearch.preparedInitialExpressions[i] == generated &&
+                         fmaSearch.preparedInitialFitness[i].state() == FitnessState::Valid;
+        }
+        check(fmaScored, "deterministic symbolic search generates and scores custom ternary nodes");
         const auto fmaCheckpointProblem = RegressionProblem::create({{{2, 3, 4}, 10}}, {7, 4, 4});
         ExpressionCandidate fmaCandidate(fmaAtPoint, fmaCheckpointProblem);
         fmaCandidate.calculateFitness();
@@ -385,6 +390,81 @@ int main() {
         }
         check(mismatchedFmaRejected,
               "mismatched custom operator arity rejects expression checkpoint restore");
+
+        // This payload is written field-by-field using the scalar candidate
+        // codec layout that existed before CustomTernary was added to the ID
+        // table. In particular, CustomUnary keeps its original kind code.
+        const auto legacyUnary = CustomScalarOperator{
+            "custom_ternary",
+            1,
+            [](std::span<const double> a) -> std::optional<double> { return a[0] + 1; },
+            {}};
+        legacyUnary.validate();
+        const auto legacyProblem = RegressionProblem::create({{{0}, 3}}, {7, 4, 4});
+        const auto legacyLimits = legacyProblem->limits();
+        CheckpointWriter legacyWriter;
+        legacyWriter.integer(legacyProblem->dimensions());
+        legacyWriter.integer(legacyLimits.maxNodes);
+        legacyWriter.integer(legacyLimits.maxDepth);
+        legacyWriter.real(legacyLimits.maxAbsConstant);
+        legacyWriter.integer(legacyLimits.maxArithmeticOperations);
+        legacyWriter.integer(2);
+        legacyWriter.integer(static_cast<std::uint64_t>(ExpressionKind::Constant));
+        legacyWriter.real(2.0);
+        legacyWriter.integer(static_cast<std::uint64_t>(ExpressionKind::CustomUnary));
+        legacyWriter.text(legacyUnary.id);
+        legacyWriter.integer(1);
+        legacyWriter.real(0.0);
+        legacyWriter.integer(std::bit_cast<std::uint32_t>(0.0f));
+        legacyWriter.integer(std::bit_cast<std::uint32_t>(0.0f));
+        legacyWriter.integer(std::bit_cast<std::uint32_t>(100.0f));
+        legacyWriter.integer(0);
+        legacyWriter.integer(static_cast<unsigned>(PreparationOrigin::Initialization));
+        CheckpointReader legacyReader(legacyWriter.data());
+        ScalarCheckpointContext legacyContext{legacyProblem, {}, {legacyUnary}};
+        const auto legacyRestored =
+            CandidateCheckpointCodec<ExpressionCandidate>::decode(legacyReader, legacyContext);
+        legacyReader.finish();
+        check(legacyRestored.expression().nodes().back().customOperator().id == "custom_ternary" &&
+                  legacyRestored.expression().nodes().back().customOperator().arity == 1 &&
+                  legacyRestored.fitness() == 0.0,
+              "old-contract unary custom_ternary checkpoint restores");
+        const auto legacyBinary = CustomScalarOperator{
+            "custom_ternary",
+            2,
+            [](std::span<const double> a) -> std::optional<double> { return a[0] + a[1]; },
+            {}};
+        legacyBinary.validate();
+        CheckpointWriter legacyBinaryWriter;
+        legacyBinaryWriter.integer(legacyProblem->dimensions());
+        legacyBinaryWriter.integer(legacyLimits.maxNodes);
+        legacyBinaryWriter.integer(legacyLimits.maxDepth);
+        legacyBinaryWriter.real(legacyLimits.maxAbsConstant);
+        legacyBinaryWriter.integer(legacyLimits.maxArithmeticOperations);
+        legacyBinaryWriter.integer(3);
+        legacyBinaryWriter.integer(static_cast<std::uint64_t>(ExpressionKind::Constant));
+        legacyBinaryWriter.real(1.0);
+        legacyBinaryWriter.integer(static_cast<std::uint64_t>(ExpressionKind::Constant));
+        legacyBinaryWriter.real(2.0);
+        legacyBinaryWriter.integer(static_cast<std::uint64_t>(ExpressionKind::CustomBinary));
+        legacyBinaryWriter.text(legacyBinary.id);
+        legacyBinaryWriter.integer(1);
+        legacyBinaryWriter.real(0.0);
+        legacyBinaryWriter.integer(std::bit_cast<std::uint32_t>(0.0f));
+        legacyBinaryWriter.integer(std::bit_cast<std::uint32_t>(0.0f));
+        legacyBinaryWriter.integer(std::bit_cast<std::uint32_t>(100.0f));
+        legacyBinaryWriter.integer(0);
+        legacyBinaryWriter.integer(static_cast<unsigned>(PreparationOrigin::Initialization));
+        CheckpointReader legacyBinaryReader(legacyBinaryWriter.data());
+        ScalarCheckpointContext legacyBinaryContext{legacyProblem, {}, {legacyBinary}};
+        const auto legacyBinaryRestored = CandidateCheckpointCodec<ExpressionCandidate>::decode(
+            legacyBinaryReader, legacyBinaryContext);
+        legacyBinaryReader.finish();
+        check(legacyBinaryRestored.expression().nodes().back().customOperator().id ==
+                      "custom_ternary" &&
+                  legacyBinaryRestored.expression().nodes().back().customOperator().arity == 2 &&
+                  legacyBinaryRestored.fitness() == 0.0,
+              "old-contract binary custom_ternary checkpoint restores");
         auto unaryProblem =
             RegressionProblem::create({{{0}, std::log(2.)}, {{1}, 1.3132616875182228}}, {7, 4, 4});
         auto unaryCfg = cfg;

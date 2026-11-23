@@ -314,9 +314,65 @@ public:
                                 : derivativeUnary(kind, right, *value,expressionPowerMetadata(kind)?node.exponent():0);
                         }
                     } else if(expressionArity(kind)==3){
-                        stack.pop_back();const Slot low=stack.back();stack.pop_back();const Slot x=stack.back();output.active=x.active||low.active||right.active;
-                        value=scalarTernary(kind,x.value,low.value,right.value,primalCharge);
-                        if(value&&output.active&&!result_.failure_){if(kind!=ExpressionKind::Clamp)fail(DerivativeFailure::UnsupportedRule);else if(x.value==low.value||x.value==right.value||low.value==right.value)fail(DerivativeFailure::NonDifferentiable);else output.derivative=x.value<low.value?low.derivative:x.value>right.value?right.derivative:x.derivative;}
+                        stack.pop_back();
+                        const Slot high = right;
+                        const Slot low = stack.back();
+                        stack.pop_back();
+                        const Slot x = stack.back();
+                        output.active = x.active || low.active || high.active;
+                        if (kind == ExpressionKind::CustomTernary) {
+                            const double args[]{x.value, low.value, high.value};
+                            primalCharge();
+                            value = expression.nodes_[i].customOperator().evaluate(args);
+                            if (value && !std::isfinite(*value))
+                                value.reset();
+                            if (value && output.active && !result_.failure_) {
+                                const auto& op = expression.nodes_[i].customOperator();
+                                if (!op.partials)
+                                    fail(DerivativeFailure::UnsupportedRule);
+                                else {
+                                    charge(result_.work_.derivativeMathCalls);
+                                    auto p = op.partials(args);
+                                    if (!p || p->size() != 3)
+                                        fail(DerivativeFailure::UnsupportedRule);
+                                    else if (!std::isfinite((*p)[0]) || !std::isfinite((*p)[1]) ||
+                                             !std::isfinite((*p)[2]))
+                                        fail(DerivativeFailure::NonfiniteArithmetic);
+                                    else {
+                                        bool assigned = false;
+                                        const auto accumulate = [&](double partial,
+                                                                    const Slot& child) {
+                                            if (!child.active || result_.failure_)
+                                                return;
+                                            const double term = binary(ExpressionKind::Multiply,
+                                                                       partial, child.derivative);
+                                            output.derivative =
+                                                assigned ? binary(ExpressionKind::Add,
+                                                                  output.derivative, term)
+                                                         : term;
+                                            assigned = true;
+                                        };
+                                        accumulate((*p)[0], x);
+                                        accumulate((*p)[1], low);
+                                        accumulate((*p)[2], high);
+                                    }
+                                }
+                            }
+                        } else {
+                            value =
+                                scalarTernary(kind, x.value, low.value, high.value, primalCharge);
+                            if (value && output.active && !result_.failure_) {
+                                if (kind != ExpressionKind::Clamp)
+                                    fail(DerivativeFailure::UnsupportedRule);
+                                else if (x.value == low.value || x.value == high.value ||
+                                         low.value == high.value)
+                                    fail(DerivativeFailure::NonDifferentiable);
+                                else
+                                    output.derivative = x.value < low.value    ? low.derivative
+                                                        : x.value > high.value ? high.derivative
+                                                                               : x.derivative;
+                            }
+                        }
                     } else {
                         stack.pop_back(); const Slot left = stack.back();
                         output.active = left.active || right.active;

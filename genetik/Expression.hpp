@@ -204,6 +204,8 @@ public:
         return {ExpressionKind::NegativePowi, static_cast<unsigned>(-exponent), 0};
     }
     static ExpressionNode ternary(ExpressionKind kind) {
+        if (isCustomScalarOperator(kind))
+            throw std::invalid_argument("custom operator descriptor required");
         if (expressionArity(kind) != 3)
             throw std::invalid_argument("ternary operation required");
         return {kind, 0, 0};
@@ -211,8 +213,7 @@ public:
     static ExpressionNode custom(CustomScalarOperator operation) {
         operation.validate();
         auto value = std::make_shared<const CustomScalarOperator>(std::move(operation));
-        return {value->arity == 1 ? ExpressionKind::CustomUnary : ExpressionKind::CustomBinary, 0,
-                0, std::move(value)};
+        return {customScalarOperatorKind(value->arity), 0, 0, std::move(value)};
     }
     const CustomScalarOperator& customOperator() const {
         if (!custom_)
@@ -291,9 +292,7 @@ public:
         for(std::size_t i=0;i<nodes_.size();++i) {
             const auto& a=nodes_[i];const auto& b=other.nodes_[i];
             if(a.kind()!=b.kind())return false;
-            if ((a.kind() == ExpressionKind::CustomUnary ||
-                 a.kind() == ExpressionKind::CustomBinary) &&
-                a.customOperator().id != b.customOperator().id)
+            if (isCustomScalarOperator(a.kind()) && a.customOperator().id != b.customOperator().id)
                 return false;
             if(expressionPowerMetadata(a.kind()) && a.exponent()!=b.exponent())return false;
             if(a.kind()==ExpressionKind::Variable && a.variableIndex()!=b.variableIndex())return false;
@@ -417,7 +416,20 @@ private:
                 stack.back() = *value;
             } else if(expressionArity(node.kind())==3){
                 const double high=stack.back();stack.pop_back();const double low=stack.back();stack.pop_back();const double x=stack.back();
-                const auto value=genetik_detail::scalarTernary(node.kind(),x,low,high,[&executed]{++executed;});if(!value)return ExpressionResult(i,executed);stack.back()=*value;
+                std::optional<double> value;
+                if (node.kind() == ExpressionKind::CustomTernary) {
+                    const double args[]{x, low, high};
+                    ++executed;
+                    value = node.customOperator().evaluate(args);
+                    if (value && !std::isfinite(*value))
+                        value.reset();
+                } else {
+                    value = genetik_detail::scalarTernary(node.kind(), x, low, high,
+                                                          [&executed] { ++executed; });
+                }
+                if (!value)
+                    return ExpressionResult(i, executed);
+                stack.back() = *value;
             } else {
                 const double right = stack.back(); stack.pop_back();
                 const double left = stack.back();
@@ -459,8 +471,7 @@ public:
             } else if(node.kind()>=ExpressionKind::NegativePowi){
                 const auto arity=expressionArity(node.kind());
                 if (frame.phase == 0) {
-                    if (node.kind() == ExpressionKind::CustomUnary ||
-                        node.kind() == ExpressionKind::CustomBinary) {
+                    if (isCustomScalarOperator(node.kind())) {
                         // Keep custom calls in a reserved, quoted namespace. IDs may
                         // contain token characters such as '-' and '/', which the
                         // built-in parser otherwise interprets as arithmetic.

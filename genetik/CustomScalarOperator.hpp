@@ -17,16 +17,20 @@ struct CustomScalarOperator {
     std::function<std::optional<double>(std::span<const double>)> evaluate;
     std::function<std::optional<std::vector<double>>(std::span<const double>)> partials;
     void validate() const {
-        if (id.empty() || (arity != 1 && arity != 2) || !evaluate)
+        if (id.empty() || arity < 1 || arity > 3 || !evaluate)
             throw std::invalid_argument(
-                "custom scalar operator needs a stable ID, unary/binary arity, and evaluator");
+                "custom scalar operator needs a stable ID, arity 1..3, and evaluator");
         for (unsigned char c : id)
             if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
                   c == '_' || c == '.' || c == ':' || c == '/' || c == '-'))
                 throw std::invalid_argument(
                     "custom scalar operator ID contains non-token characters");
         for (const auto& builtin : scalarOperators)
-            if (builtin.arity && id == builtin.name)
+            // Custom-kind names are codec/implementation tokens, not public
+            // operators. custom_unary and custom_binary were historically
+            // reserved; custom_ternary was not present in that contract.
+            if (builtin.arity && builtin.kind != ExpressionKind::CustomTernary &&
+                id == builtin.name)
                 throw std::invalid_argument(
                     "custom scalar operator ID conflicts with built-in operator: " + id);
         if (id == "ln" || id == "npowi")

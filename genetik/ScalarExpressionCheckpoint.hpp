@@ -21,8 +21,7 @@ template<> struct CandidateCheckpointCodec<ExpressionCandidate> {
             if(n.kind()==ExpressionKind::Constant)w.real(n.constantValue());
             else if(n.kind()==ExpressionKind::Variable)w.integer(n.variableIndex());
             else if(expressionPowerMetadata(n.kind()))w.integer(n.exponent());
-            else if (n.kind() == ExpressionKind::CustomUnary ||
-                     n.kind() == ExpressionKind::CustomBinary)
+            else if (isCustomScalarOperator(n.kind()))
                 w.text(n.customOperator().id);
         }
         w.integer(c.fitnessState()==FitnessState::Valid?1:c.fitnessState()==FitnessState::Invalid?2:0);
@@ -49,7 +48,7 @@ template<> struct CandidateCheckpointCodec<ExpressionCandidate> {
                 nodes.push_back(k == ExpressionKind::Powi
                                     ? ExpressionNode::power(power)
                                     : ExpressionNode::signedPower(-static_cast<int>(power)));
-            } else if (k == ExpressionKind::CustomUnary || k == ExpressionKind::CustomBinary) {
+            } else if (isCustomScalarOperator(k)) {
                 const auto id = r.text();
                 auto it = std::find_if(
                     context.customOperators.begin(), context.customOperators.end(),

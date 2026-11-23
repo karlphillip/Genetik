@@ -205,6 +205,19 @@ evaluateSecondPartial(const Expression &e, std::span<const double> x,
         stack.pop_back();
         auto left = stack.back();
         stack.pop_back();
+        if (k == K::CustomTernary) {
+            b.charge();
+            const double args[]{left.v, middle.v, c.v};
+            auto value = n.customOperator().evaluate(args);
+            if (!value || !std::isfinite(*value))
+                throw genetik_science::Stop{ScientificStatus::Invalid,
+                                            "invalid custom ternary primal"};
+            if (left.active || middle.active || c.active)
+                throw genetik_science::Stop{ScientificStatus::Unavailable,
+                                            "custom ternary second partial rule unavailable"};
+            stack.push_back({*value, 0, 0, 0, false});
+            continue;
+        }
         if (left.active || middle.active || c.active)
           throw genetik_science::Stop{
               ScientificStatus::Unavailable,

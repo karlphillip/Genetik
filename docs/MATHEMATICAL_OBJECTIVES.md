@@ -37,12 +37,17 @@ remains valid. Maximum absolute error and attempted-row reporting remain
 available. No observation is silently omitted.
 
 MSE is unchanged by default. Coordinate fitting compares the selected objective
-and therefore optimizes it. The existing least-squares Levenberg–Marquardt
-constant fitter is accepted only with unweighted MSE; MAE, Huber, and weighted
-MSE are rejected before fitting. There is no silently substituted least-squares
-surrogate. Other loss formulations extend the objective configuration and its
-single checked measurement path; they must define normalization, validation,
-parallel behavior, and compatible fitters before being added.
+and therefore optimizes it. The scalar least-squares Levenberg–Marquardt
+constant fitter supports MSE and weighted MSE. For weighted MSE it scales each
+residual and Jacobian row by `sqrt(w_i)/sqrt(sum(w))`, avoiding premature
+underflow in `w_i/sum(w)`. Zero-weight rows are still evaluated and must have a
+valid prediction, then contribute zero residual and Jacobian rows. The returned
+fit loss is the checked public scorer's value for the accepted parameters. MAE
+and Huber remain unsupported by this least-squares fitter; no surrogate is
+silently substituted. Other loss formulations extend the objective
+configuration and its single checked measurement path; they must define
+normalization, validation, parallel behavior, and compatible fitters before
+being added.
 
 Inputs, targets, deltas, weights, residuals, loss terms, and accumulated scores
 are checked for finiteness. Mathematical invalidity returns invalid fitness.

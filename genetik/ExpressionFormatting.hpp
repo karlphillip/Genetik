@@ -39,7 +39,7 @@ inline std::string formatExpression(const Expression& e,ExpressionTextFormat for
             if(k>=ExpressionKind::NegativePowi){
                 precedence=4;std::vector<Item> args;args.push_back(std::move(right));
                 for(std::size_t j=1;j<expressionArity(k);++j){auto item=std::move(stack.back());stack.pop_back();payload-=item.text.size();args.push_back(std::move(item));}std::reverse(args.begin(),args.end());
-                if (k == ExpressionKind::CustomUnary || k == ExpressionKind::CustomBinary) {
+                if (isCustomScalarOperator(k)) {
                     text = tex ? latexOperatorName(n.customOperator().id) : n.customOperator().id;
                     text += tex ? "\\left(" : "(";
                     for (std::size_t j = 0; j < args.size(); ++j) {

@@ -31,6 +31,15 @@ static CustomScalarOperator logaddexp() {
                               : std::vector<double>{small / denominator, 1 / denominator};
             }};
 }
+static CustomScalarOperator fusedMultiplyAdd() {
+    return {"example.fma/1", 3,
+            [](std::span<const double> x) -> std::optional<double> {
+                return std::fma(x[0], x[1], x[2]);
+            },
+            [](std::span<const double> x) -> std::optional<std::vector<double>> {
+                return std::vector<double>{x[1], x[0], 1.0};
+            }};
+}
 int main() {
     try {
         ExpressionGrammar defaults;
@@ -40,6 +49,43 @@ int main() {
                                                                     ExpressionKind::Multiply},
               "custom operators are opt-in and default grammar is unchanged");
         const auto op = logaddexp();
+        const auto fma = fusedMultiplyAdd();
+        const double epsilon = std::ldexp(1.0, -27);
+        const Expression roundedProductThenAdd(
+            std::array{ExpressionNode::variable(0), ExpressionNode::variable(1),
+                       ExpressionNode::binary(ExpressionKind::Multiply),
+                       ExpressionNode::constant(-1.0), ExpressionNode::binary(ExpressionKind::Add)},
+            2);
+        const Expression fused(std::array{ExpressionNode::variable(0), ExpressionNode::variable(1),
+                                          ExpressionNode::constant(-1.0),
+                                          ExpressionNode::custom(fma)},
+                               2);
+        const auto rounded =
+            roundedProductThenAdd.evaluate(std::array{1.0 + epsilon, 1.0 - epsilon});
+        const auto fusedValue = fused.evaluate(std::array{1.0 + epsilon, 1.0 - epsilon});
+        check(rounded.valid() && rounded.value() == 0.0 && fusedValue.valid() &&
+                  fusedValue.value() == -std::ldexp(1.0, -54) &&
+                  roundedProductThenAdd.nodeCount() == 5 && fused.nodeCount() == 4,
+              "FMA retains the exact product residual in a smaller expression");
+        std::cout << std::setprecision(17) << "fma before=" << rounded.value()
+                  << " (5 nodes), after=" << fusedValue.value() << " (4 nodes)\n";
+        const auto fmaAtPoint =
+            Expression(std::array{ExpressionNode::variable(0), ExpressionNode::variable(1),
+                                  ExpressionNode::variable(2), ExpressionNode::custom(fma)},
+                       3);
+        const std::array<double, 3> fmaBindings{2.0, 3.0, 4.0};
+        check(fmaAtPoint.evaluate(fmaBindings).valid() &&
+                  fmaAtPoint.evaluate(fmaBindings).value() == 10.0,
+              "ternary custom operator evaluates three ordered arguments");
+        for (std::size_t input = 0; input < 3; ++input) {
+            const auto partial = evaluatePartial(fmaAtPoint, fmaBindings, input);
+            const std::array<double, 3> expected{3.0, 2.0, 1.0};
+            check(partial.derivativeAvailable() && partial.derivative() == expected[input],
+                  "custom ternary analytic partial order");
+        }
+        const auto fmaPretty = formatExpression(fmaAtPoint, ExpressionTextFormat::Canonical);
+        check(fmaPretty.find("custom(\"example.fma/1\"") == 0,
+              "custom ternary canonical export carries its stable identity");
         const auto x = Expression::variable(0, 2), y = Expression::variable(1, 2);
         const auto expX = Expression::unary(ExpressionKind::Exp, x),
                    expY = Expression::unary(ExpressionKind::Exp, y);
@@ -240,6 +286,44 @@ int main() {
         check(fit.expression.nodeCount() == 3 && fit.improved &&
                   fit.loss.score() < fit.startingLoss.score(),
               "existing LM fits a custom operator constant");
+        const auto fmaFitProblem =
+            RegressionProblem::create({{{2, 3}, 8}, {{1, 4}, 6}, {{0, 2}, 2}}, {7, 4, 4});
+        const Expression fmaFitExpression(
+            std::array{ExpressionNode::variable(0), ExpressionNode::variable(1),
+                       ExpressionNode::constant(0), ExpressionNode::custom(fma)},
+            2);
+        auto fmaFitObjective = std::make_shared<TrainingObjective>(fmaFitProblem, 1000);
+        auto fmaFitConfig = fitCfg;
+        fmaFitConfig.lower = -4;
+        fmaFitConfig.upper = 4;
+        const auto fmaFit = fitConstants(fmaFitExpression, *fmaFitObjective, fmaFitConfig);
+        check(fmaFit.improved &&
+                  std::abs(fmaFit.expression.nodes()[2].constantValue() - 2.0) < 1e-12 &&
+                  fmaFit.loss.score() < 1e-24,
+              "LM fits a coefficient in the third custom FMA argument");
+        SymbolicRegressionConfig fmaRefinementConfig;
+        fmaRefinementConfig.population = 4;
+        fmaRefinementConfig.maxEvaluations = 4;
+        fmaRefinementConfig.maxGenerationAttempts = 0;
+        fmaRefinementConfig.grammar.operators.clear();
+        fmaRefinementConfig.grammar.customOperators = {fma};
+        fmaRefinementConfig.initialExpressionSlots = 1;
+        fmaRefinementConfig.maximumInitializerWorkUnits = 1;
+        fmaRefinementConfig.fitting = fmaFitConfig;
+        RandomContext fmaRefinementRandom(227);
+        const auto fmaRefinement = symbolicRegression(
+            fmaFitProblem, fmaRefinementConfig, fmaRefinementRandom, {},
+            [fmaFitExpression](const RegressionProblem&, std::size_t, std::uint64_t) {
+                return InitialExpressionBatch{{fmaFitExpression}, 1, "success", {}};
+            });
+        bool refinedFmaScored = false;
+        for (std::size_t i = 0; i < fmaRefinement.preparedInitialExpressions.size(); ++i)
+            refinedFmaScored |=
+                fmaRefinement.preparedInitialExpressions[i].find(fma.id) != std::string::npos &&
+                fmaRefinement.preparedInitialFitness[i].state() == FitnessState::Valid &&
+                fmaRefinement.preparedInitialFitness[i].score() < 1e-24;
+        check(refinedFmaScored && fmaRefinement.preparationWork.completedImproved > 0,
+              "ordinary symbolic-regression refinement fits a ternary custom operator");
         auto rows = std::vector<RegressionRow>{{{0, 0}, std::log(2.)},
                                                {{1, 0}, 1 + std::log1p(std::exp(-1.))},
                                                {{0, 1}, 1 + std::log1p(std::exp(-1.))}};
@@ -260,6 +344,47 @@ int main() {
             if (text.find(op.id) != std::string::npos)
                 seen = true;
         check(seen, "search generated and scored a custom operator");
+        const auto fmaSearchRows = std::vector<RegressionRow>{{{2, 3, 4}, 10}};
+        auto fmaSearchProblem = RegressionProblem::create(fmaSearchRows, {7, 4, 4});
+        auto fmaSearchConfig = cfg;
+        fmaSearchConfig.population = 128;
+        fmaSearchConfig.maxEvaluations = 128;
+        fmaSearchConfig.grammar.constants.clear();
+        fmaSearchConfig.grammar.initialMaxDepth = 2;
+        fmaSearchConfig.grammar.customOperators = {fma};
+        RandomContext fmaSearchRandom(113);
+        const auto fmaSearch =
+            symbolicRegression(fmaSearchProblem, fmaSearchConfig, fmaSearchRandom);
+        bool fmaScored = false;
+        for (const auto& candidate : fmaSearch.rawInitialExpressions)
+            fmaScored |= candidate.find(fma.id) != std::string::npos;
+        check(fmaScored && fmaSearch.best.has_value(),
+              "deterministic symbolic search generates and scores custom ternary nodes");
+        const auto fmaCheckpointProblem = RegressionProblem::create({{{2, 3, 4}, 10}}, {7, 4, 4});
+        ExpressionCandidate fmaCandidate(fmaAtPoint, fmaCheckpointProblem);
+        fmaCandidate.calculateFitness();
+        CheckpointWriter fmaWriter;
+        CandidateCheckpointCodec<ExpressionCandidate>::encode(fmaWriter, fmaCandidate);
+        CheckpointReader fmaReader(fmaWriter.data());
+        ScalarCheckpointContext fmaContext{fmaCheckpointProblem, {}, {fma}};
+        const auto fmaRestored =
+            CandidateCheckpointCodec<ExpressionCandidate>::decode(fmaReader, fmaContext);
+        fmaReader.finish();
+        check(fmaRestored.expression().sameRepresentation(fmaAtPoint),
+              "matching ternary registration restores the expression checkpoint");
+        auto mismatchedFma = fma;
+        mismatchedFma.arity = 2;
+        bool mismatchedFmaRejected = false;
+        try {
+            CheckpointReader mismatchedReader(fmaWriter.data());
+            ScalarCheckpointContext mismatchedContext{fmaCheckpointProblem, {}, {mismatchedFma}};
+            (void)CandidateCheckpointCodec<ExpressionCandidate>::decode(mismatchedReader,
+                                                                        mismatchedContext);
+        } catch (const CheckpointError&) {
+            mismatchedFmaRejected = true;
+        }
+        check(mismatchedFmaRejected,
+              "mismatched custom operator arity rejects expression checkpoint restore");
         auto unaryProblem =
             RegressionProblem::create({{{0}, std::log(2.)}, {{1}, 1.3132616875182228}}, {7, 4, 4});
         auto unaryCfg = cfg;

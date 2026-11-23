@@ -54,7 +54,8 @@ enum class ExpressionKind {
     Sinc,
     Hypot,
     CustomUnary,
-    CustomBinary
+    CustomBinary,
+    CustomTernary
 };
 struct ScalarOperatorDescription {
     ExpressionKind kind;
@@ -109,7 +110,21 @@ inline constexpr std::array scalarOperators{
     ScalarOperatorDescription{ExpressionKind::Sinc, "sinc", 1},
     ScalarOperatorDescription{ExpressionKind::Hypot, "hypot", 2},
     ScalarOperatorDescription{ExpressionKind::CustomUnary, "custom_unary", 1},
-    ScalarOperatorDescription{ExpressionKind::CustomBinary, "custom_binary", 2}};
+    ScalarOperatorDescription{ExpressionKind::CustomBinary, "custom_binary", 2},
+    ScalarOperatorDescription{ExpressionKind::CustomTernary, "custom_ternary", 3}};
+inline bool isCustomScalarOperator(ExpressionKind kind) noexcept {
+    return kind == ExpressionKind::CustomUnary || kind == ExpressionKind::CustomBinary ||
+           kind == ExpressionKind::CustomTernary;
+}
+inline ExpressionKind customScalarOperatorKind(std::size_t arity) {
+    if (arity == 1)
+        return ExpressionKind::CustomUnary;
+    if (arity == 2)
+        return ExpressionKind::CustomBinary;
+    if (arity == 3)
+        return ExpressionKind::CustomTernary;
+    throw std::invalid_argument("custom scalar operator arity must be 1, 2, or 3");
+}
 inline const ScalarOperatorDescription &scalarOperatorDescription(ExpressionKind kind) {
     const auto i = static_cast<std::size_t>(kind);
     if (i >= scalarOperators.size() || scalarOperators[i].kind != kind)
@@ -119,8 +134,7 @@ inline const ScalarOperatorDescription &scalarOperatorDescription(ExpressionKind
 inline std::size_t expressionArity(ExpressionKind kind) { return scalarOperatorDescription(kind).arity; }
 inline std::optional<ExpressionKind> scalarOperatorFromName(std::string_view name) {
     for (auto d : scalarOperators)
-        if (d.arity && d.kind != ExpressionKind::CustomUnary &&
-            d.kind != ExpressionKind::CustomBinary && d.name == name)
+        if (d.arity && !isCustomScalarOperator(d.kind) && d.name == name)
             return d.kind;
     return {};
 }

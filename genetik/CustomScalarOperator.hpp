@@ -17,9 +17,9 @@ struct CustomScalarOperator {
     std::function<std::optional<double>(std::span<const double>)> evaluate;
     std::function<std::optional<std::vector<double>>(std::span<const double>)> partials;
     void validate() const {
-        if (id.empty() || (arity != 1 && arity != 2) || !evaluate)
+        if (id.empty() || arity < 1 || arity > 3 || !evaluate)
             throw std::invalid_argument(
-                "custom scalar operator needs a stable ID, unary/binary arity, and evaluator");
+                "custom scalar operator needs a stable ID, arity 1..3, and evaluator");
         for (unsigned char c : id)
             if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
                   c == '_' || c == '.' || c == ':' || c == '/' || c == '-'))

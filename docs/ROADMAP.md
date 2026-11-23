@@ -497,6 +497,8 @@ through sound specification constraints, with matched controls and explicit cost
 accounting. See `BOUNDED_CONDITIONAL_GRAMMAR_SYNTHESIS.md`.
 # Regression priority
 
-The next regression capability after opt-in user-defined scalar operators is
-complex-coefficient fitting. Treat it as a separate milestone; do not infer
-complex support from the existing real-valued LM and derivative paths.
+Opt-in user-defined scalar operators now support unary, binary, and ternary
+primitives, including analytic first partials in coefficient fitting. The next
+regression capability is complex-coefficient fitting. Treat it as a separate
+milestone; do not infer complex support from the existing real-valued LM and
+derivative paths.

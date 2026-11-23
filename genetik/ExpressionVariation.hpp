@@ -98,8 +98,7 @@ inline void validateExpressionGrammar(std::size_t dimensions,ExpressionLimits li
         if(grammar.realExponents.size()>256||(grammar.powerExponentsAreConstants&&std::find(grammar.operators.begin(),grammar.operators.end(),ExpressionKind::Pow)!=grammar.operators.end()&&grammar.realExponents.empty()))throw std::invalid_argument("constant real-power exponent source");
         if(std::find(grammar.operators.begin(),grammar.operators.end(),ExpressionKind::Pow)!=grammar.operators.end())for(auto e:grammar.realExponents)if(!std::isfinite(e)||std::abs(e)>limits.maxAbsConstant)throw std::invalid_argument("real-power exponent bound");
         for (auto kind : grammar.operators)
-            if (expressionArity(kind) == 0 || kind == ExpressionKind::CustomUnary ||
-                kind == ExpressionKind::CustomBinary)
+            if (expressionArity(kind) == 0 || isCustomScalarOperator(kind))
                 throw std::invalid_argument("grammar operators must be built-ins; register custom "
                                             "operators with customOperators");
         for (std::size_t i = 0; i < grammar.customOperators.size(); ++i) {
@@ -159,8 +158,7 @@ inline Expression generateExpression(std::mt19937& rng, std::size_t maximumDepth
             std::vector<ExpressionKind> feasible;
             if (task.depth > 1)
                 for (const auto& custom : grammar.customOperators) {
-                    const auto kind = custom.arity == 1 ? ExpressionKind::CustomUnary
-                                                        : ExpressionKind::CustomBinary;
+                    const auto kind = customScalarOperatorKind(custom.arity);
                     if (task.budget > custom.arity && task.work > 0 &&
                         std::find(feasible.begin(), feasible.end(), kind) == feasible.end())
                         feasible.push_back(kind);
@@ -172,7 +170,7 @@ inline Expression generateExpression(std::mt19937& rng, std::size_t maximumDepth
             if (operation) {
                 const auto kind = feasible[index(feasible.size(), rng)];
                 std::shared_ptr<const CustomScalarOperator> custom;
-                if (kind == ExpressionKind::CustomUnary || kind == ExpressionKind::CustomBinary) {
+                if (isCustomScalarOperator(kind)) {
                     std::vector<const CustomScalarOperator*> choices;
                     for (const auto& op : grammar.customOperators)
                         if (op.arity == expressionArity(kind))
@@ -282,7 +280,7 @@ public:
         const auto nodes = expression.nodes();
         for (std::size_t i = 0; i < nodes.size(); ++i) {
             const auto kind = nodes[i].kind();
-            if (kind == ExpressionKind::CustomUnary || kind == ExpressionKind::CustomBinary) {
+            if (isCustomScalarOperator(kind)) {
                 const auto& id = nodes[i].customOperator().id;
                 auto it = std::find_if(grammar_.customOperators.begin(),
                                        grammar_.customOperators.end(), [&](const auto& op) {

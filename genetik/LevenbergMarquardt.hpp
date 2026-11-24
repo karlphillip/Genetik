@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <type_traits>
 #include <vector>
 
@@ -437,7 +438,8 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
 struct LMExpressionObservation { std::vector<double> inputs; double target=0; };
 inline LMResidualFunction expressionLeastSquares(Expression expression,
     std::vector<LMExpressionObservation> rows,std::vector<std::size_t> parameterBindings,
-    std::size_t maxWork=10000000, std::vector<double> observationWeights = {}) {
+    std::size_t maxWork=10000000, std::vector<double> observationWeights = {},
+    std::optional<double> huberDelta = {}) {
     if(rows.empty()||parameterBindings.empty())throw std::invalid_argument("LM expression observations and parameters required");
     for(const auto& row:rows)if(row.inputs.size()!=expression.variableCount()||!std::isfinite(row.target))throw std::invalid_argument("LM expression row schema");
     for(std::size_t i=0;i<parameterBindings.size();++i)if(parameterBindings[i]>=expression.variableCount()||(i&&parameterBindings[i]<=parameterBindings[i-1]))throw std::invalid_argument("LM parameter binding schema");
@@ -447,7 +449,22 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
         for(double weight:observationWeights){if(!std::isfinite(weight)||weight<0)throw std::invalid_argument("LM observation weights must be finite and nonnegative");volatile double next=total+weight;if(!std::isfinite(next))throw std::invalid_argument("LM observation weight sum overflow");total=next;}
         if(!(total>0))throw std::invalid_argument("LM observation weights require positive total");
     }
-    return [expression=std::move(expression),rows=std::move(rows),parameterBindings=std::move(parameterBindings),maxWork,observationWeights=std::move(observationWeights)](std::span<const double> theta,bool jac,std::size_t allowance){LMResidualEvaluation out;const auto p=parameterBindings.size();if(rows.size()>std::numeric_limits<std::size_t>::max()/p||rows.size()*p>maxWork)return out;if(rows.size()>std::numeric_limits<std::size_t>::max()/(p+1)/sizeof(double))return out;out.workspaceBytes=rows.size()*(p+1)*sizeof(double)+expression.variableCount()*sizeof(double);const auto outputWorkspace=out.workspaceBytes;const auto workLimit=std::min(maxWork,allowance);out.residuals.reserve(rows.size());if(jac)out.jacobian.reserve(rows.size()*p);std::vector<double> bindings(expression.variableCount());double totalWeight=0;if(!observationWeights.empty())for(double weight:observationWeights)totalWeight+=weight;
+    if (huberDelta && (!std::isfinite(*huberDelta) || *huberDelta <= 0.0 ||
+                       !observationWeights.empty()))
+        throw std::invalid_argument("LM Huber delta must be finite and positive, without weights");
+    return [expression=std::move(expression),rows=std::move(rows),parameterBindings=std::move(parameterBindings),maxWork,observationWeights=std::move(observationWeights),huberDelta](std::span<const double> theta,bool jac,std::size_t allowance){LMResidualEvaluation out;const auto p=parameterBindings.size();if(rows.size()>std::numeric_limits<std::size_t>::max()/p||rows.size()*p>maxWork)return out;if(rows.size()>std::numeric_limits<std::size_t>::max()/(p+1)/sizeof(double))return out;out.workspaceBytes=rows.size()*(p+1)*sizeof(double)+expression.variableCount()*sizeof(double);const auto outputWorkspace=out.workspaceBytes;const auto workLimit=std::min(maxWork,allowance);out.residuals.reserve(rows.size());if(jac)out.jacobian.reserve(rows.size()*p);std::vector<double> bindings(expression.variableCount());double totalWeight=0;if(!observationWeights.empty())for(double weight:observationWeights)totalWeight+=weight;
+        auto transformHuber = [&](double residual, double& derivative) {
+            derivative = 1.0;
+            if (!huberDelta) return residual;
+            const double magnitude = std::abs(residual);
+            if (magnitude <= *huberDelta) return residual;
+            // q^2/2 equals rho_delta(r). The algebra avoids forming r^2 in
+            // the linear tail and keeps q and dq/dr consistent with scoring.
+            const double qMagnitude = std::sqrt(*huberDelta) * std::sqrt(magnitude) *
+                                      std::sqrt(2.0 - *huberDelta / magnitude);
+            derivative = *huberDelta / qMagnitude;
+            return std::copysign(qMagnitude, residual);
+        };
         for(const auto& row:rows){std::copy(row.inputs.begin(),row.inputs.end(),bindings.begin());if(theta.size()!=p)return out;for(std::size_t j=0;j<p;++j)bindings[parameterBindings[j]]=theta[j];
             const auto rowIndex=out.rowsProcessed;
             const double weight=observationWeights.empty()?1.0:observationWeights[rowIndex];
@@ -463,7 +480,7 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
                 if(jac)for(std::size_t j=0;j<p;++j)out.jacobian.push_back(0.0);
                 ++out.rowsProcessed;if(out.mathematicalOperations>workLimit)return out;continue;
             }
-            if(jac){DerivativeLimits dl;dl.maxOperations=workLimit-out.mathematicalOperations;auto d=evaluateParameterJacobian(expression,bindings,parameterBindings,dl);out.forwardEvaluations+=d.work.forwardEvaluations;out.derivativeEvaluations+=d.work.forwardEvaluations;out.mathematicalOperations+=d.work.primalOperations+d.work.derivativeOperations+d.work.derivativeMathCalls;out.workspaceBytes=std::max(out.workspaceBytes,outputWorkspace+d.work.workspaceBytes);if(d.status!=ParameterJacobianStatus::Success)return out;const double residual=d.value-row.target;out.residuals.push_back(observationWeights.empty()?residual:residual*scale);for(double derivative:d.derivatives)out.jacobian.push_back(observationWeights.empty()?derivative:derivative*scale);}
-            else {if(expression.arithmeticCost()>workLimit-out.mathematicalOperations)return out;auto v=expression.evaluate(bindings);++out.forwardEvaluations;out.mathematicalOperations+=v.arithmeticOperations();if(!v.valid())return out;const double residual=v.value()-row.target;out.residuals.push_back(observationWeights.empty()?residual:residual*scale);}++out.rowsProcessed;if(out.mathematicalOperations>workLimit)return out;}
+            if(jac){DerivativeLimits dl;dl.maxOperations=workLimit-out.mathematicalOperations;auto d=evaluateParameterJacobian(expression,bindings,parameterBindings,dl);out.forwardEvaluations+=d.work.forwardEvaluations;out.derivativeEvaluations+=d.work.forwardEvaluations;out.mathematicalOperations+=d.work.primalOperations+d.work.derivativeOperations+d.work.derivativeMathCalls;out.workspaceBytes=std::max(out.workspaceBytes,outputWorkspace+d.work.workspaceBytes);if(d.status!=ParameterJacobianStatus::Success)return out;const double residual=d.value-row.target;double chainScale=1.0;const double fittedResidual=transformHuber(residual,chainScale);const double objectiveScale=huberDelta?1.0/std::sqrt(2.0*static_cast<double>(rows.size())):scale;out.residuals.push_back(fittedResidual*objectiveScale);for(double derivative:d.derivatives)out.jacobian.push_back(derivative*chainScale*objectiveScale);}
+            else {if(expression.arithmeticCost()>workLimit-out.mathematicalOperations)return out;auto v=expression.evaluate(bindings);++out.forwardEvaluations;out.mathematicalOperations+=v.arithmeticOperations();if(!v.valid())return out;const double residual=v.value()-row.target;double chainScale=1.0;const double fittedResidual=transformHuber(residual,chainScale);const double objectiveScale=huberDelta?1.0/std::sqrt(2.0*static_cast<double>(rows.size())):scale;out.residuals.push_back(fittedResidual*objectiveScale);}++out.rowsProcessed;if(out.mathematicalOperations>workLimit)return out;}
         out.valid=true;return out;};
 }

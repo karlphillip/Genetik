@@ -231,9 +231,10 @@ inline void validateConstantFitConfig(const ConstantFitConfig& c,const Regressio
     validateConstantFitConfigForLimit(c,problem.limits().maxAbsConstant);
     if (c.method == ConstantFitMethod::LevenbergMarquardt &&
         problem.objective().loss != RegressionLoss::MeanSquaredError &&
-        problem.objective().loss != RegressionLoss::WeightedMeanSquaredError)
-        throw std::invalid_argument(
-            "Levenberg-Marquardt constant fitting supports only MSE objectives");
+        problem.objective().loss != RegressionLoss::WeightedMeanSquaredError &&
+        problem.objective().loss != RegressionLoss::Huber)
+        throw std::invalid_argument("Levenberg-Marquardt constant fitting supports MSE, weighted "
+                                    "MSE, and Huber objectives");
 }
 enum class ConstantFitStop { NoConstants, LossThreshold, InvalidStart, MinimumStep, SweepLimit, ProposalLimit, EvaluationLimit };
 inline const char* constantFitStopName(ConstantFitStop s) {
@@ -345,11 +346,13 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
     std::vector<LMExpressionObservation> observations;observations.reserve(rows.size());for(const auto& r:rows){auto x=r.inputs;x.resize(input.variableCount()+selected.size(),0);observations.push_back({std::move(x),r.target});}
     std::vector<std::size_t> bindings(selected.size());std::vector<double> lower(selected.size(),config.lower),upper(selected.size(),config.upper);for(std::size_t i=0;i<selected.size();++i)bindings[i]=input.variableCount()+i;
     const auto& fitObjective = objective.problem()->objective();
-    auto raw =
-        expressionLeastSquares(parameterExpression, std::move(observations), bindings, 10000000,
-                               fitObjective.loss == RegressionLoss::WeightedMeanSquaredError
-                                   ? fitObjective.observationWeights
-                                   : std::vector<double>{});
+    auto raw = expressionLeastSquares(
+        parameterExpression, std::move(observations), bindings, 10000000,
+        fitObjective.loss == RegressionLoss::WeightedMeanSquaredError
+            ? fitObjective.observationWeights
+            : std::vector<double>{},
+        fitObjective.loss == RegressionLoss::Huber ? std::optional<double>{fitObjective.huberDelta}
+                                                   : std::optional<double>{});
     Fitness starting = Fitness::invalid();
     Fitness latestScore = Fitness::invalid();
     Fitness acceptedScore = Fitness::invalid();

@@ -258,8 +258,34 @@ static void budgetsAndRepeatability() {
     const auto noValid=symbolicRegression(invalidData,config,invalid);
     check(noValid.stoppingReason==SearchStop::NoViableCandidates && !noValid.best && noValid.candidateEvaluations==6,"all-invalid search initialization terminates");
 }
+static void huberLmSymbolicRefinement() {
+    RegressionObjectiveConfig objective;
+    objective.loss = RegressionLoss::Huber;
+    objective.huberDelta = 1.0;
+    const auto problem = RegressionProblem::createWithObjective(
+        {{{0}, 0}, {{0}, 0}, {{0}, 0}, {{0}, 0}, {{0}, 100}}, objective);
+    SymbolicRegressionConfig config;
+    config.population = 1;
+    config.elites = 0;
+    config.maxEvaluations = 1;
+    config.grammar.operators.clear();
+    config.grammar.constants = {0.0};
+    ConstantFitConfig fitting;
+    fitting.method = ConstantFitMethod::LevenbergMarquardt;
+    fitting.lower = -1.0;
+    fitting.upper = 2.0;
+    fitting.levenbergMarquardt.lossTolerance = 1e-14;
+    config.fitting = fitting;
+    RandomContext random(712);
+    const auto result = symbolicRegression(problem, config, random);
+    check(result.best && result.best->evaluation().state() == FitnessState::Valid &&
+              std::abs(result.best->expression().nodes().front().constantValue() - 0.25) < 1e-7 &&
+              result.best->fitness() == problem->measure(result.best->expression()).loss.score(),
+          "ordinary symbolic-regression refinement supports Huber LM");
+}
 int main() {
     try { lossesAndOwnership(); structureAndLimits(); failuresAndOrdering(); budgetsAndRepeatability();
+        huberLmSymbolicRefinement();
         std::cout<<"Symbolic regression integration/loss/variation/publication/budget contracts passed\n";
     } catch(const std::exception& e) { std::cerr<<"FAILED: "<<e.what()<<'\n'; return 1; }
 }

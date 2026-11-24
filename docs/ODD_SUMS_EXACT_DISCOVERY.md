@@ -18,12 +18,19 @@ cmake --build build/odd-sums --target genetik_odd_sums_exact_discovery
 
 The executable reports training recovery, an autonomous held-out rollout, and
 an independent exact-polynomial induction check as separate outcomes. The
-induction check recognizes an exact polynomial identity in the returned
-transition and combines it with the initial values; this proves the recurrence
-over mathematical integers for every natural index. It does not claim that
+induction check parses the actual returned transition, checks initial terms 0
+and 1, substitutes `x0=i`, `x1=i^2`, and `x2=(i+1)^2`, and checks exactly
+against `(i+2)^2`. Coefficient arithmetic is checked; an unrepresentable
+intermediate is reported as inconclusive. A non-polynomial control can still
+produce a concrete counterexample through checked finite execution. The proof
+establishes the recurrence over mathematical integers for every natural index.
+It does not claim that
 Genetik's checked Int64 execution can represent every square: checked execution
 is valid only at indices whose intermediate values remain in Int64. A control
 recurrence matches through index 2, then fails at index 3 to demonstrate a
 finite counterexample separately from an inconclusive proof result.
+
+Fast verifier contracts run in ordinary CTest and cover both `x2 + 2*x0 + 3`
+and the equivalent `2*x2 - x1 + 2` recurrence, plus coefficient overflow.
 
 The target is opt-in and adds no dependency to normal builds.

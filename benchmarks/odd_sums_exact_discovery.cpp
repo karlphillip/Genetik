@@ -1,98 +1,17 @@
-#include <ConstructiveRecurrenceSynthesis.hpp>
+#include "odd_sums_verifier.hpp"
 
 #include <array>
 #include <cstdint>
 #include <iostream>
-#include <map>
 #include <optional>
 #include <string_view>
 #include <vector>
 
 using namespace genetik::constructive;
+using odd_sums_verifier::inductionCheck;
+using odd_sums_verifier::Proof;
 
 namespace {
-using Monomial = std::array<unsigned, 3>;
-using Polynomial = std::map<Monomial, std::int64_t>;
-
-void add(Polynomial& to, const Polynomial& from, std::int64_t sign = 1) {
-    for (const auto& [m, c] : from) {
-        auto& slot = to[m];
-        slot += sign * c;
-        if (!slot)
-            to.erase(m);
-    }
-}
-
-std::optional<Polynomial> integerPolynomial(const DiscreteExpression& e) {
-    std::vector<Polynomial> stack;
-    for (const auto& node : e.nodes()) {
-        if (node.kind() == DiscreteKind::Integer) {
-            Polynomial p;
-            if (node.integer())
-                p[{}] = node.integer();
-            stack.push_back(std::move(p));
-        } else if (node.kind() == DiscreteKind::Variable) {
-            Polynomial p;
-            Monomial m{};
-            m.at(node.variable()) = 1;
-            p[m] = 1;
-            stack.push_back(std::move(p));
-        } else if (node.kind() == DiscreteKind::Add || node.kind() == DiscreteKind::Subtract ||
-                   node.kind() == DiscreteKind::Multiply) {
-            if (stack.size() < 2)
-                return std::nullopt;
-            auto rhs = std::move(stack.back());
-            stack.pop_back();
-            auto lhs = std::move(stack.back());
-            stack.pop_back();
-            if (node.kind() == DiscreteKind::Add || node.kind() == DiscreteKind::Subtract) {
-                add(lhs, rhs, node.kind() == DiscreteKind::Add ? 1 : -1);
-                stack.push_back(std::move(lhs));
-            } else {
-                Polynomial product;
-                for (const auto& [a, ca] : lhs)
-                    for (const auto& [b, cb] : rhs) {
-                        Monomial m{};
-                        for (std::size_t i = 0; i < m.size(); ++i)
-                            m[i] = a[i] + b[i];
-                        product[m] += ca * cb;
-                    }
-                stack.push_back(std::move(product));
-            }
-        } else
-            return std::nullopt;
-    }
-    if (stack.size() != 1)
-        return std::nullopt;
-    return stack.back();
-}
-
-enum class Proof { Proved, Counterexample, Inconclusive };
-
-Proof inductionCheck(const DiscreteExpression& transition) {
-    const auto actual = integerPolynomial(transition);
-    // The public recurrence binds x0 to the transition step i, x1 to the
-    // older state, and x2 to the newest state. For squares the identity is
-    // s(i+2) = s(i+1) + 2*i + 3.
-    Polynomial expected;
-    expected[Monomial{1, 0, 0}] = 2;
-    expected[Monomial{0, 0, 1}] = 1;
-    expected[Monomial{}] = 3;
-    if (actual && *actual == expected)
-        return Proof::Proved;
-
-    IntegerRecurrence model(0, {0, 1}, transition);
-    for (std::int64_t n = 2; n <= 128; ++n) {
-        const auto value = model.evaluate(n);
-        if (!value.valid())
-            return Proof::Inconclusive;
-        const auto target = n * n;
-        if (value.value->integer() != target)
-            return Proof::Counterexample;
-    }
-    return Proof::Inconclusive;
-}
-
 const char* name(Proof p) {
     switch (p) {
     case Proof::Proved:
@@ -177,10 +96,14 @@ int main() {
     const auto controlAssessment =
         assessRecurrenceTransition(controlResult, 2, {0, 1}, {{2, 4}, {3, 9}});
     const auto controlProof = inductionCheck(control);
+    IntegerRecurrence controlModel(0, {0, 1}, control);
+    const auto controlAtThree = controlModel.evaluate(3);
     std::cout << "control.expression=" << control.toString() << "\n"
               << "control.held_out=" << toString(controlAssessment.status)
               << " matched=" << controlAssessment.matchedObservations << "/2"
-              << " induction=" << name(controlProof) << "\n";
+              << " induction=" << name(controlProof)
+              << " first_counterexample_index=3 expected=9 actual="
+              << (controlAtThree.valid() ? controlAtThree.value->integer() : -1) << "\n";
     return found.trainingRecovery == TrainingRecoveryStatus::Exact &&
                    assessment.status == AssessmentStatus::ExactHeldOut && proof == Proof::Proved &&
                    controlAssessment.status == AssessmentStatus::PartialHeldOut &&

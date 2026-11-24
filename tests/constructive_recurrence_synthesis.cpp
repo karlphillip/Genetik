@@ -83,6 +83,26 @@ void tests() {
     const auto periodicTraining = points({0,1,2,0,1,2,0,1});
     const auto periodic = synthesizeRecurrenceTransition(1, {0}, periodicTraining, modularGrammar);
     requireExact("periodic modular recurrence", periodic, periodicTraining, 1, {0}, {{8,2},{9,0}});
+    RecurrenceSynthesisConfig gcdGrammar;
+    gcdGrammar.maximumNodes = 7;
+    gcdGrammar.constants = {2};
+    gcdGrammar.operators = {DiscreteKind::Add, DiscreteKind::Gcd};
+    const auto rowlandPrefix = points({7, 8, 9, 10, 15, 18});
+    const auto rowland = synthesizeRecurrenceTransition(1, {7}, rowlandPrefix, gcdGrammar);
+    require(rowland.trainingRecovery == TrainingRecoveryStatus::Exact &&
+                rowland.stop == SynthesisStop::ExactTrainingMatch,
+            "opt-in checked GCD participates in recurrence synthesis");
+    require(rowland.transition && rowland.canonicalTransition.find("gcd(") != std::string::npos,
+            "opt-in GCD grammar returns a transition containing checked GCD");
+    const auto rowlandAssessment = assessRecurrenceTransition(rowland, 1, {7}, {{6, 19}, {7, 20}});
+    require(rowlandAssessment.status == AssessmentStatus::ExactHeldOut,
+            "opt-in GCD transition rolls forward over independent observations");
+    require(rowland.stats.arithmeticOperations > 0,
+            "GCD evaluation work is included in recurrence arithmetic accounting");
+    require(RecurrenceSynthesisConfig{}.operators ==
+                std::vector<DiscreteKind>{DiscreteKind::Add, DiscreteKind::Subtract,
+                                          DiscreteKind::Multiply, DiscreteKind::Modulo},
+            "default constructive grammar and operator order stay unchanged");
     const auto triangularTraining = points({0,1,3,6,10,15});
     const auto triangular = synth(1, {0}, triangularTraining, 5);
     requireExact("triangular numbers", triangular, triangularTraining, 1, {0}, {{6,21},{7,28}});

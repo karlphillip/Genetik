@@ -1,4 +1,5 @@
 # Test name | explicit comma-separated categories
+genetik_odd_sums_verifier|numerical,unit
 genetik_strict_arithmetic|numerical
 genetik_multivariate_contracts|unit
 genetik_fitting_contracts|numerical,unit

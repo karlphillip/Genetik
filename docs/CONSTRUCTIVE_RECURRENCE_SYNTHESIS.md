@@ -4,11 +4,38 @@ Genetik exposes an optional deterministic enumerator for small integer recurrenc
 
 ## Supported grammar
 
-The initial qualified grammar is exactly the S16 grammar: integer expressions built from binary `Add`, `Subtract`, `Multiply`, and Euclidean `Modulo`; integer terminals from a caller supplied finite set; and recurrence bindings. Expressions are capped at seven nodes, matching the frozen S16 complexity ceiling. No unary negate, conditionals, iteration operators, arbitrary recursion, prime operators, or target-specific templates are synthesized. Modulo retains the existing checked semantics and requires a positive divisor. All operations use Genetik's existing checked Int64 evaluator. Overflow and invalid modulo are invalid candidate evaluations.
+The default grammar remains the S16 grammar in its original order: binary `Add`, `Subtract`, `Multiply`, and Euclidean `Modulo`; integer terminals from a caller supplied finite set; and recurrence bindings. Expressions are capped at seven nodes, matching the frozen S16 complexity ceiling. GCD is available only when explicitly added to `RecurrenceSynthesisConfig::operators`; it uses the existing checked Int64 GCD evaluator, including its arithmetic-work accounting. The default grammar and its enumeration order are unchanged. No unary negate, conditionals, iteration operators, arbitrary recursion, prime operators, or target-specific templates are synthesized. Modulo retains the existing checked semantics and requires a positive divisor. Overflow and invalid mathematical operations are invalid candidate evaluations.
 
 The recurrence order is caller-selected and must be one or two. The expression slots are `x0` for the zero-based transition index, then `x1` through `xOrder` for prior states from oldest to newest. For order two, `x1` is the older state and `x2` the newer state. Initial values are copied into the `IntegerRecurrence`; callers cannot supply reference states during rollout.
 
 Expressions are enumerated by increasing node count. At each size, operators follow `config.operators` order, terminals follow variable-slot order then `config.constants` order, and binary partitions enumerate left subtree size before right subtree size, then each subtree's stable prior enumeration order. Exact expression text is used to reject duplicate structures. No algebraic rewriting or commutative canonicalization is performed.
+
+## Opt-in GCD discovery comparison
+
+`GENETIK_BUILD_ROWLAND_GCD_BENCHMARK=ON` builds a separate comparison executable; it is off by default. The executable fixes both arms' training indices (0–8), held-out indices (9–13), initial state `[7]`, constants `[-1,0,1,2,3]`, node and work limits, and operator order before either search. The ordinary arm uses the default grammar. The opt-in arm lists GCD first, followed by the ordinary operators in their existing relative order. The recurrence `b[0]=7; b[k+1]=b[k]+gcd(k+2,b[k])` generates observations after those choices are fixed: training values are `[7,8,9,10,15,18,19,20,21]`, and held-out values are `[22,33,36,37,38]`. The assessment rolls each candidate forward from `[7]`; held-out observations are never supplied during selection.
+
+The report separates exact training fit, autonomous held-out agreement, reference-transition recognition, first divergence from the reference sequence, structures, evaluator arithmetic work, and stop reason. After both searches have selected their models, a structural checker recognizes the reference transition under operand swaps at any `Add` or `Gcd` node, recursively; all other operators and leaves must match in place. A transition outside that narrow equivalence class is reported as `unrecognized`. The controls check the discovered form `gcd(x1, 2 + x0) + x1`, an actually different `x1 + gcd(x0 + 3, x1)`, invalid modulo-by-zero, and a valid zero prediction. On divergence, only a valid evaluator result prints an integer; invalid/resource/cancelled results print their status and `actual=unavailable`. A finite fit or held-out match is not by itself evidence that the known recurrence rule was recovered. Run it with:
+
+```sh
+cmake -S . -B build/rowland-gcd -DCMAKE_BUILD_TYPE=Release \
+  -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF \
+  -DGENETIK_BUILD_ROWLAND_GCD_BENCHMARK=ON
+cmake --build build/rowland-gcd --target genetik_rowland_gcd_discovery
+./build/rowland-gcd/genetik_rowland_gcd_discovery
+```
+
+### Fixed-budget Rowland result
+
+On source base `45929f073777e26a5742c8d189e0fe67c9dd5a77`, both arms used training indices 0–8, held-out indices 9–13, initial state `[7]`, constants `[-1,0,1,2,3]`, seven-node ceiling, 3,000,000 unique-structure cap, 15,000,000 composition-attempt cap, 1,000,000 training-point-evaluation cap, 50,000,000 transition cap, 100,000,000 node-visit and arithmetic-operation caps, 768 MiB estimated-storage cap, and 64-step cap. The ordinary order was `[Add, Subtract, Multiply, Modulo]`; the opt-in order was `[Gcd, Add, Subtract, Multiply, Modulo]`.
+
+| Arm | Returned transition | Training | Held out | First divergence | Structures | Arithmetic operations | Stop |
+| --- | --- | --- | --- | --- | ---: | ---: | --- |
+| Main ordinary grammar | `(x1 + 1)` | 4/9 prefix, not exact | 0/5 | index 4: expected 15, got 11 | 483,277 | 1,978,028 | storage limit |
+| GCD enabled | `(x1 + gcd(x1, (x0 + 2)))` | exact 9/9 | exact 5/5 | none through index 13 | 334,977 | 1,706,805 | exact training match |
+
+The GCD arm's selected tree differs from `b[k] + gcd(k+2,b[k])` by operand swaps at its `Add` and `Gcd` nodes. The post-selection checker recognizes this recursive swap class, including the explicit discovered-form control `gcd(x1, 2 + x0) + x1`; `x1 + gcd(x0 + 3, x1)` remains unrecognized. This is recovery of the stated rule within the documented symmetry class, alongside exact finite-sample agreement. The ordinary arm exhausted its estimated-storage budget before finding an exact model. Search accounting is selection-only; post-selection held-out rollout is separate. Divergence reporting distinguishes valid zero from invalid evaluation, as the modulo-by-zero and literal-zero controls demonstrate.
+
+The unchanged opt-in square benchmark was rerun as a compatibility control with GCD absent from the default grammar. It returned `(x0 + (x0 + (x2 + 3)))`, exact training 5/5, exact held out 3/3, with 16,672 composition attempts/unique structures, 50,442 training-point evaluations, 17,525 transition steps, 86,087 node visits, and 50,270 arithmetic operations, matching PR #68's recorded result.
 
 ## Usage
 

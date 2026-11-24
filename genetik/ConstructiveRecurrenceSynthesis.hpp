@@ -117,6 +117,7 @@ inline bool synthesisOperator(DiscreteKind kind) {
     case DiscreteKind::Subtract:
     case DiscreteKind::Multiply:
     case DiscreteKind::Modulo:
+    case DiscreteKind::Gcd:
         return true;
     default:
         return false;

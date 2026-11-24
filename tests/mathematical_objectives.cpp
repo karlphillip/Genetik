@@ -203,6 +203,21 @@ void fittingAndSelectionUseObjective() {
               tinyFit.loss.score() < tinyFit.startingLoss.score() &&
               tinyFit.expression.nodes().front().constantValue() > 0.0,
           "eight-target 2^-536 Huber fit accepts score-improving trials");
+    const auto tinyDirectResiduals =
+        expressionLeastSquares(Expression::variable(0),
+                               std::vector<LMExpressionObservation>(
+                                   8, LMExpressionObservation{{0}, std::ldexp(1.0, -536)}),
+                               {0}, 1000, {}, 1.0);
+    const auto tinyDirectStart = tinyDirectResiduals(std::array{0.0}, false, 1000);
+    LMConfig directConfig;
+    directConfig.lossTolerance = std::ldexp(1.0, -1073);
+    const auto tinyDirectFit = levenbergMarquardt(
+        std::array{0.0}, std::array{-1.0}, std::array{1.0}, tinyDirectResiduals, directConfig);
+    check(tinyDirectStart.valid && tinyDirectStart.objectiveLoss.has_value() &&
+              *tinyDirectStart.objectiveLoss == std::ldexp(1.0, -1073) &&
+              tinyDirectFit.sumSquaredResiduals && *tinyDirectFit.sumSquaredResiduals == 0.0 &&
+              tinyDirectFit.stop == LMStop::LossTolerance && tinyDirectFit.parameters[0] == 0.0,
+          "direct Huber callback loss controls stopping when normalized SSE underflows");
     std::cout << "Huber outlier constant: coordinate c="
               << analyticCoordinate.expression.nodes().front().constantValue()
               << " loss=" << analyticCoordinate.loss.score()
@@ -240,6 +255,31 @@ void fittingAndSelectionUseObjective() {
               std::abs(negativeTailJacobian.jacobian[0] - 1.0 / std::sqrt(6.0)) < 1e-15,
           "subnormal Huber tail Jacobian is stable for both residual signs");
 
+    const double huge = std::ldexp(1.0, 600);
+    const double minuteDelta = std::ldexp(1.0, -600);
+    const auto extremeTail = expressionLeastSquares(
+        Expression::binary(ExpressionKind::Multiply, Expression::variable(0, 2),
+                           Expression::variable(1, 2)),
+        {{{huge, 0.0}, huge}}, {1}, 1000, {}, minuteDelta);
+    const auto extremeTailStart = extremeTail(std::array{0.0}, true, 1000);
+    check(extremeTailStart.valid && std::abs(extremeTailStart.jacobian[0] - 0.5) < 1e-14,
+          "Huber tail Jacobian retains precision when delta over magnitude underflows");
+    RegressionObjectiveConfig extremeObjective;
+    extremeObjective.loss = RegressionLoss::Huber;
+    extremeObjective.huberDelta = minuteDelta;
+    const auto extremeProblem =
+        RegressionProblem::createWithObjective({{{huge}, huge}}, extremeObjective);
+    TrainingObjective extremeTraining(extremeProblem);
+    auto extremeFitConfig = lm;
+    extremeFitConfig.lower = 0.0;
+    extremeFitConfig.upper = 2.0;
+    const auto extremeModel = Expression::binary(ExpressionKind::Multiply, Expression::variable(0),
+                                                 Expression::constant(0.0, 1));
+    const auto extremeFit = fitConstants(extremeModel, extremeTraining, extremeFitConfig);
+    check(extremeFit.loss == extremeProblem->measure(extremeFit.expression).loss &&
+              extremeFit.loss.score() < extremeFit.startingLoss.score(),
+          "public Huber coefficient fit reduces loss in the extreme tail");
+
     auto mseProblem = RegressionProblem::create(outlierRows, {31, 6, 8});
     ExpressionCandidate mseZero(Expression::constant(0.0, 1), mseProblem);
     ExpressionCandidate mseThree(Expression::constant(3.0, 1, mseProblem->limits()), mseProblem);
@@ -257,6 +297,10 @@ void fittingAndSelectionUseObjective() {
 }
 
 void huberLmComparisonAndBudget() {
+    LMResidualEvaluation legacyAggregate{true, {1.0}, {2.0}};
+    check(legacyAggregate.valid && legacyAggregate.residuals == std::vector<double>{1.0} &&
+              legacyAggregate.jacobian == std::vector<double>{2.0},
+          "LM residual evaluation preserves its original aggregate member order");
     constexpr double delta = 1.0;
     const auto target = [](double x) { return 2.0 * std::pow(x, 1.4); };
     std::vector<RegressionRow> rows;

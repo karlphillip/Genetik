@@ -4,6 +4,9 @@ This fixed comparison uses Huber delta `1`, expression `a*x^b`, starting
 coefficients `(2, 1.4)`, and bounds `[0.1, 4]` for both coefficients. Training
 inputs are `{0.5, 1, 1.5, 2, 2.5}` with targets `2*x^1.4`, except the center
 point at `x=1.5` has an added outlier of `5`. Clean held-out inputs are `{3, 4}`.
+The starting model `(2, 1.4)` has exactly zero error on these clean held-out
+points; the reported held-out RMSE measures how fitting to the contaminated
+training set changes that initial generalization.
 The coordinate limits were fixed at 3,000 loss attempts, 40 sweeps, and 3,000
 proposals. LM limits were fixed at 100 iterations, 300 objective evaluations,
 and 300 Jacobian evaluations; its existing arithmetic and workspace limits
@@ -23,8 +26,10 @@ counter includes both public objective scoring and residual/Jacobian evaluation.
 
 As a direct analytic check, fitting a constant to `[0, 0, 0, 0, 100]` with
 delta `1` gives `c=0.25` and mean Huber loss `19.875`. The existing coordinate
-fitter reaches that solution in 55 loss attempts; Huber LM reaches it in 11
-objective evaluations (110 counted forward evaluations, including both scorer
-and residual/Jacobian passes). The regression test also checks zero residual,
+fitter reaches that solution in 55 loss attempts; Huber LM reaches it in 16
+objective evaluations (160 counted forward evaluations, including both scorer
+and residual/Jacobian passes). Public-score trial acceptance takes five more
+objective evaluations than the first implementation; the nonlinear comparison
+measurements are unchanged. The regression test also checks zero residual,
 both signed Huber thresholds, the linear-tail Jacobian, accepted-score
 retention at the evaluation budget, and symbolic-regression refinement.

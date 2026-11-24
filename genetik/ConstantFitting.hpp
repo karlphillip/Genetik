@@ -371,12 +371,19 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
         ++calls;
         if (score.loss.state() != FitnessState::Valid)
             return LMResidualEvaluation{};
+        // Huber's transformed residuals provide a stable local least-squares
+        // model, while candidate ordering and loss stopping use exactly the
+        // same public mean-Huber score as regression scoring. Cache every
+        // objective's score because the solver accepts candidates through
+        // this callback for all supported losses.
         latestScore = score.loss;
         if (calls == 1) {
             starting = score.loss;
             acceptedScore = score.loss;
         }
         auto eval = raw(theta, jac, allowance);
+        if (fitObjective.loss == RegressionLoss::Huber)
+            eval.objectiveLoss = score.loss.score();
         if (rows.size() > std::numeric_limits<std::size_t>::max() - eval.forwardEvaluations ||
             rows.size() > std::numeric_limits<std::size_t>::max() - eval.rowsProcessed)
             throw std::overflow_error("LM row accounting overflow");

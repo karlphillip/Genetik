@@ -180,6 +180,29 @@ void fittingAndSelectionUseObjective() {
     check(std::abs(analytic.expression.nodes().front().constantValue() - 0.25) < 1e-7 &&
               std::abs(analytic.loss.score() - 19.875) < 1e-10,
           "Huber LM reaches the analytic clipped-score constant optimum");
+    auto clusteredProblem = RegressionProblem::createWithObjective(
+        {{{0}, 2}, {{0}, 0}, {{0}, 0}, {{0}, 0}, {{0}, 0}}, oneOutlier);
+    TrainingObjective clusteredTraining(clusteredProblem);
+    auto clustered = fitConstants(Expression::constant(0.0, 1), clusteredTraining, analyticConfig);
+    check(std::abs(clustered.expression.nodes().front().constantValue() - 0.25) < 1e-7 &&
+              clustered.loss == clusteredProblem->measure(clustered.expression).loss &&
+              std::abs(clustered.loss.score() - 0.275) < 1e-14,
+          "Huber trial acceptance follows the public score for [2,0,0,0,0]");
+
+    std::vector<RegressionRow> tinyRows(8, RegressionRow{{0}, std::ldexp(1.0, -536)});
+    auto tinyProblem = RegressionProblem::createWithObjective(tinyRows, oneOutlier);
+    TrainingObjective tinyTraining(tinyProblem);
+    auto tinyConfig = analyticConfig;
+    tinyConfig.lower = -1.0;
+    tinyConfig.upper = 1.0;
+    tinyConfig.levenbergMarquardt.gradientTolerance = 1e-300;
+    tinyConfig.levenbergMarquardt.stepTolerance = 1e-300;
+    tinyConfig.levenbergMarquardt.lossTolerance = 0.0;
+    auto tinyFit = fitConstants(Expression::constant(0.0, 1), tinyTraining, tinyConfig);
+    check(tinyFit.loss == tinyProblem->measure(tinyFit.expression).loss &&
+              tinyFit.loss.score() < tinyFit.startingLoss.score() &&
+              tinyFit.expression.nodes().front().constantValue() > 0.0,
+          "eight-target 2^-536 Huber fit accepts score-improving trials");
     std::cout << "Huber outlier constant: coordinate c="
               << analyticCoordinate.expression.nodes().front().constantValue()
               << " loss=" << analyticCoordinate.loss.score()
@@ -204,6 +227,18 @@ void fittingAndSelectionUseObjective() {
           "Huber transform handles zero, both thresholds, and linear tails");
     check(std::abs(genetik_detail::checkedSSE(atThresholds.residuals) - 0.8) < 1e-15,
           "Huber pseudo-residual SSE equals the normalized public Huber objective");
+
+    const double tinyDelta = std::numeric_limits<double>::denorm_min();
+    const auto tinyPositiveTail = expressionLeastSquares(
+        Expression::variable(0), {{{0}, -2.0 * tinyDelta}}, {0}, 1000, {}, tinyDelta);
+    const auto tinyNegativeTail = expressionLeastSquares(
+        Expression::variable(0), {{{0}, 2.0 * tinyDelta}}, {0}, 1000, {}, tinyDelta);
+    const auto positiveTailJacobian = tinyPositiveTail(std::array{0.0}, true, 1000);
+    const auto negativeTailJacobian = tinyNegativeTail(std::array{0.0}, true, 1000);
+    check(positiveTailJacobian.valid && negativeTailJacobian.valid &&
+              std::abs(positiveTailJacobian.jacobian[0] - 1.0 / std::sqrt(6.0)) < 1e-15 &&
+              std::abs(negativeTailJacobian.jacobian[0] - 1.0 / std::sqrt(6.0)) < 1e-15,
+          "subnormal Huber tail Jacobian is stable for both residual signs");
 
     auto mseProblem = RegressionProblem::create(outlierRows, {31, 6, 8});
     ExpressionCandidate mseZero(Expression::constant(0.0, 1), mseProblem);

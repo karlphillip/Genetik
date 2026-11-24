@@ -38,6 +38,9 @@ struct LMWork {
 };
 struct LMResidualEvaluation {
     bool valid=false;
+    // Optional public objective value used as the LM merit function when the
+    // residual transform is only a numerically convenient least-squares form.
+    std::optional<double> objectiveLoss;
     std::vector<double> residuals;
     // Row-major m by p. Empty when only objective residuals are requested.
     std::vector<double> jacobian;
@@ -203,10 +206,12 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
     }
     auto validShape=[&](const LMResidualEvaluation&e,bool jac){if(!e.valid||e.residuals.empty()||e.residuals.size()>c.maxResiduals)return false;if(jac&&e.jacobian.size()!=e.residuals.size()*initial.size())return false;for(double v:e.residuals)if(!std::isfinite(v))return false;for(double v:e.jacobian)if(!std::isfinite(v))return false;return true;};
     if(out.stop==LMStop::WorkspaceLimit){out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}if(!validShape(current,true)){out.stop=LMStop::InvalidStart;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
-    double loss=genetik_detail::checkedSSE(current.residuals);if(!std::isfinite(loss)){out.stop=LMStop::InvalidStart;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
+    const double currentSSE=genetik_detail::checkedSSE(current.residuals);
+    double loss=current.objectiveLoss ? *current.objectiveLoss : currentSSE;
+    if(!std::isfinite(loss)){out.stop=LMStop::InvalidStart;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
     if (accepted)
         accepted(out.parameters);
-    out.sumSquaredResiduals=loss;const std::size_t p=initial.size(),m=current.residuals.size();
+    out.sumSquaredResiduals=currentSSE;const std::size_t p=initial.size(),m=current.residuals.size();
     std::size_t matrixBytes = 0;
     std::size_t parameterBytes = 0;
     if (!genetik_detail::checkedWorkspaceProduct(p, p, sizeof(double), matrixBytes) ||
@@ -415,7 +420,7 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
             if (out.stop == LMStop::Cancelled || out.stop == LMStop::EvaluationLimit ||
                 out.stop == LMStop::DerivativeLimit || out.stop == LMStop::WorkspaceLimit)
                 break;
-            if(validShape(trialEval,false)&&trialEval.residuals.size()==m){double trialLoss=genetik_detail::checkedSSE(trialEval.residuals);if(trialLoss<loss){out.parameters.swap(trial);loss=trialLoss;out.sumSquaredResiduals=loss;++out.work.acceptedSteps;++out.work.parameterUpdates;if (accepted) accepted(out.parameters);lambda=std::max(c.minimumDamping,lambda*.3);madeStep=true;if(loss<=c.lossTolerance)out.stop=LMStop::LossTolerance;break;}}
+            if(validShape(trialEval,false)&&trialEval.residuals.size()==m){const double trialSSE=genetik_detail::checkedSSE(trialEval.residuals);double trialLoss=trialEval.objectiveLoss ? *trialEval.objectiveLoss : trialSSE;if(std::isfinite(trialLoss)&&trialLoss<loss){out.parameters.swap(trial);loss=trialLoss;out.sumSquaredResiduals=trialSSE;++out.work.acceptedSteps;++out.work.parameterUpdates;if (accepted) accepted(out.parameters);lambda=std::max(c.minimumDamping,lambda*.3);madeStep=true;if(loss<=c.lossTolerance)out.stop=LMStop::LossTolerance;break;}}
             ++out.work.rejectedSteps;lambda*=10;if(lambda>c.maximumDamping){out.stop=LMStop::DampingLimit;break;}
         }
         if(out.stop==LMStop::LossTolerance||out.stop==LMStop::SingularSystem||out.stop==LMStop::DampingLimit||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::WorkspaceLimit||out.stop==LMStop::Cancelled)break;
@@ -460,9 +465,13 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
             if (magnitude <= *huberDelta) return residual;
             // q^2/2 equals rho_delta(r). The algebra avoids forming r^2 in
             // the linear tail and keeps q and dq/dr consistent with scoring.
+            const double deltaRatio = *huberDelta / magnitude;
+            const double tailFactor = std::sqrt(deltaRatio / (2.0 - deltaRatio));
+            // q = sqrt(delta * (2|r| - delta)); keep the product
+            // factored so delta may be subnormal without underflowing.
             const double qMagnitude = std::sqrt(*huberDelta) * std::sqrt(magnitude) *
-                                      std::sqrt(2.0 - *huberDelta / magnitude);
-            derivative = *huberDelta / qMagnitude;
+                                      std::sqrt(2.0 - deltaRatio);
+            derivative = tailFactor;
             return std::copysign(qMagnitude, residual);
         };
         for(const auto& row:rows){std::copy(row.inputs.begin(),row.inputs.end(),bindings.begin());if(theta.size()!=p)return out;for(std::size_t j=0;j<p;++j)bindings[parameterBindings[j]]=theta[j];

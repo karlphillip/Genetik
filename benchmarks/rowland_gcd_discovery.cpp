@@ -2,9 +2,12 @@
 #include <DiscreteExpressionParsing.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
+#include <functional>
 #include <iostream>
 #include <numeric>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -26,6 +29,87 @@ constexpr std::size_t maximumSteps = 64;
 constexpr std::size_t lastTrainingIndex = 8;
 constexpr std::size_t firstHeldOutIndex = lastTrainingIndex + 1;
 constexpr std::size_t lastHeldOutIndex = 13;
+
+std::string_view evaluationStatusName(DiscreteEvaluationStatus status) {
+    switch (status) {
+    case DiscreteEvaluationStatus::Valid: return "valid";
+    case DiscreteEvaluationStatus::MathematicalInvalid: return "mathematical_invalid";
+    case DiscreteEvaluationStatus::ResourceExhausted: return "resource_exhausted";
+    case DiscreteEvaluationStatus::Cancelled: return "cancelled";
+    case DiscreteEvaluationStatus::NoWitness: return "no_witness";
+    }
+    return "unknown";
+}
+
+bool hasValidInteger(const DiscreteEvaluationResult& evaluation) {
+    return evaluation.valid() && evaluation.value &&
+           evaluation.value->type() == DiscreteType::Int64;
+}
+
+void printDivergence(std::string_view prefix, std::int64_t index, std::int64_t expected,
+                     const DiscreteEvaluationResult& evaluation) {
+    std::cout << prefix << "first_divergence_index=" << index << " expected=" << expected
+              << " evaluation_status=" << evaluationStatusName(evaluation.status) << " actual=";
+    if (hasValidInteger(evaluation))
+        std::cout << evaluation.value->integer() << '\n';
+    else
+        std::cout << "unavailable\n";
+}
+
+bool sameUnderAddAndGcdSwaps(const DiscreteExpression& left, const DiscreteExpression& right) {
+    if (left.dimensions() != right.dimensions()) return false;
+    std::function<bool(std::size_t, std::size_t)> equal = [&](std::size_t a, std::size_t b) {
+        const auto an = left.nodes()[a];
+        const auto bn = right.nodes()[b];
+        if (an.kind() != bn.kind()) return false;
+        const auto arity = discreteArity(an.kind());
+        if (arity == 0) return an == bn;
+        if (arity != 2) return false;
+        const auto ac = left.children(a);
+        const auto bc = right.children(b);
+        if (equal(ac[0], bc[0]) && equal(ac[1], bc[1])) return true;
+        if (an.kind() == DiscreteKind::Add || an.kind() == DiscreteKind::Gcd)
+            return equal(ac[0], bc[1]) && equal(ac[1], bc[0]);
+        return false;
+    };
+    return equal(left.nodeCount() - 1, right.nodeCount() - 1);
+}
+
+std::string_view rowlandRecognition(const DiscreteExpression& expression,
+                                    const DiscreteExpression& reference) {
+    return sameUnderAddAndGcdSwaps(expression, reference) ? "equivalent" : "unrecognized";
+}
+
+bool verifyAssessmentControls() {
+    const auto reference = parseDiscreteExpression("x1 + gcd(x0 + 2, x1)", 2);
+    const auto discovered = parseDiscreteExpression("gcd(x1, 2 + x0) + x1", 2);
+    const auto different = parseDiscreteExpression("x1 + gcd(x0 + 3, x1)", 2);
+    const auto equivalent = rowlandRecognition(discovered, reference) == "equivalent";
+    const auto differentUnrecognized = rowlandRecognition(different, reference) == "unrecognized";
+    const auto moduloByZero = parseDiscreteExpression("x0 % 0", 1).evaluate(
+        std::array<std::int64_t, 1>{0});
+    const auto validZero = parseDiscreteExpression("0", 1).evaluate(
+        std::array<std::int64_t, 1>{0});
+    const bool validZeroHasInteger = hasValidInteger(validZero);
+    const bool statusesDistinguished =
+        moduloByZero.status == DiscreteEvaluationStatus::MathematicalInvalid &&
+        !moduloByZero.value && validZero.status == DiscreteEvaluationStatus::Valid &&
+        validZeroHasInteger && validZero.value->integer() == 0;
+    std::cout << "control.discovered_transition=" << rowlandRecognition(discovered, reference)
+              << " expression=" << "gcd(x1, (2 + x0)) + x1" << '\n';
+    std::cout << "control.different_transition=" << rowlandRecognition(different, reference)
+              << " expression=" << "x1 + gcd((x0 + 3), x1)" << '\n';
+    std::cout << "control.modulo_by_zero status=" << evaluationStatusName(moduloByZero.status)
+              << " value=unavailable\n";
+    std::cout << "control.valid_zero status=" << evaluationStatusName(validZero.status);
+    if (validZeroHasInteger)
+        std::cout << " value=" << validZero.value->integer() << '\n';
+    else
+        std::cout << " value=unavailable\n";
+    printDivergence("control.modulo_by_zero ", 0, 0, moduloByZero);
+    printDivergence("control.valid_zero ", 0, 1, validZero);
+    return equivalent && differentUnrecognized && statusesDistinguished;
+}
 
 std::vector<std::int64_t> referenceSequence(std::size_t lastIndex) {
     std::vector<std::int64_t> values{7};
@@ -85,38 +169,32 @@ void runArm(std::string_view label, bool enableGcd, const std::vector<SequencePo
     if (!found.transition) {
         std::cout << "arm=" << label << " exact_training_match=no"
                   << " exact_held_out_match=no first_divergence=unavailable"
-                  << " reference_transition_recovered=no\n";
+                  << " reference_transition=unrecognized\n";
         return;
     }
 
     const auto assessment = assessRecurrenceTransition(found, 1, {7}, heldOut);
     std::int64_t firstMismatch = -1;
-    std::int64_t actualAtMismatch = 0;
+    std::optional<std::int64_t> actualAtMismatch;
+    DiscreteEvaluationStatus mismatchStatus = DiscreteEvaluationStatus::Valid;
     const IntegerRecurrence selectedModel(0, {7}, *found.transition);
     for (std::int64_t index = 0; index <= static_cast<std::int64_t>(lastHeldOutIndex); ++index) {
         const auto predicted = selectedModel.evaluate(index);
-        if (!predicted.valid() ||
-            predicted.value->integer() != reference.at(static_cast<std::size_t>(index))) {
+        if (!hasValidInteger(predicted) || predicted.value->integer() !=
+                reference.at(static_cast<std::size_t>(index))) {
             firstMismatch = index;
-            if (predicted.valid())
+            if (hasValidInteger(predicted))
                 actualAtMismatch = predicted.value->integer();
+            mismatchStatus = predicted.status;
             break;
         }
     }
-    bool referenceTransitionRecovered = false;
+    // Constructed only after selection. This recognizes only recursive operand
+    // swaps at Add and GCD nodes; all other structures remain unrecognized.
+    std::string_view recognition = "unrecognized";
     if (enableGcd) {
-        // Constructed only after selection; the rule is never a search seed,
-        // template, or candidate filter.
         const auto referenceTransition = parseDiscreteExpression("x1 + gcd(x0 + 2, x1)", 2);
-        const auto commutedGcdTransition = parseDiscreteExpression("x1 + gcd(x1, x0 + 2)", 2);
-        const auto sameTree = [&](const DiscreteExpression& other) {
-            return found.transition->dimensions() == other.dimensions() &&
-                   std::equal(found.transition->nodes().begin(), found.transition->nodes().end(),
-                              other.nodes().begin(), other.nodes().end());
-        };
-        // GCD is symmetric, so the second form is the same mathematical rule.
-        referenceTransitionRecovered =
-            sameTree(referenceTransition) || sameTree(commutedGcdTransition);
+        recognition = rowlandRecognition(*found.transition, referenceTransition);
     }
     const auto exactTraining = found.trainingRecovery == TrainingRecoveryStatus::Exact;
     const auto exactHeldOut = assessment.status == AssessmentStatus::ExactHeldOut;
@@ -124,14 +202,17 @@ void runArm(std::string_view label, bool enableGcd, const std::vector<SequencePo
               << " exact_held_out_match=" << (exactHeldOut ? "yes" : "no")
               << " held_out=" << toString(assessment.status)
               << " matched=" << assessment.matchedObservations << '/' << heldOut.size();
-    if (firstMismatch >= 0)
-        std::cout << " first_divergence_index=" << firstMismatch
-                  << " expected=" << reference.at(static_cast<std::size_t>(firstMismatch))
-                  << " actual=" << actualAtMismatch;
-    else
+    if (firstMismatch >= 0) {
+        std::cout << '\n';
+        DiscreteEvaluationResult mismatch;
+        mismatch.status = mismatchStatus;
+        if (actualAtMismatch) mismatch.value = DiscreteValue::integer(*actualAtMismatch);
+        printDivergence("arm=" + std::string(label) + " ", firstMismatch,
+                        reference.at(static_cast<std::size_t>(firstMismatch)), mismatch);
+    } else {
         std::cout << " first_divergence=none";
-    std::cout << " reference_transition_recovered=" << (referenceTransitionRecovered ? "yes" : "no")
-              << '\n';
+    }
+    std::cout << " reference_transition=" << recognition << '\n';
 }
 } // namespace
 
@@ -159,5 +240,8 @@ int main() {
 
     runArm("main_ordinary", false, training, heldOut, sequence);
     runArm("candidate_gcd", true, training, heldOut, sequence);
+    // These reference-based controls run after both searches, just like the
+    // assessment of each returned model.
+    if (!verifyAssessmentControls()) return 2;
     return 0;
 }

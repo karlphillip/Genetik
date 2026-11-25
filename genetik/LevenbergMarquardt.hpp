@@ -207,12 +207,17 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
     }
     auto validShape=[&](const LMResidualEvaluation&e,bool jac){if(!e.valid||e.residuals.empty()||e.residuals.size()>c.maxResiduals)return false;if(jac&&e.jacobian.size()!=e.residuals.size()*initial.size())return false;for(double v:e.residuals)if(!std::isfinite(v))return false;for(double v:e.jacobian)if(!std::isfinite(v))return false;return true;};
     if(out.stop==LMStop::WorkspaceLimit){out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}if(!validShape(current,true)){out.stop=LMStop::InvalidStart;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
-    const double currentSSE=genetik_detail::checkedSSE(current.residuals);
-    double loss=current.objectiveLoss ? *current.objectiveLoss : currentSSE;
-    if(!std::isfinite(loss)){out.stop=LMStop::InvalidStart;out.work.seconds=std::chrono::duration<double>(clock::now()-started).count();return out;}
+    const double currentSSE = genetik_detail::checkedSSE(current.residuals);
+    double loss = current.objectiveLoss ? *current.objectiveLoss : currentSSE;
+    if (!std::isfinite(loss)) {
+        out.stop = LMStop::InvalidStart;
+        out.work.seconds = std::chrono::duration<double>(clock::now() - started).count();
+        return out;
+    }
     if (accepted)
         accepted(out.parameters);
-    out.sumSquaredResiduals=currentSSE;const std::size_t p=initial.size(),m=current.residuals.size();
+    out.sumSquaredResiduals = currentSSE;
+    const std::size_t p = initial.size(), m = current.residuals.size();
     std::size_t matrixBytes = 0;
     std::size_t parameterBytes = 0;
     if (!genetik_detail::checkedWorkspaceProduct(p, p, sizeof(double), matrixBytes) ||
@@ -421,7 +426,24 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
             if (out.stop == LMStop::Cancelled || out.stop == LMStop::EvaluationLimit ||
                 out.stop == LMStop::DerivativeLimit || out.stop == LMStop::WorkspaceLimit)
                 break;
-            if(validShape(trialEval,false)&&trialEval.residuals.size()==m){const double trialSSE=genetik_detail::checkedSSE(trialEval.residuals);double trialLoss=trialEval.objectiveLoss ? *trialEval.objectiveLoss : trialSSE;if(std::isfinite(trialLoss)&&trialLoss<loss){out.parameters.swap(trial);loss=trialLoss;out.sumSquaredResiduals=trialSSE;++out.work.acceptedSteps;++out.work.parameterUpdates;if (accepted) accepted(out.parameters);lambda=std::max(c.minimumDamping,lambda*.3);madeStep=true;if(loss<=c.lossTolerance)out.stop=LMStop::LossTolerance;break;}}
+            if (validShape(trialEval, false) && trialEval.residuals.size() == m) {
+                const double trialSSE = genetik_detail::checkedSSE(trialEval.residuals);
+                double trialLoss = trialEval.objectiveLoss ? *trialEval.objectiveLoss : trialSSE;
+                if (std::isfinite(trialLoss) && trialLoss < loss) {
+                    out.parameters.swap(trial);
+                    loss = trialLoss;
+                    out.sumSquaredResiduals = trialSSE;
+                    ++out.work.acceptedSteps;
+                    ++out.work.parameterUpdates;
+                    if (accepted)
+                        accepted(out.parameters);
+                    lambda = std::max(c.minimumDamping, lambda * .3);
+                    madeStep = true;
+                    if (loss <= c.lossTolerance)
+                        out.stop = LMStop::LossTolerance;
+                    break;
+                }
+            }
             ++out.work.rejectedSteps;lambda*=10;if(lambda>c.maximumDamping){out.stop=LMStop::DampingLimit;break;}
         }
         if(out.stop==LMStop::LossTolerance||out.stop==LMStop::SingularSystem||out.stop==LMStop::DampingLimit||out.stop==LMStop::EvaluationLimit||out.stop==LMStop::DerivativeLimit||out.stop==LMStop::WorkspaceLimit||out.stop==LMStop::Cancelled)break;
@@ -443,9 +465,11 @@ inline LMResult levenbergMarquardt(std::span<const double> initial,
 
 struct LMExpressionObservation { std::vector<double> inputs; double target=0; };
 inline LMResidualFunction expressionLeastSquares(Expression expression,
-    std::vector<LMExpressionObservation> rows,std::vector<std::size_t> parameterBindings,
-    std::size_t maxWork=10000000, std::vector<double> observationWeights = {},
-    std::optional<double> huberDelta = {}) {
+                                                 std::vector<LMExpressionObservation> rows,
+                                                 std::vector<std::size_t> parameterBindings,
+                                                 std::size_t maxWork = 10000000,
+                                                 std::vector<double> observationWeights = {},
+                                                 std::optional<double> huberDelta = {}) {
     if(rows.empty()||parameterBindings.empty())throw std::invalid_argument("LM expression observations and parameters required");
     for(const auto& row:rows)if(row.inputs.size()!=expression.variableCount()||!std::isfinite(row.target))throw std::invalid_argument("LM expression row schema");
     for(std::size_t i=0;i<parameterBindings.size();++i)if(parameterBindings[i]>=expression.variableCount()||(i&&parameterBindings[i]<=parameterBindings[i-1]))throw std::invalid_argument("LM parameter binding schema");
@@ -455,8 +479,8 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
         for(double weight:observationWeights){if(!std::isfinite(weight)||weight<0)throw std::invalid_argument("LM observation weights must be finite and nonnegative");volatile double next=total+weight;if(!std::isfinite(next))throw std::invalid_argument("LM observation weight sum overflow");total=next;}
         if(!(total>0))throw std::invalid_argument("LM observation weights require positive total");
     }
-    if (huberDelta && (!std::isfinite(*huberDelta) || *huberDelta <= 0.0 ||
-                       !observationWeights.empty()))
+    if (huberDelta &&
+        (!std::isfinite(*huberDelta) || *huberDelta <= 0.0 || !observationWeights.empty()))
         throw std::invalid_argument("LM Huber delta must be finite and positive, without weights");
     return [expression = std::move(expression), rows = std::move(rows),
             parameterBindings = std::move(parameterBindings), maxWork,
@@ -485,9 +509,11 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
                 totalWeight += weight;
         auto transformHuber = [&](double residual, double& derivative) {
             derivative = 1.0;
-            if (!huberDelta) return residual;
+            if (!huberDelta)
+                return residual;
             const double magnitude = std::abs(residual);
-            if (magnitude <= *huberDelta) return residual;
+            if (magnitude <= *huberDelta)
+                return residual;
             // q^2/2 equals rho_delta(r). The algebra avoids forming r^2 in
             // the linear tail and keeps q and dq/dr consistent with scoring.
             const double deltaRatio = *huberDelta / magnitude;
@@ -497,8 +523,8 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
                 (std::sqrt(*huberDelta) / std::sqrt(magnitude)) / std::sqrt(2.0 - deltaRatio);
             // q = sqrt(delta * (2|r| - delta)); keep the product
             // factored so delta may be subnormal without underflowing.
-            const double qMagnitude = std::sqrt(*huberDelta) * std::sqrt(magnitude) *
-                                      std::sqrt(2.0 - deltaRatio);
+            const double qMagnitude =
+                std::sqrt(*huberDelta) * std::sqrt(magnitude) * std::sqrt(2.0 - deltaRatio);
             derivative = tailFactor;
             return std::copysign(qMagnitude, residual);
         };

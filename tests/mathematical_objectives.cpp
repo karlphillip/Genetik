@@ -221,15 +221,13 @@ void fittingAndSelectionUseObjective() {
 
     const auto hugeTarget = std::ldexp(1.0, 511);
     const auto overflowDelta = std::ldexp(1.0, 512);
-    const auto product = Expression::binary(ExpressionKind::Multiply,
-                                            Expression::variable(0, 2),
+    const auto product = Expression::binary(ExpressionKind::Multiply, Expression::variable(0, 2),
                                             Expression::variable(1, 2));
     const auto makeOverflowCallback = [&](std::size_t count) {
-        return expressionLeastSquares(
-            product,
-            std::vector<LMExpressionObservation>(
-                count, LMExpressionObservation{{0.0, 1.0}, hugeTarget}),
-            {0}, 1000, {}, overflowDelta);
+        return expressionLeastSquares(product,
+                                      std::vector<LMExpressionObservation>(
+                                          count, LMExpressionObservation{{0.0, 1.0}, hugeTarget}),
+                                      {0}, 1000, {}, overflowDelta);
     };
     const auto sevenResidualCallback = makeOverflowCallback(7);
     const auto sevenResiduals = sevenResidualCallback(std::array{0.0}, false, 1000);
@@ -252,9 +250,8 @@ void fittingAndSelectionUseObjective() {
               eightJacobian.mathematicalOperations > 0 && eightJacobian.workspaceBytes > 0,
           "Huber overflow rejects the eighth row while retaining its completed work");
     LMConfig overflowConfig;
-    const auto overflowFit = levenbergMarquardt(
-        std::array{0.0}, std::array{-1.0}, std::array{1.0}, eightResidualCallback,
-        overflowConfig);
+    const auto overflowFit = levenbergMarquardt(std::array{0.0}, std::array{-1.0}, std::array{1.0},
+                                                eightResidualCallback, overflowConfig);
     check(overflowFit.stop == LMStop::InvalidStart && overflowFit.parameters[0] == 0.0 &&
               overflowFit.work.objectiveEvaluations == 1 &&
               overflowFit.work.jacobianEvaluations == 1 &&

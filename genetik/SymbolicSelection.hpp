@@ -56,9 +56,9 @@ struct ExpressionComplexityCosts {
     }
 
     double cost(ExpressionKind kind) const {
-        const auto found = std::find_if(individualOperatorCosts.begin(),
-                                        individualOperatorCosts.end(),
-                                        [kind](const auto& entry) { return entry.first == kind; });
+        const auto found =
+            std::find_if(individualOperatorCosts.begin(), individualOperatorCosts.end(),
+                         [kind](const auto& entry) { return entry.first == kind; });
         return found == individualOperatorCosts.end() ? operatorCost : found->second;
     }
 };

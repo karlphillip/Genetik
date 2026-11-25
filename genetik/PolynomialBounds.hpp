@@ -188,11 +188,10 @@ inline PolynomialBoundCertificate assessPolynomialBounds(const Expression& expre
         // An infinite interval is a valid conservative enclosure after binary64
         // overflow, but it is not a point witness. Only a finite enclosure that
         // lies wholly outside the requested range can prove violation.
-        const bool finitePoint = point && std::isfinite(point->value.lo) &&
-                                 std::isfinite(point->value.hi) &&
-                                 (!request.derivativeRange ||
-                                  (std::isfinite(point->derivative.lo) &&
-                                   std::isfinite(point->derivative.hi)));
+        const bool finitePoint =
+            point && std::isfinite(point->value.lo) && std::isfinite(point->value.hi) &&
+            (!request.derivativeRange ||
+             (std::isfinite(point->derivative.lo) && std::isfinite(point->derivative.hi)));
         const bool valueViolation = finitePoint && request.valueRange &&
                                     (point->value.lo > request.valueRange->second ||
                                      point->value.hi < request.valueRange->first);

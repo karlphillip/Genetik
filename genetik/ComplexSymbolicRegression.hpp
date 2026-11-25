@@ -38,8 +38,7 @@ complexSymbolicRegression(std::shared_ptr<const ComplexRegressionProblem> proble
     // complex-interpreted training objective. Keep it as the incumbent even
     // when it has no constants or every refinement fails/exhausts its budget.
     result.selectedTopology = result.structureSearch.best->expression();
-    result.fittedExpression =
-        ComplexExpression::fromScalarGenome(*result.selectedTopology);
+    result.fittedExpression = ComplexExpression::fromScalarGenome(*result.selectedTopology);
     double incumbentLoss = result.structureSearch.best->fitness();
     std::vector<Expression> topologies{result.structureSearch.best->expression()};
     for (const auto& point : result.structureSearch.paretoFrontier)

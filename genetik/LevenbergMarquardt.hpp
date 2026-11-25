@@ -568,6 +568,10 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
                     huberDelta ? 1.0 / std::sqrt(2.0 * static_cast<double>(rows.size())) : scale;
                 out.residuals.push_back(fittedResidual * objectiveScale);
             }
+            // Count the row after its prediction and residual (and derivatives,
+            // when requested) are available, before objective accumulation can
+            // fail. Invalid evaluations then retain all work through this row.
+            ++out.rowsProcessed;
             if (huberDelta) {
                 const double magnitude = std::abs(residual);
                 volatile double checkedSquare = residual * residual;
@@ -583,16 +587,15 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
                 volatile double next = huberLossSum + contribution;
                 huberLossSum = next;
                 if (!std::isfinite(huberLossSum))
-                    return LMResidualEvaluation{};
+                    return out;
             }
-            ++out.rowsProcessed;
             if (out.mathematicalOperations > workLimit)
                 return out;
         }
         if (huberDelta) {
             out.objectiveLoss = huberLossSum / static_cast<double>(rows.size());
             if (!std::isfinite(*out.objectiveLoss))
-                return LMResidualEvaluation{};
+                return out;
         }
         out.valid = true;
         return out;

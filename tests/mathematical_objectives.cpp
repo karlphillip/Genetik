@@ -218,6 +218,52 @@ void fittingAndSelectionUseObjective() {
               tinyDirectFit.sumSquaredResiduals && *tinyDirectFit.sumSquaredResiduals == 0.0 &&
               tinyDirectFit.stop == LMStop::LossTolerance && tinyDirectFit.parameters[0] == 0.0,
           "direct Huber callback loss controls stopping when normalized SSE underflows");
+
+    const auto hugeTarget = std::ldexp(1.0, 511);
+    const auto overflowDelta = std::ldexp(1.0, 512);
+    const auto product = Expression::binary(ExpressionKind::Multiply,
+                                            Expression::variable(0, 2),
+                                            Expression::variable(1, 2));
+    const auto makeOverflowCallback = [&](std::size_t count) {
+        return expressionLeastSquares(
+            product,
+            std::vector<LMExpressionObservation>(
+                count, LMExpressionObservation{{0.0, 1.0}, hugeTarget}),
+            {0}, 1000, {}, overflowDelta);
+    };
+    const auto sevenResidualCallback = makeOverflowCallback(7);
+    const auto sevenResiduals = sevenResidualCallback(std::array{0.0}, false, 1000);
+    const auto sevenJacobian = sevenResidualCallback(std::array{0.0}, true, 1000);
+    check(sevenResiduals.valid && sevenResiduals.forwardEvaluations == 7 &&
+              sevenResiduals.rowsProcessed == 7 && sevenResiduals.mathematicalOperations > 0 &&
+              sevenResiduals.workspaceBytes > 0 && sevenJacobian.valid &&
+              sevenJacobian.forwardEvaluations == 7 && sevenJacobian.derivativeEvaluations == 7 &&
+              sevenJacobian.rowsProcessed == 7 && sevenJacobian.mathematicalOperations > 0 &&
+              sevenJacobian.workspaceBytes > 0,
+          "seven large Huber rows succeed in residual and Jacobian callback modes");
+    const auto eightResidualCallback = makeOverflowCallback(8);
+    const auto eightResiduals = eightResidualCallback(std::array{0.0}, false, 1000);
+    const auto eightJacobian = eightResidualCallback(std::array{0.0}, true, 1000);
+    check(!eightResiduals.valid && eightResiduals.forwardEvaluations == 8 &&
+              eightResiduals.derivativeEvaluations == 0 && eightResiduals.rowsProcessed == 8 &&
+              eightResiduals.mathematicalOperations > 0 && eightResiduals.workspaceBytes > 0 &&
+              !eightJacobian.valid && eightJacobian.forwardEvaluations == 8 &&
+              eightJacobian.derivativeEvaluations == 8 && eightJacobian.rowsProcessed == 8 &&
+              eightJacobian.mathematicalOperations > 0 && eightJacobian.workspaceBytes > 0,
+          "Huber overflow rejects the eighth row while retaining its completed work");
+    LMConfig overflowConfig;
+    const auto overflowFit = levenbergMarquardt(
+        std::array{0.0}, std::array{-1.0}, std::array{1.0}, eightResidualCallback,
+        overflowConfig);
+    check(overflowFit.stop == LMStop::InvalidStart && overflowFit.parameters[0] == 0.0 &&
+              overflowFit.work.objectiveEvaluations == 1 &&
+              overflowFit.work.jacobianEvaluations == 1 &&
+              overflowFit.work.forwardEvaluations == eightJacobian.forwardEvaluations &&
+              overflowFit.work.derivativeEvaluations == eightJacobian.derivativeEvaluations &&
+              overflowFit.work.rowsProcessed == eightJacobian.rowsProcessed &&
+              overflowFit.work.mathematicalOperations == eightJacobian.mathematicalOperations &&
+              overflowFit.work.peakWorkspaceBytes >= eightJacobian.workspaceBytes,
+          "LM totals include work from the invalid overflowing Huber callback");
     std::cout << "Huber outlier constant: coordinate c="
               << analyticCoordinate.expression.nodes().front().constantValue()
               << " loss=" << analyticCoordinate.loss.score()

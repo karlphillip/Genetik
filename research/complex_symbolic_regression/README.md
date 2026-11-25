@@ -41,6 +41,16 @@ search structures match the base best structures in every run; gains therefore
 come from complex coefficient refinement and choosing among the searched Pareto
 topologies. The diagnostic fit is not counted as autonomous recovery.
 
+The base arm uses the base-commit `symbolicRegression` implementation on
+`ComplexRegressionProblem`, so scalar constants are interpreted as real
+complex coefficients. It was rebuilt into the frozen v5 executable from the
+checked-out study source, making this an API-level baseline rather than a
+separately compiled base-commit binary. v4 reran all six target cases with the
+same targets, seeds, grammar, inputs, and work limits as v3 after the classifier
+change; v5 repeated those same target/seed pairs after fixing the v4 crash.
+These versioned runs are retained but are not independent target or seed
+samples.
+
 | Case | Seed | Base expression | Base RMSE | Candidate topology | Candidate RMSE | Fitter objective evaluations | Full parameterized structure recovered |
 |---|---:|---|---:|---|---:|---:|---|
 | affine | 401 | `((x0 + (cos(1.0) * x0)) - cos((-1.0)))` | 0.619647 | same | 4.64e-16 | 40 | yes |

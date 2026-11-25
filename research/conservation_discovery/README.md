@@ -93,3 +93,17 @@ The damped harmonic negative control changed energy from `0.9265926100` to
 The earlier v1 selection artifact is retained alongside its first frozen
 package as an invalidated diagnostic. v1 exposed the numerical-degeneracy issue;
 the table above and v2 machine artifacts are the final measured comparison.
+
+## Exact verifier recheck (no search rerun)
+
+The six saved v2 selections were re-read from `results/target-runs-v2.json`
+without rerunning search. `scripts/verify_conservation_exact.py` uses SymPy
+1.12 exact rational polynomial coefficients to separately establish support,
+nonconstancy, exact Lie derivative, and coefficient-wise `F=aE+b` recovery.
+Its output is `results/exact-verification-v3.json`; the frozen v2 records above
+were not rewritten. All six expressions are supported and nonconstant; all six
+have a nonzero exact Lie derivative and fail exact affine recovery. The
+independent fixtures establish that `E` and `3-2E` pass affine recovery, `E^2`
+is exactly conserved but not affine in `E`, and `y^2` is not conserved.
+Unsupported syntax or algebra exhaustion is represented as inconclusive by the
+verifier contract; none occurred for these six short polynomials.

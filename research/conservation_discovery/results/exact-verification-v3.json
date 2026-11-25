@@ -1,0 +1,85 @@
+{
+  "source": "target-runs-v2.json",
+  "search_rerun": false,
+  "verifier": "SymPy 1.12 exact rational polynomial coefficients",
+  "records": [
+    {
+      "system": "harmonic",
+      "seed": 101,
+      "expression": "((0.5 - (x1 * x1)) * (x1 * x1))",
+      "verification_status": "resolved",
+      "supported_polynomial": true,
+      "nonconstant": true,
+      "exact_conservation": false,
+      "exact_lie_derivative": "4*x0*x1**3 - x0*x1",
+      "exact_affine_reference_recovery": false,
+      "affine_scale": null,
+      "affine_offset": null
+    },
+    {
+      "system": "harmonic",
+      "seed": 211,
+      "expression": "(((x1 * ((x1 + 1.0) + (x1 + (-1.0)))) + (((((-0.5) + x0) * 1.0) * x0) - (-2.0))) + (-1.0))",
+      "verification_status": "resolved",
+      "supported_polynomial": true,
+      "nonconstant": true,
+      "exact_conservation": false,
+      "exact_lie_derivative": "-2*x0*x1 - x1/2",
+      "exact_affine_reference_recovery": false,
+      "affine_scale": null,
+      "affine_offset": null
+    },
+    {
+      "system": "harmonic",
+      "seed": 307,
+      "expression": "(x1 * (x1 - (x1 * (x1 * x1))))",
+      "verification_status": "resolved",
+      "supported_polynomial": true,
+      "nonconstant": true,
+      "exact_conservation": false,
+      "exact_lie_derivative": "4*x0*x1**3 - 2*x0*x1",
+      "exact_affine_reference_recovery": false,
+      "affine_scale": null,
+      "affine_offset": null
+    },
+    {
+      "system": "quartic",
+      "seed": 101,
+      "expression": "((-2.0) - ((-2.0) - (((1.0 - (x0 * x0)) - ((x1 * x1) + (-0.5))) * 0.5)))",
+      "verification_status": "resolved",
+      "supported_polynomial": true,
+      "nonconstant": true,
+      "exact_conservation": false,
+      "exact_lie_derivative": "2*x0**3*x1 - x0*x1",
+      "exact_affine_reference_recovery": false,
+      "affine_scale": null,
+      "affine_offset": null
+    },
+    {
+      "system": "quartic",
+      "seed": 211,
+      "expression": "((((1.0 - (x1 * x1)) - ((-2.0) - (-2.0))) * (x1 * x1)) * (-2.0))",
+      "verification_status": "resolved",
+      "supported_polynomial": true,
+      "nonconstant": true,
+      "exact_conservation": false,
+      "exact_lie_derivative": "-16*x0**3*x1**3 + 8*x0**3*x1",
+      "exact_affine_reference_recovery": false,
+      "affine_scale": null,
+      "affine_offset": null
+    },
+    {
+      "system": "quartic",
+      "seed": 307,
+      "expression": "((((-1.0) + 1.0) - x1) * x1)",
+      "verification_status": "resolved",
+      "supported_polynomial": true,
+      "nonconstant": true,
+      "exact_conservation": false,
+      "exact_lie_derivative": "4*x0**3*x1",
+      "exact_affine_reference_recovery": false,
+      "affine_scale": null,
+      "affine_offset": null
+    }
+  ]
+}

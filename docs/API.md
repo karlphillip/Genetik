@@ -136,6 +136,10 @@ computes an ordinary value and one selected input partial over an existing expre
 Activity is structural; unavailable derivatives remain distinct from invalid primal
 values and local resource exhaustion. See the compiled installed derivatives quickstart.
 
+Whole-box polynomial value and derivative assessment uses the opt-in
+[`PolynomialBounds.hpp`](POLYNOMIAL_BOUNDS.md) certificate API. Unsupported
+operators and unresolved interval enclosures remain inconclusive.
+
 Supplied value and partial observations: [DERIVATIVE_REGRESSION.md](DERIVATIVE_REGRESSION.md).
 Immutable channels have explicit scale/weight, composite fitness identity and bounded
 all-row reporting. Search/fitting use the same weighted normalized objective.
@@ -146,3 +150,17 @@ integrands. Estimated convergence is not a rigorous error bound; full-model sear
 and fitting share existing admission/preparation/publication and run-owned execution.
 
 [Constructive rational-function regression](CONSTRUCTIVE_RATIONAL_REGRESSION.md) is an independent, optional bounded fitter for normalized one-variable rational models. It does not change symbolic-regression initialization or selection.
+
+## Symbolic selection and mathematical assessment
+
+Configurable operator, variable and constant costs, custom scalar losses, and
+post-search MDL selection are documented in
+[SYMBOLIC_REGRESSION.md](SYMBOLIC_REGRESSION.md) and
+[MATHEMATICAL_OBJECTIVES.md](MATHEMATICAL_OBJECTIVES.md). MDL is an explicit
+post-search selector and does not alter AIC/BIC. Grouped-trajectory scoring is
+available through `ConservationDiscovery.hpp`; see
+[CONSERVATION_DISCOVERY.md](CONSERVATION_DISCOVERY.md) for its normalization and
+current qualification limits.
+
+The current task's measured implementation and outstanding items are summarized in
+[PRIORITY_SCORECARD.md](PRIORITY_SCORECARD.md).

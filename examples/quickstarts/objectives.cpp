@@ -1,5 +1,6 @@
 #include <ConstantFitting.hpp>
 #include <InformationCriteria.hpp>
+#include <SymbolicRegression.hpp>
 
 #include <array>
 #include <cmath>
@@ -31,6 +32,48 @@ int main() {
         !showFit(RegressionLoss::MeanAbsoluteError, 1.0, "MAE") ||
         !showFit(RegressionLoss::Huber, 1.0, "Huber"))
         return 1;
+
+    const std::vector<RegressionRow> asymmetricRows{
+        {{0.0}, 0.0}, {{0.0}, 2.0}, {{0.0}, 10.0}};
+    RegressionObjectiveConfig asymmetric;
+    asymmetric.loss = RegressionLoss::CustomScalar;
+    asymmetric.customScalarLoss = [](double prediction, double target) {
+        constexpr double quantile = 0.75;
+        const double residual = target - prediction;
+        return residual >= 0.0 ? quantile * residual : (1.0 - quantile) * -residual;
+    };
+    const auto customProblem = RegressionProblem::createWithObjective(
+        asymmetricRows, asymmetric, {31, 6, 16});
+    SymbolicRegressionConfig search;
+    search.population = 8;
+    search.elites = 1;
+    search.maxGenerationAttempts = 1;
+    search.maxEvaluations = 8;
+    search.maxTrainingLossAttempts = 64;
+    search.initialExpressionSlots = 2;
+    search.maximumInitializerWorkUnits = 1;
+    InitialExpressionProvider initial = [](const RegressionProblem& problem, std::size_t,
+                                           std::uint64_t) {
+        return InitialExpressionBatch{{Expression::constant(2.0, 1, problem.limits()),
+                                       Expression::constant(10.0, 1, problem.limits())},
+                                      1, "success", {}};
+    };
+    RandomContext customRandom(1927);
+    const auto selected = symbolicRegression(customProblem, search, customRandom, {}, initial);
+    if (!selected.best)
+        return 1;
+    TrainingObjective customTraining(customProblem);
+    ConstantFitConfig customFit;
+    customFit.lower = -2.0;
+    customFit.upper = 12.0;
+    customFit.initialStep = 1.0;
+    customFit.minimumStep = 1e-8;
+    const auto asymmetricFit = fitConstants(
+        Expression::constant(0.0, 1, customProblem->limits()), customTraining, customFit);
+    std::cout << "custom asymmetric search=" << selected.best->text()
+              << " coordinate_fit=" << asymmetricFit.expression.toString()
+              << " objective=" << asymmetricFit.loss.score()
+              << " MSE-optimum=4 asymmetric-optimum=10\n";
 
     const auto gaussian = RegressionProblem::create(
         {{{-1.0}, 0.2}, {{0.0}, 0.9}, {{1.0}, 2.1}, {{2.0}, 2.8}, {{3.0}, 4.2}, {{4.0}, 4.9}});

@@ -14,6 +14,8 @@ template<> struct CandidateCheckpointCodec<ExpressionCandidate> {
     static constexpr std::string_view identifier="genetik.scalar-expression-candidate/1";
     static void encode(CheckpointWriter& w,const ExpressionCandidate& c){
         if(typeid(c)!=typeid(ExpressionCandidate)||c.contextOwner_||c.parentPreparation_||c.fitnessState()==FitnessState::Unevaluated)throw CheckpointError("unsupported candidate codec/context");
+        if (c.problem()->objective().loss == RegressionLoss::CustomScalar)
+            throw CheckpointError("custom callback objectives require an objective-aware checkpoint codec");
         const auto& e=c.expression();const auto l=e.limits();w.integer(e.variableCount());w.integer(l.maxNodes);w.integer(l.maxDepth);w.real(l.maxAbsConstant);w.integer(l.maxArithmeticOperations);
         w.integer(e.nodeCount());
         for(const auto& n:e.nodes()){
@@ -31,6 +33,8 @@ template<> struct CandidateCheckpointCodec<ExpressionCandidate> {
     }
     static ExpressionCandidate decode(CheckpointReader& r,const ScalarCheckpointContext& context){
         if(!context.problem)throw CheckpointError("checkpoint problem context required");
+        if (context.problem->objective().loss == RegressionLoss::CustomScalar)
+            throw CheckpointError("custom callback objectives require an objective-aware checkpoint codec");
         const auto vars=r.count(100000);ExpressionLimits l;
         l.maxNodes=r.count(100000);l.maxDepth=r.count(100000);l.maxAbsConstant=r.real();l.maxArithmeticOperations=r.integer();
         const auto expected=context.problem->limits();

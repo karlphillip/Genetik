@@ -1,0 +1,100 @@
+#include <ConservationDiscovery.hpp>
+#include <SymbolicRegression.hpp>
+
+#include <cmath>
+#include <iostream>
+#include <stdexcept>
+
+namespace {
+void check(bool ok, const char* message) {
+    if (!ok) throw std::runtime_error(message);
+}
+Expression mul(const Expression& a, const Expression& b) {
+    return Expression::binary(ExpressionKind::Multiply, a, b);
+}
+}
+
+int main() {
+    try {
+        std::vector<ConservationTrajectory> trajectories;
+        constexpr double pi = 3.1415926535897932384626433832795;
+        for (const double radius : {1.0, 2.0, 3.0}) {
+            ConservationTrajectory trajectory;
+            for (int step = 0; step < 16; ++step) {
+                const double t = 2.0 * pi * static_cast<double>(step) / 16.0;
+                trajectory.states.push_back({radius * std::cos(t), -radius * std::sin(t)});
+            }
+            trajectories.push_back(std::move(trajectory));
+        }
+        const ConservationDiscoveryProblem problem(trajectories);
+        const auto y = Expression::variable(0, 2), v = Expression::variable(1, 2);
+        const auto energy = Expression::binary(ExpressionKind::Add, mul(y, y), mul(v, v));
+        const auto scaledEnergy = mul(Expression::constant(0.5, 2), energy);
+        const auto varying = mul(y, y);
+        const auto constant = Expression::constant(1.0, 2);
+
+        const auto conserved = problem.assess(energy);
+        const auto scaled = problem.assess(scaledEnergy);
+        const auto incorrect = problem.assess(varying);
+        const auto degenerate = problem.assess(constant);
+        check(conserved.score.state() == FitnessState::Valid && conserved.withinFraction &&
+                  conserved.betweenFraction && conserved.separation &&
+                  *conserved.withinFraction < 1e-20 && *conserved.betweenFraction > 0.99,
+              "grouped harmonic trajectories reward low within variation and energy separation");
+        check(scaled.score.state() == FitnessState::Valid && scaled.withinFraction &&
+                  conserved.withinFraction &&
+                  std::abs(*scaled.withinFraction - *conserved.withinFraction) < 1e-14 &&
+                  scaled.score.score() >= conserved.score.score(),
+              "shrinking a nonzero expression cannot improve its normalized objective");
+        check(incorrect.score.state() == FitnessState::Valid && conserved.score.score() <
+                  incorrect.score.score(),
+              "a varying within-trajectory expression receives a worse score");
+        check(degenerate.score.state() == FitnessState::Invalid,
+              "constant expressions have no between-trajectory separation and are rejected");
+
+        const auto tiny = mul(Expression::constant(1e-14, 2), varying);
+        check(problem.assess(tiny).score.state() == FitnessState::Invalid,
+              "numerically degenerate shrinkage is rejected");
+        std::uint64_t rows = 0;
+        RegressionSupplementalWork work;
+        const auto measured = problem.measureWithWork(energy, &rows, work);
+        check(measured.loss == conserved.score && rows == trajectories.size() * 16 &&
+                  measured.samplesAttempted == rows && work.fieldEvaluations == rows,
+              "ordinary regression measurement hooks retain row and expression-work accounting");
+
+        SymbolicRegressionConfig search;
+        search.population = 8;
+        search.elites = 1;
+        search.maxGenerationAttempts = 1;
+        search.maxEvaluations = 16;
+        search.maxTrainingLossAttempts = 16 * problem.sampleCount();
+        search.initialExpressionSlots = 2;
+        search.maximumInitializerWorkUnits = 1;
+        search.grammar.operators = {ExpressionKind::Add, ExpressionKind::Multiply};
+        search.grammar.constants = {0.25, 1.0, 2.0};
+        search.grammar.initialMaxDepth = 3;
+        RandomContext random(7781);
+        auto ownedProblem = std::make_shared<const ConservationDiscoveryProblem>(trajectories);
+        InitialExpressionProvider initial = [](const RegressionProblem& p, std::size_t,
+                                               std::uint64_t) {
+            const auto a = Expression::binary(ExpressionKind::Multiply,
+                                               Expression::variable(0, p.dimensions()),
+                                               Expression::variable(0, p.dimensions()), p.limits());
+            const auto b = Expression::binary(ExpressionKind::Multiply,
+                                               Expression::variable(1, p.dimensions()),
+                                               Expression::variable(1, p.dimensions()), p.limits());
+            return InitialExpressionBatch{{a, b}, 1, "success", {}};
+        };
+        const auto searched = symbolicRegression(ownedProblem, search, random, {}, initial);
+        check(searched.best && searched.candidateEvaluations == search.population * 2 &&
+                  searched.variation.mutationProposals + searched.variation.crossoverProposals > 0 &&
+                  searched.best->fitnessState() == FitnessState::Valid &&
+                  searched.best->fitness() ==
+                      ownedProblem->measure(searched.best->expression()).loss.score(),
+              "ordinary symbolic search evaluates grouped conservation fitness through its public path");
+        std::cout << "conservation objective contracts passed\n";
+    } catch (const std::exception& error) {
+        std::cerr << error.what() << '\n';
+        return 1;
+    }
+}

@@ -1334,3 +1334,46 @@ fitting, MAE and Huber behavior are unchanged. Deterministic fixtures cover
 constant, affine, nonlinear-coefficient and symbolic-preparation paths; the
 weighted constant comparison returns c=1 and weighted MSE=9 with LM in 7
 objective evaluations versus coordinate fitting in 56 loss attempts.
+
+## Priority implementation work from the PR #71 base
+
+The task branch starts at `1344982fe798108abf2993ba204cd399d93ab947`. It adds
+opt-in operator/variable/constant expression costs to symbolic loss ordering,
+complexity-penalty ordering and Pareto dominance. Unit costs preserve the
+existing node-count behavior; physical node counts and expression hard limits
+remain separate. The deterministic near-constant fixture reverses selection
+when variable occurrences receive cost 10 and constants cost 0.1.
+
+Regression objectives add explicit `CustomScalar` callbacks. Their finite,
+nonnegative row losses are averaged through the same scorer used by symbolic
+search and coordinate fitting. LM rejects arbitrary callbacks; callback
+parallelism defaults off. The existing cached-fitness checkpoint codec rejects
+callback objectives because callback code has no codec/fingerprint. The
+installed example and deterministic fixture use asymmetric absolute loss on
+`{0,2,10}`: symbolic search and coordinate fitting select 10; independent MSE
+minimizes at 4.
+
+An opt-in fixed-precision, signed Elias-gamma MDL selector reports model,
+residual and total bits for supported fixed-row polynomial regression. Its
+constant-zero fixture selects 15 bits over 21; the linear fixture reverses
+those totals and selects the 15-bit variable model. This is not an AIC/BIC
+change or an Operon-equivalent codebook.
+
+Whole-box polynomial value and derivative assessment now uses outward-rounded
+interval arithmetic, bounded subdivision and verified point-enclosure
+witnesses. `MathematicalConstraints::assessWholeBox` exposes the result for
+candidate assessment. The endpoint trap `x^3-x/4` produces a negative
+derivative witness at zero; `x+x^3` is certified over `[-1,1]`. Full interval
+proofs are limited to the documented polynomial grammar and may return
+Inconclusive at the subdivision ceiling.
+
+Release focused tests passed for these changes. The complete Release CTest run
+passed 137 of 139 tests; the research-program test passed on isolated rerun,
+while the complete installed-package integration again exceeded its fixed
+300-second build limit on this Jetson. A focused downstream installed consumer
+compiled and ran the changed objectives example successfully. Focused ASan+UBSan
+tests also passed. No stochastic comparison package was frozen or executed.
+The multi-site/shared-function extension and autonomous complex search remain
+outstanding. A grouped-trajectory conservation scoring problem and deterministic
+search-path smoke test are present, but no two-system held-out discovery study,
+frozen protocol, or independent Lie-derivative verification has been run.

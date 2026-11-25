@@ -1,5 +1,22 @@
 # Current phased development plan
 
+## User-directed Genetik priorities (2026-11-25)
+
+The task-owned branch from PR #71's merge commit implements configurable
+symbolic complexity, custom scalar objectives, a fixed-precision post-search
+MDL selector, and whole-box polynomial value/derivative certificates. See
+[baseline evidence](BASELINE.md), [objective/MDL definitions](MATHEMATICAL_OBJECTIVES.md),
+and [polynomial bound certificates](POLYNOMIAL_BOUNDS.md).
+
+The same assignment still has unimplemented work: objective vectors in Pareto
+selection; three-or-more independent template sites and named shared functions;
+and autonomous complex-valued structure search. A grouped-trajectory
+conservation scoring problem has been added and exercised through the public
+search path, but the two-system held-out discovery campaign and independent
+Lie-derivative verification have not been run. No conservation benchmark or
+stochastic competitor comparison has been frozen. These are explicit
+outstanding items, not completed roadmap phases.
+
 ## Current D5 development status
 
 D4 and the published 0.4.0 delivery are completed history. The additive D5

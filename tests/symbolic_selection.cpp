@@ -41,6 +41,17 @@ void penaltyKeepsLossSeparate() {
     ComplexityPenaltyOrdering moderatePenalty(0.1);
     check(moderatePenalty.better(square, linear, ObjectiveDirection::Minimize),
           "a complex model wins when its accuracy improvement exceeds the penalty");
+    const auto nearConstant = RegressionProblem::create({{{0.9}, 0.9}, {{1.1}, 1.1}});
+    ExpressionCandidate exactVariable(Expression::variable(0), nearConstant);
+    ExpressionCandidate approximateConstant(Expression::constant(1.0, 1), nearConstant);
+    exactVariable.calculateFitness();
+    approximateConstant.calculateFitness();
+    ComplexityPenaltyOrdering defaultCost(1.0);
+    check(defaultCost.better(exactVariable, approximateConstant, ObjectiveDirection::Minimize),
+          "default unit node costs retain loss ordering for equal-size models");
+    ComplexityPenaltyOrdering weighted(1.0, ExpressionComplexityCosts{0.1, 10.0, 0.1});
+    check(weighted.better(approximateConstant, exactVariable, ObjectiveDirection::Minimize),
+          "configured variable cost analytically reverses the default ranking");
 }
 
 void paretoFrontAndSurvival() {
@@ -158,8 +169,10 @@ void limitsAndSearchDeterminism() {
     for (std::size_t i = 0; i < serial.paretoFrontier.size(); ++i) {
         const auto& point = serial.paretoFrontier[i];
         check(point.predictionLoss == point.candidate.fitness() &&
-                  point.structuralComplexity == point.candidate.expression().nodeCount(),
-              "frontier reports prediction loss and structural complexity separately");
+                  point.structuralComplexity == point.candidate.expression().nodeCount() &&
+                  point.configuredComplexity == configuredExpressionComplexity(
+                      point.candidate.expression(), config.complexityCosts),
+              "frontier reports physical and configured complexity separately");
         for (std::size_t j = i + 1; j < serial.paretoFrontier.size(); ++j)
             check(serial.paretoFrontier[i].candidate.text() !=
                       serial.paretoFrontier[j].candidate.text(),
@@ -168,11 +181,16 @@ void limitsAndSearchDeterminism() {
 
     config.selectionStrategy = SymbolicRegressionConfig::SelectionStrategy::ComplexityPenalty;
     config.complexityPenalty = 0.25;
+    config.complexityCosts = ExpressionComplexityCosts{2.0, 3.0, 4.0};
     RandomContext penalizedRandom(731);
     const auto penalized = symbolicRegression(problem, config, penalizedRandom);
+    check(penalized.best.has_value(), "penalty search returns a best evaluated candidate");
+    const auto configuredBestCost = configuredExpressionComplexity(
+        penalized.best->expression(), config.complexityCosts);
     check(penalized.best && penalized.bestSelectionScore &&
               *penalized.bestSelectionScore == static_cast<long double>(penalized.best->fitness()) +
-                                                   0.25L * penalized.best->expression().nodeCount(),
+                                                   0.25L * configuredBestCost &&
+              penalized.bestConfiguredComplexity == configuredBestCost,
           "penalty search returns prediction loss and selection score independently");
 
     config.selectionStrategy = SymbolicRegressionConfig::SelectionStrategy::Pareto;

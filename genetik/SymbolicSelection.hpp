@@ -25,12 +25,68 @@ public:
     explicit ParetoSelectionLimitExceeded(const char* message) : std::runtime_error(message) {}
 };
 
+struct ExpressionComplexityCosts {
+    double operatorCost = 1.0;
+    double variableCost = 1.0;
+    double constantCost = 1.0;
+
+    void validate() const {
+        for (const double cost : {operatorCost, variableCost, constantCost})
+            if (!std::isfinite(cost) || cost < 0.0)
+                throw std::invalid_argument("expression complexity costs must be finite and nonnegative");
+    }
+};
+
+inline long double configuredExpressionComplexity(const Expression& expression,
+                                                   const ExpressionComplexityCosts& costs) {
+    costs.validate();
+    long double result = 0.0L;
+    for (const auto& node : expression.nodes()) {
+        const auto arity = expressionArity(node.kind());
+        const long double cost = arity == 0
+                                     ? (node.kind() == ExpressionKind::Variable
+                                            ? costs.variableCost
+                                            : costs.constantCost)
+                                     : costs.operatorCost;
+        if (cost > std::numeric_limits<long double>::max() - result)
+            return std::numeric_limits<long double>::max();
+        result += cost;
+    }
+    return result;
+}
+
+struct ConfiguredRegressionOrdering {
+    explicit ConfiguredRegressionOrdering(ExpressionComplexityCosts costs = {}) : costs_(costs) {
+        costs_.validate();
+    }
+    void validateDirection(ObjectiveDirection direction) const {
+        if (direction != ObjectiveDirection::Minimize)
+            throw std::invalid_argument("regression requires minimization");
+    }
+    template <class Candidate>
+    bool better(const Candidate& left, const Candidate& right,
+                ObjectiveDirection direction) const {
+        validateDirection(direction);
+        if (left.fitness() != right.fitness())
+            return left.fitness() < right.fitness();
+        const auto leftCost = configuredExpressionComplexity(left.expression(), costs_);
+        const auto rightCost = configuredExpressionComplexity(right.expression(), costs_);
+        if (leftCost != rightCost)
+            return leftCost < rightCost;
+        return left.text() < right.text();
+    }
+private:
+    ExpressionComplexityCosts costs_;
+};
+
 // Optional symbolic-regression ordering policy. Prediction loss remains the
 // candidate fitness; this policy only supplies an alternate selection score.
 struct ComplexityPenaltyOrdering {
-    explicit ComplexityPenaltyOrdering(double penalty) : penalty_(penalty) {
+    explicit ComplexityPenaltyOrdering(double penalty, ExpressionComplexityCosts costs = {})
+        : penalty_(penalty), costs_(costs) {
         if (!std::isfinite(penalty_) || penalty_ < 0.0)
             throw std::invalid_argument("complexity penalty must be finite and nonnegative");
+        costs_.validate();
     }
 
     void validateDirection(ObjectiveDirection direction) const {
@@ -39,9 +95,9 @@ struct ComplexityPenaltyOrdering {
     }
 
     template <class Candidate>
-    long double selectionScore(const Candidate& candidate) const noexcept {
+    long double selectionScore(const Candidate& candidate) const {
         const auto penaltyCost = static_cast<long double>(penalty_) *
-                                 static_cast<long double>(candidate.expression().nodeCount());
+                                 configuredExpressionComplexity(candidate.expression(), costs_);
         const auto score = static_cast<long double>(candidate.fitness()) + penaltyCost;
         return std::isfinite(score) ? score : std::numeric_limits<long double>::max();
     }
@@ -55,24 +111,30 @@ struct ComplexityPenaltyOrdering {
             return leftScore < rightScore;
         if (left.fitness() != right.fitness())
             return left.fitness() < right.fitness();
-        if (left.expression().nodeCount() != right.expression().nodeCount())
-            return left.expression().nodeCount() < right.expression().nodeCount();
+        const auto leftCost = configuredExpressionComplexity(left.expression(), costs_);
+        const auto rightCost = configuredExpressionComplexity(right.expression(), costs_);
+        if (leftCost != rightCost)
+            return leftCost < rightCost;
         return left.text() < right.text();
     }
 
 private:
     double penalty_;
+    ExpressionComplexityCosts costs_;
 };
 
 // NSGA-II-style nondominated sorting, crowding-based survival, and rank/crowding
 // parent weights. All tie breaks are stable and use expression text last.
 struct ParetoRegressionOrdering {
     ParetoRegressionOrdering(std::uint64_t maximumComparisons,
-                             std::size_t maximumEstimatedMemoryBytes, ParetoSelectionWork& work)
+                             std::size_t maximumEstimatedMemoryBytes, ParetoSelectionWork& work,
+                             ExpressionComplexityCosts costs = {})
         : maximumComparisons_(maximumComparisons),
           maximumEstimatedMemoryBytes_(maximumEstimatedMemoryBytes), work_(&work) {
         if (!maximumComparisons_ || !maximumEstimatedMemoryBytes_)
             throw std::invalid_argument("Pareto work and memory limits must be positive");
+        costs_ = costs;
+        costs_.validate();
     }
 
     void validateDirection(ObjectiveDirection direction) const {
@@ -89,8 +151,10 @@ struct ParetoRegressionOrdering {
             return left.text() < right.text();
         if (left.fitness() != right.fitness())
             return left.fitness() < right.fitness();
-        if (left.expression().nodeCount() != right.expression().nodeCount())
-            return left.expression().nodeCount() < right.expression().nodeCount();
+        const auto leftComplexity = configuredExpressionComplexity(left.expression(), costs_);
+        const auto rightComplexity = configuredExpressionComplexity(right.expression(), costs_);
+        if (leftComplexity != rightComplexity)
+            return leftComplexity < rightComplexity;
         return left.text() < right.text();
     }
 
@@ -387,8 +451,8 @@ private:
             return false;
         if (right.fitnessState() != FitnessState::Valid)
             return true;
-        const auto leftComplexity = left.expression().nodeCount();
-        const auto rightComplexity = right.expression().nodeCount();
+        const auto leftComplexity = configuredExpressionComplexity(left.expression(), costs_);
+        const auto rightComplexity = configuredExpressionComplexity(right.expression(), costs_);
         const bool noWorse = left.fitness() <= right.fitness() && leftComplexity <= rightComplexity;
         const bool strictlyBetter =
             left.fitness() < right.fitness() || leftComplexity < rightComplexity;
@@ -490,4 +554,5 @@ private:
     std::uint64_t maximumComparisons_;
     std::size_t maximumEstimatedMemoryBytes_;
     ParetoSelectionWork* work_;
+    ExpressionComplexityCosts costs_{};
 };

@@ -31,6 +31,7 @@ struct SymbolicRegressionConfig {
     enum class SelectionStrategy { PredictionLoss, ComplexityPenalty, Pareto };
     SelectionStrategy selectionStrategy = SelectionStrategy::PredictionLoss;
     double complexityPenalty = 0.0;
+    ExpressionComplexityCosts complexityCosts{};
     std::uint64_t maximumParetoComparisons = 10'000'000;
     std::size_t maximumParetoEstimatedMemoryBytes = 64 * 1024 * 1024;
     std::size_t maximumParetoFrontier = 64;
@@ -63,6 +64,7 @@ struct SymbolicParetoPoint {
     ExpressionCandidate candidate;
     double predictionLoss;
     std::size_t structuralComplexity;
+    long double configuredComplexity = 0.0L;
 };
 struct SymbolicRegressionResult {
     std::optional<ExpressionCandidate> best;
@@ -93,6 +95,7 @@ struct SymbolicRegressionResult {
     std::vector<ObjectiveImprovement> objectiveImprovements;
     SearchStop stoppingReason = SearchStop::GenerationLimit;
     std::optional<long double> bestSelectionScore;
+    std::optional<long double> bestConfiguredComplexity;
     ParetoSelectionWork paretoWork;
     std::vector<SymbolicParetoPoint> paretoFrontier;
 };
@@ -259,6 +262,9 @@ inline SymbolicRegressionResult runSymbolicSearch(
         previous = current;
     }
     result.best = population.bestSeen(); result.bestGeneration = population.bestGeneration();
+    if (result.best)
+        result.bestConfiguredComplexity =
+            configuredExpressionComplexity(result.best->expression(), config.complexityCosts);
     result.attemptedGenerations = ga.attempts(); result.publishedGenerations = ga.evolutions();
     result.trainingWork = objective->work();
     result.supplementalWork=objective->supplementalWork();
@@ -283,7 +289,8 @@ inline SymbolicRegressionResult runSymbolicSearch(
                 result.paretoFrontier.reserve(frontier.size());
                 for (const auto& candidate : frontier)
                     result.paretoFrontier.push_back(
-                        {candidate, candidate.fitness(), candidate.expression().nodeCount()});
+                        {candidate, candidate.fitness(), candidate.expression().nodeCount(),
+                         configuredExpressionComplexity(candidate.expression(), config.complexityCosts)});
             } catch (const ParetoSelectionLimitExceeded&) {
                 result.stoppingReason = SearchStop::SelectionResourceLimit;
             }
@@ -324,6 +331,7 @@ symbolicRegression(std::shared_ptr<const RegressionProblem> problem,
          (!config.maximumParetoComparisons || !config.maximumParetoEstimatedMemoryBytes ||
           !config.maximumParetoFrontier)))
         throw std::invalid_argument("invalid symbolic search configuration");
+    config.complexityCosts.validate();
     if (config.initialExpressionSlots > std::min<std::size_t>(8, config.population / 4) ||
         (config.initialExpressionSlots &&
          (!initialProvider || !config.maximumInitializerWorkUnits)) ||
@@ -360,16 +368,18 @@ symbolicRegression(std::shared_ptr<const RegressionProblem> problem,
     switch (config.selectionStrategy) {
     case SymbolicRegressionConfig::SelectionStrategy::PredictionLoss:
         return genetik_detail::runSymbolicSearch(problem, config, random, objective, preparation,
-                                                 std::move(variation), RegressionOrdering{},
+                                                 std::move(variation),
+                                                 ConfiguredRegressionOrdering(config.complexityCosts),
                                                  nullptr, batch);
     case SymbolicRegressionConfig::SelectionStrategy::ComplexityPenalty:
         return genetik_detail::runSymbolicSearch(
             problem, config, random, objective, preparation, std::move(variation),
-            ComplexityPenaltyOrdering(config.complexityPenalty), nullptr, batch);
+            ComplexityPenaltyOrdering(config.complexityPenalty, config.complexityCosts), nullptr, batch);
     case SymbolicRegressionConfig::SelectionStrategy::Pareto: {
         ParetoSelectionWork work;
         ParetoRegressionOrdering ordering(config.maximumParetoComparisons,
-                                          config.maximumParetoEstimatedMemoryBytes, work);
+                                          config.maximumParetoEstimatedMemoryBytes, work,
+                                          config.complexityCosts);
         return genetik_detail::runSymbolicSearch(problem, config, random, objective, preparation,
                                                  std::move(variation), std::move(ordering), &work,
                                                  batch);

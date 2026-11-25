@@ -7,12 +7,13 @@
 
 namespace {
 void check(bool ok, const char* message) {
-    if (!ok) throw std::runtime_error(message);
+    if (!ok)
+        throw std::runtime_error(message);
 }
 Expression mul(const Expression& a, const Expression& b) {
     return Expression::binary(ExpressionKind::Multiply, a, b);
 }
-}
+} // namespace
 
 int main() {
     try {
@@ -46,8 +47,8 @@ int main() {
                   std::abs(*scaled.withinFraction - *conserved.withinFraction) < 1e-14 &&
                   scaled.score.score() >= conserved.score.score(),
               "shrinking a nonzero expression cannot improve its normalized objective");
-        check(incorrect.score.state() == FitnessState::Valid && conserved.score.score() <
-                  incorrect.score.score(),
+        check(incorrect.score.state() == FitnessState::Valid &&
+                  conserved.score.score() < incorrect.score.score(),
               "a varying within-trajectory expression receives a worse score");
         check(degenerate.score.state() == FitnessState::Invalid,
               "constant expressions have no between-trajectory separation and are rejected");
@@ -57,10 +58,12 @@ int main() {
               "numerically degenerate shrinkage is rejected");
         const auto cancellation = Expression::binary(
             ExpressionKind::Add, Expression::constant(0.5, 2),
-            Expression::binary(ExpressionKind::Add, v,
+            Expression::binary(
+                ExpressionKind::Add, v,
                 Expression::binary(ExpressionKind::Subtract, Expression::constant(1.0, 2), v)));
-        check(problem.assess(cancellation).score.state() == FitnessState::Invalid,
-              "roundoff-only between-trajectory variation cannot make a constant appear informative");
+        check(
+            problem.assess(cancellation).score.state() == FitnessState::Invalid,
+            "roundoff-only between-trajectory variation cannot make a constant appear informative");
         std::uint64_t rows = 0;
         RegressionSupplementalWork work;
         const auto measured = problem.measureWithWork(energy, &rows, work);
@@ -84,20 +87,22 @@ int main() {
         InitialExpressionProvider initial = [](const RegressionProblem& p, std::size_t,
                                                std::uint64_t) {
             const auto a = Expression::binary(ExpressionKind::Multiply,
-                                               Expression::variable(0, p.dimensions()),
-                                               Expression::variable(0, p.dimensions()), p.limits());
+                                              Expression::variable(0, p.dimensions()),
+                                              Expression::variable(0, p.dimensions()), p.limits());
             const auto b = Expression::binary(ExpressionKind::Multiply,
-                                               Expression::variable(1, p.dimensions()),
-                                               Expression::variable(1, p.dimensions()), p.limits());
+                                              Expression::variable(1, p.dimensions()),
+                                              Expression::variable(1, p.dimensions()), p.limits());
             return InitialExpressionBatch{{a, b}, 1, "success", {}};
         };
         const auto searched = symbolicRegression(ownedProblem, search, random, {}, initial);
         check(searched.best && searched.candidateEvaluations == search.population * 2 &&
-                  searched.variation.mutationProposals + searched.variation.crossoverProposals > 0 &&
+                  searched.variation.mutationProposals + searched.variation.crossoverProposals >
+                      0 &&
                   searched.best->fitnessState() == FitnessState::Valid &&
                   searched.best->fitness() ==
                       ownedProblem->measure(searched.best->expression()).loss.score(),
-              "ordinary symbolic search evaluates grouped conservation fitness through its public path");
+              "ordinary symbolic search evaluates grouped conservation fitness through its public "
+              "path");
         std::cout << "conservation objective contracts passed\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

@@ -379,14 +379,14 @@ symbolicRegression(std::shared_ptr<const RegressionProblem> problem,
     }
     switch (config.selectionStrategy) {
     case SymbolicRegressionConfig::SelectionStrategy::PredictionLoss:
-        return genetik_detail::runSymbolicSearch(problem, config, random, objective, preparation,
-                                                 std::move(variation),
-                                                 ConfiguredRegressionOrdering(config.complexityCosts),
-                                                 nullptr, batch);
+        return genetik_detail::runSymbolicSearch(
+            problem, config, random, objective, preparation, std::move(variation),
+            ConfiguredRegressionOrdering(config.complexityCosts), nullptr, batch);
     case SymbolicRegressionConfig::SelectionStrategy::ComplexityPenalty:
         return genetik_detail::runSymbolicSearch(
             problem, config, random, objective, preparation, std::move(variation),
-            ComplexityPenaltyOrdering(config.complexityPenalty, config.complexityCosts), nullptr, batch);
+            ComplexityPenaltyOrdering(config.complexityPenalty, config.complexityCosts), nullptr,
+            batch);
     case SymbolicRegressionConfig::SelectionStrategy::Pareto: {
         ParetoSelectionWork work;
         ParetoRegressionOrdering ordering(config.maximumParetoComparisons,

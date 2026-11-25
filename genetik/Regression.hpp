@@ -18,7 +18,13 @@ struct RegressionRow {
     std::vector<double> inputs;
     double target;
 };
-enum class RegressionLoss { MeanSquaredError, MeanAbsoluteError, Huber, WeightedMeanSquaredError, CustomScalar };
+enum class RegressionLoss {
+    MeanSquaredError,
+    MeanAbsoluteError,
+    Huber,
+    WeightedMeanSquaredError,
+    CustomScalar
+};
 struct RegressionObjectiveConfig {
     RegressionLoss loss = RegressionLoss::MeanSquaredError;
     double huberDelta = 1.0;
@@ -298,7 +304,8 @@ private:
         case RegressionLoss::MeanAbsoluteError:
             if (!objective.observationWeights.empty() || objective.customScalarLoss ||
                 objective.customScalarLossParallelSafe)
-                throw std::invalid_argument("callback/parallel flag is only valid for CustomScalar");
+                throw std::invalid_argument(
+                    "callback/parallel flag is only valid for CustomScalar");
             break;
         case RegressionLoss::Huber:
             if (!objective.observationWeights.empty() || objective.customScalarLoss ||

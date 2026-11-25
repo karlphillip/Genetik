@@ -37,21 +37,21 @@ struct ExpressionComplexityCosts {
     void validate() const {
         for (const double cost : {operatorCost, variableCost, constantCost})
             if (!std::isfinite(cost) || cost < 0.0)
-                throw std::invalid_argument("expression complexity costs must be finite and nonnegative");
+                throw std::invalid_argument(
+                    "expression complexity costs must be finite and nonnegative");
     }
 };
 
 inline long double configuredExpressionComplexity(const Expression& expression,
-                                                   const ExpressionComplexityCosts& costs) {
+                                                  const ExpressionComplexityCosts& costs) {
     costs.validate();
     long double result = 0.0L;
     for (const auto& node : expression.nodes()) {
         const auto arity = expressionArity(node.kind());
-        const long double cost = arity == 0
-                                     ? (node.kind() == ExpressionKind::Variable
-                                            ? costs.variableCost
-                                            : costs.constantCost)
-                                     : costs.operatorCost;
+        const long double cost =
+            arity == 0 ? (node.kind() == ExpressionKind::Variable ? costs.variableCost
+                                                                  : costs.constantCost)
+                       : costs.operatorCost;
         if (cost > std::numeric_limits<long double>::max() - result)
             return std::numeric_limits<long double>::max();
         result += cost;
@@ -68,8 +68,7 @@ struct ConfiguredRegressionOrdering {
             throw std::invalid_argument("regression requires minimization");
     }
     template <class Candidate>
-    bool better(const Candidate& left, const Candidate& right,
-                ObjectiveDirection direction) const {
+    bool better(const Candidate& left, const Candidate& right, ObjectiveDirection direction) const {
         validateDirection(direction);
         if (left.fitness() != right.fitness())
             return left.fitness() < right.fitness();
@@ -79,6 +78,7 @@ struct ConfiguredRegressionOrdering {
             return leftCost < rightCost;
         return left.text() < right.text();
     }
+
 private:
     ExpressionComplexityCosts costs_;
 };
@@ -98,8 +98,7 @@ struct ComplexityPenaltyOrdering {
             throw std::invalid_argument("regression requires minimization");
     }
 
-    template <class Candidate>
-    long double selectionScore(const Candidate& candidate) const {
+    template <class Candidate> long double selectionScore(const Candidate& candidate) const {
         const auto penaltyCost = static_cast<long double>(penalty_) *
                                  configuredExpressionComplexity(candidate.expression(), costs_);
         const auto score = static_cast<long double>(candidate.fitness()) + penaltyCost;

@@ -35,7 +35,7 @@ struct ConservationObjectiveMetrics {
 // minimumNormalizedSeparation (relative to that scale) to avoid accepting
 // constants whose apparent separation consists only of floating-point noise.
 class ConservationDiscoveryProblem final : public RegressionProblem {
-  public:
+public:
     ConservationDiscoveryProblem(const std::vector<ConservationTrajectory>& trajectories,
                                  ExpressionLimits limits = {63, 8, 1e6},
                                  ConservationObjectiveConfig config = {})
@@ -51,7 +51,8 @@ class ConservationDiscoveryProblem final : public RegressionProblem {
             throw std::invalid_argument("invalid conservation objective configuration/data");
         for (const auto& trajectory : trajectories_) {
             if (trajectory.states.size() < 2)
-                throw std::invalid_argument("each conservation trajectory requires multiple states");
+                throw std::invalid_argument(
+                    "each conservation trajectory requires multiple states");
             if (trajectory.states.size() > std::numeric_limits<std::size_t>::max() - sampleCount_)
                 throw std::length_error("conservation observation count overflow");
             sampleCount_ += trajectory.states.size();
@@ -62,8 +63,12 @@ class ConservationDiscoveryProblem final : public RegressionProblem {
         }
     }
 
-    bool parallelEvaluationSafe() const noexcept override { return true; }
-    std::size_t sampleCount() const noexcept override { return sampleCount_; }
+    bool parallelEvaluationSafe() const noexcept override {
+        return true;
+    }
+    std::size_t sampleCount() const noexcept override {
+        return sampleCount_;
+    }
 
     ConservationObjectiveMetrics assess(const Expression& expression,
                                         std::uint64_t* rowAttempts = nullptr,
@@ -86,7 +91,8 @@ class ConservationDiscoveryProblem final : public RegressionProblem {
                 ++result.observationsAttempted;
                 const auto prediction = workspace.evaluate(checked, state);
                 if (supplemental) {
-                    if (prediction.arithmeticOperations() > UINT64_MAX - supplemental->mathematicalOperations ||
+                    if (prediction.arithmeticOperations() >
+                            UINT64_MAX - supplemental->mathematicalOperations ||
                         supplemental->fieldEvaluations == UINT64_MAX)
                         throw std::overflow_error("conservation work counter overflow");
                     supplemental->mathematicalOperations += prediction.arithmeticOperations();
@@ -111,14 +117,16 @@ class ConservationDiscoveryProblem final : public RegressionProblem {
             for (double& value : values[group]) {
                 value /= magnitude;
                 volatile double next = sum + value;
-                if (!std::isfinite(next)) return result;
+                if (!std::isfinite(next))
+                    return result;
                 sum = next;
                 ++count;
             }
             means[group] = sum / static_cast<double>(values[group].size());
-            volatile double nextGrand = grandSum + means[group] *
-                                                   static_cast<double>(values[group].size());
-            if (!std::isfinite(nextGrand)) return result;
+            volatile double nextGrand =
+                grandSum + means[group] * static_cast<double>(values[group].size());
+            if (!std::isfinite(nextGrand))
+                return result;
             grandSum = nextGrand;
         }
         const double grandMean = grandSum / static_cast<double>(count);
@@ -127,12 +135,15 @@ class ConservationDiscoveryProblem final : public RegressionProblem {
             for (const double value : values[group]) {
                 const double delta = value - means[group];
                 volatile double next = within + delta * delta;
-                if (!std::isfinite(next)) return result;
+                if (!std::isfinite(next))
+                    return result;
                 within = next;
             }
             const double delta = means[group] - grandMean;
-            volatile double next = between + static_cast<double>(values[group].size()) * delta * delta;
-            if (!std::isfinite(next)) return result;
+            volatile double next =
+                between + static_cast<double>(values[group].size()) * delta * delta;
+            if (!std::isfinite(next))
+                return result;
             between = next;
         }
         const double total = within + between;
@@ -140,13 +151,12 @@ class ConservationDiscoveryProblem final : public RegressionProblem {
             return result;
         const double withinFraction = within / total;
         const double betweenFraction = between / total;
-        if (!std::isfinite(withinFraction) || !std::isfinite(betweenFraction) ||
-            between <= 0.0 || betweenFraction < config_.minimumBetweenFraction ||
-            std::sqrt(between / static_cast<double>(count)) <
-                config_.minimumNormalizedSeparation)
+        if (!std::isfinite(withinFraction) || !std::isfinite(betweenFraction) || between <= 0.0 ||
+            betweenFraction < config_.minimumBetweenFraction ||
+            std::sqrt(between / static_cast<double>(count)) < config_.minimumNormalizedSeparation)
             return result;
-        const double complexity = config_.complexityPenalty *
-                                  static_cast<double>(checked.nodeCount());
+        const double complexity =
+            config_.complexityPenalty * static_cast<double>(checked.nodeCount());
         const double score = withinFraction + complexity;
         if (!std::isfinite(score))
             return result;
@@ -173,7 +183,7 @@ class ConservationDiscoveryProblem final : public RegressionProblem {
         return trajectories_;
     }
 
-  private:
+private:
     std::vector<ConservationTrajectory> trajectories_;
     ConservationObjectiveConfig config_;
     std::size_t sampleCount_ = 0;

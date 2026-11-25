@@ -24,8 +24,13 @@ struct MinimumDescriptionLengthConfig {
 };
 
 enum class MinimumDescriptionLengthStatus {
-    Success, NoCandidates, UnsupportedDataModel, InvalidModel, InvalidPrediction,
-    ResourceExhausted, NumericalFailure
+    Success,
+    NoCandidates,
+    UnsupportedDataModel,
+    InvalidModel,
+    InvalidPrediction,
+    ResourceExhausted,
+    NumericalFailure
 };
 
 struct MinimumDescriptionLengthCandidate {
@@ -77,10 +82,10 @@ inline std::uint64_t checkedAdd(std::uint64_t a, std::uint64_t b) {
 }
 } // namespace genetik_mdl_detail
 
-inline MinimumDescriptionLengthResult selectMinimumDescriptionLength(
-    const RegressionProblem& problem,
-    std::span<const MinimumDescriptionLengthCandidate> candidates,
-    const MinimumDescriptionLengthConfig& config = {}) {
+inline MinimumDescriptionLengthResult
+selectMinimumDescriptionLength(const RegressionProblem& problem,
+                               std::span<const MinimumDescriptionLengthCandidate> candidates,
+                               const MinimumDescriptionLengthConfig& config = {}) {
     if (!std::isfinite(config.coefficientPrecision) || config.coefficientPrecision <= 0.0 ||
         !std::isfinite(config.residualPrecision) || config.residualPrecision <= 0.0 ||
         !config.maximumCandidates || !config.maximumRowEvaluations ||
@@ -100,8 +105,8 @@ inline MinimumDescriptionLengthResult selectMinimumDescriptionLength(
         return result;
     }
     if (candidates.size() > config.maximumCandidates ||
-        candidates.size() > config.maximumEstimatedMemoryBytes /
-                                sizeof(MinimumDescriptionLengthCandidateResult)) {
+        candidates.size() >
+            config.maximumEstimatedMemoryBytes / sizeof(MinimumDescriptionLengthCandidateResult)) {
         result.status = MinimumDescriptionLengthStatus::ResourceExhausted;
         return result;
     }
@@ -113,17 +118,18 @@ inline MinimumDescriptionLengthResult selectMinimumDescriptionLength(
         const auto& input = candidates[ci].expression;
         scored.structuralNodes = input.nodeCount();
         constexpr std::size_t bytesPerNode = sizeof(ExpressionNode) + 4 * sizeof(double);
-        const auto resultBytes = candidates.size() * sizeof(MinimumDescriptionLengthCandidateResult);
-        if (input.nodeCount() > (config.maximumEstimatedMemoryBytes - resultBytes) /
-                                    bytesPerNode) {
+        const auto resultBytes =
+            candidates.size() * sizeof(MinimumDescriptionLengthCandidateResult);
+        if (input.nodeCount() > (config.maximumEstimatedMemoryBytes - resultBytes) / bytesPerNode) {
             result.status = MinimumDescriptionLengthStatus::ResourceExhausted;
             result.selectedIndex.reset();
             result.selectedModel.reset();
             return result;
         }
         std::optional<Expression> checkedStorage;
-        try { checkedStorage.emplace(problem.checkedExpression(input)); }
-        catch (const std::invalid_argument&) {
+        try {
+            checkedStorage.emplace(problem.checkedExpression(input));
+        } catch (const std::invalid_argument&) {
             scored.status = MinimumDescriptionLengthStatus::InvalidModel;
             continue;
         } catch (const std::length_error&) {
@@ -142,15 +148,18 @@ inline MinimumDescriptionLengthResult selectMinimumDescriptionLength(
                     modelBits = genetik_mdl_detail::checkedAdd(
                         modelBits, genetik_mdl_detail::gammaBits(nodes[n].variableIndex() + 1));
                 } else if (kind == ExpressionKind::Constant) {
-                    const auto code = genetik_mdl_detail::signedCode(
-                        nodes[n].constantValue(), config.coefficientPrecision);
-                    const auto q = static_cast<std::int64_t>((code & 1) ? (code - 1) / 2 : -(code / 2));
+                    const auto code = genetik_mdl_detail::signedCode(nodes[n].constantValue(),
+                                                                     config.coefficientPrecision);
+                    const auto q =
+                        static_cast<std::int64_t>((code & 1) ? (code - 1) / 2 : -(code / 2));
                     const auto reconstructed = static_cast<double>(q) * config.coefficientPrecision;
-                    if (!std::isfinite(reconstructed) || std::abs(reconstructed) > checked.limits().maxAbsConstant)
-                        throw std::overflow_error("quantized coefficient exceeds expression limits");
+                    if (!std::isfinite(reconstructed) ||
+                        std::abs(reconstructed) > checked.limits().maxAbsConstant)
+                        throw std::overflow_error(
+                            "quantized coefficient exceeds expression limits");
                     nodes[n] = ExpressionNode::constant(reconstructed);
                     modelBits = genetik_mdl_detail::checkedAdd(modelBits,
-                                                              genetik_mdl_detail::gammaBits(code));
+                                                               genetik_mdl_detail::gammaBits(code));
                 } else if (kind != ExpressionKind::Add && kind != ExpressionKind::Subtract &&
                            kind != ExpressionKind::Multiply) {
                     supported = false;
@@ -186,13 +195,19 @@ inline MinimumDescriptionLengthResult selectMinimumDescriptionLength(
                 const auto prediction = workspace.evaluate(quantized, row.inputs);
                 result.expressionOperations = genetik_mdl_detail::checkedAdd(
                     result.expressionOperations, prediction.arithmeticOperations());
-                if (!prediction.valid()) { valid = false; break; }
+                if (!prediction.valid()) {
+                    valid = false;
+                    break;
+                }
                 volatile double residual = row.target - prediction.value();
-                if (!std::isfinite(residual)) { valid = false; break; }
-                const auto code = genetik_mdl_detail::signedCode(
-                    residual, config.residualPrecision);
-                residualBits = genetik_mdl_detail::checkedAdd(
-                    residualBits, genetik_mdl_detail::gammaBits(code));
+                if (!std::isfinite(residual)) {
+                    valid = false;
+                    break;
+                }
+                const auto code =
+                    genetik_mdl_detail::signedCode(residual, config.residualPrecision);
+                residualBits = genetik_mdl_detail::checkedAdd(residualBits,
+                                                              genetik_mdl_detail::gammaBits(code));
                 if (residualBits > config.maximumBits) {
                     result.status = MinimumDescriptionLengthStatus::ResourceExhausted;
                     result.selectedIndex.reset();
@@ -220,8 +235,7 @@ inline MinimumDescriptionLengthResult selectMinimumDescriptionLength(
                 (total == *result.candidates[*winner].totalBits &&
                  (scored.structuralNodes < result.candidates[*winner].structuralNodes ||
                   (scored.structuralNodes == result.candidates[*winner].structuralNodes &&
-                   input.toString() < candidates[*winner].expression.toString()))))
-            {
+                   input.toString() < candidates[*winner].expression.toString())))) {
                 winner = ci;
                 result.selectedModel = quantized;
             }

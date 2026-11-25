@@ -101,14 +101,24 @@ static void fileTests(const std::filesystem::path& root){
         ExpressionCandidate original(parseExpression(source,1,{},scalarProblem->limits()),scalarProblem);original.calculateFitness();CheckpointWriter writer;CandidateCheckpointCodec<ExpressionCandidate>::encode(writer,original);
         CheckpointReader reader(writer.data());const auto copy=CandidateCheckpointCodec<ExpressionCandidate>::decode(reader,ScalarCheckpointContext{scalarProblem,{}});reader.finish();check(copy.expression().sameRepresentation(original.expression())&&copy.evaluation()==original.evaluation(),"all scalar codec node/constant bits and fitness outcomes");
     }
-    RegressionObjectiveConfig customObjective;customObjective.loss=RegressionLoss::CustomScalar;
-    customObjective.customScalarLoss=[](double prediction,double target){return std::abs(prediction-target);};
-    const auto callbackProblem=RegressionProblem::createWithObjective({{{0},1}},customObjective);
-    ExpressionCandidate callbackCandidate(Expression::constant(1,1),callbackProblem);callbackCandidate.calculateFitness();
+    RegressionObjectiveConfig customObjective;
+    customObjective.loss = RegressionLoss::CustomScalar;
+    customObjective.customScalarLoss = [](double prediction, double target) {
+        return std::abs(prediction - target);
+    };
+    const auto callbackProblem =
+        RegressionProblem::createWithObjective({{{0}, 1}}, customObjective);
+    ExpressionCandidate callbackCandidate(Expression::constant(1, 1), callbackProblem);
+    callbackCandidate.calculateFitness();
     CheckpointWriter callbackWriter;
-    rejects([&]{CandidateCheckpointCodec<ExpressionCandidate>::encode(callbackWriter,callbackCandidate);});
+    rejects([&] {
+        CandidateCheckpointCodec<ExpressionCandidate>::encode(callbackWriter, callbackCandidate);
+    });
     CheckpointReader callbackReader("");
-    rejects([&]{(void)CandidateCheckpointCodec<ExpressionCandidate>::decode(callbackReader,ScalarCheckpointContext{callbackProblem,{}});});
+    rejects([&] {
+        (void)CandidateCheckpointCodec<ExpressionCandidate>::decode(
+            callbackReader, ScalarCheckpointContext{callbackProblem, {}});
+    });
     const auto file=root/"atomic.gtkc";saveCheckpointAtomic(file,d);
     auto replacement=d;replacement.payload="second";
     rejects([&]{saveCheckpointAtomic(file,replacement,[]{throw std::runtime_error("injected failure before rename");});});

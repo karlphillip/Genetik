@@ -33,8 +33,7 @@ int main() {
         !showFit(RegressionLoss::Huber, 1.0, "Huber"))
         return 1;
 
-    const std::vector<RegressionRow> asymmetricRows{
-        {{0.0}, 0.0}, {{0.0}, 2.0}, {{0.0}, 10.0}};
+    const std::vector<RegressionRow> asymmetricRows{{{0.0}, 0.0}, {{0.0}, 2.0}, {{0.0}, 10.0}};
     RegressionObjectiveConfig asymmetric;
     asymmetric.loss = RegressionLoss::CustomScalar;
     asymmetric.customScalarLoss = [](double prediction, double target) {
@@ -42,8 +41,8 @@ int main() {
         const double residual = target - prediction;
         return residual >= 0.0 ? quantile * residual : (1.0 - quantile) * -residual;
     };
-    const auto customProblem = RegressionProblem::createWithObjective(
-        asymmetricRows, asymmetric, {31, 6, 16});
+    const auto customProblem =
+        RegressionProblem::createWithObjective(asymmetricRows, asymmetric, {31, 6, 16});
     SymbolicRegressionConfig search;
     search.population = 8;
     search.elites = 1;
@@ -56,7 +55,9 @@ int main() {
                                            std::uint64_t) {
         return InitialExpressionBatch{{Expression::constant(2.0, 1, problem.limits()),
                                        Expression::constant(10.0, 1, problem.limits())},
-                                      1, "success", {}};
+                                      1,
+                                      "success",
+                                      {}};
     };
     RandomContext customRandom(1927);
     const auto selected = symbolicRegression(customProblem, search, customRandom, {}, initial);
@@ -68,8 +69,8 @@ int main() {
     customFit.upper = 12.0;
     customFit.initialStep = 1.0;
     customFit.minimumStep = 1e-8;
-    const auto asymmetricFit = fitConstants(
-        Expression::constant(0.0, 1, customProblem->limits()), customTraining, customFit);
+    const auto asymmetricFit = fitConstants(Expression::constant(0.0, 1, customProblem->limits()),
+                                            customTraining, customFit);
     std::cout << "custom asymmetric search=" << selected.best->text()
               << " coordinate_fit=" << asymmetricFit.expression.toString()
               << " objective=" << asymmetricFit.loss.score()

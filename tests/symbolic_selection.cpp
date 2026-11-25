@@ -170,8 +170,9 @@ void limitsAndSearchDeterminism() {
         const auto& point = serial.paretoFrontier[i];
         check(point.predictionLoss == point.candidate.fitness() &&
                   point.structuralComplexity == point.candidate.expression().nodeCount() &&
-                  point.configuredComplexity == configuredExpressionComplexity(
-                      point.candidate.expression(), config.complexityCosts),
+                  point.configuredComplexity ==
+                      configuredExpressionComplexity(point.candidate.expression(),
+                                                     config.complexityCosts),
               "frontier reports physical and configured complexity separately");
         for (std::size_t j = i + 1; j < serial.paretoFrontier.size(); ++j)
             check(serial.paretoFrontier[i].candidate.text() !=
@@ -185,8 +186,8 @@ void limitsAndSearchDeterminism() {
     RandomContext penalizedRandom(731);
     const auto penalized = symbolicRegression(problem, config, penalizedRandom);
     check(penalized.best.has_value(), "penalty search returns a best evaluated candidate");
-    const auto configuredBestCost = configuredExpressionComplexity(
-        penalized.best->expression(), config.complexityCosts);
+    const auto configuredBestCost =
+        configuredExpressionComplexity(penalized.best->expression(), config.complexityCosts);
     check(penalized.best && penalized.bestSelectionScore &&
               *penalized.bestSelectionScore == static_cast<long double>(penalized.best->fitness()) +
                                                    0.25L * configuredBestCost &&

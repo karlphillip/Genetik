@@ -6,28 +6,27 @@
 
 namespace {
 void check(bool ok, const char* message) {
-    if (!ok) throw std::runtime_error(message);
+    if (!ok)
+        throw std::runtime_error(message);
 }
 Expression multiply(const Expression& a, const Expression& b) {
     return Expression::binary(ExpressionKind::Multiply, a, b);
 }
-}
+} // namespace
 
 int main() {
     try {
         const auto x = Expression::variable(0);
         const auto x3 = multiply(multiply(x, x), x);
-        const auto trap = Expression::binary(
-            ExpressionKind::Subtract, x3,
-            multiply(Expression::constant(0.25, 1), x));
+        const auto trap = Expression::binary(ExpressionKind::Subtract, x3,
+                                             multiply(Expression::constant(0.25, 1), x));
         const FiniteBox unit{{-1.0}, {1.0}};
 
         PolynomialBoundRequest trapValue;
         trapValue.valueRange = std::pair{-1.0, 1.0};
         const auto value = assessPolynomialBounds(trap, unit, trapValue);
-        check(value.status == PolynomialCertificateStatus::Certified &&
-                  value.subdivisions > 0 && value.valueEnclosure &&
-                  value.valueEnclosure->first >= -1.0 &&
+        check(value.status == PolynomialCertificateStatus::Certified && value.subdivisions > 0 &&
+                  value.valueEnclosure && value.valueEnclosure->first >= -1.0 &&
                   value.valueEnclosure->second <= 1.0,
               "outward interval subdivision certifies the complete value range");
 
@@ -42,11 +41,9 @@ int main() {
                   falseMonotone.witnessDerivativeEnclosure->second < 0.0,
               "midpoint derivative witness defeats endpoint-only monotonicity sampling");
         MathematicalConstraints candidateAssessment;
-        const auto assessedCandidate =
-            candidateAssessment.assessWholeBox(trap, unit, monotonicity);
+        const auto assessedCandidate = candidateAssessment.assessWholeBox(trap, unit, monotonicity);
         check(assessedCandidate.status == ConstraintStatus::Violated &&
-                  assessedCandidate.wholeBoxCertificate &&
-                  !assessedCandidate.sampledOnly,
+                  assessedCandidate.wholeBoxCertificate && !assessedCandidate.sampledOnly,
               "candidate assessment exposes and preserves the whole-box certificate result");
 
         const auto control = Expression::binary(ExpressionKind::Add, x, x3);

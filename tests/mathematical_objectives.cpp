@@ -366,20 +366,21 @@ void customScalarLossSearchAndCoordinateFit() {
     search.initialExpressionSlots = 2;
     search.maximumInitializerWorkUnits = 1;
     InitialExpressionProvider initial = [](const RegressionProblem& p, std::size_t, std::uint64_t) {
-        return InitialExpressionBatch{{Expression::constant(2.0, 1, p.limits()),
-                                       Expression::constant(10.0, 1, p.limits())}, 1,
-                                      "success", {}};
+        return InitialExpressionBatch{
+            {Expression::constant(2.0, 1, p.limits()), Expression::constant(10.0, 1, p.limits())},
+            1,
+            "success",
+            {}};
     };
     RandomContext random(1927);
     const auto discovered = symbolicRegression(problem, search, random, {}, initial);
-    check(discovered.best && discovered.best->expression().nodes().front().kind() ==
-                                 ExpressionKind::Constant &&
+    check(discovered.best &&
+              discovered.best->expression().nodes().front().kind() == ExpressionKind::Constant &&
               discovered.best->expression().nodes().front().constantValue() == 10.0,
           "ordinary symbolic search evaluates the explicit custom scalar loss");
     RandomContext parallelRandom(1927, ExecutionConfig{2});
-    throws<std::invalid_argument>([&] {
-        (void)symbolicRegression(problem, search, parallelRandom, {}, initial);
-    });
+    throws<std::invalid_argument>(
+        [&] { (void)symbolicRegression(problem, search, parallelRandom, {}, initial); });
     check(parallelRandom.evaluationAttempts() == 0,
           "unsafe callback is rejected before parallel search consumes evaluations");
 
@@ -389,8 +390,8 @@ void customScalarLossSearchAndCoordinateFit() {
     fitting.upper = 12.0;
     fitting.initialStep = 1.0;
     fitting.minimumStep = 1e-8;
-    const auto fitted = fitConstants(Expression::constant(0.0, 1, problem->limits()), training,
-                                     fitting);
+    const auto fitted =
+        fitConstants(Expression::constant(0.0, 1, problem->limits()), training, fitting);
     check(fitted.expression.nodes().front().constantValue() == 10.0 &&
               fitted.loss == problem->measure(fitted.expression).loss,
           "coordinate fitting reaches unique asymmetric absolute-loss minimizer 10");

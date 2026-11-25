@@ -503,48 +503,48 @@ void complexCoefficientFitting() {
 }
 
 void complexSearchRetainsValidStructure() {
-  std::vector<ComplexObservation> rows;
-  for (const std::complex<double> z : std::array<std::complex<double>, 5>{
-           {{-2.0, -1.0}, {-1.0, 0.5}, {0.25, -0.75}, {1.0, 1.5}, {2.0, -0.25}}})
-    rows.push_back({{z}, z});
-  auto problem = std::make_shared<const ComplexRegressionProblem>(rows);
-  SymbolicRegressionConfig config;
-  config.population = 16;
-  config.elites = 2;
-  config.maxGenerationAttempts = 2;
-  config.maxEvaluations = 48;
-  config.maxTrainingLossAttempts = 48 * rows.size();
-  config.grammar.operators = {ExpressionKind::Add, ExpressionKind::Multiply};
-  config.grammar.constants = {-1.0, 0.0, 1.0};
-  config.grammar.initialMaxDepth = 2;
-  config.grammar.mutationMaxDepth = 2;
-  RandomContext random(73021);
-  ComplexCoefficientFitConfig fitConfig;
-  fitConfig.optimizer.maxObjectiveEvaluations = 200;
-  const auto result = complexSymbolicRegression(problem, config, random, fitConfig);
-  check(result.structureSearch.best && result.fittedExpression && result.selectedTopology,
-        "complex public search retains a valid selected model");
-  const auto retainedLoss = problem->assess(*result.fittedExpression);
-  check(retainedLoss.status == ScientificStatus::Success && retainedLoss.loss &&
-            result.structureSearch.best->fitness() <= *retainedLoss.loss + 1e-14,
-        "complex refinement cannot replace the incumbent with a worse training model");
+    std::vector<ComplexObservation> rows;
+    for (const std::complex<double> z : std::array<std::complex<double>, 5>{
+             {{-2.0, -1.0}, {-1.0, 0.5}, {0.25, -0.75}, {1.0, 1.5}, {2.0, -0.25}}})
+        rows.push_back({{z}, z});
+    auto problem = std::make_shared<const ComplexRegressionProblem>(rows);
+    SymbolicRegressionConfig config;
+    config.population = 16;
+    config.elites = 2;
+    config.maxGenerationAttempts = 2;
+    config.maxEvaluations = 48;
+    config.maxTrainingLossAttempts = 48 * rows.size();
+    config.grammar.operators = {ExpressionKind::Add, ExpressionKind::Multiply};
+    config.grammar.constants = {-1.0, 0.0, 1.0};
+    config.grammar.initialMaxDepth = 2;
+    config.grammar.mutationMaxDepth = 2;
+    RandomContext random(73021);
+    ComplexCoefficientFitConfig fitConfig;
+    fitConfig.optimizer.maxObjectiveEvaluations = 200;
+    const auto result = complexSymbolicRegression(problem, config, random, fitConfig);
+    check(result.structureSearch.best && result.fittedExpression && result.selectedTopology,
+          "complex public search retains a valid selected model");
+    const auto retainedLoss = problem->assess(*result.fittedExpression);
+    check(retainedLoss.status == ScientificStatus::Success && retainedLoss.loss &&
+              result.structureSearch.best->fitness() <= *retainedLoss.loss + 1e-14,
+          "complex refinement cannot replace the incumbent with a worse training model");
 
-  SymbolicRegressionConfig identityConfig = config;
-  identityConfig.population = 8;
-  identityConfig.elites = 1;
-  identityConfig.maxGenerationAttempts = 1;
-  identityConfig.maxEvaluations = 8;
-  identityConfig.maxTrainingLossAttempts = 8 * rows.size();
-  identityConfig.grammar.operators.clear();
-  identityConfig.grammar.constants.clear();
-  identityConfig.grammar.initialMaxDepth = 1;
-  identityConfig.grammar.mutationMaxDepth = 1;
-  RandomContext identityRandom(19);
-  const auto identity = complexSymbolicRegression(problem, identityConfig, identityRandom);
-  check(identity.structureSearch.best && identity.fittedExpression &&
-            identity.coefficientFit == std::nullopt && identity.fittedTopologies == 0 &&
-            problem->assess(*identity.fittedExpression).loss == 0.0,
-        "identity target without constants is returned without requiring coefficient fitting");
+    SymbolicRegressionConfig identityConfig = config;
+    identityConfig.population = 8;
+    identityConfig.elites = 1;
+    identityConfig.maxGenerationAttempts = 1;
+    identityConfig.maxEvaluations = 8;
+    identityConfig.maxTrainingLossAttempts = 8 * rows.size();
+    identityConfig.grammar.operators.clear();
+    identityConfig.grammar.constants.clear();
+    identityConfig.grammar.initialMaxDepth = 1;
+    identityConfig.grammar.mutationMaxDepth = 1;
+    RandomContext identityRandom(19);
+    const auto identity = complexSymbolicRegression(problem, identityConfig, identityRandom);
+    check(identity.structureSearch.best && identity.fittedExpression &&
+              identity.coefficientFit == std::nullopt && identity.fittedTopologies == 0 &&
+              problem->assess(*identity.fittedExpression).loss == 0.0,
+          "identity target without constants is returned without requiring coefficient fitting");
 }
 void complexCoefficientFitLimitsAndBudgets() {
     const std::vector<ComplexObservation> largeTarget{{{{1, 0}}, {1e12, 1e12}},

@@ -64,14 +64,13 @@ int main() {
 
         const auto xTwo = Expression::variable(0, 2);
         const auto s = Expression::variable(1, 2);
-        const auto scaledSquare = Expression::binary(
-            ExpressionKind::Multiply, multiply(xTwo, xTwo), s);
+        const auto scaledSquare =
+            Expression::binary(ExpressionKind::Multiply, multiply(xTwo, xTwo), s);
         const double huge = std::ldexp(1.0, 600), tiny = std::ldexp(1.0, -1000);
         PolynomialBoundRequest overflowRequest;
         overflowRequest.valueRange = std::pair{0.0, std::ldexp(1.0, 201)};
         overflowRequest.derivativeInput = 0;
-        overflowRequest.derivativeRange = std::pair{-std::ldexp(1.0, -398),
-                                                    std::ldexp(1.0, -398)};
+        overflowRequest.derivativeRange = std::pair{-std::ldexp(1.0, -398), std::ldexp(1.0, -398)};
         for (const double sign : {-1.0, 1.0}) {
             const FiniteBox singleton{{sign * huge, tiny}, {sign * huge, tiny}};
             const auto overflow = assessPolynomialBounds(scaledSquare, singleton, overflowRequest);
@@ -81,8 +80,7 @@ int main() {
             PolynomialBoundRequest derivativeOnly;
             derivativeOnly.derivativeInput = 0;
             derivativeOnly.derivativeRange = overflowRequest.derivativeRange;
-            const auto derivative =
-                assessPolynomialBounds(scaledSquare, singleton, derivativeOnly);
+            const auto derivative = assessPolynomialBounds(scaledSquare, singleton, derivativeOnly);
             check(derivative.status == PolynomialCertificateStatus::Certified &&
                       derivative.derivativeEnclosure &&
                       derivative.derivativeEnclosure->first <= sign * std::ldexp(1.0, -399) &&

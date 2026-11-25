@@ -56,7 +56,8 @@ void penaltyKeepsLossSeparate() {
     const auto tieProblem = RegressionProblem::create({{{1.0}, 1.5}});
     const auto x = Expression::variable(0);
     ExpressionCandidate addition(Expression::binary(ExpressionKind::Add, x, x), tieProblem);
-    ExpressionCandidate multiplication(Expression::binary(ExpressionKind::Multiply, x, x), tieProblem);
+    ExpressionCandidate multiplication(Expression::binary(ExpressionKind::Multiply, x, x),
+                                       tieProblem);
     addition.calculateFitness();
     multiplication.calculateFitness();
     ExpressionComplexityCosts operatorCosts;

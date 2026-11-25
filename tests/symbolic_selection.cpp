@@ -52,6 +52,27 @@ void penaltyKeepsLossSeparate() {
     ComplexityPenaltyOrdering weighted(1.0, ExpressionComplexityCosts{0.1, 10.0, 0.1});
     check(weighted.better(approximateConstant, exactVariable, ObjectiveDirection::Minimize),
           "configured variable cost analytically reverses the default ranking");
+
+    const auto tieProblem = RegressionProblem::create({{{1.0}, 1.5}});
+    const auto x = Expression::variable(0);
+    ExpressionCandidate addition(Expression::binary(ExpressionKind::Add, x, x), tieProblem);
+    ExpressionCandidate multiplication(Expression::binary(ExpressionKind::Multiply, x, x), tieProblem);
+    addition.calculateFitness();
+    multiplication.calculateFitness();
+    ExpressionComplexityCosts operatorCosts;
+    operatorCosts.individualOperatorCosts = {{ExpressionKind::Add, 20.0},
+                                             {ExpressionKind::Multiply, 0.1}};
+    ConfiguredRegressionOrdering operatorOrdering(operatorCosts);
+    check(addition.expression().nodeCount() == multiplication.expression().nodeCount() &&
+              addition.fitness() == multiplication.fitness() &&
+              operatorOrdering.better(multiplication, addition, ObjectiveDirection::Minimize),
+          "individual operator costs reverse equal-size, equal-loss tree ranking");
+    ParetoSelectionWork operatorWork;
+    ParetoRegressionOrdering operatorPareto(1000, 100000, operatorWork, operatorCosts);
+    const auto operatorFront =
+        operatorPareto.frontier(std::vector<ExpressionCandidate>{addition, multiplication}, 4);
+    check(operatorFront.size() == 1 && operatorFront.front().text() == multiplication.text(),
+          "individual operator costs participate in Pareto dominance");
 }
 
 void paretoFrontAndSurvival() {

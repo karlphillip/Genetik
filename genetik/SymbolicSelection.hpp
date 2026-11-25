@@ -30,15 +30,36 @@ public:
 };
 
 struct ExpressionComplexityCosts {
+    ExpressionComplexityCosts(double operators = 1.0, double variables = 1.0,
+                              double constants = 1.0,
+                              std::vector<std::pair<ExpressionKind, double>> individual = {})
+        : operatorCost(operators), variableCost(variables), constantCost(constants),
+          individualOperatorCosts(std::move(individual)) {}
     double operatorCost = 1.0;
     double variableCost = 1.0;
     double constantCost = 1.0;
+    std::vector<std::pair<ExpressionKind, double>> individualOperatorCosts;
 
     void validate() const {
         for (const double cost : {operatorCost, variableCost, constantCost})
             if (!std::isfinite(cost) || cost < 0.0)
                 throw std::invalid_argument(
                     "expression complexity costs must be finite and nonnegative");
+        for (std::size_t i = 0; i < individualOperatorCosts.size(); ++i) {
+            const auto [kind, cost] = individualOperatorCosts[i];
+            if (expressionArity(kind) == 0 || !std::isfinite(cost) || cost < 0.0 ||
+                std::find_if(individualOperatorCosts.begin(), individualOperatorCosts.begin() + i,
+                             [kind](const auto& entry) { return entry.first == kind; }) !=
+                    individualOperatorCosts.begin() + i)
+                throw std::invalid_argument("invalid or duplicate individual operator cost");
+        }
+    }
+
+    double cost(ExpressionKind kind) const {
+        const auto found = std::find_if(individualOperatorCosts.begin(),
+                                        individualOperatorCosts.end(),
+                                        [kind](const auto& entry) { return entry.first == kind; });
+        return found == individualOperatorCosts.end() ? operatorCost : found->second;
     }
 };
 
@@ -48,13 +69,13 @@ inline long double configuredExpressionComplexity(const Expression& expression,
     long double result = 0.0L;
     for (const auto& node : expression.nodes()) {
         const auto arity = expressionArity(node.kind());
-        const long double cost =
+        const long double nodeCost =
             arity == 0 ? (node.kind() == ExpressionKind::Variable ? costs.variableCost
                                                                   : costs.constantCost)
-                       : costs.operatorCost;
-        if (cost > std::numeric_limits<long double>::max() - result)
+                       : costs.cost(node.kind());
+        if (nodeCost > std::numeric_limits<long double>::max() - result)
             return std::numeric_limits<long double>::max();
-        result += cost;
+        result += nodeCost;
     }
     return result;
 }
@@ -575,10 +596,14 @@ private:
                         if (objective == 0 &&
                             candidates[left].fitness() != candidates[right].fitness())
                             return candidates[left].fitness() < candidates[right].fitness();
-                        if (objective == 1 && candidates[left].expression().nodeCount() !=
-                                                  candidates[right].expression().nodeCount())
-                            return candidates[left].expression().nodeCount() <
-                                   candidates[right].expression().nodeCount();
+                        if (objective == 1) {
+                            const auto leftCost = configuredExpressionComplexity(
+                                candidates[left].expression(), costs_);
+                            const auto rightCost = configuredExpressionComplexity(
+                                candidates[right].expression(), costs_);
+                            if (leftCost != rightCost)
+                                return leftCost < rightCost;
+                        }
                     }
                     return better(candidates[left], candidates[right],
                                   ObjectiveDirection::Minimize);
@@ -593,7 +618,7 @@ private:
                 }
                 return objective == 0
                            ? static_cast<long double>(candidates[index].fitness())
-                           : static_cast<long double>(candidates[index].expression().nodeCount());
+                           : configuredExpressionComplexity(candidates[index].expression(), costs_);
             };
             const auto low = value(ordered.front());
             const auto high = value(ordered.back());

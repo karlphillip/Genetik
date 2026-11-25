@@ -56,19 +56,27 @@ inline double up(double x) {
 }
 inline Interval add(Interval a, Interval b) {
     const double lo = a.lo + b.lo, hi = a.hi + b.hi;
-    return std::isnan(lo) || std::isnan(hi) ? Interval{-std::numeric_limits<double>::infinity(),
-                                                       std::numeric_limits<double>::infinity()}
-                                            : Interval{down(lo), up(hi)};
+    return !std::isfinite(lo) || !std::isfinite(hi)
+               ? Interval{-std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity()}
+               : Interval{down(lo), up(hi)};
 }
 inline Interval subtract(Interval a, Interval b) {
     const double lo = a.lo - b.hi, hi = a.hi - b.lo;
-    return std::isnan(lo) || std::isnan(hi) ? Interval{-std::numeric_limits<double>::infinity(),
-                                                       std::numeric_limits<double>::infinity()}
-                                            : Interval{down(lo), up(hi)};
+    return !std::isfinite(lo) || !std::isfinite(hi)
+               ? Interval{-std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity()}
+               : Interval{down(lo), up(hi)};
 }
 inline Interval multiply(Interval a, Interval b) {
+    if ((a.lo == 0.0 && a.hi == 0.0) || (b.lo == 0.0 && b.hi == 0.0))
+        return {0.0, 0.0};
     const std::array<double, 4> p{a.lo * b.lo, a.lo * b.hi, a.hi * b.lo, a.hi * b.hi};
-    if (std::any_of(p.begin(), p.end(), [](double x) { return std::isnan(x); }))
+    // Binary64 overflow destroys the magnitude needed by later operations
+    // (for example, an overflowing square multiplied by a tiny value). Widen
+    // to the whole extended range so the enclosure remains sound and the
+    // caller reports Inconclusive instead of inventing a point witness.
+    if (std::any_of(p.begin(), p.end(), [](double x) { return !std::isfinite(x); }))
         return {-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity()};
     const auto [mn, mx] = std::minmax_element(p.begin(), p.end());
     return {down(*mn), up(*mx)};
@@ -177,10 +185,18 @@ inline PolynomialBoundCertificate assessPolynomialBounds(const Expression& expre
         auto pointBox = FiniteBox{midpoint, midpoint};
         const auto point =
             genetik_bounds_detail::enclose(expression, pointBox, request.derivativeInput);
-        const bool valueViolation = point && request.valueRange &&
+        // An infinite interval is a valid conservative enclosure after binary64
+        // overflow, but it is not a point witness. Only a finite enclosure that
+        // lies wholly outside the requested range can prove violation.
+        const bool finitePoint = point && std::isfinite(point->value.lo) &&
+                                 std::isfinite(point->value.hi) &&
+                                 (!request.derivativeRange ||
+                                  (std::isfinite(point->derivative.lo) &&
+                                   std::isfinite(point->derivative.hi)));
+        const bool valueViolation = finitePoint && request.valueRange &&
                                     (point->value.lo > request.valueRange->second ||
                                      point->value.hi < request.valueRange->first);
-        const bool derivativeViolation = point && request.derivativeRange &&
+        const bool derivativeViolation = finitePoint && request.derivativeRange &&
                                          (point->derivative.lo > request.derivativeRange->second ||
                                           point->derivative.hi < request.derivativeRange->first);
         if (valueViolation || derivativeViolation) {

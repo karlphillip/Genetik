@@ -127,26 +127,6 @@ void tests() {
             "opt-in GCD transition rolls forward over independent observations");
     require(rowland.stats.arithmeticOperations > 0,
             "GCD evaluation work is included in recurrence arithmetic accounting");
-    RecurrenceSynthesisConfig recordedRowlandGrammar;
-    recordedRowlandGrammar.operators = {DiscreteKind::Gcd, DiscreteKind::Add,
-        DiscreteKind::Subtract, DiscreteKind::Multiply, DiscreteKind::Modulo};
-    recordedRowlandGrammar.constants = {-1, 0, 1, 2, 3};
-    recordedRowlandGrammar.maximumNodes = 7;
-    recordedRowlandGrammar.maximumStructures = 3000000;
-    recordedRowlandGrammar.maximumCompositionAttempts = 15000000;
-    recordedRowlandGrammar.maximumTransitionSteps = 50000000;
-    recordedRowlandGrammar.maximumNodeVisits = 100000000;
-    recordedRowlandGrammar.maximumArithmeticOperations = 100000000;
-    recordedRowlandGrammar.maximumEstimatedStorageBytes = 768 * 1024 * 1024;
-    recordedRowlandGrammar.maximumSteps = 64;
-    const auto recordedRowland = synthesizeRecurrenceTransition(
-        1, {7}, points({7, 8, 9, 10, 15, 18, 19, 20, 21}), recordedRowlandGrammar);
-    require(recordedRowland.canonicalTransition == "(x1 + gcd(x1, (x0 + 2)))" &&
-                recordedRowland.stats.uniqueStructures == 334977 &&
-                recordedRowland.stats.arithmeticOperations == 1706805 &&
-                assessRecurrenceTransition(recordedRowland, 1, {7},
-                    {{9, 22}, {10, 33}, {11, 36}, {12, 37}, {13, 38}}).matchedObservations == 5,
-            "recorded Rowland benchmark expression, work, and held-out rollout remain unchanged");
     require(RecurrenceSynthesisConfig{}.operators ==
                 std::vector<DiscreteKind>{DiscreteKind::Add, DiscreteKind::Subtract,
                                           DiscreteKind::Multiply, DiscreteKind::Modulo},

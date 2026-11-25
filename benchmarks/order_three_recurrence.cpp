@@ -1,11 +1,50 @@
 #include <ConstructiveRecurrenceSynthesis.hpp>
+#include <DiscreteExpressionParsing.hpp>
 
 #include <array>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 #include <vector>
 
 using namespace genetik::constructive;
+
+std::optional<std::size_t> predictedTrainingMatches(const SynthesisResult& result,
+                                                     std::size_t initialTerms) {
+    if (!result.transition || result.matchedTrainingPoints < initialTerms) return std::nullopt;
+    return result.matchedTrainingPoints - initialTerms;
+}
+
+bool isThreeTermSum(const DiscreteExpression& expression) {
+    if (expression.dimensions() != 4) return false;
+    std::array<std::size_t, 4> variables{};
+    bool valid = true;
+    const auto visit = [&](const auto& self, std::size_t node) -> void {
+        const auto kind = expression.nodes()[node].kind();
+        if (kind == DiscreteKind::Variable) {
+            const auto slot = expression.nodes()[node].variable();
+            if (slot < 1 || slot > 3) valid = false;
+            else ++variables[slot];
+        } else if (kind == DiscreteKind::Add) {
+            const auto children = expression.children(node);
+            self(self, children[0]);
+            self(self, children[1]);
+        } else valid = false;
+    };
+    visit(visit, expression.nodeCount() - 1);
+    return valid && variables[1] == 1 && variables[2] == 1 && variables[3] == 1;
+}
+
+bool verifyFailedSearchReporting() {
+    SynthesisResult failed;
+    failed.stop = SynthesisStop::StructureLimit;
+    const auto leftAssociated = parseDiscreteExpression("x1 + x2 + x3", 4);
+    const auto permuted = parseDiscreteExpression("x3 + (x1 + x2)", 4);
+    const auto wrong = parseDiscreteExpression("x1 + (x1 + x3)", 4);
+    return !predictedTrainingMatches(failed, 3).has_value() &&
+           isThreeTermSum(leftAssociated) && isThreeTermSum(permuted) &&
+           !isThreeTermSum(wrong);
+}
 
 int main() {
     // Freeze every remaining search and assessment limit before constructing
@@ -80,13 +119,18 @@ int main() {
               << " assessment-steps=" << assessmentLimits.maximumSteps
               << "\n";
 
+    if (!verifyFailedSearchReporting())
+        throw std::runtime_error("failed-search prediction reporting regression");
+    std::cout << "control.failed-search-predicted-training=unavailable\n";
     const auto selected = synthesizeRecurrenceTransition(3, {0, 0, 1}, training, search);
     const auto held = assessRecurrenceTransition(selected, 3, {0, 0, 1}, heldOut,
                                                   assessmentLimits);
     std::cout << "selected=" << selected.canonicalTransition
               << " training=" << selected.matchedTrainingPoints << '/' << training.size()
               << " initial-terms=3/3 predicted-training="
-              << selected.matchedTrainingPoints - 3 << "/" << training.size() - 3
+              << (predictedTrainingMatches(selected, 3)
+                    ? std::to_string(*predictedTrainingMatches(selected, 3)) : "unavailable")
+              << "/" << (selected.transition ? std::to_string(training.size() - 3) : "unavailable")
               << " held-out=" << held.matchedObservations << '/' << held.observationCount
               << " structures=" << selected.stats.uniqueStructures
               << " arithmetic-operations=" << selected.stats.arithmeticOperations
@@ -111,7 +155,7 @@ int main() {
     std::cout << "alternate-initial=[2,0,1] next=" << reused.evaluate(3).value->integer()
               << " rollout-matches=" << alternateMatches << "/4"
               << " recovered-three-term-sum="
-              << (selected.canonicalTransition == "(x1 + (x2 + x3))" ? "yes" : "no")
+              << (selected.transition && isThreeTermSum(*selected.transition) ? "yes" : "no")
               << " finite-agreement-is-universal-proof=no\n";
     if (alternateMatches != 4) throw std::runtime_error("alternate initial-state rollout mismatch");
 }

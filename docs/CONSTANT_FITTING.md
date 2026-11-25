@@ -251,10 +251,14 @@ selection for the one inserted subtree and scores the complete model against the
 original rows. See [SCALAR_TEMPLATES.md](SCALAR_TEMPLATES.md) for the context, budget,
 cadence and concurrency rules, and the independent c=2.6 full-objective fixture.
 
-Levenberg–Marquardt fitting supports `MeanSquaredError` and the existing
-`WeightedMeanSquaredError` objective. For weighted rows, its residual and matching
-Jacobian row are both scaled by `sqrt(weight / sum(weights))`; consequently the
-solver's squared-residual sum is already the same normalized weighted MSE reported
-by training evaluation. Every observation is still evaluated, including zero-weight
-rows, so weighted fitting preserves the prediction-validity contract. MAE and Huber
-remain unsupported by LM; coordinate fitting retains its existing objective support.
+Levenberg–Marquardt fitting supports `MeanSquaredError`, the existing
+`WeightedMeanSquaredError`, and Huber objectives. For weighted rows, its residual
+and matching Jacobian row are both scaled by `sqrt(weight / sum(weights))`;
+consequently the solver's squared-residual sum is already the same normalized
+weighted MSE reported by training evaluation. Huber uses a signed square-root
+residual whose square is twice the row's Huber loss, with its analytic derivative
+applied to the matching Jacobian row and a `1/sqrt(2*n)` normalization. This gives
+LM the same Huber minimizer and the public scorer's normalized objective. Every
+observation is still evaluated, including zero-weight rows, so weighted fitting
+preserves the prediction-validity contract. MAE remains unsupported by LM;
+coordinate fitting retains its existing objective support.

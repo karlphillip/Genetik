@@ -140,10 +140,188 @@ void fittingAndSelectionUseObjective() {
     ConstantFitConfig lm;
     lm.method = ConstantFitMethod::LevenbergMarquardt;
     TrainingObjective robustTraining(robustProblem);
+    lm.lower = -2.0;
+    lm.upper = 8.0;
+    lm.levenbergMarquardt.lossTolerance = 1e-14;
+    const auto robustFit =
+        fitConstants(Expression::constant(0.0, 1, robustProblem->limits()), robustTraining, lm);
+    check(robustFit.loss == robustProblem->measure(robustFit.expression).loss &&
+              std::abs(robustFit.expression.nodes().front().constantValue() - 0.5) < 2e-6 &&
+              std::abs(robustFit.loss.score() - 9.25 / 3.0) < 2e-6,
+          "Huber LM fits through the same public scorer");
+    RegressionObjectiveConfig maeObjective;
+    maeObjective.loss = RegressionLoss::MeanAbsoluteError;
+    const auto maeProblem =
+        RegressionProblem::createWithObjective(outlierRows, maeObjective, {31, 6, 8});
+    TrainingObjective maeTraining(maeProblem);
     throws<std::invalid_argument>([&] {
-        (void)fitConstants(Expression::constant(0.0, 1, robustProblem->limits()), robustTraining,
-                           lm);
+        (void)fitConstants(Expression::constant(0.0, 1, maeProblem->limits()), maeTraining, lm);
     });
+
+    RegressionObjectiveConfig oneOutlier;
+    oneOutlier.loss = RegressionLoss::Huber;
+    oneOutlier.huberDelta = 1.0;
+    auto analyticProblem = RegressionProblem::createWithObjective(
+        {{{0}, 0}, {{0}, 0}, {{0}, 0}, {{0}, 0}, {{0}, 100}}, oneOutlier);
+    TrainingObjective analyticTraining(analyticProblem);
+    auto analyticConfig = lm;
+    analyticConfig.lower = -1.0;
+    analyticConfig.upper = 2.0;
+    auto analyticCoordinateConfig = analyticConfig;
+    analyticCoordinateConfig.method = ConstantFitMethod::Coordinate;
+    TrainingObjective analyticCoordinateObjective(analyticProblem, 100000);
+    const auto analyticCoordinate = fitConstants(
+        Expression::constant(0.0, 1), analyticCoordinateObjective, analyticCoordinateConfig);
+    const auto analytic =
+        fitConstants(Expression::constant(0.0, 1), analyticTraining, analyticConfig);
+    check(std::abs(analyticCoordinate.expression.nodes().front().constantValue() - 0.25) < 2e-6 &&
+              std::abs(analyticCoordinate.loss.score() - 19.875) < 1e-10,
+          "existing coordinate fitter reaches the same analytic Huber optimum");
+    check(std::abs(analytic.expression.nodes().front().constantValue() - 0.25) < 1e-7 &&
+              std::abs(analytic.loss.score() - 19.875) < 1e-10,
+          "Huber LM reaches the analytic clipped-score constant optimum");
+    auto clusteredProblem = RegressionProblem::createWithObjective(
+        {{{0}, 2}, {{0}, 0}, {{0}, 0}, {{0}, 0}, {{0}, 0}}, oneOutlier);
+    TrainingObjective clusteredTraining(clusteredProblem);
+    auto clustered = fitConstants(Expression::constant(0.0, 1), clusteredTraining, analyticConfig);
+    check(std::abs(clustered.expression.nodes().front().constantValue() - 0.25) < 1e-7 &&
+              clustered.loss == clusteredProblem->measure(clustered.expression).loss &&
+              std::abs(clustered.loss.score() - 0.275) < 1e-14,
+          "Huber trial acceptance follows the public score for [2,0,0,0,0]");
+
+    std::vector<RegressionRow> tinyRows(8, RegressionRow{{0}, std::ldexp(1.0, -536)});
+    auto tinyProblem = RegressionProblem::createWithObjective(tinyRows, oneOutlier);
+    TrainingObjective tinyTraining(tinyProblem);
+    auto tinyConfig = analyticConfig;
+    tinyConfig.lower = -1.0;
+    tinyConfig.upper = 1.0;
+    tinyConfig.levenbergMarquardt.gradientTolerance = 1e-300;
+    tinyConfig.levenbergMarquardt.stepTolerance = 1e-300;
+    tinyConfig.levenbergMarquardt.lossTolerance = 0.0;
+    auto tinyFit = fitConstants(Expression::constant(0.0, 1), tinyTraining, tinyConfig);
+    check(tinyFit.loss == tinyProblem->measure(tinyFit.expression).loss &&
+              tinyFit.loss.score() < tinyFit.startingLoss.score() &&
+              tinyFit.expression.nodes().front().constantValue() > 0.0,
+          "eight-target 2^-536 Huber fit accepts score-improving trials");
+    const auto tinyDirectResiduals =
+        expressionLeastSquares(Expression::variable(0),
+                               std::vector<LMExpressionObservation>(
+                                   8, LMExpressionObservation{{0}, std::ldexp(1.0, -536)}),
+                               {0}, 1000, {}, 1.0);
+    const auto tinyDirectStart = tinyDirectResiduals(std::array{0.0}, false, 1000);
+    LMConfig directConfig;
+    directConfig.lossTolerance = std::ldexp(1.0, -1073);
+    const auto tinyDirectFit = levenbergMarquardt(
+        std::array{0.0}, std::array{-1.0}, std::array{1.0}, tinyDirectResiduals, directConfig);
+    check(tinyDirectStart.valid && tinyDirectStart.objectiveLoss.has_value() &&
+              *tinyDirectStart.objectiveLoss == std::ldexp(1.0, -1073) &&
+              tinyDirectFit.sumSquaredResiduals && *tinyDirectFit.sumSquaredResiduals == 0.0 &&
+              tinyDirectFit.stop == LMStop::LossTolerance && tinyDirectFit.parameters[0] == 0.0,
+          "direct Huber callback loss controls stopping when normalized SSE underflows");
+
+    const auto hugeTarget = std::ldexp(1.0, 511);
+    const auto overflowDelta = std::ldexp(1.0, 512);
+    const auto product = Expression::binary(ExpressionKind::Multiply, Expression::variable(0, 2),
+                                            Expression::variable(1, 2));
+    const auto makeOverflowCallback = [&](std::size_t count) {
+        return expressionLeastSquares(product,
+                                      std::vector<LMExpressionObservation>(
+                                          count, LMExpressionObservation{{0.0, 1.0}, hugeTarget}),
+                                      {0}, 1000, {}, overflowDelta);
+    };
+    const auto sevenResidualCallback = makeOverflowCallback(7);
+    const auto sevenResiduals = sevenResidualCallback(std::array{0.0}, false, 1000);
+    const auto sevenJacobian = sevenResidualCallback(std::array{0.0}, true, 1000);
+    check(sevenResiduals.valid && sevenResiduals.forwardEvaluations == 7 &&
+              sevenResiduals.rowsProcessed == 7 && sevenResiduals.mathematicalOperations > 0 &&
+              sevenResiduals.workspaceBytes > 0 && sevenJacobian.valid &&
+              sevenJacobian.forwardEvaluations == 7 && sevenJacobian.derivativeEvaluations == 7 &&
+              sevenJacobian.rowsProcessed == 7 && sevenJacobian.mathematicalOperations > 0 &&
+              sevenJacobian.workspaceBytes > 0,
+          "seven large Huber rows succeed in residual and Jacobian callback modes");
+    const auto eightResidualCallback = makeOverflowCallback(8);
+    const auto eightResiduals = eightResidualCallback(std::array{0.0}, false, 1000);
+    const auto eightJacobian = eightResidualCallback(std::array{0.0}, true, 1000);
+    check(!eightResiduals.valid && eightResiduals.forwardEvaluations == 8 &&
+              eightResiduals.derivativeEvaluations == 0 && eightResiduals.rowsProcessed == 8 &&
+              eightResiduals.mathematicalOperations > 0 && eightResiduals.workspaceBytes > 0 &&
+              !eightJacobian.valid && eightJacobian.forwardEvaluations == 8 &&
+              eightJacobian.derivativeEvaluations == 8 && eightJacobian.rowsProcessed == 8 &&
+              eightJacobian.mathematicalOperations > 0 && eightJacobian.workspaceBytes > 0,
+          "Huber overflow rejects the eighth row while retaining its completed work");
+    LMConfig overflowConfig;
+    const auto overflowFit = levenbergMarquardt(std::array{0.0}, std::array{-1.0}, std::array{1.0},
+                                                eightResidualCallback, overflowConfig);
+    check(overflowFit.stop == LMStop::InvalidStart && overflowFit.parameters[0] == 0.0 &&
+              overflowFit.work.objectiveEvaluations == 1 &&
+              overflowFit.work.jacobianEvaluations == 1 &&
+              overflowFit.work.forwardEvaluations == eightJacobian.forwardEvaluations &&
+              overflowFit.work.derivativeEvaluations == eightJacobian.derivativeEvaluations &&
+              overflowFit.work.rowsProcessed == eightJacobian.rowsProcessed &&
+              overflowFit.work.mathematicalOperations == eightJacobian.mathematicalOperations &&
+              overflowFit.work.peakWorkspaceBytes >= eightJacobian.workspaceBytes,
+          "LM totals include work from the invalid overflowing Huber callback");
+    std::cout << "Huber outlier constant: coordinate c="
+              << analyticCoordinate.expression.nodes().front().constantValue()
+              << " loss=" << analyticCoordinate.loss.score()
+              << " loss_attempts=" << analyticCoordinate.lossAttempts
+              << "; LM c=" << analytic.expression.nodes().front().constantValue()
+              << " loss=" << analytic.loss.score()
+              << " objective_evaluations=" << analytic.optimizerWork.objectiveEvaluations
+              << " prediction_evaluations=" << analytic.optimizerWork.forwardEvaluations << '\n';
+
+    // The pseudo-residual and its Jacobian are differentiable at zero and at
+    // both Huber thresholds, with the exact linear-tail derivative outside.
+    const auto huberResiduals = expressionLeastSquares(
+        Expression::variable(0), {{{0}, 0.0}, {{0}, 1.0}, {{0}, -1.0}, {{0}, 2.0}, {{0}, -2.0}},
+        {0}, 1000, {}, 1.0);
+    const auto atThresholds = huberResiduals(std::array{0.0}, true, 1000);
+    check(atThresholds.valid && atThresholds.residuals[0] == 0.0 &&
+              atThresholds.jacobian[0] == 1.0 / std::sqrt(10.0) &&
+              atThresholds.jacobian[1] == 1.0 / std::sqrt(10.0) &&
+              atThresholds.jacobian[2] == 1.0 / std::sqrt(10.0) &&
+              std::abs(atThresholds.jacobian[3] - 1.0 / std::sqrt(30.0)) < 1e-15 &&
+              std::abs(atThresholds.jacobian[4] - 1.0 / std::sqrt(30.0)) < 1e-15,
+          "Huber transform handles zero, both thresholds, and linear tails");
+    check(std::abs(genetik_detail::checkedSSE(atThresholds.residuals) - 0.8) < 1e-15,
+          "Huber pseudo-residual SSE equals the normalized public Huber objective");
+
+    const double tinyDelta = std::numeric_limits<double>::denorm_min();
+    const auto tinyPositiveTail = expressionLeastSquares(
+        Expression::variable(0), {{{0}, -2.0 * tinyDelta}}, {0}, 1000, {}, tinyDelta);
+    const auto tinyNegativeTail = expressionLeastSquares(
+        Expression::variable(0), {{{0}, 2.0 * tinyDelta}}, {0}, 1000, {}, tinyDelta);
+    const auto positiveTailJacobian = tinyPositiveTail(std::array{0.0}, true, 1000);
+    const auto negativeTailJacobian = tinyNegativeTail(std::array{0.0}, true, 1000);
+    check(positiveTailJacobian.valid && negativeTailJacobian.valid &&
+              std::abs(positiveTailJacobian.jacobian[0] - 1.0 / std::sqrt(6.0)) < 1e-15 &&
+              std::abs(negativeTailJacobian.jacobian[0] - 1.0 / std::sqrt(6.0)) < 1e-15,
+          "subnormal Huber tail Jacobian is stable for both residual signs");
+
+    const double huge = std::ldexp(1.0, 600);
+    const double minuteDelta = std::ldexp(1.0, -600);
+    const auto extremeTail = expressionLeastSquares(
+        Expression::binary(ExpressionKind::Multiply, Expression::variable(0, 2),
+                           Expression::variable(1, 2)),
+        {{{huge, 0.0}, huge}}, {1}, 1000, {}, minuteDelta);
+    const auto extremeTailStart = extremeTail(std::array{0.0}, true, 1000);
+    check(extremeTailStart.valid && std::abs(extremeTailStart.jacobian[0] - 0.5) < 1e-14,
+          "Huber tail Jacobian retains precision when delta over magnitude underflows");
+    RegressionObjectiveConfig extremeObjective;
+    extremeObjective.loss = RegressionLoss::Huber;
+    extremeObjective.huberDelta = minuteDelta;
+    const auto extremeProblem =
+        RegressionProblem::createWithObjective({{{huge}, huge}}, extremeObjective);
+    TrainingObjective extremeTraining(extremeProblem);
+    auto extremeFitConfig = lm;
+    extremeFitConfig.lower = 0.0;
+    extremeFitConfig.upper = 2.0;
+    const auto extremeModel = Expression::binary(ExpressionKind::Multiply, Expression::variable(0),
+                                                 Expression::constant(0.0, 1));
+    const auto extremeFit = fitConstants(extremeModel, extremeTraining, extremeFitConfig);
+    check(extremeFit.loss == extremeProblem->measure(extremeFit.expression).loss &&
+              extremeFit.loss.score() < extremeFit.startingLoss.score(),
+          "public Huber coefficient fit reduces loss in the extreme tail");
 
     auto mseProblem = RegressionProblem::create(outlierRows, {31, 6, 8});
     ExpressionCandidate mseZero(Expression::constant(0.0, 1), mseProblem);
@@ -159,6 +337,87 @@ void fittingAndSelectionUseObjective() {
     huberThree.calculateFitness();
     check(RegressionOrdering{}.better(huberZero, huberThree, ObjectiveDirection::Minimize),
           "evolutionary ordering follows the selected robust fitness");
+}
+
+void huberLmComparisonAndBudget() {
+    LMResidualEvaluation legacyAggregate{true, {1.0}, {2.0}};
+    check(legacyAggregate.valid && legacyAggregate.residuals == std::vector<double>{1.0} &&
+              legacyAggregate.jacobian == std::vector<double>{2.0},
+          "LM residual evaluation preserves its original aggregate member order");
+    constexpr double delta = 1.0;
+    const auto target = [](double x) { return 2.0 * std::pow(x, 1.4); };
+    std::vector<RegressionRow> rows;
+    for (double x : {0.5, 1.0, 1.5, 2.0, 2.5})
+        rows.push_back({{x}, target(x) + (x == 1.5 ? 5.0 : 0.0)});
+    RegressionObjectiveConfig huber;
+    huber.loss = RegressionLoss::Huber;
+    huber.huberDelta = delta;
+    const auto problem = RegressionProblem::createWithObjective(rows, huber, {31, 6, 8});
+    const auto x = Expression::variable(0);
+    const auto initial = Expression::binary(
+        ExpressionKind::Multiply, Expression::constant(2.0, 1),
+        Expression::binary(ExpressionKind::Pow, x, Expression::constant(1.4, 1)));
+    ConstantFitConfig coordinate;
+    coordinate.lower = 0.1;
+    coordinate.upper = 4.0;
+    coordinate.initialStep = 0.25;
+    coordinate.minimumStep = 1e-5;
+    coordinate.maxLossAttempts = 3000;
+    coordinate.maxSweeps = 40;
+    coordinate.maxProposals = 3000;
+    TrainingObjective coordinateObjective(problem, 100000);
+    const auto coordinateFit = fitConstants(initial, coordinateObjective, coordinate);
+
+    auto lm = coordinate;
+    lm.method = ConstantFitMethod::LevenbergMarquardt;
+    lm.levenbergMarquardt.maxIterations = 100;
+    lm.levenbergMarquardt.maxObjectiveEvaluations = 300;
+    lm.levenbergMarquardt.maxJacobianEvaluations = 300;
+    lm.levenbergMarquardt.lossTolerance = 1e-14;
+    TrainingObjective lmObjective(problem, 100000);
+    const auto lmFit = fitConstants(initial, lmObjective, lm);
+    auto heldOutRmse = [&](const Expression& expression) {
+        double squares = 0.0;
+        for (double value : {3.0, 4.0}) {
+            const auto prediction = expression.evaluate(std::array{value});
+            check(prediction.valid(), "Huber comparison held-out prediction valid");
+            const double residual = prediction.value() - target(value);
+            squares += residual * residual;
+        }
+        return std::sqrt(squares / 2.0);
+    };
+    auto report = [&](const char* name, const ConstantFitResult& fit,
+                      std::uint64_t predictionEvaluations) {
+        const auto parameters = fit.expression.nodes();
+        std::cout << "Huber nonlinear " << name << ": a=" << parameters[0].constantValue()
+                  << " b=" << parameters[2].constantValue()
+                  << " training_loss=" << problem->measure(fit.expression).loss.score()
+                  << " heldout_rmse=" << heldOutRmse(fit.expression)
+                  << " prediction_evaluations=" << predictionEvaluations
+                  << " stop=" << constantFitStopName(fit.stop) << '\n';
+    };
+    report("coordinate", coordinateFit, coordinateObjective.work().rowAttempts);
+    report("LM", lmFit, lmFit.optimizerWork.forwardEvaluations);
+    check(lmFit.loss == problem->measure(lmFit.expression).loss,
+          "Huber LM score belongs to returned nonlinear parameters");
+
+    auto square = Expression::power(Expression::constant(1.0, 1), 2);
+    const auto zeroTarget = RegressionProblem::createWithObjective({{{0}, 0.0}}, huber);
+    auto budget = lm;
+    budget.lower = -1.0;
+    budget.upper = 2.0;
+    budget.maxLossAttempts = 3;
+    budget.levenbergMarquardt.maxObjectiveEvaluations = 20;
+    budget.levenbergMarquardt.lossTolerance = 0.0;
+    budget.levenbergMarquardt.gradientTolerance = 1e-30;
+    budget.levenbergMarquardt.stepTolerance = 1e-30;
+    TrainingObjective budgetObjective(zeroTarget, 3);
+    const auto budgetFit = fitConstants(square, budgetObjective, budget);
+    check(budgetFit.stop == ConstantFitStop::EvaluationLimit &&
+              budgetFit.optimizerWork.objectiveEvaluations == 3 &&
+              budgetFit.optimizerWork.acceptedSteps > 0 &&
+              budgetFit.loss == zeroTarget->measure(budgetFit.expression).loss,
+          "Huber LM budget stop retains the accepted parameter score");
 }
 
 void informationCriteria() {
@@ -246,6 +505,7 @@ int main() {
     try {
         lossContracts();
         fittingAndSelectionUseObjective();
+        huberLmComparisonAndBudget();
         informationCriteria();
         std::cout << "mathematical objective and information-criterion contracts passed\n";
     } catch (const std::exception& error) {

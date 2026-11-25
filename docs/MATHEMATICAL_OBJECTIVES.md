@@ -38,13 +38,15 @@ available. No observation is silently omitted.
 
 MSE is unchanged by default. Coordinate fitting compares the selected objective
 and therefore optimizes it. The scalar least-squares Levenberg–Marquardt
-constant fitter supports MSE and weighted MSE. For weighted MSE it scales each
-residual and Jacobian row by `sqrt(w_i)/sqrt(sum(w))`, avoiding premature
+constant fitter supports MSE, weighted MSE, and Huber. For weighted MSE it scales
+each residual and Jacobian row by `sqrt(w_i)/sqrt(sum(w))`, avoiding premature
 underflow in `w_i/sum(w)`. Zero-weight rows are still evaluated and must have a
-valid prediction, then contribute zero residual and Jacobian rows. The returned
-fit loss is the checked public scorer's value for the accepted parameters. MAE
-and Huber remain unsupported by this least-squares fitter; no surrogate is
-silently substituted. Other loss formulations extend the objective
+valid prediction, then contribute zero residual and Jacobian rows. For Huber, LM
+applies the signed square root of twice each Huber contribution and its analytic
+chain-rule factor to each Jacobian row, normalized so the solver's squared-residual
+objective equals mean Huber loss. The returned fit loss is the checked public
+scorer's value for the accepted parameters. MAE remains unsupported by this
+least-squares fitter; no surrogate is silently substituted. Other loss formulations extend the objective
 configuration and its single checked measurement path; they must define
 normalization, validation, parallel behavior, and compatible fitters before
 being added.

@@ -12,9 +12,9 @@ class IntegerRecurrence {
                       const DiscreteExpression &transition, IntegerRecurrenceLimits limits = {})
         : external_(external), initial_(checkedInitial(external, initial, transition, limits)),
           transition_(transition), limits_(limits) {
-        if (initial.empty() || initial.size() > 2 || external > 1024 || limits.maxSteps > 1000000000 ||
+        if (initial.empty() || initial.size() > 3 || external > 1024 || limits.maxSteps > 1000000000 ||
             !limits.maxWorkspaceBytes)
-            throw std::invalid_argument("recurrence requires order1or2 and bounded workspace/steps");
+            throw std::invalid_argument("recurrence requires order1to3 and bounded workspace/steps");
         if (transition.dimensions() != external + initial.size() + 1 ||
             transition.type() != DiscreteType::Int64 || !transition.outerBindings().empty())
             throw std::invalid_argument("recurrence transition schema/type differs");
@@ -54,7 +54,7 @@ class IntegerRecurrence {
                                                     const std::vector<std::int64_t> &initial,
                                                     const DiscreteExpression &transition,
                                                     IntegerRecurrenceLimits limits) {
-        if (initial.empty() || initial.size() > 2 || external > 1024 || limits.maxSteps > 1000000000 ||
+        if (initial.empty() || initial.size() > 3 || external > 1024 || limits.maxSteps > 1000000000 ||
             !limits.maxWorkspaceBytes)
             throw std::invalid_argument("recurrence order/schema/resource policy");
         if (transition.dimensions() != external + initial.size() + 1 ||
@@ -177,7 +177,7 @@ class IntegerRecurrence {
             d.identity != "Int64;ordered-oldest-state;index-zero/1" || d.runtime != checkpointRuntime())
             throw CheckpointError("recurrence codec/context differs");
         CheckpointReader r(d.payload);
-        auto external = r.count(1024), order = r.count(2);
+        auto external = r.count(1024), order = r.count(3);
         if (!order)
             throw CheckpointError("zero recurrence order");
         std::vector<std::int64_t> initial;
@@ -278,7 +278,7 @@ recurrenceRegressionProblem(std::size_t external, const std::vector<std::int64_t
                             DiscreteExpressionLimits expression = {},
                             DiscreteEvaluationLimits evaluation = {}, DiscreteDatasetLimits data = {},
                             IntegerRecurrenceLimits recurrence = {}) {
-    if (initial.empty() || initial.size() > 2 || external > 1024)
+    if (initial.empty() || initial.size() > 3 || external > 1024)
         throw std::invalid_argument("recurrence problem schema");
     std::vector<DiscreteRegressionRow> rows;
     rows.reserve(observations.size());

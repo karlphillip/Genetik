@@ -162,8 +162,8 @@ inline SynthesisResult synthesizeRecurrenceTransition(
     std::size_t order, const std::vector<std::int64_t> &initial,
     const std::vector<SequencePoint> &training,
     const RecurrenceSynthesisConfig &config = {}) {
-    if ((order != 1 && order != 2) || initial.size() != order || training.size() <= order)
-        throw std::invalid_argument("recurrence synthesis requires order one/two, matching initial state, and training points");
+    if ((order < 1 || order > 3) || initial.size() != order || training.size() <= order)
+        throw std::invalid_argument("recurrence synthesis requires order one to three, matching initial state, and training points");
     genetik_discrete_detail::validateLimits(config.expressionLimits);
     if (!config.maximumNodes || config.maximumNodes > 7 ||
         config.maximumNodes > config.expressionLimits.maxNodes || !config.maximumStructures ||
@@ -465,7 +465,7 @@ inline RecurrenceAssessment assessRecurrenceTransition(
     const RecurrenceAssessmentConfig &config = {}) {
     RecurrenceAssessment result;
     result.observationCount = heldOut.size();
-    if ((order != 1 && order != 2) || initial.size() != order || heldOut.empty() ||
+    if ((order < 1 || order > 3) || initial.size() != order || heldOut.empty() ||
         !config.maximumObservations || config.maximumObservations > 10000000 ||
         heldOut.size() > config.maximumObservations ||
         !config.maximumTransitionSteps || config.maximumTransitionSteps > 1000000000ULL ||

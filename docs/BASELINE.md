@@ -1,5 +1,27 @@
 # Baseline and first hardening milestone
 
+## Order-three integer recurrence support
+
+Order-three support extends `IntegerRecurrence`, the recurrence regression
+problem, the existing checkpoint payload, constructive synthesis, and frozen
+held-out assessment. State slots remain ordered oldest to newest and the
+default operator grammar/order is unchanged. The integer recurrence codec
+remains `genetik.integer-recurrence/1`; order-one and order-two payload fields
+are unchanged.
+
+The deterministic Tribonacci benchmark's base `a8e83b5719b1cc687f2b16c2fd7ff6f5aae1be64`
+rejected the three-term public constructor with
+`recurrence order/schema/resource policy`. The candidate with the ordinary
+grammar and five-node limit selected `(x1 + (x2 + x3))`: 10/10 training
+observations (three initial terms plus 7/7 predicted terms), 4/4 held-out,
+679 structures, 2,778 search arithmetic operations, 114 held-out operations,
+and `exact_training_match`. Reuse from `[2,0,1]` matched the independent next
+four terms `3,4,8,15`; the selected expression is structurally the three-term
+sum. Finite agreement does not prove universal equivalence. The square and
+Rowland compatibility replays reproduce their recorded expressions, matches,
+work totals, and stop reasons. Deterministic contracts include an asymmetric
+slot-order transition and third-order checkpoint round-trip.
+
 ## Python interoperability I2 (qualification candidate)
 
 I2 is based on the published 0.5.0 tree plus the local I1 native Python

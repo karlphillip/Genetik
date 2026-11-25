@@ -174,6 +174,13 @@ void runArm(std::string_view label, bool enableGcd, const std::vector<SequencePo
     }
 
     const auto assessment = assessRecurrenceTransition(found, 1, {7}, heldOut);
+    if (enableGcd) {
+        if (found.canonicalTransition != "(x1 + gcd(x1, (x0 + 2)))" ||
+            found.stats.uniqueStructures != 334977 ||
+            found.stats.arithmeticOperations != 1706805 ||
+            assessment.matchedObservations != 5)
+            throw std::runtime_error("recorded Rowland expression, work, or held-out replay changed");
+    }
     std::int64_t firstMismatch = -1;
     std::optional<std::int64_t> actualAtMismatch;
     DiscreteEvaluationStatus mismatchStatus = DiscreteEvaluationStatus::Valid;

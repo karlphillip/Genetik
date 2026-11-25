@@ -6,9 +6,25 @@ Genetik exposes an optional deterministic enumerator for small integer recurrenc
 
 The default grammar remains the S16 grammar in its original order: binary `Add`, `Subtract`, `Multiply`, and Euclidean `Modulo`; integer terminals from a caller supplied finite set; and recurrence bindings. Expressions are capped at seven nodes, matching the frozen S16 complexity ceiling. GCD is available only when explicitly added to `RecurrenceSynthesisConfig::operators`; it uses the existing checked Int64 GCD evaluator, including its arithmetic-work accounting. The default grammar and its enumeration order are unchanged. No unary negate, conditionals, iteration operators, arbitrary recursion, prime operators, or target-specific templates are synthesized. Modulo retains the existing checked semantics and requires a positive divisor. Overflow and invalid mathematical operations are invalid candidate evaluations.
 
-The recurrence order is caller-selected and must be one or two. The expression slots are `x0` for the zero-based transition index, then `x1` through `xOrder` for prior states from oldest to newest. For order two, `x1` is the older state and `x2` the newer state. Initial values are copied into the `IntegerRecurrence`; callers cannot supply reference states during rollout.
+The recurrence order is caller-selected and must be one, two, or three. The expression slots are `x0` for the zero-based transition index, then `x1` through `xOrder` for prior states from oldest to newest. Initial values are copied into the `IntegerRecurrence`; callers cannot supply reference states during rollout. The standalone checkpoint codec and identity are unchanged, so existing order-one and order-two checkpoint documents retain their encoding.
 
 Expressions are enumerated by increasing node count. At each size, operators follow `config.operators` order, terminals follow variable-slot order then `config.constants` order, and binary partitions enumerate left subtree size before right subtree size, then each subtree's stable prior enumeration order. Exact expression text is used to reject duplicate structures. No algebraic rewriting or commutative canonicalization is performed.
+
+## Deterministic Tribonacci benchmark
+
+`GENETIK_BUILD_ORDER_THREE_BENCHMARK=ON` builds the fixed order-three capability demonstration. Search receives initial state `[0,0,1]` and training observations at indices 0–9 only; held-out indices 10–13 are constructed separately and assessed after selection. The ordinary grammar order is `[Add, Subtract, Multiply, Modulo]`, with constants `[-1,0,1,2,3]` and a five-node ceiling. Before search, the executable prints all remaining fixed search and assessment limits: 60,000 structures, 250,000 composition attempts, 1,000,000 training-point evaluations, 10,000,000 transition steps and arithmetic operations, 20,000,000 node visits, 32 MiB estimated candidate storage, and 32 recurrence steps. Expression limits are depth 5, four variables, five constants of magnitude at most 3, 4 MiB storage, iteration depth 8, and 128 binders. Evaluator limits are 4,096 node visits and operations, 1 MiB workspace, 10,000 iterations per operation, 100,000 aggregate iterations, and iteration depth 8. Assessment allows 100 observations, 10,000 transition steps, 100,000 node visits and arithmetic operations, and 32 recurrence steps. The base revision rejected the public three-term `IntegerRecurrence` constructor with `recurrence order/schema/resource policy`.
+
+On base `a8e83b5719b1cc687f2b16c2fd7ff6f5aae1be64`, the public API request was rejected as above. The order-three candidate selected `(x1 + (x2 + x3))`, matched all 10 supplied training observations (the three initial terms separately, then 7/7 predicted training terms), and matched held-out 4/4. It examined 679 unique structures and used 2,778 arithmetic operations during search; held-out assessment used 114 operations. Stop reason was `exact_training_match`. Reusing the selected expression from `[2,0,1]` produced the next four independently generated values `3,4,8,15` exactly. Its structure recovers the three-term sum; these finite agreements do not prove the recurrence universally.
+
+The order-two square compatibility replay reproduced `(x0 + (x0 + (x2 + 3)))`, exact training 5/5 and held-out 3/3, with 16,672 structures, 50,442 training-point evaluations, 17,525 transition steps, 86,087 node visits and 50,270 arithmetic operations, matching the recorded result. The fixed-budget Rowland replay also matched its recorded expressions and work counts: ordinary `(x1 + 1)` at 483,277 structures/1,978,028 arithmetic operations (storage limit), and GCD-enabled `(x1 + gcd(x1, (x0 + 2)))` at 334,977 structures/1,706,805 operations (exact training match).
+
+```sh
+cmake -S . -B build/order-three -DCMAKE_BUILD_TYPE=Release \
+  -DGENETIK_BUILD_TESTS=OFF -DGENETIK_BUILD_EXAMPLES=OFF \
+  -DGENETIK_BUILD_ORDER_THREE_BENCHMARK=ON
+cmake --build build/order-three --target genetik_order_three_recurrence
+./build/order-three/genetik_order_three_recurrence
+```
 
 ## Opt-in GCD discovery comparison
 

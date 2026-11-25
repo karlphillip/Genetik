@@ -71,6 +71,34 @@ void tests() {
     const auto fib = synth(2, {0,1}, points({0,1,1,2,3,5,8}));
     const auto fibTraining = points({0,1,1,2,3,5,8});
     requireExact("Fibonacci", fib, fibTraining, 2, {0,1}, {{7,13},{8,21}});
+    const auto tribTraining = points({0,0,1,1,2,4,7,13,24,44});
+    RecurrenceSynthesisConfig tribConfig;
+    tribConfig.maximumNodes = 5;
+    const auto trib = synthesizeRecurrenceTransition(3, {0,0,1}, tribTraining, tribConfig);
+    requireExact("Tribonacci", trib, tribTraining, 3, {0,0,1}, {{10,81},{11,149},{12,274},{13,504}});
+    require(trib.canonicalTransition == "(x1 + (x2 + x3))" ||
+                trib.canonicalTransition == "((x1 + x2) + x3)",
+            "ordinary grammar recovers the three-term sum");
+    const auto square = synthesizeRecurrenceTransition(
+        2, {0, 1}, points({0, 1, 4, 9, 16}));
+    require(square.canonicalTransition == "(x0 + (x0 + (x2 + 3)))" &&
+                square.stats.uniqueStructures == 16672 &&
+                square.stats.trainingPoints == 50442 &&
+                square.stats.transitionSteps == 17525 && square.stats.nodeVisits == 86087 &&
+                square.stats.arithmeticOperations == 50270 &&
+                assessRecurrenceTransition(square, 2, {0, 1},
+                    {{5, 25}, {6, 36}, {7, 49}}).matchedObservations == 3,
+            "recorded order-two square expression and work remain unchanged");
+    IntegerRecurrence asymmetric(0, {2,3,5}, parseDiscreteExpression("x1+10*x2+100*x3", 4));
+    require(asymmetric.evaluate(3).value->integer() == 532 &&
+                asymmetric.evaluate(4).value->integer() == 53253,
+            "third-order recurrence binds previous-state slots oldest to newest");
+    const auto asymmetricRoundTrip = IntegerRecurrence::restore(
+        decodeCheckpoint(encodeCheckpoint(asymmetric.checkpoint())));
+    require(asymmetricRoundTrip.toString() == asymmetric.toString() &&
+                asymmetricRoundTrip.evaluate(3).value->integer() == 532 &&
+                asymmetricRoundTrip.evaluate(4).value->integer() == 53253,
+            "third-order recurrence checkpoint round trip preserves ordered state slots");
     const auto geometricTraining = points({1,2,4,8,16});
     const auto geometric = synth(1, {1}, geometricTraining, 3);
     requireExact("geometric progression", geometric, geometricTraining, 1, {1}, {{5,32},{6,64}});
@@ -155,7 +183,7 @@ void tests() {
     require(assessRecurrenceTransition(noCandidate, 2, {0,1}, {{4,3}}).status ==
                 AssessmentStatus::NoCandidate,
             "no-candidate held-out outcome distinct");
-    requireInvalidAssessment(noCandidate, 3, {0,1,2}, {{4,3}});
+    requireInvalidAssessment(noCandidate, 4, {0,1,2,3}, {{4,3}});
     requireInvalidAssessment(noCandidate, 2, {0}, {{4,3}});
     requireInvalidAssessment(noCandidate, 2, {0,1}, {});
     requireInvalidAssessment(noCandidate, 2, {0,1}, {{-1,3}});

@@ -1,0 +1,36 @@
+{
+  "adapter_sha256": "1655fbf5529f0238b0378ab817f0a01e6ac2b9ba907c3951931edc205f0ab911",
+  "binary_sha256": "06f4dd7a0fa0cc83147320fdc0e225ea42851088bd77998362b63b97d0a6b88f",
+  "mode": "synthetic",
+  "selected": [
+    {
+      "candidate_evaluations": 640,
+      "expression": "(x0 * (x0 * x0))",
+      "generator_rk4_refinement_error": 3.051749727631566e-08,
+      "heldout_metrics_valid": true,
+      "heldout_separation": 0.4990432100531377,
+      "heldout_within_fraction": 0.9749454493560095,
+      "nodes": 5,
+      "seed": 101,
+      "stop": "evaluation_budget",
+      "system": "harmonic",
+      "training_rows": 232960,
+      "valid": true
+    },
+    {
+      "candidate_evaluations": 640,
+      "expression": "((x0 - x1) + x0)",
+      "generator_rk4_refinement_error": 6.974449373130373e-07,
+      "heldout_metrics_valid": true,
+      "heldout_separation": 0.14158228824630462,
+      "heldout_within_fraction": 0.9978911995462283,
+      "nodes": 5,
+      "seed": 101,
+      "stop": "evaluation_budget",
+      "system": "quartic",
+      "training_rows": 232960,
+      "valid": true
+    }
+  ],
+  "spec_sha256": "0196e51a798372486a45f285b4623fe2d6ef1b78ab66de7cca78b51c75138d41"
+}

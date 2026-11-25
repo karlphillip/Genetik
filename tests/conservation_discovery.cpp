@@ -55,6 +55,12 @@ int main() {
         const auto tiny = mul(Expression::constant(1e-14, 2), varying);
         check(problem.assess(tiny).score.state() == FitnessState::Invalid,
               "numerically degenerate shrinkage is rejected");
+        const auto cancellation = Expression::binary(
+            ExpressionKind::Add, Expression::constant(0.5, 2),
+            Expression::binary(ExpressionKind::Add, v,
+                Expression::binary(ExpressionKind::Subtract, Expression::constant(1.0, 2), v)));
+        check(problem.assess(cancellation).score.state() == FitnessState::Invalid,
+              "roundoff-only between-trajectory variation cannot make a constant appear informative");
         std::uint64_t rows = 0;
         RegressionSupplementalWork work;
         const auto measured = problem.measureWithWork(energy, &rows, work);

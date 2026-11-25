@@ -1377,3 +1377,25 @@ The multi-site/shared-function extension and autonomous complex search remain
 outstanding. A grouped-trajectory conservation scoring problem and deterministic
 search-path smoke test are present, but no two-system held-out discovery study,
 frozen protocol, or independent Lie-derivative verification has been run.
+
+## Conservation discovery campaign (2026-11)
+
+At base `1344982fe798108abf2993ba204cd399d93ab947`, there was no grouped
+trajectory scoring objective or conservation search path; the base API could
+not express the requested discovery task. The candidate now exposes grouped
+state observations to an opt-in scorer while expressions receive only `(y,v)`.
+The objective minimizes normalized within/(within+between) variation plus a
+small physical-node penalty, rejects insufficient separation, and now rejects
+roundoff-only separation from cancellation. Release deterministic contracts
+check scaling behavior, constant rejection, and cancellation rejection.
+
+The frozen harmonic/quartic campaign used six fixed seeds, 640 candidates per
+run, the same Add/Subtract/Multiply grammar, whole-initial-condition holdouts,
+RK4 data, and a separate exact symbolic Lie-derivative verifier. All six runs
+completed but selected no exact nonconstant invariant; none recovered the
+reference law up to nonzero affine rescaling. The damped control's energy fell
+by 0.6878681724. Full expressions, held-out drift and separation, RK4
+refinement error, work, exact verification, and numerical reference-law RMSE
+are in `research/conservation_discovery/README.md` and the associated frozen
+machine artifacts. This is an unsuccessful bounded search, not evidence that
+these systems have no discoverable invariants.

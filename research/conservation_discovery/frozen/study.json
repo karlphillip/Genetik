@@ -1,0 +1,17 @@
+{
+  "schema": "genetik-conservation-study-v1",
+  "base_sha": "1344982fe798108abf2993ba204cd399d93ab947",
+  "systems": ["harmonic", "quartic"],
+  "seeds": [101, 211, 307],
+  "synthetic_seed": 101,
+  "train_initial_conditions": [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1]],
+  "heldout_initial_conditions": [[2,0],[0,-0.5]],
+  "dynamics": {"harmonic": ["y'=v", "v'=-y"], "quartic": ["y'=v", "v'=-2*y^3"]},
+  "generator": {"method": "classical RK4", "step": 0.025, "steps": 400, "retained_steps": "i=40..400 where i mod 4 = 0", "training_only_inputs": ["y", "v"], "trajectory_grouping_for_scorer": true},
+  "grammar": {"operators": ["Add", "Subtract", "Multiply"], "constants": [-2,-1,-0.5,0.5,1,2], "max_nodes": 31, "max_depth": 7, "max_abs_constant": 16, "initializer": "ordinary unconstrained symbolic initializer; no invariant seeded"},
+  "search": {"population": 32, "elites": 2, "max_generation_attempts": 20, "max_candidate_evaluations": 640, "max_training_loss_attempts_total": 349440, "fitting": false},
+  "resource_limits_per_invocation": {"cpu_seconds": 60, "wall_seconds": 90, "address_space_bytes": 4294967296, "cpu_affinity": [0,1], "stdout_bytes": 1048576},
+  "work_plan": {"target_invocations": 6, "maximum_candidate_evaluations_total": 3840, "maximum_cpu_seconds_total": 360, "maximum_wall_seconds_total": 540},
+  "selection": "normalized within-trajectory variation plus fixed node penalty; between-trajectory separation must exceed scorer floor",
+  "verifier": "post-selection only; nonconstant check, exact symbolic Lie derivative, held-out affine reference-law recovery"
+}

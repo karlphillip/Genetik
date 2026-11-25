@@ -10,12 +10,16 @@ and [polynomial bound certificates](POLYNOMIAL_BOUNDS.md).
 
 The same assignment still has unimplemented work: objective vectors in Pareto
 selection; three-or-more independent template sites and named shared functions;
-and autonomous complex-valued structure search. A grouped-trajectory
-conservation scoring problem has been added and exercised through the public
-search path, but the two-system held-out discovery campaign and independent
-Lie-derivative verification have not been run. No conservation benchmark or
-stochastic competitor comparison has been frozen. These are explicit
-outstanding items, not completed roadmap phases.
+and autonomous complex-valued structure search. The grouped-trajectory
+conservation campaign has now run for harmonic and quartic oscillators with a
+frozen protocol, whole-initial-condition holdouts, and an exact post-selection
+Lie-derivative verifier. All six bounded searches completed but returned no
+exact nonconstant invariant and no reference-law recovery. Results, including
+the damped control and numerical generator error, are in
+[`research/conservation_discovery/README.md`](../research/conservation_discovery/README.md).
+The deterministic objective contract rejects roundoff-only apparent
+separation. Conservation discovery remains a measured unsuccessful search,
+not a completed capability. No external competitor comparison has been frozen.
 
 ## Current D5 development status
 

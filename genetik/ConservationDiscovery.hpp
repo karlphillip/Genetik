@@ -14,6 +14,7 @@ struct ConservationTrajectory {
 
 struct ConservationObjectiveConfig {
     double minimumMagnitude = 1e-12;
+    double minimumNormalizedSeparation = 1e-12;
     double minimumBetweenFraction = 0.01;
     double complexityPenalty = 1e-6;
 };
@@ -28,6 +29,11 @@ struct ConservationObjectiveMetrics {
 
 // Group labels are retained only for scoring. Expressions see ordered state
 // coordinates, never trajectory IDs, time, initial labels, or reference laws.
+// The minimized objective is within/(within+between) plus nodeCount*penalty.
+// Moments are computed after dividing candidate outputs by their largest
+// magnitude; candidates need >= minimumBetweenFraction and >=
+// minimumNormalizedSeparation (relative to that scale) to avoid accepting
+// constants whose apparent separation consists only of floating-point noise.
 class ConservationDiscoveryProblem final : public RegressionProblem {
   public:
     ConservationDiscoveryProblem(const std::vector<ConservationTrajectory>& trajectories,
@@ -37,6 +43,8 @@ class ConservationDiscoveryProblem final : public RegressionProblem {
           config_(config) {
         if (trajectories_.size() < 2 || !std::isfinite(config_.minimumMagnitude) ||
             config_.minimumMagnitude <= 0.0 ||
+            !std::isfinite(config_.minimumNormalizedSeparation) ||
+            config_.minimumNormalizedSeparation <= 0.0 ||
             !std::isfinite(config_.minimumBetweenFraction) ||
             config_.minimumBetweenFraction <= 0.0 || config_.minimumBetweenFraction >= 1.0 ||
             !std::isfinite(config_.complexityPenalty) || config_.complexityPenalty < 0.0)
@@ -133,7 +141,9 @@ class ConservationDiscoveryProblem final : public RegressionProblem {
         const double withinFraction = within / total;
         const double betweenFraction = between / total;
         if (!std::isfinite(withinFraction) || !std::isfinite(betweenFraction) ||
-            between <= 0.0 || betweenFraction < config_.minimumBetweenFraction)
+            between <= 0.0 || betweenFraction < config_.minimumBetweenFraction ||
+            std::sqrt(between / static_cast<double>(count)) <
+                config_.minimumNormalizedSeparation)
             return result;
         const double complexity = config_.complexityPenalty *
                                   static_cast<double>(checked.nodeCount());

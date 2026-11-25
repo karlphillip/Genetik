@@ -1,0 +1,84 @@
+{
+  "records": [
+    {
+      "result": {
+        "exact_conservation": false,
+        "expression": "((0.5 - (x1 * x1)) * (x1 * x1))",
+        "lie_derivative_identically_zero": false,
+        "nonconstant": true,
+        "reference_best_affine_relative_rmse": 0.5442449647084389,
+        "reference_law_affine_recovery": false
+      },
+      "seed": 101,
+      "status": "verified",
+      "system": "harmonic"
+    },
+    {
+      "result": {
+        "exact_conservation": false,
+        "expression": "(((x1 * ((x1 + 1.0) + (x1 + (-1.0)))) + (((((-0.5) + x0) * 1.0) * x0) - (-2.0))) + (-1.0))",
+        "lie_derivative_identically_zero": false,
+        "nonconstant": true,
+        "reference_best_affine_relative_rmse": 0.2260020946748694,
+        "reference_law_affine_recovery": false
+      },
+      "seed": 211,
+      "status": "verified",
+      "system": "harmonic"
+    },
+    {
+      "result": {
+        "exact_conservation": false,
+        "expression": "(x1 * (x1 - (x1 * (x1 * x1))))",
+        "lie_derivative_identically_zero": false,
+        "nonconstant": true,
+        "reference_best_affine_relative_rmse": 0.5547292953284998,
+        "reference_law_affine_recovery": false
+      },
+      "seed": 307,
+      "status": "verified",
+      "system": "harmonic"
+    },
+    {
+      "result": {
+        "exact_conservation": false,
+        "expression": "((-2.0) - ((-2.0) - (((1.0 - (x0 * x0)) - ((x1 * x1) + (-0.5))) * 0.5)))",
+        "lie_derivative_identically_zero": false,
+        "nonconstant": true,
+        "reference_best_affine_relative_rmse": 0.3166879932808988,
+        "reference_law_affine_recovery": false
+      },
+      "seed": 101,
+      "status": "verified",
+      "system": "quartic"
+    },
+    {
+      "result": {
+        "exact_conservation": false,
+        "expression": "((((1.0 - (x1 * x1)) - ((-2.0) - (-2.0))) * (x1 * x1)) * (-2.0))",
+        "lie_derivative_identically_zero": false,
+        "nonconstant": true,
+        "reference_best_affine_relative_rmse": 0.4945004126591509,
+        "reference_law_affine_recovery": false
+      },
+      "seed": 211,
+      "status": "verified",
+      "system": "quartic"
+    },
+    {
+      "result": {
+        "exact_conservation": false,
+        "expression": "((((-1.0) + 1.0) - x1) * x1)",
+        "lie_derivative_identically_zero": false,
+        "nonconstant": true,
+        "reference_best_affine_relative_rmse": 0.4249368061811199,
+        "reference_law_affine_recovery": false
+      },
+      "seed": 307,
+      "status": "verified",
+      "system": "quartic"
+    }
+  ],
+  "selected_artifact_sha256": "e5f09e494b955cb6481b645e783a8637e04cea73ebfc81860d143bb9a1b7e955",
+  "verifier_binary_sha256": "c067fc0e6f8c4f541b5622d64f3f3e87ba2aa280a120b9dfb0c8b2bd0f8f2fca"
+}

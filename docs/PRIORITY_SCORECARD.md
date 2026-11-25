@@ -1,4 +1,4 @@
-# PR #71 mathematical and conservation priority scorecard
+# PR #72 mathematical and conservation priority scorecard
 
 Base: `1344982fe798108abf2993ba204cd399d93ab947` (full SHA; confirmed in the freshly fetched `origin/main` before worktree creation). The task worktree began at this exact SHA. The conservation discovery protocol is frozen and its unsuccessful six-seed results are reported below; other comparisons are deterministic contract evidence.
 
@@ -20,3 +20,21 @@ The revised Release build completed. A clean Release CTest rerun excluding the s
 The full Release and ASan/UBSan target builds completed. Seven relevant ASan/UBSan contracts passed (custom objective, vector Pareto, MDL, polynomial bounds, conservation scoring, two-site templates, and scientific/complex fitting); the autonomous complex adapter also passed its synthetic constant-fit smoke under ASan/UBSan. Changed-line clang-format/clang-tidy passes. On hosted head `023c24a69fb9d2cafff189941800e308063a2a3b`, formatter, sanitizer, Python, and optional-math jobs pass; GCC minimum and arm64 jobs remain pending. `python3 scripts/test_branch_lifecycle.py` passed all 10 tests. `python3 scripts/check_hygiene.py` passed after the generated cache was removed.
 
 `python3 scripts/check_hygiene.py` and `git diff --check` pass. The workspace-wide hygiene mode reports a pre-existing sibling `Genetik-sync-backup-20261118T183118Z`; it was preserved. `python3 scripts/test_branch_lifecycle.py` passed all 10 tests.
+
+### Follow-up head `54eab33dc9edb914811ef6a3960c94f59bc94022`
+
+The final full Release build succeeded and the full CTest run passed 141/141.
+Final targeted Release and ASan/UBSan runs passed polynomial bounds, symbolic
+selection (including operator-weighted crowding survival), and D6 complex
+search contracts. The exact coefficient recheck of all six frozen conservation
+selections is recorded in
+[`exact-verification-v3.json`](../research/conservation_discovery/results/exact-verification-v3.json).
+
+The isolated installed-package test again hit the inner 300-second limit during
+the ordinary consumer build at 93%, compiling
+`complex_coefficient_fitting_quickstart`. The partial build was resumed with a
+1,200-second command cap; ordinary and relocated installed consumers,
+quickstart execution, metadata/version/component checks, C++23, and embedding
+all passed. See the follow-up section of the
+[installed-package note](../research/installed_package_qualification/README.md).
+Hosted status for this exact head is tracked on [draft PR #72](https://github.com/karlphillip/Genetik/pull/72); it is not merged.

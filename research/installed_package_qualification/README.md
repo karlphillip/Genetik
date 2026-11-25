@@ -40,3 +40,24 @@ The disposable command log remains under the local Release build directory at
 `build/release/tests/genetik-delivery-fixture/commands.log`. This README keeps
 the measured failing step and useful partial-consumer checks reviewable without
 checking in generated build logs.
+
+## Follow-up on resumed head `54eab33dc9edb914811ef6a3960c94f59bc94022`
+
+The isolated test was rerun with the repository's ordinary CTest timeout
+(1,200 seconds) and the script's normal 300-second per-command cap. It failed
+again in `cmake --build <workspace>/ordinary consumer build -j2`, after 300.017
+seconds. The compiler was building
+`quickstarts/complex_coefficient_fitting_quickstart`; Make had completed the
+preceding quickstarts and reported 93% progress. The captured command transcript
+is retained locally at
+`build/release/tests/installed-package-timeout-54eab33.log`.
+
+To complete the checks beyond that cap, the existing producer/install and
+partially compiled ordinary-consumer artifacts were resumed with the same
+integration procedure and a 1,200-second per-command cap. The ordinary
+multi-TU consumer, every installed quickstart and its runtime/dependency checks,
+relocation after moving the prefix and deleting producer/build trees, package
+metadata and rejected-version/component checks, C++23 consumer, and source
+embedding parent project all passed. The final command log and generated
+consumer artifacts remain in the ignored Release build fixture directory. The
+repository's normal 300-second cap was not changed.

@@ -1,0 +1,27 @@
+{
+  "schema": "genetik-complex-symbolic-study-v1",
+  "base_sha": "1344982fe798108abf2993ba204cd399d93ab947",
+  "systems": ["affine", "nonlinear"],
+  "seeds": [401, 503, 601],
+  "excluded_development_pilot": {"seeds": [101], "reason": "used only to debug the adapter before freezing; excluded from the final three-seed comparison"},
+  "synthetic_seed": 401,
+  "training_inputs": [[-0.95,0.15],[-0.8,-0.1],[-0.55,0.2],[-0.3,-0.15],[-0.1,0.1],[0.2,-0.2],[0.4,0.12],[0.65,-0.08],[0.82,0.18],[1.0,-0.1],[1.15,0.07],[-1.1,-0.18]],
+  "heldout_complex_inputs": [[-1.2,0.13],[-0.72,-0.17],[0.08,0.19],[0.48,-0.11],[0.93,0.14],[1.25,-0.16]],
+  "targets_for_postselection_assessment": {
+    "affine": "a*z+b; a=1.27+0.48i, b=-0.31+0.27i",
+    "nonlinear": "a*cos(b*z); a=0.73-0.28i, b=1.13+0.32i"
+  },
+  "autonomous_arms": {
+    "base": "base-SHA ordinary symbolicRegression on ComplexRegressionProblem; complex interpreted, real-valued constants; Pareto loss/complexity",
+    "candidate": "same seeded search; complexSymbolicRegression fits real and imaginary coefficient coordinates for best and Pareto-front topologies using training data only",
+    "diagnostic": "supplied generic topology with unit real starting coefficients, fit on training rows only; reported separately"
+  },
+  "grammar": {"operators": ["Add","Subtract","Multiply","Cos"], "constants": [-1,0,1], "max_nodes": 15, "max_depth": 6, "max_abs_constant": 1.5, "max_arithmetic_operations": 24, "initializer": "ordinary unconstrained initializer; no target topology or target constants seeded"},
+  "search": {"population": 32, "elites": 2, "max_generation_attempts": 40, "max_candidate_evaluations": 1312, "max_training_loss_attempts_per_search": 15744, "pareto_frontier_cap": 16, "pareto_comparison_cap": 1000000},
+  "fitting": {"bounds": [-2,2], "max_topologies": 17, "max_objective_evaluations_per_topology": 256, "max_iterations": 64, "max_parameters": 16, "max_residuals": 24},
+  "resource_limits_per_invocation": {"cpu_seconds": 60, "wall_seconds": 90, "address_space_bytes": 4294967296, "cpu_affinity": [0,1], "max_captured_output_bytes": 1048576},
+  "effective_resource_preflight": {"process_affinity": [0,1,2,3,4,5,6,7], "cgroup_cpu_quota": "unbounded", "cgroup_memory_limit": "unbounded", "host_available_memory_bytes": 12834635776, "inherited_cpu_seconds_limit": "unbounded", "inherited_address_space_limit": "unbounded"},
+  "work_plan": {"target_invocations": 6, "max_candidate_evaluations_total": 15744, "max_training_rows_total": 188928, "max_fitter_objective_evaluations_total": 27648, "max_cpu_seconds_total": 360, "max_wall_seconds_total": 540},
+  "symmetry_equivalence": "count canonical affine addition/multiplication operand swaps and Cos(b*z)=Cos(-b*z) as one topology class",
+  "failed_runs": "report one record per task/seed including timeout, missing search model, fit failure, or other failure"
+}

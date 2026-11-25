@@ -1,0 +1,106 @@
+{
+  "adapter_sha256": "fdafb80aa6a43999b1a4a1cd0618a431910608ed387a1d9f5482c02194933139",
+  "api_source_sha256": "dc85e3254071843cc3204e6ea77f1bea65218dcead0b7ae72b43bd52854bd9ad",
+  "binary_sha256": "4934532d97fa326dd2bb4c22f29dec6326c375f46bb1cc33cc7bb7d82027a0d1",
+  "mode": "target",
+  "records": [
+    {
+      "captured_bytes": 1039,
+      "case": "affine",
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/complex/genetik_complex_autonomous_comparison",
+        "affine",
+        "401",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 401,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"case\":\"affine\",\"seed\":401,\"synthetic\":false,\"baseline_expression\":\"((x0 + (cos(1.0) * x0)) - cos((-1.0)))\",\"baseline_structure_recovery\":false,\"baseline_heldout_rmse\":0.61964741569751036,\"baseline_candidate_evaluations\":1312,\"baseline_training_rows\":15744,\"candidate_search_expression_matches_baseline\":true,\"candidate_topology\":\"((x0 + (cos(1.0) * x0)) - cos((-1.0)))\",\"candidate_structure_recovery\":false,\"complex_fit_stop\":\"gradient_tolerance\",\"complex_fit_objective_evaluations\":11,\"complex_fit_topologies\":4,\"complex_fit_total_objective_evaluations\":40,\"complex_fit_training_loss\":1.1529900600398251e-31,\"candidate_heldout_rmse\":4.6443961262081255e-16,\"candidate_complex_coefficients\":[[1.3263638454525375,-0.47647100328440317],[-1.2678906523190887,-0.27923543492364]],\"diagnostic_supplied_topology\":\"1.0*x0+1.0\",\"diagnostic_training_loss\":1.1478542468547926e-30,\"diagnostic_heldout_rmse\":1.0258304546138148e-15,\"diagnostic_complex_coefficients\":[[1.2699999999999996,0.4799999999999997],[-0.30999999999999905,0.26999999999999985]]}",
+      "wall_seconds": 0.2608714650014008
+    },
+    {
+      "captured_bytes": 953,
+      "case": "affine",
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/complex/genetik_complex_autonomous_comparison",
+        "affine",
+        "503",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 503,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"case\":\"affine\",\"seed\":503,\"synthetic\":false,\"baseline_expression\":\"(x0 - cos((-1.0)))\",\"baseline_structure_recovery\":false,\"baseline_heldout_rmse\":0.64716109654588538,\"baseline_candidate_evaluations\":1312,\"baseline_training_rows\":15744,\"candidate_search_expression_matches_baseline\":true,\"candidate_topology\":\"(x0 - cos((-1.0)))\",\"candidate_structure_recovery\":false,\"complex_fit_stop\":\"gradient_tolerance\",\"complex_fit_objective_evaluations\":9,\"complex_fit_topologies\":2,\"complex_fit_total_objective_evaluations\":18,\"complex_fit_training_loss\":0.17700566937499995,\"candidate_heldout_rmse\":0.48803431039727924,\"candidate_complex_coefficients\":[[-1.2783687178099785,-0.29543390787155338]],\"diagnostic_supplied_topology\":\"1.0*x0+1.0\",\"diagnostic_training_loss\":1.1478542468547926e-30,\"diagnostic_heldout_rmse\":1.0258304546138148e-15,\"diagnostic_complex_coefficients\":[[1.2699999999999996,0.4799999999999997],[-0.30999999999999905,0.26999999999999985]]}",
+      "wall_seconds": 0.24985078200188582
+    },
+    {
+      "captured_bytes": 944,
+      "case": "affine",
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/complex/genetik_complex_autonomous_comparison",
+        "affine",
+        "601",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 601,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"case\":\"affine\",\"seed\":601,\"synthetic\":false,\"baseline_expression\":\"(x0 - cos(1.0))\",\"baseline_structure_recovery\":false,\"baseline_heldout_rmse\":0.64716109654588538,\"baseline_candidate_evaluations\":1312,\"baseline_training_rows\":15744,\"candidate_search_expression_matches_baseline\":true,\"candidate_topology\":\"(x0 - cos(1.0))\",\"candidate_structure_recovery\":false,\"complex_fit_stop\":\"gradient_tolerance\",\"complex_fit_objective_evaluations\":9,\"complex_fit_topologies\":1,\"complex_fit_total_objective_evaluations\":9,\"complex_fit_training_loss\":0.17700566937499995,\"candidate_heldout_rmse\":0.48803431039727924,\"candidate_complex_coefficients\":[[1.2783687178099785,0.29543390787155338]],\"diagnostic_supplied_topology\":\"1.0*x0+1.0\",\"diagnostic_training_loss\":1.1478542468547926e-30,\"diagnostic_heldout_rmse\":1.0258304546138148e-15,\"diagnostic_complex_coefficients\":[[1.2699999999999996,0.4799999999999997],[-0.30999999999999905,0.26999999999999985]]}",
+      "wall_seconds": 0.2763301570012118
+    },
+    {
+      "captured_bytes": 941,
+      "case": "nonlinear",
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/complex/genetik_complex_autonomous_comparison",
+        "nonlinear",
+        "401",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 401,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"case\":\"nonlinear\",\"seed\":401,\"synthetic\":false,\"baseline_expression\":\"cos((-1.0))\",\"baseline_structure_recovery\":false,\"baseline_heldout_rmse\":0.45331530760400535,\"baseline_candidate_evaluations\":1312,\"baseline_training_rows\":15744,\"candidate_search_expression_matches_baseline\":true,\"candidate_topology\":\"0.0\",\"candidate_structure_recovery\":false,\"complex_fit_stop\":\"gradient_tolerance\",\"complex_fit_objective_evaluations\":9,\"complex_fit_topologies\":3,\"complex_fit_total_objective_evaluations\":27,\"complex_fit_training_loss\":0.055615535152166766,\"candidate_heldout_rmse\":0.30186055381397492,\"candidate_complex_coefficients\":[[0.46198178791374411,-0.32583320073940014]],\"diagnostic_supplied_topology\":\"1.0*cos(1.0*x0)\",\"diagnostic_training_loss\":8.3392766591967312e-31,\"diagnostic_heldout_rmse\":1.0912830893548416e-15,\"diagnostic_complex_coefficients\":[[0.73000000000000109,-0.28000000000000047],[1.1300000000000012,0.31999999999999873]]}",
+      "wall_seconds": 0.22907959399890387
+    },
+    {
+      "captured_bytes": 1004,
+      "case": "nonlinear",
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/complex/genetik_complex_autonomous_comparison",
+        "nonlinear",
+        "503",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 503,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"case\":\"nonlinear\",\"seed\":503,\"synthetic\":false,\"baseline_expression\":\"(cos(cos((-1.0))) * (cos(x0) * cos(x0)))\",\"baseline_structure_recovery\":false,\"baseline_heldout_rmse\":0.30804922454338562,\"baseline_candidate_evaluations\":1312,\"baseline_training_rows\":15744,\"candidate_search_expression_matches_baseline\":true,\"candidate_topology\":\"(cos(cos(cos((-1.0)))) * cos(x0))\",\"candidate_structure_recovery\":false,\"complex_fit_stop\":\"gradient_tolerance\",\"complex_fit_objective_evaluations\":18,\"complex_fit_topologies\":11,\"complex_fit_total_objective_evaluations\":135,\"complex_fit_training_loss\":0.021863524895721711,\"candidate_heldout_rmse\":0.19177665058315893,\"candidate_complex_coefficients\":[[-0.98499733201334883,-0.72888420357289285]],\"diagnostic_supplied_topology\":\"1.0*cos(1.0*x0)\",\"diagnostic_training_loss\":8.3392766591967312e-31,\"diagnostic_heldout_rmse\":1.0912830893548416e-15,\"diagnostic_complex_coefficients\":[[0.73000000000000109,-0.28000000000000047],[1.1300000000000012,0.31999999999999873]]}",
+      "wall_seconds": 0.2661706809994939
+    },
+    {
+      "captured_bytes": 941,
+      "case": "nonlinear",
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/complex/genetik_complex_autonomous_comparison",
+        "nonlinear",
+        "601",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 601,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"case\":\"nonlinear\",\"seed\":601,\"synthetic\":false,\"baseline_expression\":\"cos((-1.0))\",\"baseline_structure_recovery\":false,\"baseline_heldout_rmse\":0.45331530760400535,\"baseline_candidate_evaluations\":1312,\"baseline_training_rows\":15744,\"candidate_search_expression_matches_baseline\":true,\"candidate_topology\":\"0.0\",\"candidate_structure_recovery\":false,\"complex_fit_stop\":\"gradient_tolerance\",\"complex_fit_objective_evaluations\":9,\"complex_fit_topologies\":3,\"complex_fit_total_objective_evaluations\":27,\"complex_fit_training_loss\":0.055615535152166766,\"candidate_heldout_rmse\":0.30186055381397492,\"candidate_complex_coefficients\":[[0.46198178791374411,-0.32583320073940014]],\"diagnostic_supplied_topology\":\"1.0*cos(1.0*x0)\",\"diagnostic_training_loss\":8.3392766591967312e-31,\"diagnostic_heldout_rmse\":1.0912830893548416e-15,\"diagnostic_complex_coefficients\":[[0.73000000000000109,-0.28000000000000047],[1.1300000000000012,0.31999999999999873]]}",
+      "wall_seconds": 0.23385694000171497
+    }
+  ],
+  "source_sha256": "d080b224a70a23cfaef36bb181b7fadb557982ea9b2050b6f856e67a892b1a92",
+  "spec_sha256": "1059ed133c02fad26e3b2fbba240cc85b975fdd0a349b9a0b1167668d889e7a3"
+}

@@ -1,6 +1,7 @@
 #include <ComplexSymbolicRegression.hpp>
 #include <ExpressionParsing.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <complex>
@@ -134,6 +135,50 @@ bool containsVariable(const Expression& e, const Tree& tree, std::size_t root) {
             return true;
     return false;
 }
+bool containsConstant(const Expression& e, const Tree& tree, std::size_t root) {
+    const auto nodes = e.nodes();
+    if (constant(nodes[root]))
+        return true;
+    for (std::size_t c = 0; c < expressionArity(nodes[root].kind()); ++c)
+        if (containsConstant(e, tree, tree.children[root][c]))
+            return true;
+    return false;
+}
+std::size_t constantCount(const Expression& e) {
+    const auto nodes = e.nodes();
+    return static_cast<std::size_t>(std::count_if(nodes.begin(), nodes.end(), constant));
+}
+bool hasVariableScale(const Expression& e, const Tree& tree, std::size_t root) {
+    const auto nodes = e.nodes();
+    if (nodes[root].kind() == ExpressionKind::Multiply) {
+        const auto left = tree.children[root][0], right = tree.children[root][1];
+        if ((containsVariable(e, tree, left) && !containsVariable(e, tree, right) &&
+             containsConstant(e, tree, right)) ||
+            (containsVariable(e, tree, right) && !containsVariable(e, tree, left) &&
+             containsConstant(e, tree, left)))
+            return true;
+    }
+    for (std::size_t c = 0; c < expressionArity(nodes[root].kind()); ++c)
+        if (hasVariableScale(e, tree, tree.children[root][c]))
+            return true;
+    return false;
+}
+bool hasOffsetTerm(const Expression& e, const Tree& tree, std::size_t root) {
+    const auto nodes = e.nodes();
+    if (nodes[root].kind() == ExpressionKind::Add ||
+        nodes[root].kind() == ExpressionKind::Subtract) {
+        const auto left = tree.children[root][0], right = tree.children[root][1];
+        if ((containsVariable(e, tree, left) && !containsVariable(e, tree, right) &&
+             containsConstant(e, tree, right)) ||
+            (containsVariable(e, tree, right) && !containsVariable(e, tree, left) &&
+             containsConstant(e, tree, left)))
+            return true;
+    }
+    for (std::size_t c = 0; c < expressionArity(nodes[root].kind()); ++c)
+        if (hasOffsetTerm(e, tree, tree.children[root][c]))
+            return true;
+    return false;
+}
 LinearForm linearForm(const Expression& e, const Tree& tree, std::size_t root) {
     const auto nodes = e.nodes();
     const auto& node = nodes[root];
@@ -168,33 +213,36 @@ Expression subtreeExpression(const Expression& e, std::size_t root) {
 bool affineTopology(const Expression& e) {
     const auto tree = indexTree(e);
     const auto form = linearForm(e, tree, e.nodeCount() - 1);
-    return form.valid && form.depends && form.degree == 1;
+    // a*z+b requires independently adjustable scale and offset. A one-
+    // parameter expression such as z-c is affine but cannot express this task.
+    return form.valid && form.depends && form.degree == 1 && constantCount(e) >= 2 &&
+           hasVariableScale(e, tree, e.nodeCount() - 1) &&
+           hasOffsetTerm(e, tree, e.nodeCount() - 1);
 }
 bool cosineTopology(const Expression& e) {
     const auto tree = indexTree(e);
     const auto nodes = e.nodes();
-    const auto visit = [&](auto&& self, std::size_t root) -> bool {
-        if (nodes[root].kind() == ExpressionKind::Cos) {
-            const auto argument = tree.children[root][0];
-            const auto form = linearForm(e, tree, argument);
-            if (!form.valid || !form.depends || form.degree != 1)
-                return false;
-            const auto expression = subtreeExpression(e, argument);
-            const std::array<double, 1> zero{0.0}, one{1.0};
-            const auto atZero = expression.evaluate(zero), atOne = expression.evaluate(one);
-            return atZero.valid() && atOne.valid() && std::abs(atZero.value()) < 1e-12 &&
-                   std::abs(atOne.value()) > 1e-12;
-        }
-        if (nodes[root].kind() != ExpressionKind::Multiply)
-            return false;
-        const auto left = tree.children[root][0], right = tree.children[root][1];
-        const bool leftVariable = containsVariable(e, tree, left),
-                   rightVariable = containsVariable(e, tree, right);
-        if (leftVariable == rightVariable)
-            return false;
-        return self(self, leftVariable ? left : right);
-    };
-    return visit(visit, e.nodeCount() - 1);
+    const auto root = e.nodeCount() - 1;
+    if (nodes[root].kind() != ExpressionKind::Multiply)
+        return false;
+    const auto left = tree.children[root][0], right = tree.children[root][1];
+    for (const auto [cosine, amplitude] : {std::pair{left, right}, std::pair{right, left}}) {
+        if (nodes[cosine].kind() != ExpressionKind::Cos || containsVariable(e, tree, amplitude) ||
+            !containsConstant(e, tree, amplitude))
+            continue;
+        const auto argument = tree.children[cosine][0];
+        const auto form = linearForm(e, tree, argument);
+        if (!form.valid || !form.depends || form.degree != 1 ||
+            !hasVariableScale(e, tree, argument))
+            continue;
+        const auto expression = subtreeExpression(e, argument);
+        const std::array<double, 1> zero{0.0}, one{1.0};
+        const auto atZero = expression.evaluate(zero), atOne = expression.evaluate(one);
+        if (atZero.valid() && atOne.valid() && std::abs(atZero.value()) < 1e-12 &&
+            std::abs(atOne.value()) > 1e-12)
+            return true;
+    }
+    return false;
 }
 Task caseTask(std::string_view name) {
     if (name == "affine")

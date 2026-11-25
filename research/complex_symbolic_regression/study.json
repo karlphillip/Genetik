@@ -22,6 +22,6 @@
   "resource_limits_per_invocation": {"cpu_seconds": 60, "wall_seconds": 90, "address_space_bytes": 4294967296, "cpu_affinity": [0,1], "max_captured_output_bytes": 1048576},
   "effective_resource_preflight": {"process_affinity": [0,1,2,3,4,5,6,7], "cgroup_cpu_quota": "unbounded", "cgroup_memory_limit": "unbounded", "host_available_memory_bytes": 12834635776, "inherited_cpu_seconds_limit": "unbounded", "inherited_address_space_limit": "unbounded"},
   "work_plan": {"target_invocations": 6, "max_candidate_evaluations_total": 15744, "max_training_rows_total": 188928, "max_fitter_objective_evaluations_total": 27648, "max_cpu_seconds_total": 360, "max_wall_seconds_total": 540},
-  "symmetry_equivalence": "count canonical affine addition/multiplication operand swaps and Cos(b*z)=Cos(-b*z) as one topology class",
+  "symmetry_equivalence": "strict parameterized topology recovery requires independently adjustable scale and offset for a*z+b, or independently adjustable amplitude and frequency for a*cos(b*z); accept multiplication operand swaps and Cos(b*z)=Cos(-b*z)",
   "failed_runs": "report one record per task/seed including timeout, missing search model, fit failure, or other failure"
 }

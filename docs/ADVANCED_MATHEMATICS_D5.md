@@ -73,19 +73,21 @@ Integer operations do not offer real derivatives.
 
 ## Bounded recurrences
 
-`IntegerRecurrence.hpp` owns an external schema, one or two Int64 initial
+`IntegerRecurrence.hpp` owns an external schema, one, two, or three Int64 initial
 conditions, and an ordinary discrete transition. Transition slots are:
-external `[0,N)`, step index `N`, oldest previous value `N+1`, then newer `N+2`
-for order2. `previousSlot(state)` and `previous(state)` expose these roles.
+external `[0,N)`, step index `N`, then previous values oldest to newest at
+`N+1` through `N+order`. `previousSlot(state)` and `previous(state)` expose
+these roles.
 
 ```cpp
 IntegerRecurrence fibonacci(0, {0,1}, parseDiscreteExpression("x1+x2",3));
 auto value = fibonacci.evaluate(20); // 6765
 ```
 
-First order computes a[n+1]=f(n,a[n]); second order computes
-a[n+2]=f(n,a[n],a[n+1]). Initial queries never evaluate the transition.
-Private storage holds at most two states plus bindings, not an unbounded history.
+First order computes a[n+1]=f(n,a[n]); order two computes
+a[n+2]=f(n,a[n],a[n+1]); order three computes
+a[n+3]=f(n,a[n],a[n+1],a[n+2]). Initial queries never evaluate the transition.
+Private storage holds at most three states plus bindings, not an unbounded history.
 A step charges one operation and aggregate iteration plus actual transition work.
 `IntegerRecurrenceLimits` caps steps/storage; discrete evaluation limits cap all
 aggregate work, nested iteration and scratch. Failed steps return no partial

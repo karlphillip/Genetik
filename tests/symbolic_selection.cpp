@@ -207,6 +207,74 @@ void limitsAndSearchDeterminism() {
               memory.paretoWork.peakEstimatedMemoryBytes > config.maximumParetoEstimatedMemoryBytes,
           "estimated-memory exhaustion is explicit");
 }
+
+void vectorObjectiveSearch() {
+    const auto problem =
+        RegressionProblem::create({{{100.0}, 0.0}, {{100.0}, 2.0}}, ExpressionLimits{1, 1, 2.0});
+    SymbolicRegressionConfig config;
+    config.population = 12;
+    config.elites = 1;
+    config.maxGenerationAttempts = 0;
+    config.maxEvaluations = 12;
+    config.maxTrainingLossAttempts = 24;
+    config.selectionStrategy = SymbolicRegressionConfig::SelectionStrategy::Pareto;
+    config.maximumParetoObjectives = 2;
+    config.grammar.operators = {ExpressionKind::Add};
+    config.grammar.constants = {0.0, 1.0, 2.0};
+    config.grammar.initialMaxDepth = 1;
+    config.grammar.mutationMaxDepth = 1;
+    config.paretoObjectives = [](const Expression& expression, const RegressionProblem& training) {
+        std::vector<double> objectives(training.trainingRows().size());
+        genetik_detail::EvaluationWorkspace workspace;
+        for (std::size_t i = 0; i < objectives.size(); ++i) {
+            const auto& row = training.trainingRows()[i];
+            const auto prediction = workspace.evaluate(expression, row.inputs);
+            if (!prediction.valid())
+                return std::vector<double>{std::numeric_limits<double>::infinity()};
+            const double residual = prediction.value() - row.target;
+            objectives[i] = residual * residual;
+        }
+        return objectives;
+    };
+    InitialExpressionProvider initial = [](const RegressionProblem& p, std::size_t, std::uint64_t) {
+        return InitialExpressionBatch{{Expression::constant(0.0, p.dimensions()),
+                                       Expression::constant(1.0, p.dimensions()),
+                                       Expression::constant(2.0, p.dimensions())},
+                                      1,
+                                      "success",
+                                      {}};
+    };
+    config.initialExpressionSlots = 3;
+    config.maximumInitializerWorkUnits = 1;
+    RandomContext random(9227);
+    const auto result = symbolicRegression(problem, config, random, {}, initial);
+    std::vector<std::array<double, 2>> actual;
+    for (const auto& point : result.paretoFrontier) {
+        check(point.objectives.size() == 2,
+              "Pareto results expose the configured bounded objective vector");
+        actual.push_back({point.objectives[0], point.objectives[1]});
+    }
+    const std::vector<std::array<double, 2>> expected{{0.0, 4.0}, {1.0, 1.0}, {4.0, 0.0}};
+    for (const auto& objective : expected)
+        check(std::find(actual.begin(), actual.end(), objective) != actual.end(),
+              "hand-computed nondominated objective vector is selected by symbolic Pareto search");
+    check(actual.size() == expected.size(),
+          "the selected nondominated set matches the independent three-point calculation");
+    check(result.paretoWork.objectiveVectorEvaluations > 0,
+          "Pareto work reports callback-vector evaluations");
+    config.maximumParetoObjectives = 1;
+    config.paretoObjectives = [](const Expression&, const RegressionProblem&) {
+        return std::vector<double>{0.0, 1.0};
+    };
+    RandomContext bounded(9227);
+    bool rejected = false;
+    try {
+        (void)symbolicRegression(problem, config, bounded, {}, initial);
+    } catch (const std::invalid_argument&) {
+        rejected = true;
+    }
+    check(rejected, "objective vectors exceeding the declared bound are rejected");
+}
 } // namespace
 
 int main() {
@@ -214,6 +282,7 @@ int main() {
         penaltyKeepsLossSeparate();
         paretoFrontAndSurvival();
         limitsAndSearchDeterminism();
+        vectorObjectiveSearch();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

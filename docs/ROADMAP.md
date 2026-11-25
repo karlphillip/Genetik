@@ -8,9 +8,10 @@ MDL selector, and whole-box polynomial value/derivative certificates. See
 [baseline evidence](BASELINE.md), [objective/MDL definitions](MATHEMATICAL_OBJECTIVES.md),
 and [polynomial bound certificates](POLYNOMIAL_BOUNDS.md).
 
-The same assignment still has unimplemented work: objective vectors in Pareto
-selection; three-or-more independent template sites and named shared functions;
-and autonomous complex-valued structure search. The grouped-trajectory
+The same assignment still has unimplemented work: three-or-more independent
+template sites and named shared functions, and autonomous complex-valued
+structure search. Bounded vector objectives are now used by actual Pareto
+selection, with independent nondominated-set coverage. The grouped-trajectory
 conservation campaign has now run for harmonic and quartic oscillators with a
 frozen protocol, whole-initial-condition holdouts, and an exact post-selection
 Lie-derivative verifier. All six bounded searches completed but returned no

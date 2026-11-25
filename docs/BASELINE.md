@@ -1367,16 +1367,14 @@ derivative witness at zero; `x+x^3` is certified over `[-1,1]`. Full interval
 proofs are limited to the documented polynomial grammar and may return
 Inconclusive at the subdivision ceiling.
 
-Release focused tests passed for these changes. The complete Release CTest run
-passed 137 of 139 tests; the research-program test passed on isolated rerun,
-while the complete installed-package integration again exceeded its fixed
-300-second build limit on this Jetson. A focused downstream installed consumer
-compiled and ran the changed objectives example successfully. Focused ASan+UBSan
-tests also passed. No stochastic comparison package was frozen or executed.
-The multi-site/shared-function extension and autonomous complex search remain
-outstanding. A grouped-trajectory conservation scoring problem and deterministic
-search-path smoke test are present, but no two-system held-out discovery study,
-frozen protocol, or independent Lie-derivative verification has been run.
+At the first checkpoint, focused Release tests passed and the complete Release
+CTest had a 300-second installed-package consumer timeout. The installed
+objectives consumer and focused ASan+UBSan tests passed. Conservation now has a
+frozen two-system, six-seed study and separate exact verifier; the measured
+search did not recover any exact nonconstant invariant. This continuation must
+rerun the installed-package test and hosted qualification on the revised head.
+Multi-site/shared-function templates and autonomous complex search remain
+outstanding.
 
 ## Conservation discovery campaign (2026-11)
 
@@ -1399,3 +1397,14 @@ refinement error, work, exact verification, and numerical reference-law RMSE
 are in `research/conservation_discovery/README.md` and the associated frozen
 machine artifacts. This is an unsuccessful bounded search, not evidence that
 these systems have no discoverable invariants.
+
+## Bounded Pareto objective vectors (2026-11)
+
+Pareto selection now accepts a callback returning up to four finite objectives
+computed from training data. The vector replaces scalar loss in Pareto
+dominance/crowding; configured complexity is an extra objective. Selected
+points expose their vector and vector callback work is counted. The installed
+selection quickstart demonstrates MSE and maximum absolute error. A public
+symbolic-search contract returns the hand-computed nondominated set
+`(0,4)`, `(1,1)`, `(4,0)` and rejects vector overflow. Callback code is not
+serialized; a generic checkpoint resume must recreate the identical callback.

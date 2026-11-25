@@ -35,6 +35,11 @@ struct SymbolicRegressionConfig {
     std::uint64_t maximumParetoComparisons = 10'000'000;
     std::size_t maximumParetoEstimatedMemoryBytes = 64 * 1024 * 1024;
     std::size_t maximumParetoFrontier = 64;
+    // Optional finite minimization vector. Its size is capped and configured
+    // complexity remains an additional Pareto dimension.
+    std::function<std::vector<double>(const Expression&, const RegressionProblem&)>
+        paretoObjectives;
+    std::size_t maximumParetoObjectives = 4;
     std::size_t initialExpressionSlots = 0;
     std::uint64_t maximumInitializerWorkUnits = 0;
 };
@@ -65,6 +70,7 @@ struct SymbolicParetoPoint {
     double predictionLoss;
     std::size_t structuralComplexity;
     long double configuredComplexity = 0.0L;
+    std::vector<double> objectives;
 };
 struct SymbolicRegressionResult {
     std::optional<ExpressionCandidate> best;
@@ -290,7 +296,9 @@ inline SymbolicRegressionResult runSymbolicSearch(
                 for (const auto& candidate : frontier)
                     result.paretoFrontier.push_back(
                         {candidate, candidate.fitness(), candidate.expression().nodeCount(),
-                         configuredExpressionComplexity(candidate.expression(), config.complexityCosts)});
+                         configuredExpressionComplexity(candidate.expression(),
+                                                        config.complexityCosts),
+                         ordering.objectiveValues(candidate)});
             } catch (const ParetoSelectionLimitExceeded&) {
                 result.stoppingReason = SearchStop::SelectionResourceLimit;
             }
@@ -329,7 +337,11 @@ symbolicRegression(std::shared_ptr<const RegressionProblem> problem,
         !std::isfinite(config.complexityPenalty) || config.complexityPenalty < 0 ||
         (config.selectionStrategy == SymbolicRegressionConfig::SelectionStrategy::Pareto &&
          (!config.maximumParetoComparisons || !config.maximumParetoEstimatedMemoryBytes ||
-          !config.maximumParetoFrontier)))
+          !config.maximumParetoFrontier)) ||
+        (config.paretoObjectives &&
+         (!config.maximumParetoObjectives || config.maximumParetoObjectives > 4)) ||
+        (config.paretoObjectives &&
+         config.selectionStrategy != SymbolicRegressionConfig::SelectionStrategy::Pareto))
         throw std::invalid_argument("invalid symbolic search configuration");
     config.complexityCosts.validate();
     if (config.initialExpressionSlots > std::min<std::size_t>(8, config.population / 4) ||
@@ -379,7 +391,8 @@ symbolicRegression(std::shared_ptr<const RegressionProblem> problem,
         ParetoSelectionWork work;
         ParetoRegressionOrdering ordering(config.maximumParetoComparisons,
                                           config.maximumParetoEstimatedMemoryBytes, work,
-                                          config.complexityCosts);
+                                          config.complexityCosts, problem, config.paretoObjectives,
+                                          config.maximumParetoObjectives);
         return genetik_detail::runSymbolicSearch(problem, config, random, objective, preparation,
                                                  std::move(variation), std::move(ordering), &work,
                                                  batch);

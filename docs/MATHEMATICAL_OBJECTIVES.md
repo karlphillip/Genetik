@@ -77,6 +77,26 @@ on targets `{0,2,10}`. Its unique constant minimizer is 10 (the 0.75 quantile),
 while MSE minimizes at 4. It exercises both normal symbolic selection and
 coordinate refinement with this explicit callback.
 
+## Bounded vector objectives for Pareto selection
+
+`SymbolicRegressionConfig::paretoObjectives` optionally supplies a finite
+minimization vector from an expression and the immutable `RegressionProblem`.
+The callback receives training rows only, must return the same nonempty vector
+for every candidate, and is capped at four entries by
+`maximumParetoObjectives`. Nonfinite values and dimension changes are rejected.
+The vector replaces scalar loss in Pareto dominance and crowding; configured
+expression complexity remains an additional Pareto dimension. Scalar
+`candidate.fitness()` is still ordinary reported prediction loss and supplies
+stable tie ordering. `SymbolicParetoPoint::objectives` reports the selected
+vector and `ParetoSelectionWork::objectiveVectorEvaluations` counts callback
+calls. The memory estimate includes the bounded objective storage.
+
+The installed `selection_strategies` quickstart uses a two-objective vector of
+training MSE and maximum absolute error. A deterministic search contract uses
+per-row squared residuals for a two-row constant-model fixture. Its hand
+calculation gives `(0,4)`, `(1,1)`, `(4,0)` for constants 0, 1, and 2; all three
+are nondominated and the actual Pareto frontier returns exactly that set.
+
 ## Post-search AIC/BIC
 
 `InformationCriteria.hpp` provides `selectInformationCriterion` as an explicit

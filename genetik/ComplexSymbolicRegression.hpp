@@ -34,6 +34,13 @@ complexSymbolicRegression(std::shared_ptr<const ComplexRegressionProblem> proble
     result.structureSearch = symbolicRegression(problem, config, random);
     if (!result.structureSearch.best)
         return result;
+    // The structure search already evaluated this valid model with the same
+    // complex-interpreted training objective. Keep it as the incumbent even
+    // when it has no constants or every refinement fails/exhausts its budget.
+    result.selectedTopology = result.structureSearch.best->expression();
+    result.fittedExpression =
+        ComplexExpression::fromScalarGenome(*result.selectedTopology);
+    double incumbentLoss = result.structureSearch.best->fitness();
     std::vector<Expression> topologies{result.structureSearch.best->expression()};
     for (const auto& point : result.structureSearch.paretoFrontier)
         if (std::none_of(topologies.begin(), topologies.end(), [&](const Expression& e) {
@@ -54,10 +61,10 @@ complexSymbolicRegression(std::shared_ptr<const ComplexRegressionProblem> proble
         result.coefficientFitObjectiveEvaluations += fit.objectiveEvaluations;
         if (fit.trainingLoss.state() != FitnessState::Valid)
             continue;
-        if (!result.coefficientFit ||
-            fit.trainingLoss.score() < result.coefficientFit->trainingLoss.score() ||
-            (fit.trainingLoss.score() == result.coefficientFit->trainingLoss.score() &&
+        if (fit.trainingLoss.score() < incumbentLoss ||
+            (fit.trainingLoss.score() == incumbentLoss &&
              topology.toString() < result.selectedTopology->toString())) {
+            incumbentLoss = fit.trainingLoss.score();
             result.selectedTopology = topology;
             result.fittedExpression = fit.expression;
             result.coefficientFit = std::move(fit);

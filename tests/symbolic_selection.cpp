@@ -74,6 +74,49 @@ void penaltyKeepsLossSeparate() {
         operatorPareto.frontier(std::vector<ExpressionCandidate>{addition, multiplication}, 4);
     check(operatorFront.size() == 1 && operatorFront.front().text() == multiplication.text(),
           "individual operator costs participate in Pareto dominance");
+
+    const auto vectorProblem = RegressionProblem::create({{{1.0, 1.0}, 1.0}});
+    const auto x0 = Expression::variable(0, 2), x1 = Expression::variable(1, 2);
+    std::vector<ExpressionCandidate> crowdingParents{
+        ExpressionCandidate(Expression::binary(ExpressionKind::Add, x0, x1), vectorProblem),
+        ExpressionCandidate(Expression::binary(ExpressionKind::Multiply, x0, x1), vectorProblem),
+        ExpressionCandidate(Expression::binary(ExpressionKind::Subtract, x0, x1), vectorProblem),
+        ExpressionCandidate(Expression::binary(ExpressionKind::Divide, x0, x1), vectorProblem)};
+    for (auto& candidate : crowdingParents)
+        candidate.calculateFitness();
+    const auto objectives = [](const Expression& expression, const RegressionProblem&) {
+        switch (expression.nodes().back().kind()) {
+        case ExpressionKind::Add:
+            return std::vector<double>{0.0, 4.0};
+        case ExpressionKind::Multiply:
+            return std::vector<double>{2.0, 0.5};
+        case ExpressionKind::Subtract:
+            return std::vector<double>{1.0, 1.0};
+        case ExpressionKind::Divide:
+            return std::vector<double>{4.0, 0.0};
+        default:
+            throw std::logic_error("unexpected crowding fixture operator");
+        }
+    };
+    ParetoSelectionWork defaultCrowdingWork;
+    ParetoRegressionOrdering defaultCrowding(10000, 100000, defaultCrowdingWork, {}, vectorProblem,
+                                             objectives, 2);
+    auto defaultSurvivors = crowdingParents;
+    defaultCrowding.environmentalSelect(defaultSurvivors, crowdingParents, 3);
+    const auto hasMultiply = [](const auto& candidates) {
+        return std::any_of(candidates.begin(), candidates.end(), [](const auto& candidate) {
+            return candidate.expression().nodes().back().kind() == ExpressionKind::Multiply;
+        });
+    };
+    check(!hasMultiply(defaultSurvivors),
+          "default Pareto crowding drops the interior point with smaller distance");
+    ParetoSelectionWork weightedCrowdingWork;
+    ParetoRegressionOrdering weightedCrowding(10000, 100000, weightedCrowdingWork, operatorCosts,
+                                              vectorProblem, objectives, 2);
+    auto weightedSurvivors = crowdingParents;
+    weightedCrowding.environmentalSelect(weightedSurvivors, crowdingParents, 3);
+    check(hasMultiply(weightedSurvivors),
+          "configured complexity adds a crowding extreme and changes survivor selection");
 }
 
 void paretoFrontAndSurvival() {

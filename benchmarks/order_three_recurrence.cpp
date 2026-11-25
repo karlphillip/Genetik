@@ -15,6 +15,14 @@ int main() {
                         DiscreteKind::Multiply, DiscreteKind::Modulo};
     search.constants = {-1, 0, 1, 2, 3};
     search.maximumNodes = 5;
+    search.expressionLimits.maxNodes = 5;
+    search.expressionLimits.maxDepth = 5;
+    search.expressionLimits.maxVariables = 4;
+    search.expressionLimits.maxConstants = 5;
+    search.expressionLimits.maxConstantMagnitude = 3;
+    search.expressionLimits.maxStorageBytes = 4 * 1024 * 1024;
+    search.expressionLimits.maxIterationDepth = 8;
+    search.expressionLimits.maxBinders = 128;
     search.maximumStructures = 60000;
     search.maximumCompositionAttempts = 250000;
     search.maximumTrainingPointEvaluations = 1000000;
@@ -23,6 +31,12 @@ int main() {
     search.maximumArithmeticOperations = 10000000;
     search.maximumEstimatedStorageBytes = 32 * 1024 * 1024;
     search.maximumSteps = 32;
+    search.evaluationLimits.maxNodeVisits = 4096;
+    search.evaluationLimits.maxOperations = 4096;
+    search.evaluationLimits.maxWorkspaceBytes = 1024 * 1024;
+    search.evaluationLimits.maxIterationsPerOperation = 10000;
+    search.evaluationLimits.maxAggregateIterations = 100000;
+    search.evaluationLimits.maxIterationDepth = 8;
 
     RecurrenceAssessmentConfig assessmentLimits;
     assessmentLimits.maximumObservations = 100;
@@ -30,6 +44,7 @@ int main() {
     assessmentLimits.maximumNodeVisits = 100000;
     assessmentLimits.maximumArithmeticOperations = 100000;
     assessmentLimits.maximumSteps = 32;
+    assessmentLimits.evaluationLimits = search.evaluationLimits;
 
     const std::vector<std::int64_t> reference{0, 0, 1, 1, 2, 4, 7, 13, 24, 44,
                                                81, 149, 274, 504};
@@ -45,10 +60,24 @@ int main() {
               << " arithmetic-operations=" << search.maximumArithmeticOperations
               << " estimated-storage-bytes=" << search.maximumEstimatedStorageBytes
               << " steps=" << search.maximumSteps
+              << " expression-depth=" << search.expressionLimits.maxDepth
+              << " variables=" << search.expressionLimits.maxVariables
+              << " constants=" << search.expressionLimits.maxConstants
+              << " constant-magnitude=" << search.expressionLimits.maxConstantMagnitude
+              << " expression-storage-bytes=" << search.expressionLimits.maxStorageBytes
+              << " expression-iteration-depth=" << search.expressionLimits.maxIterationDepth
+              << " binders=" << search.expressionLimits.maxBinders
+              << " evaluator-node-visits=" << search.evaluationLimits.maxNodeVisits
+              << " evaluator-arithmetic-operations=" << search.evaluationLimits.maxOperations
+              << " evaluator-workspace-bytes=" << search.evaluationLimits.maxWorkspaceBytes
+              << " iterations-per-operation=" << search.evaluationLimits.maxIterationsPerOperation
+              << " aggregate-iterations=" << search.evaluationLimits.maxAggregateIterations
+              << " evaluator-iteration-depth=" << search.evaluationLimits.maxIterationDepth
               << " assessment-observations=" << assessmentLimits.maximumObservations
               << " assessment-transitions=" << assessmentLimits.maximumTransitionSteps
               << " assessment-node-visits=" << assessmentLimits.maximumNodeVisits
               << " assessment-arithmetic-operations=" << assessmentLimits.maximumArithmeticOperations
+              << " assessment-steps=" << assessmentLimits.maximumSteps
               << "\n";
 
     const auto selected = synthesizeRecurrenceTransition(3, {0, 0, 1}, training, search);

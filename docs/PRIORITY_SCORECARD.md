@@ -1,5 +1,35 @@
 # PR #72 mathematical and conservation priority scorecard
 
+## Follow-up template regressions (base `1344982fe798108abf2993ba204cd399d93ab947`)
+
+The public two-site `componentRanges(model)` again returns
+`std::array<std::pair<std::size_t,std::size_t>,2>`, matching the original base
+API and supporting `auto [leftRange,rightRange]`. N-site callers use the
+separately named `componentRangesVector(model)`, matching the existing
+`componentsVector(model)` pattern. The same two-site consumer source compiles
+with structured bindings for both `components()` and `componentRanges()` on
+the original base and the candidate.
+
+The shared one-coefficient fitter previously lost scale information by
+normalizing the target and feature independently and could overflow while
+probing the unit coefficient. It now evaluates unit-coefficient call terms
+individually and accumulates the design in a wider intermediate before
+computing the bounded least-squares coefficient. Deterministic public API
+regressions assert: (A) `H=2^1023`, rows `(H,H)->H`, `(H/2,H/2)->H/2`, bounds
+`[0,0.5]` gives `a=0.5`, MSE `0`; (B) `s=2^-1000`, targets `2^40` at inputs
+`(s,0)` and `(-s,0)`, bounds `[-2,2]` gives `a=0`, MSE `2^80`; (C) rows
+`(s,0)->s`, `(0,0)->2^40`, bounds `[0,2]` gives `a=1` (asserted directly).
+The fixed-seed shared-body selection now asserts selected body, coefficient,
+and predictions at both call inputs in CI. The existing scale and zero-feature
+controls remain.
+
+Installed-package compatibility was checked from fresh source/package builds
+at the original base and candidate. The identical downstream CMake consumer
+used `auto [left,right] = problem.components(model)` and
+`auto [leftRange,rightRange] = problem.componentRanges(model)`; both executables
+compiled and returned success on both versions. The Release template contract
+and quickstart passed (2/2); the ASan/UBSan versions also passed (2/2).
+
 Base: `1344982fe798108abf2993ba204cd399d93ab947` (full SHA; confirmed in the freshly fetched `origin/main` before worktree creation). The task worktree began at this exact SHA. The conservation discovery protocol is frozen and its unsuccessful six-seed results are reported below; other comparisons are deterministic contract evidence.
 
 | Capability | Base behavior | Candidate behavior and independent expected result | Measured result / work | Remaining limitation |

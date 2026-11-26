@@ -162,7 +162,7 @@ public:
               std::vector<ExpressionLimits>(componentLimits.begin(), componentLimits.end()),
               modelLimits, maximumMaterializationBytes) {}
 
-    MultiComponentRanges componentRanges(const Expression& model) const {
+    MultiComponentRanges componentRangesVector(const Expression& model) const {
         if (model.variableCount() != variableCount() || model.nodeCount() > modelLimits_.maxNodes)
             throw std::invalid_argument("model does not match multi-component template schema");
         if (model.nodeCount() > std::numeric_limits<std::size_t>::max() - source_.nodeCount() ||
@@ -201,7 +201,7 @@ public:
     }
 
     MultiComponentExpressions componentsVector(const Expression& model) const {
-        const auto ranges = componentRanges(model);
+        const auto ranges = componentRangesVector(model);
         MultiComponentExpressions result;
         for (std::size_t site = 0; site < ranges.size(); ++site)
             result.push_back(slice(model, ranges[site], componentLimits_[site]));
@@ -212,6 +212,13 @@ public:
             throw std::invalid_argument("two-site extraction requires exactly two components");
         const auto result = componentsVector(model);
         return {result[0], result[1]};
+    }
+    std::array<std::pair<std::size_t, std::size_t>, 2>
+    componentRanges(const Expression& model) const {
+        if (roots_.size() != 2)
+            throw std::invalid_argument("two-site ranges require exactly two components");
+        const auto ranges = componentRangesVector(model);
+        return {ranges[0], ranges[1]};
     }
     std::size_t siteCount() const noexcept {
         return roots_.size();
@@ -529,39 +536,31 @@ public:
         if (problem.objective().loss != RegressionLoss::MeanSquaredError)
             throw std::invalid_argument(
                 "shared function coefficient fitting supports ordinary MSE only");
-        const auto intercept = expanded(0.0);
-        const double probe = std::min(1.0, expandedLimits_.maxAbsConstant);
-        if (probe == 0.0) {
-            const auto loss = problem.measure(intercept).loss.score();
-            return {0.0, loss, intercept, 1};
-        }
-        const auto probed = expanded(probe);
-        double featureScale = 0.0, targetScale = 0.0;
-        std::vector<std::pair<double, double>> design;
+        // Evaluate each call separately with unit coefficient. Summing calls in
+        // binary64 first can overflow even when the bounded fitted model is
+        // finite (for example, two 2^1023 inputs with a=0.5). Accumulate the
+        // design and normal equations in the wider intermediate type.
+        const auto unitBody = body_.withConstant(coefficientNode_, 1.0);
+        long double numerator = 0.0L, denominator = 0.0L;
         for (const auto& row : problem.trainingRows()) {
-            const auto base = intercept.evaluate(row.inputs);
-            const auto value = probed.evaluate(row.inputs);
-            if (!base.valid() || !value.valid())
-                throw std::domain_error("shared function fit encountered invalid prediction");
-            const double feature = (value.value() - base.value()) / probe;
-            const double target = row.target - base.value();
+            long double feature = 0.0L;
+            for (const auto& input : callInputs_) {
+                const auto call = expandCall(unitBody, input).evaluate(row.inputs);
+                if (!call.valid())
+                    throw std::domain_error("shared function fit encountered invalid call");
+                feature += static_cast<long double>(call.value());
+            }
+            const long double target = static_cast<long double>(row.target);
             if (!std::isfinite(feature) || !std::isfinite(target))
                 throw std::domain_error("shared function design values are non-finite");
-            design.emplace_back(feature, target);
-            featureScale = std::max(featureScale, std::abs(feature));
-            targetScale = std::max(targetScale, std::abs(target));
+            numerator += feature * target;
+            denominator += feature * feature;
         }
-        if (!(featureScale > 0.0))
+        if (!(denominator > 0.0L))
             throw std::domain_error("shared function coefficient is not identifiable");
-        double numerator = 0.0, denominator = 0.0;
-        for (const auto& [feature, target] : design) {
-            const double normalizedFeature = feature / featureScale;
-            numerator += normalizedFeature * (targetScale == 0.0 ? 0.0 : target / targetScale);
-            denominator += normalizedFeature * normalizedFeature;
-        }
-        const double unconstrained =
-            targetScale == 0.0 ? 0.0 : (targetScale / featureScale) * (numerator / denominator);
-        const double coefficient = std::clamp(unconstrained, lower, upper);
+        const long double unconstrained = numerator / denominator;
+        const double coefficient = static_cast<double>(std::clamp(
+            unconstrained, static_cast<long double>(lower), static_cast<long double>(upper)));
         auto model = expanded(coefficient);
         const auto loss = problem.measure(model).loss.score();
         return {coefficient, loss, std::move(model), 1};
@@ -741,7 +740,7 @@ public:
         std::vector<std::size_t> result;
         // Constant fitting operates on full-model postfix indices. Locate the two
         // validated component representations in the frozen materialization.
-        const auto selected = domain_->expressionTemplate().componentRanges(model);
+        const auto selected = domain_->expressionTemplate().componentRangesVector(model);
         for (std::size_t site = 0; site < domain_->expressionTemplate().siteCount(); ++site) {
             const auto nodes = components[site].nodes();
             for (std::size_t index = 0; index < nodes.size(); ++index)

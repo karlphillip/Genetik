@@ -86,11 +86,17 @@ void structuralContracts() {
     check(legacyExtracted[0].sameRepresentation(left) &&
               legacyExtracted[1].sameRepresentation(right),
           "existing two-site array extraction callers remain source compatible");
-    const std::array<std::pair<std::size_t, std::size_t>, 2> legacyRanges =
-        scaffold.componentRanges(materialized);
-    check(legacyRanges[0].second > legacyRanges[0].first &&
-              legacyRanges[1].second > legacyRanges[1].first,
+    auto [legacyLeftRange, legacyRightRange] = scaffold.componentRanges(materialized);
+    const auto vectorRanges = scaffold.componentRangesVector(materialized);
+    check(vectorRanges.size() == 2 && vectorRanges[0] == legacyLeftRange &&
+              vectorRanges[1] == legacyRightRange,
+          "two-site range structured binding remains compatible and vector ranges are explicit");
+    check(legacyLeftRange.second > legacyLeftRange.first &&
+              legacyRightRange.second > legacyRightRange.first,
           "existing two-site array range callers remain source compatible");
+    auto [legacyLeft, legacyRight] = scaffold.components(materialized);
+    check(legacyLeft.sameRepresentation(left) && legacyRight.sameRepresentation(right),
+          "two-site component structured binding remains source compatible");
     rejects(
         [&] {
             (void)MultiScalarExpressionTemplate(
@@ -452,6 +458,7 @@ void sharedNamedFunction() {
     double bestBodyMse = std::numeric_limits<double>::infinity();
     double bestBodyCoefficient = 0.0;
     std::string bestBody;
+    std::optional<Expression> bestBodyModel;
     std::size_t generatedBodies = 0, mutatedBodies = 0;
     for (std::size_t i = 0; i < 64; ++i) {
         auto candidate = SharedLearnableFunctionTemplate::generateBody(
@@ -467,11 +474,17 @@ void sharedNamedFunction() {
             bestBodyMse = fit.mse;
             bestBodyCoefficient = fit.coefficient;
             bestBody = candidate.body().toString();
+            bestBodyModel = fit.expanded;
         }
     }
     std::cout << "shared_body_selection seed=20261127 grammar={multiply}, candidates=64 generated="
               << generatedBodies << " mutated=" << mutatedBodies << " selected=" << bestBody
               << " coefficient=" << bestBodyCoefficient << " training_mse=" << bestBodyMse << '\n';
+    check(bestBody == "((x0 * x0) * 1.0)" && bestBodyCoefficient == 3.0 && bestBodyMse == 0.0 &&
+              bestBodyModel.has_value() &&
+              bestBodyModel->evaluate(std::array<double, 2>{2.0, 0.0}).value() == 12.0 &&
+              bestBodyModel->evaluate(std::array<double, 2>{0.0, 3.0}).value() == 27.0,
+          "fixed-seed body selection asserts selected model, fitted coefficient and both calls");
     std::cout << "shared_body_generation seed=20261126 generated=" << generated.body().toString()
               << " mutated=" << changed.body().toString()
               << " generated_fit_a=" << generatedFit.coefficient << " before_calls=" << originalAtP
@@ -499,6 +512,24 @@ void sharedNamedFunction() {
         check(scaleFit.parameterCount == 1 && scaleFit.coefficient == 1.0 && scaleFit.mse == 0.0,
               "scaled shared least squares preserves a=1 and zero MSE");
     }
+    const double huge = std::ldexp(1.0, 1023);
+    const auto hugeRows = RegressionProblem::create(
+        {{{huge, huge}, huge}, {{huge / 2.0, huge / 2.0}, huge / 2.0}}, expandedLimits);
+    const auto hugeFit = shared.fit(*hugeRows, 0.0, 0.5);
+    check(hugeFit.coefficient == 0.5 && hugeFit.mse == 0.0,
+          "finite unit-fit-bound case handles overflowing binary64 sum of call features");
+    const double tiny = std::ldexp(1.0, -1000);
+    const double largeTarget = std::ldexp(1.0, 40);
+    const auto cancellingRows = RegressionProblem::create(
+        {{{tiny, 0.0}, largeTarget}, {{-tiny, 0.0}, largeTarget}}, expandedLimits);
+    const auto cancellingFit = shared.fit(*cancellingRows, -2.0, 2.0);
+    check(cancellingFit.coefficient == 0.0 && cancellingFit.mse == largeTarget * largeTarget,
+          "exactly cancelling normalized cross-product gives zero coefficient");
+    const auto mixedScaleRows =
+        RegressionProblem::create({{{tiny, 0.0}, tiny}, {{0.0, 0.0}, largeTarget}}, expandedLimits);
+    const auto mixedScaleFit = shared.fit(*mixedScaleRows, 0.0, 2.0);
+    check(mixedScaleFit.coefficient == 1.0,
+          "tiny informative row is retained beside a much larger orthogonal target");
     const auto zeroFeature =
         RegressionProblem::create({{{0.0, 0.0}, 0.0}, {{0.0, 0.0}, 0.0}}, expandedLimits);
     rejects([&] { (void)shared.fit(*zeroFeature, 0.0, 2.0); },

@@ -19,6 +19,10 @@ regressions assert: (A) `H=2^1023`, rows `(H,H)->H`, `(H/2,H/2)->H/2`, bounds
 `[0,0.5]` gives `a=0.5`, MSE `0`; (B) `s=2^-1000`, targets `2^40` at inputs
 `(s,0)` and `(-s,0)`, bounds `[-2,2]` gives `a=0`, MSE `2^80`; (C) rows
 `(s,0)->s`, `(0,0)->2^40`, bounds `[0,2]` gives `a=1` (asserted directly).
+Before the correction, A's unit probe overflowed despite the representable
+bounded solution, B's scale ratio overflowed despite an exactly zero
+cross-product, and C returned `a=2`; the post-fix assertions now report the
+expected `0.5`, `0`, and `1` respectively.
 The fixed-seed shared-body selection now asserts selected body, coefficient,
 and predictions at both call inputs in CI. The existing scale and zero-feature
 controls remain.

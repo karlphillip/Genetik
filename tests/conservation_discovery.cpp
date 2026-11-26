@@ -220,6 +220,22 @@ int main() {
                       *signedLaw.trainingAssessment.withinFraction == 0.0,
                   plus ? "bounded three-node y+v export uses no unit literal"
                        : "bounded three-node y-v export uses subtraction without a unit literal");
+            const double invariant = plus ? signedGroups.front().states.front()[0] +
+                                                signedGroups.front().states.front()[1]
+                                          : signedGroups.front().states.front()[0] -
+                                                signedGroups.front().states.front()[1];
+            const double scale =
+                signedLaw.expression.evaluate(signedGroups.front().states.front()).value() /
+                invariant;
+            check(scale != 0.0, "signed unit coefficient recovery has nonzero scale");
+            for (const auto& group : signedGroups)
+                for (const auto& state : group.states) {
+                    const double expected = plus ? state[0] + state[1] : state[0] - state[1];
+                    check(signedLaw.expression.evaluate(state).value() == scale * expected,
+                          "signed compact polynomial matches y+v or y-v up to scale");
+                }
+            std::cout << (plus ? "signed y+v" : "signed y-v")
+                      << " selected expression: " << signedLaw.expression.toString() << '\n';
         }
         auto tooSmall = linearConfig;
         const ConservationDiscoveryProblem insufficientProblem(compactGroups,

@@ -61,3 +61,18 @@ The standard isolated `genetik_installed_package` CTest run used its configured 
 To complete the package qualification, the same integration script was run from a separate clean fixture with only its per-command cap changed from 300 to 1,200 seconds. That run passed from scratch: ordinary install/consumer, relocated consumer after deleting producer/build trees, installed quickstarts, metadata/version/component and flag checks, C++23 consumer matrix, and parent embedding/source-inclusion checks. The changed quickstart exercised three-site materialization/prediction and shared-function fitting/body variation. The command log and complete disposable workspace are retained under `out/tmp/template-installed-qualification/genetik-delivery-fixture/`; the normal-cap CTest log remains under `build/release/Testing/Temporary/`.
 
 After the named-body expansion guard, explicit non-MSE rejection, and legacy range-conversion regression were added, the directly affected multi-component Release and ASan/UBSan tests were rerun and passed. The final-source compatibility wrapper is included in the eight-test matrices. The extended clean package run exercised the new public APIs; the final wrapper was subsequently covered by focused builds, the standalone header check, and the pushed-head hosted package workflow. Hosted checks are required on the pushed final head and are reported in the PR and final delivery. The full prior mathematical and conservation study records remain preserved and unchanged.
+
+### Two-site factory compatibility correction
+
+The hosted run at `ffedcc8` identified ambiguity when the new vector factory
+shared the name `create` with the existing two-site overload. The N-site path
+is now explicitly `MultiComponentTemplateProblem::createMany`; the two-site
+`create` overload remains unchanged and its brace-initialized benchmark,
+contract, and quickstart callers pass again. The three-site regression now
+uses `createMany`. Focused Release and ASan/UBSan matrices both pass all four
+template/automatic-separable tests after the correction. The pre-correction
+hosted failures were compile ambiguity in GCC/Clang minimum, sanitizer, and
+clang-tidy jobs. The separate x86 Python job failed fetching SRBench's external
+`results/black-box_results.feather` LFS object (HTTP 503); wheel checks passed
+before that fetch step. Final-head hosted results are recorded after the
+corrective commit is pushed.

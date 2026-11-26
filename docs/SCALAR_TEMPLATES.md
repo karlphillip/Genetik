@@ -192,7 +192,9 @@ algebraic rewrite or global-equivalence claim is implied.
 
 `<MultiComponentTemplateRegression.hpp>` retains the original two-site overloads
 and also accepts vectors of roots, component limits, per-site variable/operator
-allowlists and per-site grammars. Each site has its own restrictions. Component and selected-range results are vector-like; for two-site callers they convert to the historical two-element arrays. Materialized
+allowlists and per-site grammars through `MultiComponentTemplateProblem::createMany`.
+Each site has its own restrictions. Component and selected-range results are
+vector-like; for two-site callers they convert to the historical two-element arrays. Materialized
 expressions remain ordinary owned postfix trees, and the whole expanded scaffold
 is checked against the model limits. The fixed scaffold remains caller supplied.
 Component extraction provides separate attribution for each unknown subtree.

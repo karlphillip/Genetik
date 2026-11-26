@@ -365,10 +365,10 @@ public:
               std::vector<std::vector<ExpressionKind>>{allowedOperators[0], allowedOperators[1]}) {}
 
     static std::shared_ptr<const MultiComponentTemplateProblem>
-    create(const MultiScalarExpressionTemplate& scaffold,
-           std::shared_ptr<const RegressionProblem> problem,
-           std::vector<std::vector<std::size_t>> allowedVariables,
-           std::vector<std::vector<ExpressionKind>> allowedOperators) {
+    createMany(const MultiScalarExpressionTemplate& scaffold,
+               std::shared_ptr<const RegressionProblem> problem,
+               std::vector<std::vector<std::size_t>> allowedVariables,
+               std::vector<std::vector<ExpressionKind>> allowedOperators) {
         return std::make_shared<const MultiComponentTemplateProblem>(
             scaffold, std::move(problem), std::move(allowedVariables), std::move(allowedOperators));
     }
@@ -380,7 +380,6 @@ public:
         return std::make_shared<const MultiComponentTemplateProblem>(
             scaffold, std::move(problem), std::move(allowedVariables), std::move(allowedOperators));
     }
-
     const MultiScalarExpressionTemplate& expressionTemplate() const noexcept {
         return scaffold_;
     }

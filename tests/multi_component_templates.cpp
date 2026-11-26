@@ -266,7 +266,7 @@ void threeIndependentSites() {
         for (double y : {-1.0, 0.0, 0.75})
             for (double z : {-0.75, 0.25, 1.0})
                 rows.push_back({{x, y, z}, std::sin(x) + 3.0 * y + z * z});
-    const auto domain = MultiComponentTemplateProblem::create(
+    const auto domain = MultiComponentTemplateProblem::createMany(
         scaffold, RegressionProblem::create(rows, modelLimits),
         std::vector<std::vector<std::size_t>>{{0}, {1}, {2}},
         std::vector<std::vector<ExpressionKind>>{{ExpressionKind::Sin, ExpressionKind::Multiply},

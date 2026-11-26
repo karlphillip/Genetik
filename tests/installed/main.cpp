@@ -1,4 +1,6 @@
 #include "common.hpp"
+#include <ConservationDiscovery.hpp>
+#include <PolynomialConservationDiscovery.hpp>
 #include <array>
 extern "C" int mixed_c(void);
 bool constructive_recurrence_check();

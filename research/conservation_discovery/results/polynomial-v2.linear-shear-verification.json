@@ -1,0 +1,31 @@
+{
+  "fixture": "(y,v)=(t,C-3*t)",
+  "trajectories": {
+    "C": [
+      -5,
+      2,
+      8
+    ],
+    "t": [
+      -3,
+      -1,
+      1,
+      3
+    ]
+  },
+  "dynamics": {
+    "y_prime": "1",
+    "v_prime": "-3"
+  },
+  "selected_expression": "((0.0 + (3.0 * x0)) + (1.0 * x1))",
+  "exact_verification": {
+    "affine_offset": null,
+    "affine_scale": null,
+    "exact_affine_reference_recovery": false,
+    "exact_conservation": true,
+    "exact_lie_derivative": "0",
+    "nonconstant": true,
+    "supported_polynomial": true,
+    "verification_status": "resolved"
+  }
+}

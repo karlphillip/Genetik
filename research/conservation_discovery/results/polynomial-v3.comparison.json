@@ -1,0 +1,270 @@
+{
+  "selection_artifact": "polynomial-v3.selected.json",
+  "selection_artifact_sha256": "be33ec6ad94bb75a3d14fcbfbe8d6982dba9d0b6a88fded08dc2e4f50a966286",
+  "assessment_initial_conditions": [
+    [
+      0,
+      2
+    ],
+    [
+      -0.5,
+      0
+    ],
+    [
+      1.5,
+      -0.5
+    ]
+  ],
+  "records": [
+    {
+      "system": "harmonic",
+      "source": "polynomial-v3",
+      "expression": "((x0 * x0) + (x1 * x1))",
+      "search_work": {
+        "cumulative_feature_values": 3822,
+        "final_matrix_feature_values": 2730,
+        "jacobi_rotations": 6,
+        "cpu_seconds": 0.000392
+      },
+      "heldout": {
+        "expression": "((x0 * x0) + (x1 * x1))",
+        "valid": true,
+        "heldout_within_fraction": 3.9744649886848956e-19,
+        "heldout_separation": 0.38527587495042576,
+        "heldout_separation_units": "dimensionless_normalized_by_max_abs_candidate_output",
+        "generator_rk4_refinement_error": 6.103499455263132e-08,
+        "nonconstant": true,
+        "exact_conservation": true,
+        "reference_law_affine_recovery": "assess-with-independent-verifier"
+      },
+      "exact_verification": {
+        "verification_status": "resolved",
+        "supported_polynomial": true,
+        "nonconstant": true,
+        "exact_conservation": true,
+        "exact_lie_derivative": "0",
+        "exact_affine_reference_recovery": true,
+        "affine_scale": "1",
+        "affine_offset": "0"
+      }
+    },
+    {
+      "system": "quartic",
+      "source": "polynomial-v3",
+      "expression": "((x1 * x1) + (((x0 * x0) * x0) * x0))",
+      "search_work": {
+        "cumulative_feature_values": 16380,
+        "final_matrix_feature_values": 7644,
+        "jacobi_rotations": 166,
+        "cpu_seconds": 0.001817
+      },
+      "heldout": {
+        "expression": "((x1 * x1) + (((x0 * x0) * x0) * x0))",
+        "valid": true,
+        "heldout_within_fraction": 8.607475947243667e-14,
+        "heldout_separation": 0.41991910638337454,
+        "heldout_separation_units": "dimensionless_normalized_by_max_abs_candidate_output",
+        "generator_rk4_refinement_error": 1.630589397451311e-05,
+        "nonconstant": true,
+        "exact_conservation": true,
+        "reference_law_affine_recovery": "assess-with-independent-verifier"
+      },
+      "exact_verification": {
+        "verification_status": "resolved",
+        "supported_polynomial": true,
+        "nonconstant": true,
+        "exact_conservation": true,
+        "exact_lie_derivative": "0",
+        "exact_affine_reference_recovery": true,
+        "affine_scale": "1",
+        "affine_offset": "0"
+      }
+    },
+    {
+      "system": "harmonic",
+      "source": "PR72-v2-seed-101",
+      "expression": "((0.5 - (x1 * x1)) * (x1 * x1))",
+      "search_work": {
+        "candidate_evaluations": 640,
+        "training_rows": 349440,
+        "search_wall_seconds": 0.08859515699805343
+      },
+      "heldout": {
+        "expression": "((0.5 - (x1 * x1)) * (x1 * x1))",
+        "valid": true,
+        "heldout_within_fraction": 0.694627834505996,
+        "heldout_separation": 0.15168222937337184,
+        "heldout_separation_units": "dimensionless_normalized_by_max_abs_candidate_output",
+        "generator_rk4_refinement_error": 6.103499455263132e-08,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "reference_law_affine_recovery": "assess-with-independent-verifier"
+      },
+      "exact_verification": {
+        "verification_status": "resolved",
+        "supported_polynomial": true,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "exact_lie_derivative": "4*x0*x1**3 - x0*x1",
+        "exact_affine_reference_recovery": false,
+        "affine_scale": null,
+        "affine_offset": null
+      }
+    },
+    {
+      "system": "harmonic",
+      "source": "PR72-v2-seed-211",
+      "expression": "(((x1 * ((x1 + 1.0) + (x1 + (-1.0)))) + (((((-0.5) + x0) * 1.0) * x0) - (-2.0))) + (-1.0))",
+      "search_work": {
+        "candidate_evaluations": 640,
+        "training_rows": 349440,
+        "search_wall_seconds": 0.08409232000121847
+      },
+      "heldout": {
+        "expression": "(((x1 * ((x1 + 1.0) + (x1 + (-1.0)))) + (((((-0.5) + x0) * 1.0) * x0) - (-2.0))) + (-1.0))",
+        "valid": true,
+        "heldout_within_fraction": 0.19994911494328743,
+        "heldout_separation": 0.2517026351567478,
+        "heldout_separation_units": "dimensionless_normalized_by_max_abs_candidate_output",
+        "generator_rk4_refinement_error": 6.103499455263132e-08,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "reference_law_affine_recovery": "assess-with-independent-verifier"
+      },
+      "exact_verification": {
+        "verification_status": "resolved",
+        "supported_polynomial": true,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "exact_lie_derivative": "-2*x0*x1 - x1/2",
+        "exact_affine_reference_recovery": false,
+        "affine_scale": null,
+        "affine_offset": null
+      }
+    },
+    {
+      "system": "harmonic",
+      "source": "PR72-v2-seed-307",
+      "expression": "(x1 * (x1 - (x1 * (x1 * x1))))",
+      "search_work": {
+        "candidate_evaluations": 640,
+        "training_rows": 349440,
+        "search_wall_seconds": 0.0854075550014386
+      },
+      "heldout": {
+        "expression": "(x1 * (x1 - (x1 * (x1 * x1))))",
+        "valid": true,
+        "heldout_within_fraction": 0.709773502637247,
+        "heldout_separation": 0.14648644124267998,
+        "heldout_separation_units": "dimensionless_normalized_by_max_abs_candidate_output",
+        "generator_rk4_refinement_error": 6.103499455263132e-08,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "reference_law_affine_recovery": "assess-with-independent-verifier"
+      },
+      "exact_verification": {
+        "verification_status": "resolved",
+        "supported_polynomial": true,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "exact_lie_derivative": "4*x0*x1**3 - 2*x0*x1",
+        "exact_affine_reference_recovery": false,
+        "affine_scale": null,
+        "affine_offset": null
+      }
+    },
+    {
+      "system": "quartic",
+      "source": "PR72-v2-seed-101",
+      "expression": "((-2.0) - ((-2.0) - (((1.0 - (x0 * x0)) - ((x1 * x1) + (-0.5))) * 0.5)))",
+      "search_work": {
+        "candidate_evaluations": 640,
+        "training_rows": 349440,
+        "search_wall_seconds": 0.08061616699706065
+      },
+      "heldout": {
+        "expression": "((-2.0) - ((-2.0) - (((1.0 - (x0 * x0)) - ((x1 * x1) + (-0.5))) * 0.5)))",
+        "valid": true,
+        "heldout_within_fraction": 0.13873694743457443,
+        "heldout_separation": 0.4722842000937746,
+        "heldout_separation_units": "dimensionless_normalized_by_max_abs_candidate_output",
+        "generator_rk4_refinement_error": 1.630589397451311e-05,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "reference_law_affine_recovery": "assess-with-independent-verifier"
+      },
+      "exact_verification": {
+        "verification_status": "resolved",
+        "supported_polynomial": true,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "exact_lie_derivative": "2*x0**3*x1 - x0*x1",
+        "exact_affine_reference_recovery": false,
+        "affine_scale": null,
+        "affine_offset": null
+      }
+    },
+    {
+      "system": "quartic",
+      "source": "PR72-v2-seed-211",
+      "expression": "((((1.0 - (x1 * x1)) - ((-2.0) - (-2.0))) * (x1 * x1)) * (-2.0))",
+      "search_work": {
+        "candidate_evaluations": 640,
+        "training_rows": 349440,
+        "search_wall_seconds": 0.0886794789985288
+      },
+      "heldout": {
+        "expression": "((((1.0 - (x1 * x1)) - ((-2.0) - (-2.0))) * (x1 * x1)) * (-2.0))",
+        "valid": true,
+        "heldout_within_fraction": 0.5751915867109406,
+        "heldout_separation": 0.22772421125259168,
+        "heldout_separation_units": "dimensionless_normalized_by_max_abs_candidate_output",
+        "generator_rk4_refinement_error": 1.630589397451311e-05,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "reference_law_affine_recovery": "assess-with-independent-verifier"
+      },
+      "exact_verification": {
+        "verification_status": "resolved",
+        "supported_polynomial": true,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "exact_lie_derivative": "-16*x0**3*x1**3 + 8*x0**3*x1",
+        "exact_affine_reference_recovery": false,
+        "affine_scale": null,
+        "affine_offset": null
+      }
+    },
+    {
+      "system": "quartic",
+      "source": "PR72-v2-seed-307",
+      "expression": "((((-1.0) + 1.0) - x1) * x1)",
+      "search_work": {
+        "candidate_evaluations": 640,
+        "training_rows": 349440,
+        "search_wall_seconds": 0.07509755999853951
+      },
+      "heldout": {
+        "expression": "((((-1.0) + 1.0) - x1) * x1)",
+        "valid": true,
+        "heldout_within_fraction": 0.4439416783956609,
+        "heldout_separation": 0.28327926256957386,
+        "heldout_separation_units": "dimensionless_normalized_by_max_abs_candidate_output",
+        "generator_rk4_refinement_error": 1.630589397451311e-05,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "reference_law_affine_recovery": "assess-with-independent-verifier"
+      },
+      "exact_verification": {
+        "verification_status": "resolved",
+        "supported_polynomial": true,
+        "nonconstant": true,
+        "exact_conservation": false,
+        "exact_lie_derivative": "4*x0**3*x1",
+        "exact_affine_reference_recovery": false,
+        "affine_scale": null,
+        "affine_offset": null
+      }
+    }
+  ]
+}

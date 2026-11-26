@@ -1,9 +1,11 @@
 #include <ConservationDiscovery.hpp>
+#include <PolynomialConservationDiscovery.hpp>
 #include <ExpressionParsing.hpp>
 #include <SymbolicAlgebra.hpp>
 #include <SymbolicRegression.hpp>
 
 #include <array>
+#include <ctime>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -45,6 +47,12 @@ std::vector<ConservationTrajectory> split(int system, bool heldout, bool synthet
     std::vector<ConservationTrajectory> result;
     for (auto s : (synthetic ? std::vector<State>{{1, 0}, {0, 1}, {-1, 0}, {0, -1}}
                              : (heldout ? test : train)))
+        result.push_back(trajectory(s, system));
+    return result;
+}
+std::vector<ConservationTrajectory> freshHeldout(int system) {
+    std::vector<ConservationTrajectory> result;
+    for (auto s : std::vector<State>{{0, 2}, {-.5, 0}, {1.5, -.5}})
         result.push_back(trajectory(s, system));
     return result;
 }
@@ -97,10 +105,7 @@ bool exactNonconstant(const Expression& expression) {
 double lawValue(int system, double y, double v) {
     return system == 0 ? y * y + v * v : y * y * y * y + v * v;
 }
-double generatorError(int system, bool smoke) {
-    const auto starts = smoke ? std::vector<State>{{1, 0}, {0, 1}, {-1, 0}, {0, -1}}
-                              : std::vector<State>{{1, 0}, {-1, 0},  {0, 1}, {0, -1},
-                                                   {1, 1}, {-1, -1}, {2, 0}, {0, -.5}};
+double generatorError(int system, const std::vector<State>& starts) {
     double maximum = 0;
     for (auto initial : starts) {
         State coarse = initial, fine = initial;
@@ -113,6 +118,12 @@ double generatorError(int system, bool smoke) {
         }
     }
     return maximum;
+}
+double generatorError(int system, bool smoke) {
+    return generatorError(
+        system, smoke ? std::vector<State>{{1, 0}, {0, 1}, {-1, 0}, {0, -1}}
+                      : std::vector<State>{
+                            {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {2, 0}, {0, -.5}});
 }
 struct Heldout {
     double within = 0, separation = 0;
@@ -157,7 +168,7 @@ Heldout heldoutMetrics(const Expression& e, const std::vector<ConservationTrajec
         between += values[i].size() * (means[i] - grand) * (means[i] - grand);
     }
     const double total = within + between;
-    return {total > 0 ? within / total : 0, std::sqrt(between / n) * scale, true};
+    return {total > 0 ? within / total : 0, std::sqrt(between / n), true};
 }
 void report(int system, unsigned seed, bool smoke) {
     auto training = split(system, false, smoke);
@@ -193,6 +204,7 @@ void report(int system, unsigned seed, bool smoke) {
               << ",\"generator_rk4_refinement_error\":" << generatorError(system, smoke)
               << ",\"heldout_within_fraction\":" << (metrics.finite ? metrics.within : -1)
               << ",\"heldout_separation\":" << (metrics.finite ? metrics.separation : -1)
+              << ",\"heldout_separation_units\":\"dimensionless_normalized_by_max_abs_candidate_output\""
               << ",\"heldout_metrics_valid\":" << (metrics.finite ? "true" : "false") << "}\n";
 }
 void verify(int system, const std::string& text) {
@@ -242,8 +254,63 @@ void verify(int system, const std::string& text) {
               << ",\"reference_law_affine_recovery\":" << (affine ? "true" : "false")
               << ",\"reference_best_affine_relative_rmse\":" << relativeRmse << "}\n";
 }
+void polynomialSelect(int system) {
+    const auto training = split(system, false);
+    const ConservationDiscoveryProblem problem(training, ExpressionLimits{63, 8, 1e6});
+    PolynomialConservationConfig config;
+    const auto started = std::clock();
+    const auto selected = discoverPolynomialConservation(problem, config);
+    const auto elapsed = static_cast<double>(std::clock() - started) / CLOCKS_PER_SEC;
+    std::cout << "{\"found\":" << (selected.found ? "true" : "false") << ",\"expression\":\""
+              << (selected.found ? selected.expression.toString() : "")
+              << "\",\"degree\":" << selected.degree << ",\"monomials\":" << selected.monomials
+              << ",\"expression_nodes\":"
+              << (selected.found ? selected.expression.nodeCount() : 0)
+              << ",\"cumulative_feature_values\":" << selected.cumulativeFeatureValues
+              << ",\"final_matrix_feature_values\":" << selected.monomials * problem.sampleCount()
+              << ",\"exact_representation_available\":"
+              << (selected.exactRepresentationAvailable ? "true" : "false")
+              << ",\"jacobi_rotations\":" << selected.jacobiRotations
+              << ",\"eigenvalue_ratio\":" << selected.eigenvalueRatio
+              << ",\"training_within_fraction\":"
+              << (selected.trainingAssessment.withinFraction
+                      ? *selected.trainingAssessment.withinFraction
+                      : -1.0)
+              << ",\"training_between_fraction\":"
+              << (selected.trainingAssessment.betweenFraction
+                      ? *selected.trainingAssessment.betweenFraction
+                      : -1.0)
+              << ",\"cpu_seconds\":" << elapsed << "}\n";
+}
+void polynomialAssess(int system, const std::string& text) {
+    const auto expression = parseExpression(text, 2, {}, ExpressionLimits{63, 8, 1e6});
+    const auto groups = freshHeldout(system);
+    const ConservationDiscoveryProblem problem(groups, ExpressionLimits{63, 8, 1e6});
+    const auto metrics = problem.assess(expression);
+    std::cout << "{\"expression\":\"" << text << "\",\"valid\":"
+              << (metrics.score.state() == FitnessState::Valid ? "true" : "false")
+              << ",\"heldout_within_fraction\":"
+              << (metrics.withinFraction ? *metrics.withinFraction : -1.0)
+              << ",\"heldout_separation\":" << (metrics.separation ? *metrics.separation : -1.0)
+              << ",\"heldout_separation_units\":\"dimensionless_normalized_by_max_abs_candidate_output\""
+              << ",\"generator_rk4_refinement_error\":"
+              << generatorError(system, std::vector<State>{{0, 2}, {-.5, 0}, {1.5, -.5}})
+              << ",\"nonconstant\":" << (exactNonconstant(expression) ? "true" : "false")
+              << ",\"exact_conservation\":" << (exactLieZero(expression, system) ? "true" : "false")
+              << ",\"reference_law_affine_recovery\":\"assess-with-independent-verifier\"}\n";
+}
 } // namespace
 int main(int argc, char** argv) {
+    if (argc == 3 && std::string(argv[1]) == "polynomial-select") {
+        std::cout << std::setprecision(17);
+        polynomialSelect(std::string(argv[2]) == "harmonic" ? 0 : 1);
+        return 0;
+    }
+    if (argc == 4 && std::string(argv[1]) == "polynomial-assess") {
+        std::cout << std::setprecision(17);
+        polynomialAssess(std::string(argv[2]) == "harmonic" ? 0 : 1, argv[3]);
+        return 0;
+    }
     if (argc == 4 && std::string(argv[1]) == "verify") {
         std::cout << std::setprecision(17);
         verify(std::string(argv[2]) == "harmonic" ? 0 : 1, argv[3]);

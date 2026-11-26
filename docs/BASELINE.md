@@ -1,5 +1,16 @@
 # Baseline and first hardening milestone
 
+## Grouped polynomial conservation discovery
+
+At base `44524894a295cbdd4656d1b26de273ffe543d3c1`, Genetik exposed a grouped
+trajectory scorer but no deterministic monomial nullspace selector. The
+candidate adds an opt-in degree-1-through-4 polynomial method using grouped
+observations and ordinary bounded expressions. It returns harmonic `y²+v²`
+and quartic `y⁴+v²`; both pass an independent exact Lie-derivative check and
+coefficient-wise affine reference-law verifier. The complete protocol, held-out
+comparison against the six frozen PR #72 records, work counts, and qualification
+limits are in [the conservation study report](../research/conservation_discovery/README.md).
+
 ## Order-three integer recurrence support
 
 Order-three support extends `IntegerRecurrence`, the recurrence regression
@@ -1397,6 +1408,18 @@ refinement error, work, exact verification, and numerical reference-law RMSE
 are in `research/conservation_discovery/README.md` and the associated frozen
 machine artifacts. This is an unsuccessful bounded search, not evidence that
 these systems have no discoverable invariants.
+
+The PR #73 correction preserves the original v1 selection/comparison records
+and adds a zero-centered-feature direct-assessment path plus bounded primitive
+integer coefficient reconstruction. The existing equations were unchanged:
+harmonic `y^2+v^2`, quartic `y^4+v^2`. Public cumulative matrix work is now
+3,822 / 16,380 feature values; final matrix sizes are separately 2,730 / 7,644.
+Held-out separation is dimensionless standard deviation after dividing candidate
+outputs by their maximum absolute value; scaling a candidate does not change it. A
+degree-one fixture recovers fixed-per-trajectory `y`; the shear fixture exports
+compact `3*y+v` and the exact verifier confirms its Lie derivative is zero under
+`y'=1, v'=-3`. The compact-export and normalized-separation corrections are
+recorded additively as `polynomial-v3.*` artifacts.
 
 ## Bounded Pareto objective vectors (2026-11)
 

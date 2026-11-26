@@ -1,0 +1,38 @@
+{
+  "base_sha": "44524894a295cbdd4656d1b26de273ffe543d3c1",
+  "selection": [
+    {
+      "system": "harmonic",
+      "found": true,
+      "expression": "((x0 * x0) + (x1 * x1))",
+      "degree": 2,
+      "monomials": 5,
+      "expression_nodes": 7,
+      "cumulative_feature_values": 3822,
+      "final_matrix_feature_values": 2730,
+      "exact_representation_available": true,
+      "jacobi_rotations": 6,
+      "eigenvalue_ratio": 0,
+      "training_within_fraction": 1.142246444996265e-18,
+      "training_between_fraction": 1,
+      "cpu_seconds": 0.000392
+    },
+    {
+      "system": "quartic",
+      "found": true,
+      "expression": "((x1 * x1) + (((x0 * x0) * x0) * x0))",
+      "degree": 4,
+      "monomials": 14,
+      "expression_nodes": 11,
+      "cumulative_feature_values": 16380,
+      "final_matrix_feature_values": 7644,
+      "exact_representation_available": true,
+      "jacobi_rotations": 166,
+      "eigenvalue_ratio": 1.0748979394230362e-15,
+      "training_within_fraction": 1.6012149688877983e-14,
+      "training_between_fraction": 0.9999999999999839,
+      "cpu_seconds": 0.001817
+    }
+  ],
+  "binary_sha256": "b36b59703a2d252096560c6a2e65912ae41eb973517128926cbb3786500810c0"
+}

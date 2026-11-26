@@ -1,7 +1,9 @@
 #include <ConservationDiscovery.hpp>
+#include <PolynomialConservationDiscovery.hpp>
 #include <SymbolicRegression.hpp>
 
 #include <cmath>
+#include <array>
 #include <iostream>
 #include <stdexcept>
 
@@ -53,6 +55,20 @@ int main() {
         check(degenerate.score.state() == FitnessState::Invalid,
               "constant expressions have no between-trajectory separation and are rejected");
 
+        std::vector<ConservationTrajectory> scaleGroups;
+        for (const double fixedY : {1.0, 2.0}) {
+            ConservationTrajectory group;
+            group.states = {{fixedY, -1.0}, {fixedY, 1.0}};
+            scaleGroups.push_back(std::move(group));
+        }
+        const ConservationDiscoveryProblem scaleProblem(scaleGroups);
+        const auto ySeparation = scaleProblem.assess(y).separation;
+        const auto scaledY = mul(Expression::constant(8.0, 2), y);
+        const auto scaledSeparation = scaleProblem.assess(scaledY).separation;
+        check(ySeparation && scaledSeparation && std::abs(*ySeparation - 0.25) < 1e-15 &&
+                  std::abs(*scaledSeparation - 0.25) < 1e-15,
+              "held-out separation is dimensionless and invariant under candidate scaling");
+
         const auto tiny = mul(Expression::constant(1e-14, 2), varying);
         check(problem.assess(tiny).score.state() == FitnessState::Invalid,
               "numerically degenerate shrinkage is rejected");
@@ -64,6 +80,175 @@ int main() {
         check(
             problem.assess(cancellation).score.state() == FitnessState::Invalid,
             "roundoff-only between-trajectory variation cannot make a constant appear informative");
+        PolynomialConservationConfig polynomialConfig;
+        const auto discovered = discoverPolynomialConservation(problem, polynomialConfig);
+        check(discovered.found && discovered.degree == 2 && discovered.monomials == 5 &&
+                  discovered.trainingAssessment.withinFraction &&
+                  *discovered.trainingAssessment.withinFraction <= 1e-6,
+              "public polynomial discovery selects the lowest valid degree from observations");
+        check(discovered.expression.variableCount() == 2 && discovered.expression.nodeCount() <= 63,
+              "polynomial discovery returns a bounded ordinary expression");
+        check(discovered.expression.evaluate(std::array{2.0, 3.0}).value() == 13.0,
+              "harmonic selection predicts the independent expected invariant value");
+        check(discovered.cumulativeFeatureValues == 48 * (2 + 5),
+              "public work reports every cumulative degree matrix");
+        auto unsupportedConfig = polynomialConfig;
+        unsupportedConfig.maximumDegree = 5;
+        bool rejectedDegree = false;
+        try {
+            (void)discoverPolynomialConservation(problem, unsupportedConfig);
+        } catch (const std::invalid_argument&) {
+            rejectedDegree = true;
+        }
+        check(rejectedDegree, "polynomial discovery enforces its documented degree cap");
+        auto exhaustedConfig = polynomialConfig;
+        exhaustedConfig.maximumFeatureValues = 48 * (2 + 5) - 1;
+        bool rejectedWork = false;
+        try {
+            (void)discoverPolynomialConservation(problem, exhaustedConfig);
+        } catch (const std::length_error&) {
+            rejectedWork = true;
+        }
+        check(rejectedWork, "polynomial discovery enforces its configured feature-work limit");
+        std::vector<ConservationTrajectory> quarticGroups;
+        for (const double level : {1.0, 2.0, 4.0}) {
+            ConservationTrajectory group;
+            const double extent = std::pow(level, 0.25);
+            for (int i = 0; i <= 32; ++i) {
+                const double q = -1.0 + 2.0 * static_cast<double>(i) / 32.0;
+                const double yValue = extent * q;
+                const double vMagnitude = std::sqrt(std::max(0.0, level - std::pow(yValue, 4)));
+                group.states.push_back({yValue, vMagnitude});
+                group.states.push_back({-yValue, -vMagnitude});
+            }
+            quarticGroups.push_back(std::move(group));
+        }
+        const ConservationDiscoveryProblem quarticProblem(quarticGroups);
+        const auto quartic = discoverPolynomialConservation(quarticProblem, polynomialConfig);
+        check(quartic.found && quartic.degree == 4 && quartic.trainingAssessment.withinFraction &&
+                  *quartic.trainingAssessment.withinFraction <= 1e-6,
+              "the same polynomial method selects a degree-four invariant when lower degrees fail");
+        check(quartic.cumulativeFeatureValues == 30 * quarticProblem.sampleCount(),
+              "degree-four public work sums all cumulative matrices, not only the final one");
+        check(quartic.expression.evaluate(std::array{2.0, 3.0}).value() == 25.0,
+              "quartic selection predicts the independent expected invariant value");
+
+        std::vector<ConservationTrajectory> fixedCoordinateGroups;
+        for (const double fixedY : {-2.0, 1.0, 2.0}) {
+            ConservationTrajectory group;
+            for (const double velocity : {-2.0, -1.0, 1.0, 2.0})
+                group.states.push_back({fixedY, velocity});
+            fixedCoordinateGroups.push_back(std::move(group));
+        }
+        const ConservationDiscoveryProblem fixedCoordinateProblem(fixedCoordinateGroups);
+        auto linearConfig = polynomialConfig;
+        linearConfig.maximumDegree = 1;
+        const auto fixedCoordinate =
+            discoverPolynomialConservation(fixedCoordinateProblem, linearConfig);
+        check(fixedCoordinate.found && fixedCoordinate.degree == 1 &&
+                  fixedCoordinate.trainingAssessment.withinFraction &&
+                  *fixedCoordinate.trainingAssessment.withinFraction == 0.0,
+              "a zero within-trajectory feature is tested directly as an invariant");
+        const auto fixedAt = fixedCoordinate.expression.evaluate(std::array{-2.0, 0.0}).value();
+        const auto fixedAtOther = fixedCoordinate.expression.evaluate(std::array{1.0, 0.0}).value();
+        check(fixedAt != 0.0 && fixedAtOther / fixedAt == -0.5,
+              "degree-one direct selection recovers the grouped fixed coordinate up to scale");
+        std::vector<ConservationTrajectory> constantCoordinateGroups;
+        for (const double velocityOffset : {-2.0, 1.0, 2.0}) {
+            ConservationTrajectory group;
+            for (const double velocity : {-1.0, 0.0, 1.0})
+                group.states.push_back({7.0, velocity + velocityOffset});
+            constantCoordinateGroups.push_back(std::move(group));
+        }
+        const ConservationDiscoveryProblem constantCoordinateProblem(constantCoordinateGroups);
+        const auto constantCoordinate =
+            discoverPolynomialConservation(constantCoordinateProblem, linearConfig);
+        check(!constantCoordinate.found,
+              "a coordinate constant globally is not accepted as a direct invariant");
+
+        std::vector<ConservationTrajectory> affineGroups;
+        for (const double invariantValue : {-5.0, 2.0, 8.0}) {
+            ConservationTrajectory group;
+            for (const double time : {-3.0, -1.0, 1.0, 3.0})
+                group.states.push_back({time, invariantValue - 3.0 * time});
+            affineGroups.push_back(std::move(group));
+        }
+        const ConservationDiscoveryProblem affineProblem(affineGroups);
+        const auto affineLaw = discoverPolynomialConservation(affineProblem, linearConfig);
+        check(affineLaw.found && affineLaw.degree == 1 &&
+                  affineLaw.trainingAssessment.withinFraction &&
+                  *affineLaw.trainingAssessment.withinFraction < 1e-24,
+              "linear nullspace search reconstructs a shared rational coefficient ratio");
+        for (const auto& group : affineGroups) {
+            const double expected = group.states.front()[1] + 3.0 * group.states.front()[0];
+            for (const auto& state : group.states)
+                check(affineLaw.expression.evaluate(state).value() == expected,
+                      "cleared integer coefficients preserve the exact grouped invariant");
+        }
+        std::cout << "linear shear selected expression: " << affineLaw.expression.toString()
+                  << '\n';
+        std::vector<ConservationTrajectory> compactGroups;
+        for (const double offset : {-2.0, 1.0, 2.0}) {
+            ConservationTrajectory group;
+            for (const double time : {-2.0, -1.0, 1.0, 2.0})
+                group.states.push_back({time, offset - time});
+            compactGroups.push_back(std::move(group));
+        }
+        const ConservationDiscoveryProblem compactProblem(compactGroups,
+                                                          ExpressionLimits{3, 4, 1e6});
+        const auto compactLaw = discoverPolynomialConservation(compactProblem, linearConfig);
+        check(compactLaw.found && compactLaw.degree == 1 &&
+                  compactLaw.expression.nodeCount() == 3 &&
+                  compactLaw.expression.evaluate(std::array{2.0, -1.0}).value() == 1.0 &&
+                  compactLaw.expression.evaluate(std::array{-1.0, 3.0}).value() == 2.0,
+              "compact three-node degree-one export recovers y+v within maxNodes=3");
+        for (const bool plus : {true, false}) {
+            std::vector<ConservationTrajectory> signedGroups;
+            for (const double offset : {-2.0, 1.0, 2.0}) {
+                ConservationTrajectory group;
+                for (const double time : {-2.0, -1.0, 1.0, 2.0})
+                    group.states.push_back({time, offset + (plus ? -time : time)});
+                signedGroups.push_back(std::move(group));
+            }
+            const ConservationDiscoveryProblem signedProblem(signedGroups,
+                                                             ExpressionLimits{3, 4, 0.5});
+            const auto signedLaw = discoverPolynomialConservation(signedProblem, linearConfig);
+            check(signedLaw.found && signedLaw.degree == 1 &&
+                      signedLaw.expression.nodeCount() == 3 &&
+                      signedLaw.expression.limits().maxAbsConstant == 0.5 &&
+                      signedLaw.trainingAssessment.withinFraction &&
+                      *signedLaw.trainingAssessment.withinFraction == 0.0,
+                  plus ? "bounded three-node y+v export uses no unit literal"
+                       : "bounded three-node y-v export uses subtraction without a unit literal");
+            const double invariant = plus ? signedGroups.front().states.front()[0] +
+                                                signedGroups.front().states.front()[1]
+                                          : signedGroups.front().states.front()[0] -
+                                                signedGroups.front().states.front()[1];
+            const double scale =
+                signedLaw.expression.evaluate(signedGroups.front().states.front()).value() /
+                invariant;
+            check(scale != 0.0, "signed unit coefficient recovery has nonzero scale");
+            for (const auto& group : signedGroups)
+                for (const auto& state : group.states) {
+                    const double expected = plus ? state[0] + state[1] : state[0] - state[1];
+                    check(signedLaw.expression.evaluate(state).value() == scale * expected,
+                          "signed compact polynomial matches y+v or y-v up to scale");
+                }
+            std::cout << (plus ? "signed y+v" : "signed y-v")
+                      << " selected expression: " << signedLaw.expression.toString() << '\n';
+        }
+        auto tooSmall = linearConfig;
+        const ConservationDiscoveryProblem insufficientProblem(compactGroups,
+                                                               ExpressionLimits{2, 4, 1e6});
+        const auto insufficient = discoverPolynomialConservation(insufficientProblem, tooSmall);
+        check(!insufficient.found,
+              "a genuinely insufficient expression-node budget rejects the linear law");
+        const ConservationDiscoveryProblem limitedAffineProblem(affineGroups,
+                                                                ExpressionLimits{63, 8, 0.5});
+        const auto unavailableAffine =
+            discoverPolynomialConservation(limitedAffineProblem, linearConfig);
+        check(!unavailableAffine.found && !unavailableAffine.exactRepresentationAvailable,
+              "coefficient clearing reports when exact integer representation exceeds limits");
         std::uint64_t rows = 0;
         RegressionSupplementalWork work;
         const auto measured = problem.measureWithWork(energy, &rows, work);

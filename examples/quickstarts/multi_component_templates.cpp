@@ -105,9 +105,18 @@ int main() {
                                     parseExpression("x1*3", 3, {}, threeLimits),
                                     parseExpression("x2*x2", 3, {}, threeLimits)});
         const auto threeParts = threeScaffold.components(threeModel);
+        const auto threeProblem =
+            RegressionProblem::create({{{0.5, 2.0, 3.0}, std::sin(0.5) + 15.0}}, threeLimits);
+        const auto threeDomain = MultiComponentTemplateProblem::createMany(
+            threeScaffold, threeProblem, std::vector<std::vector<std::size_t>>{{0}, {1}, {2}},
+            std::vector<std::vector<ExpressionKind>>{
+                {ExpressionKind::Sin, ExpressionKind::Multiply},
+                {ExpressionKind::Multiply},
+                {ExpressionKind::Multiply}});
         const std::array<double, 3> threeInput{0.5, 2.0, 3.0};
         if (threeParts.size() != 3 || !threeModel.evaluate(threeInput).valid() ||
-            std::abs(threeModel.evaluate(threeInput).value() - (std::sin(0.5) + 15.0)) > 1.0e-14)
+            std::abs(threeModel.evaluate(threeInput).value() - (std::sin(0.5) + 15.0)) > 1.0e-14 ||
+            threeDomain->allowedVariables(2) != std::vector<std::size_t>{2})
             throw std::runtime_error("three-site installed consumer contract failed");
         std::cout << "three_site_components=" << threeParts[0].toString() << ';'
                   << threeParts[1].toString() << ';' << threeParts[2].toString()

@@ -85,6 +85,11 @@ void structuralContracts() {
     check(legacyExtracted[0].sameRepresentation(left) &&
               legacyExtracted[1].sameRepresentation(right),
           "existing two-site array extraction callers remain source compatible");
+    const std::array<std::pair<std::size_t, std::size_t>, 2> legacyRanges =
+        scaffold.componentRanges(materialized);
+    check(legacyRanges[0].second > legacyRanges[0].first &&
+              legacyRanges[1].second > legacyRanges[1].first,
+          "existing two-site array range callers remain source compatible");
     rejects(
         [&] {
             (void)MultiScalarExpressionTemplate(

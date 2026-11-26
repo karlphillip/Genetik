@@ -33,6 +33,18 @@ public:
     }
 };
 
+class MultiComponentRanges final : public std::vector<std::pair<std::size_t, std::size_t>> {
+public:
+    using std::vector<std::pair<std::size_t, std::size_t>>::vector;
+    MultiComponentRanges(std::vector<std::pair<std::size_t, std::size_t>> ranges)
+        : std::vector<std::pair<std::size_t, std::size_t>>(std::move(ranges)) {}
+    operator std::array<std::pair<std::size_t, std::size_t>, 2>() const {
+        if (size() != 2)
+            throw std::invalid_argument("two-site range conversion requires exactly two ranges");
+        return {at(0), at(1)};
+    }
+};
+
 class MultiScalarExpressionTemplate final {
 public:
     MultiScalarExpressionTemplate(const Expression& source, std::vector<std::size_t> roots,
@@ -150,8 +162,7 @@ public:
               std::vector<ExpressionLimits>(componentLimits.begin(), componentLimits.end()),
               modelLimits, maximumMaterializationBytes) {}
 
-    std::vector<std::pair<std::size_t, std::size_t>>
-    componentRanges(const Expression& model) const {
+    MultiComponentRanges componentRanges(const Expression& model) const {
         if (model.variableCount() != variableCount() || model.nodeCount() > modelLimits_.maxNodes)
             throw std::invalid_argument("model does not match multi-component template schema");
         if (model.nodeCount() > std::numeric_limits<std::size_t>::max() - source_.nodeCount() ||
@@ -180,7 +191,7 @@ public:
                 pending.emplace_back(sourceTree.children[sourceIndex][child],
                                      modelTree.children[modelIndex][child]);
         }
-        std::vector<std::pair<std::size_t, std::size_t>> result;
+        MultiComponentRanges result;
         for (const auto& capture : captures) {
             if (!capture)
                 throw std::logic_error("template matcher did not reach every site");

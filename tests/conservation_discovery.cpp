@@ -195,16 +195,35 @@ int main() {
             compactGroups.push_back(std::move(group));
         }
         const ConservationDiscoveryProblem compactProblem(compactGroups,
-                                                           ExpressionLimits{3, 4, 1e6});
+                                                          ExpressionLimits{3, 4, 1e6});
         const auto compactLaw = discoverPolynomialConservation(compactProblem, linearConfig);
         check(compactLaw.found && compactLaw.degree == 1 &&
                   compactLaw.expression.nodeCount() == 3 &&
                   compactLaw.expression.evaluate(std::array{2.0, -1.0}).value() == 1.0 &&
                   compactLaw.expression.evaluate(std::array{-1.0, 3.0}).value() == 2.0,
               "compact three-node degree-one export recovers y+v within maxNodes=3");
+        for (const bool plus : {true, false}) {
+            std::vector<ConservationTrajectory> signedGroups;
+            for (const double offset : {-2.0, 1.0, 2.0}) {
+                ConservationTrajectory group;
+                for (const double time : {-2.0, -1.0, 1.0, 2.0})
+                    group.states.push_back({time, offset + (plus ? -time : time)});
+                signedGroups.push_back(std::move(group));
+            }
+            const ConservationDiscoveryProblem signedProblem(signedGroups,
+                                                             ExpressionLimits{3, 4, 0.5});
+            const auto signedLaw = discoverPolynomialConservation(signedProblem, linearConfig);
+            check(signedLaw.found && signedLaw.degree == 1 &&
+                      signedLaw.expression.nodeCount() == 3 &&
+                      signedLaw.expression.limits().maxAbsConstant == 0.5 &&
+                      signedLaw.trainingAssessment.withinFraction &&
+                      *signedLaw.trainingAssessment.withinFraction == 0.0,
+                  plus ? "bounded three-node y+v export uses no unit literal"
+                       : "bounded three-node y-v export uses subtraction without a unit literal");
+        }
         auto tooSmall = linearConfig;
         const ConservationDiscoveryProblem insufficientProblem(compactGroups,
-                                                                 ExpressionLimits{2, 4, 1e6});
+                                                               ExpressionLimits{2, 4, 1e6});
         const auto insufficient = discoverPolynomialConservation(insufficientProblem, tooSmall);
         check(!insufficient.found,
               "a genuinely insufficient expression-node budget rejects the linear law");

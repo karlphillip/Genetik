@@ -164,7 +164,11 @@ clearDenominators(const std::vector<std::pair<std::int64_t, std::int64_t>>& rati
     for (auto& value : integerCoefficients)
         value /= commonDivisor;
     for (const auto value : integerCoefficients)
-        if (std::abs(static_cast<double>(value)) > maximumMagnitude ||
+        // Unit coefficients are represented by the tree structure (including
+        // subtraction), so they do not consume a literal and are not subject
+        // to maxAbsConstant.
+        if ((std::abs(static_cast<double>(value)) != 1.0 &&
+             std::abs(static_cast<double>(value)) > maximumMagnitude) ||
             value < -9007199254740991LL || value > 9007199254740991LL)
             return false;
     return true;
@@ -174,8 +178,14 @@ inline Expression makeExpression(const std::vector<Monomial>& ms,
                                  const std::vector<std::int64_t>& cs, ExpressionLimits limits) {
     const auto y = Expression::variable(0, 2, limits), v = Expression::variable(1, 2, limits);
     std::optional<Expression> sum;
+    // A conserved polynomial is defined only up to a nonzero scale. Orient
+    // its first nonzero coefficient positively so a negative unit term can be
+    // expressed as subtraction without introducing a -1 literal.
+    const auto first = std::find_if(cs.begin(), cs.end(), [](std::int64_t c) { return c != 0; });
+    const bool negate = first != cs.end() && *first < 0;
     for (std::size_t i = 0; i < ms.size(); ++i) {
-        if (cs[i] == 0)
+        const auto coefficient = negate ? -cs[i] : cs[i];
+        if (coefficient == 0)
             continue;
         std::optional<Expression> term;
         if (ms[i].y > 0)
@@ -192,12 +202,17 @@ inline Expression makeExpression(const std::vector<Monomial>& ms,
             --remainingV;
             term = Expression::binary(ExpressionKind::Multiply, *term, v, limits);
         }
-        if (cs[i] != 1) {
-            const auto coefficient = Expression::constant(static_cast<double>(cs[i]), 2, limits);
-            term = Expression::binary(ExpressionKind::Multiply, coefficient, *term, limits);
+        const auto magnitude = coefficient < 0 ? -coefficient : coefficient;
+        if (magnitude != 1) {
+            const auto literal = Expression::constant(static_cast<double>(magnitude), 2, limits);
+            term = Expression::binary(ExpressionKind::Multiply, literal, *term, limits);
         }
-        sum = sum ? std::optional<Expression>(Expression::binary(ExpressionKind::Add, *sum, *term, limits))
-                  : std::move(term);
+        if (!sum)
+            sum = std::move(term);
+        else
+            sum =
+                Expression::binary(coefficient < 0 ? ExpressionKind::Subtract : ExpressionKind::Add,
+                                   *sum, *term, limits);
     }
     if (!sum)
         throw std::invalid_argument("zero polynomial has no nonconstant expression");

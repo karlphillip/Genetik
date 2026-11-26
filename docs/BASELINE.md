@@ -1334,3 +1334,77 @@ fitting, MAE and Huber behavior are unchanged. Deterministic fixtures cover
 constant, affine, nonlinear-coefficient and symbolic-preparation paths; the
 weighted constant comparison returns c=1 and weighted MSE=9 with LM in 7
 objective evaluations versus coordinate fitting in 56 loss attempts.
+
+## Priority implementation work from the PR #71 base
+
+The task branch starts at `1344982fe798108abf2993ba204cd399d93ab947`. It adds
+opt-in operator/variable/constant expression costs to symbolic loss ordering,
+complexity-penalty ordering and Pareto dominance. Unit costs preserve the
+existing node-count behavior; physical node counts and expression hard limits
+remain separate. The deterministic near-constant fixture reverses selection
+when variable occurrences receive cost 10 and constants cost 0.1.
+
+Regression objectives add explicit `CustomScalar` callbacks. Their finite,
+nonnegative row losses are averaged through the same scorer used by symbolic
+search and coordinate fitting. LM rejects arbitrary callbacks; callback
+parallelism defaults off. The existing cached-fitness checkpoint codec rejects
+callback objectives because callback code has no codec/fingerprint. The
+installed example and deterministic fixture use asymmetric absolute loss on
+`{0,2,10}`: symbolic search and coordinate fitting select 10; independent MSE
+minimizes at 4.
+
+An opt-in fixed-precision, signed Elias-gamma MDL selector reports model,
+residual and total bits for supported fixed-row polynomial regression. Its
+constant-zero fixture selects 15 bits over 21; the linear fixture reverses
+those totals and selects the 15-bit variable model. This is not an AIC/BIC
+change or an Operon-equivalent codebook.
+
+Whole-box polynomial value and derivative assessment now uses outward-rounded
+interval arithmetic, bounded subdivision and verified point-enclosure
+witnesses. `MathematicalConstraints::assessWholeBox` exposes the result for
+candidate assessment. The endpoint trap `x^3-x/4` produces a negative
+derivative witness at zero; `x+x^3` is certified over `[-1,1]`. Full interval
+proofs are limited to the documented polynomial grammar and may return
+Inconclusive at the subdivision ceiling.
+
+At the first checkpoint, focused Release tests passed and the complete Release
+CTest had a 300-second installed-package consumer timeout. The installed
+objectives consumer and focused ASan+UBSan tests passed. Conservation now has a
+frozen two-system, six-seed study and separate exact verifier; the measured
+search did not recover any exact nonconstant invariant. This continuation must
+rerun the installed-package test and hosted qualification on the revised head.
+Multi-site/shared-function templates and autonomous complex search remain
+outstanding.
+
+## Conservation discovery campaign (2026-11)
+
+At base `1344982fe798108abf2993ba204cd399d93ab947`, there was no grouped
+trajectory scoring objective or conservation search path; the base API could
+not express the requested discovery task. The candidate now exposes grouped
+state observations to an opt-in scorer while expressions receive only `(y,v)`.
+The objective minimizes normalized within/(within+between) variation plus a
+small physical-node penalty, rejects insufficient separation, and now rejects
+roundoff-only separation from cancellation. Release deterministic contracts
+check scaling behavior, constant rejection, and cancellation rejection.
+
+The frozen harmonic/quartic campaign used six fixed seeds, 640 candidates per
+run, the same Add/Subtract/Multiply grammar, whole-initial-condition holdouts,
+RK4 data, and a separate exact symbolic Lie-derivative verifier. All six runs
+completed but selected no exact nonconstant invariant; none recovered the
+reference law up to nonzero affine rescaling. The damped control's energy fell
+by 0.6878681724. Full expressions, held-out drift and separation, RK4
+refinement error, work, exact verification, and numerical reference-law RMSE
+are in `research/conservation_discovery/README.md` and the associated frozen
+machine artifacts. This is an unsuccessful bounded search, not evidence that
+these systems have no discoverable invariants.
+
+## Bounded Pareto objective vectors (2026-11)
+
+Pareto selection now accepts a callback returning up to four finite objectives
+computed from training data. The vector replaces scalar loss in Pareto
+dominance/crowding; configured complexity is an extra objective. Selected
+points expose their vector and vector callback work is counted. The installed
+selection quickstart demonstrates MSE and maximum absolute error. A public
+symbolic-search contract returns the hand-computed nondominated set
+`(0,4)`, `(1,1)`, `(4,0)` and rejects vector overflow. Callback code is not
+serialized; a generic checkpoint resume must recreate the identical callback.

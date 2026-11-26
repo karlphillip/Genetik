@@ -8,6 +8,7 @@
 #include "EvaluatedCandidate.hpp"
 #include "Expression.hpp"
 #include <memory>
+#include <functional>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -17,11 +18,19 @@ struct RegressionRow {
     std::vector<double> inputs;
     double target;
 };
-enum class RegressionLoss { MeanSquaredError, MeanAbsoluteError, Huber, WeightedMeanSquaredError };
+enum class RegressionLoss {
+    MeanSquaredError,
+    MeanAbsoluteError,
+    Huber,
+    WeightedMeanSquaredError,
+    CustomScalar
+};
 struct RegressionObjectiveConfig {
     RegressionLoss loss = RegressionLoss::MeanSquaredError;
     double huberDelta = 1.0;
     std::vector<double> observationWeights;
+    std::function<double(double prediction, double target)> customScalarLoss;
+    bool customScalarLossParallelSafe = false;
 };
 struct RegressionSupplementalWork {
     std::uint64_t mathematicalOperations = 0;
@@ -45,7 +54,7 @@ class RegressionProblem {
 public:
     RegressionProblem(const std::vector<RegressionRow>& rows, ExpressionLimits limits = {31, 6, 2},
                       RegressionLoss loss = RegressionLoss::MeanSquaredError)
-        : RegressionProblem(rows, limits, RegressionObjectiveConfig{loss, 1.0, {}},
+        : RegressionProblem(rows, limits, RegressionObjectiveConfig{loss, 1.0, {}, {}},
                             ObjectiveTag{}) {}
 
 private:
@@ -70,7 +79,9 @@ public:
     }
     virtual ~RegressionProblem() = default;
     virtual bool parallelEvaluationSafe() const noexcept {
-        return typeid(*this) == typeid(RegressionProblem);
+        return typeid(*this) == typeid(RegressionProblem) &&
+               (objective_.loss != RegressionLoss::CustomScalar ||
+                objective_.customScalarLossParallelSafe);
     }
     std::size_t dimensions() const noexcept { return dimensions_; }
     virtual std::size_t sampleCount() const noexcept { return rows_.size(); }
@@ -160,7 +171,11 @@ private:
                 }
             }
             double contribution = magnitude;
-            if (objective_.loss == RegressionLoss::Huber) {
+            if (objective_.loss == RegressionLoss::CustomScalar) {
+                contribution = objective_.customScalarLoss(prediction.value(), row.target);
+                if (!std::isfinite(contribution) || contribution < 0.0)
+                    return {{Fitness::invalid(), {}, attempted}, {}};
+            } else if (objective_.loss == RegressionLoss::Huber) {
                 if (magnitude <= objective_.huberDelta) {
                     volatile double halfSquare = 0.5 * square;
                     contribution = halfSquare;
@@ -287,16 +302,21 @@ private:
         switch (objective.loss) {
         case RegressionLoss::MeanSquaredError:
         case RegressionLoss::MeanAbsoluteError:
-            if (!objective.observationWeights.empty())
-                throw std::invalid_argument("observation weights require weighted MSE");
+            if (!objective.observationWeights.empty() || objective.customScalarLoss ||
+                objective.customScalarLossParallelSafe)
+                throw std::invalid_argument(
+                    "callback/parallel flag is only valid for CustomScalar");
             break;
         case RegressionLoss::Huber:
-            if (!objective.observationWeights.empty() || !std::isfinite(objective.huberDelta) ||
+            if (!objective.observationWeights.empty() || objective.customScalarLoss ||
+                objective.customScalarLossParallelSafe || !std::isfinite(objective.huberDelta) ||
                 objective.huberDelta <= 0.0)
                 throw std::invalid_argument(
                     "Huber loss requires a finite positive delta and no weights");
             break;
         case RegressionLoss::WeightedMeanSquaredError: {
+            if (objective.customScalarLoss || objective.customScalarLossParallelSafe)
+                throw std::invalid_argument("custom loss callback requires CustomScalar objective");
             if (objective.observationWeights.size() != observations)
                 throw std::invalid_argument("weighted MSE requires one weight per observation");
             double sum = 0.0;
@@ -313,6 +333,10 @@ private:
                 throw std::invalid_argument("observation weights must have positive total");
             break;
         }
+        case RegressionLoss::CustomScalar:
+            if (!objective.observationWeights.empty() || !objective.customScalarLoss)
+                throw std::invalid_argument("CustomScalar objective requires only a loss callback");
+            break;
         default:
             throw std::invalid_argument("unsupported regression objective");
         }

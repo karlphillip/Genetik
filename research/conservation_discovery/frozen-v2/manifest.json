@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "ConservationDiscovery.hpp": "8508fbdd1d591fe81104368a4bcefccb792930dbd2105ebcbc98bc95a2849e17",
+    "conservation_study.cpp": "97e293feb9a39ecc38eeda1c023b3e394dd915be4c7290f037b5801a02678cdb",
+    "run_study.py": "1655fbf5529f0238b0378ab817f0a01e6ac2b9ba907c3951931edc205f0ab911",
+    "study.json": "0196e51a798372486a45f285b4623fe2d6ef1b78ab66de7cca78b51c75138d41"
+  },
+  "binary_sha256": "06f4dd7a0fa0cc83147320fdc0e225ea42851088bd77998362b63b97d0a6b88f",
+  "rehearsal_sha256": "14a5e0850ecc02bd5c8ae2715ab8183488ca79cb89750bd76932ea6c9ac265c2",
+  "schema": "genetik-frozen-study-v1"
+}

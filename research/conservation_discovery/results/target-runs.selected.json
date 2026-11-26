@@ -1,0 +1,92 @@
+{
+  "adapter_sha256": "1655fbf5529f0238b0378ab817f0a01e6ac2b9ba907c3951931edc205f0ab911",
+  "binary_sha256": "490c0a83beb4412ecf69a58a927e66eaf37d64a90d5dc44c99958e6872a68724",
+  "mode": "target",
+  "selected": [
+    {
+      "candidate_evaluations": 640,
+      "expression": "((((0.5 - (x1 * x1)) * ((-2.0) + (-2.0))) - (x1 * x1)) * (x1 * x1))",
+      "generator_rk4_refinement_error": 6.103499455263132e-08,
+      "heldout_metrics_valid": true,
+      "heldout_separation": 7.18827092572536,
+      "heldout_within_fraction": 0.6844968883619605,
+      "nodes": 17,
+      "seed": 101,
+      "stop": "evaluation_budget",
+      "system": "harmonic",
+      "training_rows": 349440,
+      "valid": true
+    },
+    {
+      "candidate_evaluations": 640,
+      "expression": "(0.5 + (x1 + (1.0 - x1)))",
+      "generator_rk4_refinement_error": 6.103499455263132e-08,
+      "heldout_metrics_valid": true,
+      "heldout_separation": 0,
+      "heldout_within_fraction": 1,
+      "nodes": 7,
+      "seed": 211,
+      "stop": "evaluation_budget",
+      "system": "harmonic",
+      "training_rows": 349440,
+      "valid": true
+    },
+    {
+      "candidate_evaluations": 640,
+      "expression": "((((-2.0) - (-2.0)) - (x1 + (x1 * ((-1.0) * (x1 * x1))))) * x1)",
+      "generator_rk4_refinement_error": 6.103499455263132e-08,
+      "heldout_metrics_valid": true,
+      "heldout_separation": 2.083645363336591,
+      "heldout_within_fraction": 0.7029797326694641,
+      "nodes": 15,
+      "seed": 307,
+      "stop": "evaluation_budget",
+      "system": "harmonic",
+      "training_rows": 349440,
+      "valid": true
+    },
+    {
+      "candidate_evaluations": 640,
+      "expression": "(((x1 * x1) - (-0.5)) - ((-0.5) + (1.0 - (x0 * x0))))",
+      "generator_rk4_refinement_error": 0.00014217458745128926,
+      "heldout_metrics_valid": true,
+      "heldout_separation": 6.026613606195922,
+      "heldout_within_fraction": 0.2070510039689846,
+      "nodes": 13,
+      "seed": 101,
+      "stop": "evaluation_budget",
+      "system": "quartic",
+      "training_rows": 349440,
+      "valid": true
+    },
+    {
+      "candidate_evaluations": 640,
+      "expression": "(x0 + (((1.0 - (-2.0)) - (2.0 - 2.0)) - x0))",
+      "generator_rk4_refinement_error": 0.00014217458745128926,
+      "heldout_metrics_valid": true,
+      "heldout_separation": 0,
+      "heldout_within_fraction": 1,
+      "nodes": 11,
+      "seed": 211,
+      "stop": "evaluation_budget",
+      "system": "quartic",
+      "training_rows": 349440,
+      "valid": true
+    },
+    {
+      "candidate_evaluations": 640,
+      "expression": "((((-1.0) + 1.0) - x1) * x1)",
+      "generator_rk4_refinement_error": 0.00014217458745128926,
+      "heldout_metrics_valid": true,
+      "heldout_separation": 5.23962217057734,
+      "heldout_within_fraction": 0.3727889791470386,
+      "nodes": 7,
+      "seed": 307,
+      "stop": "evaluation_budget",
+      "system": "quartic",
+      "training_rows": 349440,
+      "valid": true
+    }
+  ],
+  "spec_sha256": "0196e51a798372486a45f285b4623fe2d6ef1b78ab66de7cca78b51c75138d41"
+}

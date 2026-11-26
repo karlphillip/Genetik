@@ -48,13 +48,21 @@ Use a separate fresh context for each snippet/run. Custom representation authors
 
 ## Dataset, loss and ordering
 
-RegressionProblem copies its rows and nested input vectors even for rvalues. It is nonassignable, exposes only values/configuration, and is shared as const. It validates nonempty rows, consistent input dimensionality (zero-variable constant problems are permitted), finite inputs/targets, finite positive structural limits/nonnegative constant bound, and the supported MeanSquaredError loss kind. A candidate must match dimensions and hard limits. No input normalization, hidden repair, rounding or held-out data is used in fitness.
+RegressionProblem copies its rows and nested input vectors even for rvalues. It is nonassignable, exposes only values/configuration, and is shared as const. It validates nonempty rows, consistent input dimensionality (zero-variable constant problems are permitted), finite inputs/targets, finite positive structural limits/nonnegative constant bound, and the selected loss configuration. A candidate must match dimensions and hard limits. No input normalization, hidden repair, rounding or held-out data is used in fitness.
 
 Population binds a shared problem identity before initial evaluation, including an all-invalid initialization. Every later candidate must have that exact identity; mixed or changed problems are API errors before evaluation. Changing data, loss or hard limits requires a new problem and run. Clones/elite caches are not reused during publication, even when unchanged. Fixed problem/objective and deterministic serial execution remain required.
 
 For the default MSE objective, each training row is evaluated in order; the residual, its square, sequential sum and final row-count division are checked with the original strict-FP operation order. Any invalid prediction or MSE intermediate returns `Fitness::invalid()` and no partial max-error metric. Other loss definitions, objective configuration and their checked arithmetic are documented in [MATHEMATICAL_OBJECTIVES.md](MATHEMATICAL_OBJECTIVES.md). No sample is silently omitted, and no arbitrary poor score/NaN sentinel represents invalidity. Bad schemas/configuration and unexpected exceptions propagate unchanged into the engine's nested evaluation/generation context.
 
-Primary ordering is exact finite training MSE ascending (ObjectiveDirection::Minimize is mandatory and validated even for a singleton). Only when MSE is exactly equal, prefer fewer nodes, then lexicographically smaller faithful expression text. Identical complete keys retain the prior historical best and discovery generation. Population's linear-rank roulette uses the same complete ordering and averages ranks only for identical keys; invalids receive no weight. Elitism copies the same sorted tail. No epsilon enters a comparator; training MSE == 0 is the example's early stop, and max-absolute error <=1e-9 is a separate post-run numerical-recovery report.
+Prediction-loss ordering is exact finite configured loss ascending. The default configured loss remains MSE. Only when losses tie, prefer fewer nodes, then lexicographically smaller faithful expression text. Identical complete keys retain the prior historical best and discovery generation. Population's linear-rank roulette uses the same complete ordering and averages ranks only for identical keys; invalids receive no weight. Elitism copies the same sorted tail. No epsilon enters a comparator; the default MSE zero-loss stop and max-absolute error <=1e-9 numerical-recovery report retain their established meanings.
+
+Opt-in `ComplexityPenalty` and `Pareto` policies accept `ExpressionComplexityCosts`
+for operators, variable occurrences, and constant occurrences. Costs default to
+one, so the prior node-count objective is preserved. The weighted value is used
+for ordering and Pareto dominance; frontier reports retain `structuralComplexity`
+as the physical node count and add `configuredComplexity`. `ExpressionLimits`
+continue to constrain actual nodes, depth, arithmetic work, and constant magnitude
+independently of these selection costs.
 
 `RegressionProblem::measure` is also the public evaluation/reporting API: returns loss state, optional max absolute error and actual samples attempted. Its metric work does not increment RandomContext's search counter. Bind evaluation-only data to separate immutable problems and call measure only after search/selection are frozen.
 

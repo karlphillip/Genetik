@@ -56,6 +56,8 @@ PORTABLE = {
     'genetik_fitting_contracts', 'genetik_symbolic_contracts',
     'genetik_lm_rational_fit_regression',
     'genetik_objective_regression_contracts', 'genetik_objectives_quickstart',
+    'genetik_minimum_description_length_contracts', 'genetik_polynomial_bounds_contracts',
+    'genetik_conservation_discovery_contracts',
     'genetik_symbolic_selection_contracts', 'genetik_selection_strategies_quickstart',
     'genetik_multi_component_template_contracts', 'genetik_multi_component_templates_quickstart',
     'genetik_automatic_separable_contracts', 'genetik_automatic_separable_quickstart',

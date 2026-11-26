@@ -1,0 +1,14 @@
+{
+  "artifacts": {
+    "ComplexSymbolicRegression.hpp": "dc85e3254071843cc3204e6ea77f1bea65218dcead0b7ae72b43bd52854bd9ad",
+    "complex_autonomous_comparison.cpp": "40d91ce0fde91a6af912ed23382bfbfe26ce5f963ab5311498a152502ac5b9b7",
+    "run_study.py": "fdafb80aa6a43999b1a4a1cd0618a431910608ed387a1d9f5482c02194933139",
+    "study.json": "1059ed133c02fad26e3b2fbba240cc85b975fdd0a349b9a0b1167668d889e7a3"
+  },
+  "base_sha": "1344982fe798108abf2993ba204cd399d93ab947",
+  "binary_sha256": "c301eb7a22e2cc24bac4b53a33a5c6f2c771c1e84cacc42715269bb4679566a0",
+  "rehearsal_sha256": "12c71d9f6cc82e0863a9bd455b2c3074fc96142e24ba7933b01720f387d1e7ee",
+  "schema": "genetik-frozen-complex-study-v1",
+  "source_head_sha": "35fcea83698873f5cf621dd43f40c732ea25f27c",
+  "tracked_working_patch_sha256": "c0a9840e837e6b34dc698d634b709cf431d4f424f9f1add4365aa4b91d893c5b"
+}

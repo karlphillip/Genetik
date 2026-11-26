@@ -1,6 +1,7 @@
 #pragma once
 #include "ExpressionDerivative.hpp"
 #include "ExpressionVariation.hpp"
+#include "PolynomialBounds.hpp"
 #include "ScalarExpressionCheckpoint.hpp"
 
 struct VariableDomain {
@@ -27,16 +28,18 @@ enum class ConstraintStatus {
     DerivativeUnavailable,
     MathematicallyInvalid,
     ResourceExhausted,
-    Cancelled
+    Cancelled,
+    Inconclusive
 };
 struct ConstraintReport {
     ConstraintStatus status = ConstraintStatus::Satisfied;
     std::size_t checks = 0, expressionWork = 0;
     bool structuralProof = false;
     bool sampledOnly = false;
+    std::optional<PolynomialBoundCertificate> wholeBoxCertificate;
 };
-// Immutable policy. Numerical positivity/nonzero/monotonicity assessments are
-// explicitly sample-local, never a proof over an interval or the real line.
+// Immutable policy. Pointwise numerical constraints remain sample-local;
+// assessWholeBox is the separate interval-backed path for supported polynomials.
 class MathematicalConstraints {
   public:
     MathematicalConstraints(const std::vector<VariableDomain> &domains = {},
@@ -217,6 +220,28 @@ class MathematicalConstraints {
             }
             if (increasing_ ? derivative.derivative() < 0 : derivative.derivative() > 0)
                 result.status = ConstraintStatus::Violated;
+        }
+        return result;
+    }
+    ConstraintReport assessWholeBox(const Expression& candidate, const FiniteBox& box,
+                                    const PolynomialBoundRequest& request) const {
+        auto result = structural(candidate);
+        if (result.status != ConstraintStatus::Satisfied)
+            return result;
+        result.structuralProof = true;
+        result.sampledOnly = false;
+        auto certificate = assessPolynomialBounds(candidate, box, request, limits_.derivative);
+        result.wholeBoxCertificate = certificate;
+        switch (certificate.status) {
+        case PolynomialCertificateStatus::Certified:
+            result.status = ConstraintStatus::Satisfied;
+            break;
+        case PolynomialCertificateStatus::Violated:
+            result.status = ConstraintStatus::Violated;
+            break;
+        case PolynomialCertificateStatus::Inconclusive:
+            result.status = ConstraintStatus::Inconclusive;
+            break;
         }
         return result;
     }

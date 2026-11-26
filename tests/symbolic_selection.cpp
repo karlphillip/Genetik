@@ -41,6 +41,82 @@ void penaltyKeepsLossSeparate() {
     ComplexityPenaltyOrdering moderatePenalty(0.1);
     check(moderatePenalty.better(square, linear, ObjectiveDirection::Minimize),
           "a complex model wins when its accuracy improvement exceeds the penalty");
+    const auto nearConstant = RegressionProblem::create({{{0.9}, 0.9}, {{1.1}, 1.1}});
+    ExpressionCandidate exactVariable(Expression::variable(0), nearConstant);
+    ExpressionCandidate approximateConstant(Expression::constant(1.0, 1), nearConstant);
+    exactVariable.calculateFitness();
+    approximateConstant.calculateFitness();
+    ComplexityPenaltyOrdering defaultCost(1.0);
+    check(defaultCost.better(exactVariable, approximateConstant, ObjectiveDirection::Minimize),
+          "default unit node costs retain loss ordering for equal-size models");
+    ComplexityPenaltyOrdering weighted(1.0, ExpressionComplexityCosts{0.1, 10.0, 0.1});
+    check(weighted.better(approximateConstant, exactVariable, ObjectiveDirection::Minimize),
+          "configured variable cost analytically reverses the default ranking");
+
+    const auto tieProblem = RegressionProblem::create({{{1.0}, 1.5}});
+    const auto x = Expression::variable(0);
+    ExpressionCandidate addition(Expression::binary(ExpressionKind::Add, x, x), tieProblem);
+    ExpressionCandidate multiplication(Expression::binary(ExpressionKind::Multiply, x, x),
+                                       tieProblem);
+    addition.calculateFitness();
+    multiplication.calculateFitness();
+    ExpressionComplexityCosts operatorCosts;
+    operatorCosts.individualOperatorCosts = {{ExpressionKind::Add, 20.0},
+                                             {ExpressionKind::Multiply, 0.1}};
+    ConfiguredRegressionOrdering operatorOrdering(operatorCosts);
+    check(addition.expression().nodeCount() == multiplication.expression().nodeCount() &&
+              addition.fitness() == multiplication.fitness() &&
+              operatorOrdering.better(multiplication, addition, ObjectiveDirection::Minimize),
+          "individual operator costs reverse equal-size, equal-loss tree ranking");
+    ParetoSelectionWork operatorWork;
+    ParetoRegressionOrdering operatorPareto(1000, 100000, operatorWork, operatorCosts);
+    const auto operatorFront =
+        operatorPareto.frontier(std::vector<ExpressionCandidate>{addition, multiplication}, 4);
+    check(operatorFront.size() == 1 && operatorFront.front().text() == multiplication.text(),
+          "individual operator costs participate in Pareto dominance");
+
+    const auto vectorProblem = RegressionProblem::create({{{1.0, 1.0}, 1.0}});
+    const auto x0 = Expression::variable(0, 2), x1 = Expression::variable(1, 2);
+    std::vector<ExpressionCandidate> crowdingParents{
+        ExpressionCandidate(Expression::binary(ExpressionKind::Add, x0, x1), vectorProblem),
+        ExpressionCandidate(Expression::binary(ExpressionKind::Multiply, x0, x1), vectorProblem),
+        ExpressionCandidate(Expression::binary(ExpressionKind::Subtract, x0, x1), vectorProblem),
+        ExpressionCandidate(Expression::binary(ExpressionKind::Divide, x0, x1), vectorProblem)};
+    for (auto& candidate : crowdingParents)
+        candidate.calculateFitness();
+    const auto objectives = [](const Expression& expression, const RegressionProblem&) {
+        switch (expression.nodes().back().kind()) {
+        case ExpressionKind::Add:
+            return std::vector<double>{0.0, 4.0};
+        case ExpressionKind::Multiply:
+            return std::vector<double>{2.0, 0.5};
+        case ExpressionKind::Subtract:
+            return std::vector<double>{1.0, 1.0};
+        case ExpressionKind::Divide:
+            return std::vector<double>{4.0, 0.0};
+        default:
+            throw std::logic_error("unexpected crowding fixture operator");
+        }
+    };
+    ParetoSelectionWork defaultCrowdingWork;
+    ParetoRegressionOrdering defaultCrowding(10000, 100000, defaultCrowdingWork, {}, vectorProblem,
+                                             objectives, 2);
+    auto defaultSurvivors = crowdingParents;
+    defaultCrowding.environmentalSelect(defaultSurvivors, crowdingParents, 3);
+    const auto hasMultiply = [](const auto& candidates) {
+        return std::any_of(candidates.begin(), candidates.end(), [](const auto& candidate) {
+            return candidate.expression().nodes().back().kind() == ExpressionKind::Multiply;
+        });
+    };
+    check(!hasMultiply(defaultSurvivors),
+          "default Pareto crowding drops the interior point with smaller distance");
+    ParetoSelectionWork weightedCrowdingWork;
+    ParetoRegressionOrdering weightedCrowding(10000, 100000, weightedCrowdingWork, operatorCosts,
+                                              vectorProblem, objectives, 2);
+    auto weightedSurvivors = crowdingParents;
+    weightedCrowding.environmentalSelect(weightedSurvivors, crowdingParents, 3);
+    check(hasMultiply(weightedSurvivors),
+          "configured complexity adds a crowding extreme and changes survivor selection");
 }
 
 void paretoFrontAndSurvival() {
@@ -158,8 +234,11 @@ void limitsAndSearchDeterminism() {
     for (std::size_t i = 0; i < serial.paretoFrontier.size(); ++i) {
         const auto& point = serial.paretoFrontier[i];
         check(point.predictionLoss == point.candidate.fitness() &&
-                  point.structuralComplexity == point.candidate.expression().nodeCount(),
-              "frontier reports prediction loss and structural complexity separately");
+                  point.structuralComplexity == point.candidate.expression().nodeCount() &&
+                  point.configuredComplexity ==
+                      configuredExpressionComplexity(point.candidate.expression(),
+                                                     config.complexityCosts),
+              "frontier reports physical and configured complexity separately");
         for (std::size_t j = i + 1; j < serial.paretoFrontier.size(); ++j)
             check(serial.paretoFrontier[i].candidate.text() !=
                       serial.paretoFrontier[j].candidate.text(),
@@ -168,11 +247,16 @@ void limitsAndSearchDeterminism() {
 
     config.selectionStrategy = SymbolicRegressionConfig::SelectionStrategy::ComplexityPenalty;
     config.complexityPenalty = 0.25;
+    config.complexityCosts = ExpressionComplexityCosts{2.0, 3.0, 4.0};
     RandomContext penalizedRandom(731);
     const auto penalized = symbolicRegression(problem, config, penalizedRandom);
+    check(penalized.best.has_value(), "penalty search returns a best evaluated candidate");
+    const auto configuredBestCost =
+        configuredExpressionComplexity(penalized.best->expression(), config.complexityCosts);
     check(penalized.best && penalized.bestSelectionScore &&
               *penalized.bestSelectionScore == static_cast<long double>(penalized.best->fitness()) +
-                                                   0.25L * penalized.best->expression().nodeCount(),
+                                                   0.25L * configuredBestCost &&
+              penalized.bestConfiguredComplexity == configuredBestCost,
           "penalty search returns prediction loss and selection score independently");
 
     config.selectionStrategy = SymbolicRegressionConfig::SelectionStrategy::Pareto;
@@ -189,6 +273,74 @@ void limitsAndSearchDeterminism() {
               memory.paretoWork.peakEstimatedMemoryBytes > config.maximumParetoEstimatedMemoryBytes,
           "estimated-memory exhaustion is explicit");
 }
+
+void vectorObjectiveSearch() {
+    const auto problem =
+        RegressionProblem::create({{{100.0}, 0.0}, {{100.0}, 2.0}}, ExpressionLimits{1, 1, 2.0});
+    SymbolicRegressionConfig config;
+    config.population = 12;
+    config.elites = 1;
+    config.maxGenerationAttempts = 0;
+    config.maxEvaluations = 12;
+    config.maxTrainingLossAttempts = 24;
+    config.selectionStrategy = SymbolicRegressionConfig::SelectionStrategy::Pareto;
+    config.maximumParetoObjectives = 2;
+    config.grammar.operators = {ExpressionKind::Add};
+    config.grammar.constants = {0.0, 1.0, 2.0};
+    config.grammar.initialMaxDepth = 1;
+    config.grammar.mutationMaxDepth = 1;
+    config.paretoObjectives = [](const Expression& expression, const RegressionProblem& training) {
+        std::vector<double> objectives(training.trainingRows().size());
+        genetik_detail::EvaluationWorkspace workspace;
+        for (std::size_t i = 0; i < objectives.size(); ++i) {
+            const auto& row = training.trainingRows()[i];
+            const auto prediction = workspace.evaluate(expression, row.inputs);
+            if (!prediction.valid())
+                return std::vector<double>{std::numeric_limits<double>::infinity()};
+            const double residual = prediction.value() - row.target;
+            objectives[i] = residual * residual;
+        }
+        return objectives;
+    };
+    InitialExpressionProvider initial = [](const RegressionProblem& p, std::size_t, std::uint64_t) {
+        return InitialExpressionBatch{{Expression::constant(0.0, p.dimensions()),
+                                       Expression::constant(1.0, p.dimensions()),
+                                       Expression::constant(2.0, p.dimensions())},
+                                      1,
+                                      "success",
+                                      {}};
+    };
+    config.initialExpressionSlots = 3;
+    config.maximumInitializerWorkUnits = 1;
+    RandomContext random(9227);
+    const auto result = symbolicRegression(problem, config, random, {}, initial);
+    std::vector<std::array<double, 2>> actual;
+    for (const auto& point : result.paretoFrontier) {
+        check(point.objectives.size() == 2,
+              "Pareto results expose the configured bounded objective vector");
+        actual.push_back({point.objectives[0], point.objectives[1]});
+    }
+    const std::vector<std::array<double, 2>> expected{{0.0, 4.0}, {1.0, 1.0}, {4.0, 0.0}};
+    for (const auto& objective : expected)
+        check(std::find(actual.begin(), actual.end(), objective) != actual.end(),
+              "hand-computed nondominated objective vector is selected by symbolic Pareto search");
+    check(actual.size() == expected.size(),
+          "the selected nondominated set matches the independent three-point calculation");
+    check(result.paretoWork.objectiveVectorEvaluations > 0,
+          "Pareto work reports callback-vector evaluations");
+    config.maximumParetoObjectives = 1;
+    config.paretoObjectives = [](const Expression&, const RegressionProblem&) {
+        return std::vector<double>{0.0, 1.0};
+    };
+    RandomContext bounded(9227);
+    bool rejected = false;
+    try {
+        (void)symbolicRegression(problem, config, bounded, {}, initial);
+    } catch (const std::invalid_argument&) {
+        rejected = true;
+    }
+    check(rejected, "objective vectors exceeding the declared bound are rejected");
+}
 } // namespace
 
 int main() {
@@ -196,6 +348,7 @@ int main() {
         penaltyKeepsLossSeparate();
         paretoFrontAndSurvival();
         limitsAndSearchDeterminism();
+        vectorObjectiveSearch();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

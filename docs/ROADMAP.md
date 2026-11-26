@@ -1,5 +1,27 @@
 # Current phased development plan
 
+## User-directed Genetik priorities (2026-11-25)
+
+The task-owned branch from PR #71's merge commit implements configurable
+symbolic complexity, custom scalar objectives, a fixed-precision post-search
+MDL selector, and whole-box polynomial value/derivative certificates. See
+[baseline evidence](BASELINE.md), [objective/MDL definitions](MATHEMATICAL_OBJECTIVES.md),
+and [polynomial bound certificates](POLYNOMIAL_BOUNDS.md).
+
+The same assignment still has unimplemented work: three-or-more independent
+template sites and named shared functions, and autonomous complex-valued
+structure search. Bounded vector objectives are now used by actual Pareto
+selection, with independent nondominated-set coverage. The grouped-trajectory
+conservation campaign has now run for harmonic and quartic oscillators with a
+frozen protocol, whole-initial-condition holdouts, and an exact post-selection
+Lie-derivative verifier. All six bounded searches completed but returned no
+exact nonconstant invariant and no reference-law recovery. Results, including
+the damped control and numerical generator error, are in
+[`research/conservation_discovery/README.md`](../research/conservation_discovery/README.md).
+The deterministic objective contract rejects roundoff-only apparent
+separation. Conservation discovery remains a measured unsuccessful search,
+not a completed capability. No external competitor comparison has been frozen.
+
 ## Current D5 development status
 
 D4 and the published 0.4.0 delivery are completed history. The additive D5

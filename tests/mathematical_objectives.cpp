@@ -339,6 +339,70 @@ void fittingAndSelectionUseObjective() {
           "evolutionary ordering follows the selected robust fitness");
 }
 
+void customScalarLossSearchAndCoordinateFit() {
+    RegressionObjectiveConfig objective;
+    objective.loss = RegressionLoss::CustomScalar;
+    objective.customScalarLoss = [](double prediction, double target) {
+        constexpr double tau = 0.75;
+        const double residual = target - prediction;
+        return residual >= 0.0 ? tau * residual : (1.0 - tau) * -residual;
+    };
+    const auto rows = std::vector<RegressionRow>{{{0.0}, 0.0}, {{0.0}, 2.0}, {{0.0}, 10.0}};
+    const auto problem = RegressionProblem::createWithObjective(rows, objective, {31, 6, 16});
+    check(!problem->parallelEvaluationSafe(),
+          "custom callback parallel execution requires an explicit safety declaration");
+    const auto mse = RegressionProblem::create(rows, {31, 6, 16});
+    check(mse->measure(Expression::constant(4.0, 1)).loss.score() == 56.0 / 3.0,
+          "independent MSE optimum is arithmetic mean 4 with loss 56/3");
+
+    SymbolicRegressionConfig search;
+    search.population = 8;
+    search.elites = 1;
+    search.maxGenerationAttempts = 1;
+    search.maxEvaluations = 8;
+    search.maxTrainingLossAttempts = 64;
+    search.grammar.constants = {0.0, 2.0, 10.0, 4.0};
+    search.grammar.initialMaxDepth = 1;
+    search.initialExpressionSlots = 2;
+    search.maximumInitializerWorkUnits = 1;
+    InitialExpressionProvider initial = [](const RegressionProblem& p, std::size_t, std::uint64_t) {
+        return InitialExpressionBatch{
+            {Expression::constant(2.0, 1, p.limits()), Expression::constant(10.0, 1, p.limits())},
+            1,
+            "success",
+            {}};
+    };
+    RandomContext random(1927);
+    const auto discovered = symbolicRegression(problem, search, random, {}, initial);
+    check(discovered.best &&
+              discovered.best->expression().nodes().front().kind() == ExpressionKind::Constant &&
+              discovered.best->expression().nodes().front().constantValue() == 10.0,
+          "ordinary symbolic search evaluates the explicit custom scalar loss");
+    RandomContext parallelRandom(1927, ExecutionConfig{2});
+    throws<std::invalid_argument>(
+        [&] { (void)symbolicRegression(problem, search, parallelRandom, {}, initial); });
+    check(parallelRandom.evaluationAttempts() == 0,
+          "unsafe callback is rejected before parallel search consumes evaluations");
+
+    TrainingObjective training(problem);
+    ConstantFitConfig fitting;
+    fitting.lower = -2.0;
+    fitting.upper = 12.0;
+    fitting.initialStep = 1.0;
+    fitting.minimumStep = 1e-8;
+    const auto fitted =
+        fitConstants(Expression::constant(0.0, 1, problem->limits()), training, fitting);
+    check(fitted.expression.nodes().front().constantValue() == 10.0 &&
+              fitted.loss == problem->measure(fitted.expression).loss,
+          "coordinate fitting reaches unique asymmetric absolute-loss minimizer 10");
+
+    fitting.method = ConstantFitMethod::LevenbergMarquardt;
+    throws<std::invalid_argument>([&] {
+        TrainingObjective lmTraining(problem);
+        (void)fitConstants(Expression::constant(0.0, 1, problem->limits()), lmTraining, fitting);
+    });
+}
+
 void huberLmComparisonAndBudget() {
     LMResidualEvaluation legacyAggregate{true, {1.0}, {2.0}};
     check(legacyAggregate.valid && legacyAggregate.residuals == std::vector<double>{1.0} &&
@@ -505,6 +569,7 @@ int main() {
     try {
         lossContracts();
         fittingAndSelectionUseObjective();
+        customScalarLossSearchAndCoordinateFit();
         huberLmComparisonAndBudget();
         informationCriteria();
         std::cout << "mathematical objective and information-criterion contracts passed\n";

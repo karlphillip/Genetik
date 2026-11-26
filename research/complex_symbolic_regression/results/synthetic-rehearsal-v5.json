@@ -1,0 +1,42 @@
+{
+  "adapter_sha256": "fdafb80aa6a43999b1a4a1cd0618a431910608ed387a1d9f5482c02194933139",
+  "api_source_sha256": "e03e46143ee145081575b0fdce08fd1373e51f15d142bd54cfa37ffb30a56f83",
+  "binary_sha256": "e3ea76e6c8d00010d1bb175aa92aa2c208fb3bfba0bca9da269d001690a324db",
+  "mode": "synthetic",
+  "records": [
+    {
+      "captured_bytes": 957,
+      "case": "affine",
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/complex/genetik_complex_autonomous_comparison",
+        "affine",
+        "401",
+        "synthetic"
+      ],
+      "returncode": 0,
+      "seed": 401,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"case\":\"affine\",\"seed\":401,\"synthetic\":true,\"baseline_expression\":\"(1.0 - cos(cos(cos(cos((-1.0))))))\",\"baseline_structure_recovery\":false,\"baseline_heldout_rmse\":1.2894411739929184,\"baseline_candidate_evaluations\":1312,\"baseline_training_rows\":15744,\"candidate_search_expression_matches_baseline\":true,\"candidate_topology\":\"0.0\",\"candidate_structure_recovery\":false,\"complex_fit_stop\":\"gradient_tolerance\",\"complex_fit_objective_evaluations\":7,\"complex_fit_topologies\":5,\"complex_fit_total_objective_evaluations\":11,\"complex_fit_training_loss\":3.6348712576934041e-23,\"candidate_heldout_rmse\":1.2650065836446522,\"candidate_complex_coefficients\":[[0.19999999999460752,0.09999999999730376]],\"diagnostic_supplied_topology\":\"1.0*x0+1.0\",\"diagnostic_training_loss\":4.9465905679965827e-31,\"diagnostic_heldout_rmse\":1.2650065836455817,\"diagnostic_complex_coefficients\":[[6.0458193543206356e-16,2.0191698783976958e-17],[0.20000000000000051,0.099999999999999936]]}",
+      "wall_seconds": 0.6506459929987614
+    },
+    {
+      "captured_bytes": 968,
+      "case": "nonlinear",
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/complex/genetik_complex_autonomous_comparison",
+        "nonlinear",
+        "401",
+        "synthetic"
+      ],
+      "returncode": 0,
+      "seed": 401,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"case\":\"nonlinear\",\"seed\":401,\"synthetic\":true,\"baseline_expression\":\"(1.0 - cos(cos(cos(cos((-1.0))))))\",\"baseline_structure_recovery\":false,\"baseline_heldout_rmse\":0.45472135476347542,\"baseline_candidate_evaluations\":1312,\"baseline_training_rows\":15744,\"candidate_search_expression_matches_baseline\":true,\"candidate_topology\":\"0.0\",\"candidate_structure_recovery\":false,\"complex_fit_stop\":\"gradient_tolerance\",\"complex_fit_objective_evaluations\":7,\"complex_fit_topologies\":5,\"complex_fit_total_objective_evaluations\":11,\"complex_fit_training_loss\":3.6348712576934041e-23,\"candidate_heldout_rmse\":0.52976610500033106,\"candidate_complex_coefficients\":[[0.19999999999460752,0.09999999999730376]],\"diagnostic_supplied_topology\":\"1.0*cos(1.0*x0)\",\"diagnostic_training_loss\":2.1812458071261422e-23,\"diagnostic_heldout_rmse\":0.52976610499884402,\"diagnostic_complex_coefficients\":[[0.20000000000048396,0.10000000000019765],[7.8309208438825924e-06,-4.7115843782773869e-07]]}",
+      "wall_seconds": 0.522548419998202
+    }
+  ],
+  "source_sha256": "b2d365efd556d210ff98049174e8bb2a08734bf3f0ff18e633a2c3738f42c52f",
+  "spec_sha256": "ae278a9c14f1abab6df64e90f9ca4dcf02b5ae1f559bc75c2ec198d84e8bd9ed"
+}

@@ -7,15 +7,19 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <functional>
+#include <memory>
 #include <numeric>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 struct ParetoSelectionWork {
     std::uint64_t dominanceComparisons = 0;
     std::uint64_t selectionComparisons = 0;
+    std::uint64_t objectiveVectorEvaluations = 0;
     std::size_t peakEstimatedMemoryBytes = 0;
     bool operator==(const ParetoSelectionWork&) const = default;
 };
@@ -25,12 +29,89 @@ public:
     explicit ParetoSelectionLimitExceeded(const char* message) : std::runtime_error(message) {}
 };
 
+struct ExpressionComplexityCosts {
+    ExpressionComplexityCosts(double operators = 1.0, double variables = 1.0,
+                              double constants = 1.0,
+                              std::vector<std::pair<ExpressionKind, double>> individual = {})
+        : operatorCost(operators), variableCost(variables), constantCost(constants),
+          individualOperatorCosts(std::move(individual)) {}
+    double operatorCost = 1.0;
+    double variableCost = 1.0;
+    double constantCost = 1.0;
+    std::vector<std::pair<ExpressionKind, double>> individualOperatorCosts;
+
+    void validate() const {
+        for (const double cost : {operatorCost, variableCost, constantCost})
+            if (!std::isfinite(cost) || cost < 0.0)
+                throw std::invalid_argument(
+                    "expression complexity costs must be finite and nonnegative");
+        for (std::size_t i = 0; i < individualOperatorCosts.size(); ++i) {
+            const auto [kind, cost] = individualOperatorCosts[i];
+            if (expressionArity(kind) == 0 || !std::isfinite(cost) || cost < 0.0 ||
+                std::find_if(individualOperatorCosts.begin(), individualOperatorCosts.begin() + i,
+                             [kind](const auto& entry) { return entry.first == kind; }) !=
+                    individualOperatorCosts.begin() + i)
+                throw std::invalid_argument("invalid or duplicate individual operator cost");
+        }
+    }
+
+    double cost(ExpressionKind kind) const {
+        const auto found =
+            std::find_if(individualOperatorCosts.begin(), individualOperatorCosts.end(),
+                         [kind](const auto& entry) { return entry.first == kind; });
+        return found == individualOperatorCosts.end() ? operatorCost : found->second;
+    }
+};
+
+inline long double configuredExpressionComplexity(const Expression& expression,
+                                                  const ExpressionComplexityCosts& costs) {
+    costs.validate();
+    long double result = 0.0L;
+    for (const auto& node : expression.nodes()) {
+        const auto arity = expressionArity(node.kind());
+        const long double nodeCost =
+            arity == 0 ? (node.kind() == ExpressionKind::Variable ? costs.variableCost
+                                                                  : costs.constantCost)
+                       : costs.cost(node.kind());
+        if (nodeCost > std::numeric_limits<long double>::max() - result)
+            return std::numeric_limits<long double>::max();
+        result += nodeCost;
+    }
+    return result;
+}
+
+struct ConfiguredRegressionOrdering {
+    explicit ConfiguredRegressionOrdering(ExpressionComplexityCosts costs = {}) : costs_(costs) {
+        costs_.validate();
+    }
+    void validateDirection(ObjectiveDirection direction) const {
+        if (direction != ObjectiveDirection::Minimize)
+            throw std::invalid_argument("regression requires minimization");
+    }
+    template <class Candidate>
+    bool better(const Candidate& left, const Candidate& right, ObjectiveDirection direction) const {
+        validateDirection(direction);
+        if (left.fitness() != right.fitness())
+            return left.fitness() < right.fitness();
+        const auto leftCost = configuredExpressionComplexity(left.expression(), costs_);
+        const auto rightCost = configuredExpressionComplexity(right.expression(), costs_);
+        if (leftCost != rightCost)
+            return leftCost < rightCost;
+        return left.text() < right.text();
+    }
+
+private:
+    ExpressionComplexityCosts costs_;
+};
+
 // Optional symbolic-regression ordering policy. Prediction loss remains the
 // candidate fitness; this policy only supplies an alternate selection score.
 struct ComplexityPenaltyOrdering {
-    explicit ComplexityPenaltyOrdering(double penalty) : penalty_(penalty) {
+    explicit ComplexityPenaltyOrdering(double penalty, ExpressionComplexityCosts costs = {})
+        : penalty_(penalty), costs_(costs) {
         if (!std::isfinite(penalty_) || penalty_ < 0.0)
             throw std::invalid_argument("complexity penalty must be finite and nonnegative");
+        costs_.validate();
     }
 
     void validateDirection(ObjectiveDirection direction) const {
@@ -38,10 +119,9 @@ struct ComplexityPenaltyOrdering {
             throw std::invalid_argument("regression requires minimization");
     }
 
-    template <class Candidate>
-    long double selectionScore(const Candidate& candidate) const noexcept {
+    template <class Candidate> long double selectionScore(const Candidate& candidate) const {
         const auto penaltyCost = static_cast<long double>(penalty_) *
-                                 static_cast<long double>(candidate.expression().nodeCount());
+                                 configuredExpressionComplexity(candidate.expression(), costs_);
         const auto score = static_cast<long double>(candidate.fitness()) + penaltyCost;
         return std::isfinite(score) ? score : std::numeric_limits<long double>::max();
     }
@@ -55,24 +135,39 @@ struct ComplexityPenaltyOrdering {
             return leftScore < rightScore;
         if (left.fitness() != right.fitness())
             return left.fitness() < right.fitness();
-        if (left.expression().nodeCount() != right.expression().nodeCount())
-            return left.expression().nodeCount() < right.expression().nodeCount();
+        const auto leftCost = configuredExpressionComplexity(left.expression(), costs_);
+        const auto rightCost = configuredExpressionComplexity(right.expression(), costs_);
+        if (leftCost != rightCost)
+            return leftCost < rightCost;
         return left.text() < right.text();
     }
 
 private:
     double penalty_;
+    ExpressionComplexityCosts costs_;
 };
 
 // NSGA-II-style nondominated sorting, crowding-based survival, and rank/crowding
 // parent weights. All tie breaks are stable and use expression text last.
 struct ParetoRegressionOrdering {
-    ParetoRegressionOrdering(std::uint64_t maximumComparisons,
-                             std::size_t maximumEstimatedMemoryBytes, ParetoSelectionWork& work)
+    ParetoRegressionOrdering(
+        std::uint64_t maximumComparisons, std::size_t maximumEstimatedMemoryBytes,
+        ParetoSelectionWork& work, ExpressionComplexityCosts costs = {},
+        std::shared_ptr<const RegressionProblem> problem = {},
+        std::function<std::vector<double>(const Expression&, const RegressionProblem&)> objectives =
+            {},
+        std::size_t maximumObjectives = 4)
         : maximumComparisons_(maximumComparisons),
-          maximumEstimatedMemoryBytes_(maximumEstimatedMemoryBytes), work_(&work) {
+          maximumEstimatedMemoryBytes_(maximumEstimatedMemoryBytes), work_(&work),
+          problem_(std::move(problem)), objectives_(std::move(objectives)),
+          maximumObjectives_(maximumObjectives) {
         if (!maximumComparisons_ || !maximumEstimatedMemoryBytes_)
             throw std::invalid_argument("Pareto work and memory limits must be positive");
+        if (objectives_ && (!problem_ || !maximumObjectives_ || maximumObjectives_ > 4))
+            throw std::invalid_argument(
+                "Pareto objective vectors require a problem and a limit in [1,4]");
+        costs_ = costs;
+        costs_.validate();
     }
 
     void validateDirection(ObjectiveDirection direction) const {
@@ -89,8 +184,10 @@ struct ParetoRegressionOrdering {
             return left.text() < right.text();
         if (left.fitness() != right.fitness())
             return left.fitness() < right.fitness();
-        if (left.expression().nodeCount() != right.expression().nodeCount())
-            return left.expression().nodeCount() < right.expression().nodeCount();
+        const auto leftComplexity = configuredExpressionComplexity(left.expression(), costs_);
+        const auto rightComplexity = configuredExpressionComplexity(right.expression(), costs_);
+        if (leftComplexity != rightComplexity)
+            return leftComplexity < rightComplexity;
         return left.text() < right.text();
     }
 
@@ -300,6 +397,12 @@ struct ParetoRegressionOrdering {
         return result;
     }
 
+    template <class Candidate> std::vector<double> objectiveValues(const Candidate& candidate) {
+        if (!objectives_)
+            return {candidate.fitness()};
+        return vectorObjectives(candidate);
+    }
+
 private:
     struct RankedFronts {
         std::vector<std::vector<std::size_t>> fronts;
@@ -330,6 +433,15 @@ private:
         if (slots && perCandidate > (std::numeric_limits<std::size_t>::max() - bytes) / slots)
             throw ParetoSelectionLimitExceeded("Pareto memory estimate overflow");
         bytes += slots * perCandidate;
+        if (objectives_) {
+            constexpr auto objectiveOverhead =
+                sizeof(std::vector<double>) + sizeof(std::string) + 64;
+            const auto each = maximumObjectives_ * sizeof(double) + objectiveOverhead;
+            if (slots && each > (std::numeric_limits<std::size_t>::max() - bytes) / slots)
+                throw ParetoSelectionLimitExceeded(
+                    "Pareto objective-vector memory estimate overflow");
+            bytes += slots * each;
+        }
         auto addExpressionStorage = [&](const auto& candidates) {
             for (const auto& candidate : candidates) {
                 const auto nodes = candidate.expression().nodeCount();
@@ -387,8 +499,20 @@ private:
             return false;
         if (right.fitnessState() != FitnessState::Valid)
             return true;
-        const auto leftComplexity = left.expression().nodeCount();
-        const auto rightComplexity = right.expression().nodeCount();
+        if (objectives_) {
+            const auto a = vectorObjectives(left), b = vectorObjectives(right);
+            bool noWorse = configuredExpressionComplexity(left.expression(), costs_) <=
+                           configuredExpressionComplexity(right.expression(), costs_);
+            bool strictlyBetter = configuredExpressionComplexity(left.expression(), costs_) <
+                                  configuredExpressionComplexity(right.expression(), costs_);
+            for (std::size_t i = 0; i < a.size(); ++i) {
+                noWorse = noWorse && a[i] <= b[i];
+                strictlyBetter = strictlyBetter || a[i] < b[i];
+            }
+            return noWorse && strictlyBetter;
+        }
+        const auto leftComplexity = configuredExpressionComplexity(left.expression(), costs_);
+        const auto rightComplexity = configuredExpressionComplexity(right.expression(), costs_);
         const bool noWorse = left.fitness() <= right.fitness() && leftComplexity <= rightComplexity;
         const bool strictlyBetter =
             left.fitness() < right.fitness() || leftComplexity < rightComplexity;
@@ -397,6 +521,8 @@ private:
 
     template <class Candidate>
     RankedFronts rankAndCrowding(const std::vector<Candidate>& candidates) {
+        objectiveCache_.clear();
+        objectiveCount_ = 0;
         const auto count = candidates.size();
         RankedFronts result;
         result.crowding.assign(count, 0.0);
@@ -447,24 +573,52 @@ private:
                 crowding[index] = std::numeric_limits<double>::infinity();
             return;
         }
-        for (unsigned objective = 0; objective < 2; ++objective) {
+        const auto dimensions = objectives_ ? objectiveCount_ + 1 : 2;
+        for (std::size_t objective = 0; objective < dimensions; ++objective) {
             auto ordered = front;
             std::stable_sort(
                 ordered.begin(), ordered.end(), [&](std::size_t left, std::size_t right) {
                     chargeComparison(false);
-                    if (objective == 0 && candidates[left].fitness() != candidates[right].fitness())
-                        return candidates[left].fitness() < candidates[right].fitness();
-                    if (objective == 1 && candidates[left].expression().nodeCount() !=
-                                              candidates[right].expression().nodeCount())
-                        return candidates[left].expression().nodeCount() <
-                               candidates[right].expression().nodeCount();
+                    if (objectives_) {
+                        const auto a = vectorObjectives(candidates[left]);
+                        const auto b = vectorObjectives(candidates[right]);
+                        const auto av = objective < objectiveCount_
+                                            ? static_cast<long double>(a[objective])
+                                            : configuredExpressionComplexity(
+                                                  candidates[left].expression(), costs_);
+                        const auto bv = objective < objectiveCount_
+                                            ? static_cast<long double>(b[objective])
+                                            : configuredExpressionComplexity(
+                                                  candidates[right].expression(), costs_);
+                        if (av != bv)
+                            return av < bv;
+                    } else {
+                        if (objective == 0 &&
+                            candidates[left].fitness() != candidates[right].fitness())
+                            return candidates[left].fitness() < candidates[right].fitness();
+                        if (objective == 1) {
+                            const auto leftCost = configuredExpressionComplexity(
+                                candidates[left].expression(), costs_);
+                            const auto rightCost = configuredExpressionComplexity(
+                                candidates[right].expression(), costs_);
+                            if (leftCost != rightCost)
+                                return leftCost < rightCost;
+                        }
+                    }
                     return better(candidates[left], candidates[right],
                                   ObjectiveDirection::Minimize);
                 });
             const auto value = [&](std::size_t index) {
+                if (objectives_) {
+                    const auto values = vectorObjectives(candidates[index]);
+                    return objective < objectiveCount_
+                               ? static_cast<long double>(values[objective])
+                               : configuredExpressionComplexity(candidates[index].expression(),
+                                                                costs_);
+                }
                 return objective == 0
                            ? static_cast<long double>(candidates[index].fitness())
-                           : static_cast<long double>(candidates[index].expression().nodeCount());
+                           : configuredExpressionComplexity(candidates[index].expression(), costs_);
             };
             const auto low = value(ordered.front());
             const auto high = value(ordered.back());
@@ -487,7 +641,32 @@ private:
         }
     }
 
+    template <class Candidate> std::vector<double> vectorObjectives(const Candidate& candidate) {
+        const auto key = candidate.text();
+        if (const auto found = objectiveCache_.find(key); found != objectiveCache_.end())
+            return found->second;
+        if (work_->objectiveVectorEvaluations == std::numeric_limits<std::uint64_t>::max())
+            throw ParetoSelectionLimitExceeded("Pareto objective-vector counter overflow");
+        ++work_->objectiveVectorEvaluations;
+        auto values = objectives_(candidate.expression(), *problem_);
+        if (values.empty() || values.size() > maximumObjectives_ ||
+            (objectiveCount_ && values.size() != objectiveCount_))
+            throw std::invalid_argument(
+                "Pareto objective callback returned an empty or inconsistent vector");
+        for (const auto value : values)
+            if (!std::isfinite(value))
+                throw std::invalid_argument("Pareto objective values must be finite");
+        objectiveCount_ = values.size();
+        objectiveCache_.emplace(key, values);
+        return values;
+    }
+
     std::uint64_t maximumComparisons_;
     std::size_t maximumEstimatedMemoryBytes_;
     ParetoSelectionWork* work_;
+    ExpressionComplexityCosts costs_{};
+    std::shared_ptr<const RegressionProblem> problem_;
+    std::function<std::vector<double>(const Expression&, const RegressionProblem&)> objectives_;
+    std::size_t maximumObjectives_ = 4, objectiveCount_ = 0;
+    std::unordered_map<std::string, std::vector<double>> objectiveCache_;
 };

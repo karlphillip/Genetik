@@ -1,0 +1,249 @@
+{
+  "adapter_sha256": "1655fbf5529f0238b0378ab817f0a01e6ac2b9ba907c3951931edc205f0ab911",
+  "binary_sha256": "490c0a83beb4412ecf69a58a927e66eaf37d64a90d5dc44c99958e6872a68724",
+  "mode": "target",
+  "records": [
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "harmonic",
+        "101",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 101,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"system\":\"harmonic\",\"seed\":101,\"stop\":\"evaluation_budget\",\"expression\":\"((((0.5 - (x1 * x1)) * ((-2.0) + (-2.0))) - (x1 * x1)) * (x1 * x1))\",\"valid\":true,\"nodes\":17,\"candidate_evaluations\":640,\"training_rows\":349440,\"generator_rk4_refinement_error\":6.1034994552631315e-08,\"heldout_within_fraction\":0.68449688836196054,\"heldout_separation\":7.1882709257253596,\"heldout_metrics_valid\":true}",
+      "system": "harmonic",
+      "wall_seconds": 0.09479516599822091
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "harmonic",
+        "211",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 211,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"system\":\"harmonic\",\"seed\":211,\"stop\":\"evaluation_budget\",\"expression\":\"(0.5 + (x1 + (1.0 - x1)))\",\"valid\":true,\"nodes\":7,\"candidate_evaluations\":640,\"training_rows\":349440,\"generator_rk4_refinement_error\":6.1034994552631315e-08,\"heldout_within_fraction\":1,\"heldout_separation\":0,\"heldout_metrics_valid\":true}",
+      "system": "harmonic",
+      "wall_seconds": 0.055633535997912986
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "harmonic",
+        "307",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 307,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"system\":\"harmonic\",\"seed\":307,\"stop\":\"evaluation_budget\",\"expression\":\"((((-2.0) - (-2.0)) - (x1 + (x1 * ((-1.0) * (x1 * x1))))) * x1)\",\"valid\":true,\"nodes\":15,\"candidate_evaluations\":640,\"training_rows\":349440,\"generator_rk4_refinement_error\":6.1034994552631315e-08,\"heldout_within_fraction\":0.70297973266946412,\"heldout_separation\":2.0836453633365908,\"heldout_metrics_valid\":true}",
+      "system": "harmonic",
+      "wall_seconds": 0.08339378999880864
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "quartic",
+        "101",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 101,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"system\":\"quartic\",\"seed\":101,\"stop\":\"evaluation_budget\",\"expression\":\"(((x1 * x1) - (-0.5)) - ((-0.5) + (1.0 - (x0 * x0))))\",\"valid\":true,\"nodes\":13,\"candidate_evaluations\":640,\"training_rows\":349440,\"generator_rk4_refinement_error\":0.00014217458745128926,\"heldout_within_fraction\":0.2070510039689846,\"heldout_separation\":6.0266136061959221,\"heldout_metrics_valid\":true}",
+      "system": "quartic",
+      "wall_seconds": 0.07761559600112378
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "quartic",
+        "211",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 211,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"system\":\"quartic\",\"seed\":211,\"stop\":\"evaluation_budget\",\"expression\":\"(x0 + (((1.0 - (-2.0)) - (2.0 - 2.0)) - x0))\",\"valid\":true,\"nodes\":11,\"candidate_evaluations\":640,\"training_rows\":349440,\"generator_rk4_refinement_error\":0.00014217458745128926,\"heldout_within_fraction\":1,\"heldout_separation\":0,\"heldout_metrics_valid\":true}",
+      "system": "quartic",
+      "wall_seconds": 0.09743081700071343
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "quartic",
+        "307",
+        "target"
+      ],
+      "returncode": 0,
+      "seed": 307,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"system\":\"quartic\",\"seed\":307,\"stop\":\"evaluation_budget\",\"expression\":\"((((-1.0) + 1.0) - x1) * x1)\",\"valid\":true,\"nodes\":7,\"candidate_evaluations\":640,\"training_rows\":349440,\"generator_rk4_refinement_error\":0.00014217458745128926,\"heldout_within_fraction\":0.37278897914703862,\"heldout_separation\":5.2396221705773396,\"heldout_metrics_valid\":true}",
+      "system": "quartic",
+      "wall_seconds": 0.07653976100118598
+    }
+  ],
+  "selection_artifact": "research/conservation_discovery/results/target-runs.selected.json",
+  "selection_artifact_sha256": "1a73c501bba382c62dbb353e2d3b99a9d3374f567b734fd927c9cfad7c0eba50",
+  "spec_sha256": "0196e51a798372486a45f285b4623fe2d6ef1b78ab66de7cca78b51c75138d41",
+  "verifications": [
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "verify",
+        "harmonic",
+        "((((0.5 - (x1 * x1)) * ((-2.0) + (-2.0))) - (x1 * x1)) * (x1 * x1))"
+      ],
+      "returncode": 0,
+      "seed": 101,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"expression\":\"((((0.5 - (x1 * x1)) * ((-2.0) + (-2.0))) - (x1 * x1)) * (x1 * x1))\",\"nonconstant\":true,\"lie_derivative_identically_zero\":false,\"reference_law_affine_recovery\":false}",
+      "system": "harmonic",
+      "verification": {
+        "expression": "((((0.5 - (x1 * x1)) * ((-2.0) + (-2.0))) - (x1 * x1)) * (x1 * x1))",
+        "lie_derivative_identically_zero": false,
+        "nonconstant": true,
+        "reference_law_affine_recovery": false
+      },
+      "wall_seconds": 0.006189628998981789
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "verify",
+        "harmonic",
+        "(0.5 + (x1 + (1.0 - x1)))"
+      ],
+      "returncode": 0,
+      "seed": 211,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"expression\":\"(0.5 + (x1 + (1.0 - x1)))\",\"nonconstant\":false,\"lie_derivative_identically_zero\":true,\"reference_law_affine_recovery\":false}",
+      "system": "harmonic",
+      "verification": {
+        "expression": "(0.5 + (x1 + (1.0 - x1)))",
+        "lie_derivative_identically_zero": true,
+        "nonconstant": false,
+        "reference_law_affine_recovery": false
+      },
+      "wall_seconds": 0.00523686900123721
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "verify",
+        "harmonic",
+        "((((-2.0) - (-2.0)) - (x1 + (x1 * ((-1.0) * (x1 * x1))))) * x1)"
+      ],
+      "returncode": 0,
+      "seed": 307,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"expression\":\"((((-2.0) - (-2.0)) - (x1 + (x1 * ((-1.0) * (x1 * x1))))) * x1)\",\"nonconstant\":true,\"lie_derivative_identically_zero\":false,\"reference_law_affine_recovery\":false}",
+      "system": "harmonic",
+      "verification": {
+        "expression": "((((-2.0) - (-2.0)) - (x1 + (x1 * ((-1.0) * (x1 * x1))))) * x1)",
+        "lie_derivative_identically_zero": false,
+        "nonconstant": true,
+        "reference_law_affine_recovery": false
+      },
+      "wall_seconds": 0.004521041999396402
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "verify",
+        "quartic",
+        "(((x1 * x1) - (-0.5)) - ((-0.5) + (1.0 - (x0 * x0))))"
+      ],
+      "returncode": 0,
+      "seed": 101,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"expression\":\"(((x1 * x1) - (-0.5)) - ((-0.5) + (1.0 - (x0 * x0))))\",\"nonconstant\":true,\"lie_derivative_identically_zero\":false,\"reference_law_affine_recovery\":false}",
+      "system": "quartic",
+      "verification": {
+        "expression": "(((x1 * x1) - (-0.5)) - ((-0.5) + (1.0 - (x0 * x0))))",
+        "lie_derivative_identically_zero": false,
+        "nonconstant": true,
+        "reference_law_affine_recovery": false
+      },
+      "wall_seconds": 0.004767225000250619
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "verify",
+        "quartic",
+        "(x0 + (((1.0 - (-2.0)) - (2.0 - 2.0)) - x0))"
+      ],
+      "returncode": 0,
+      "seed": 211,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"expression\":\"(x0 + (((1.0 - (-2.0)) - (2.0 - 2.0)) - x0))\",\"nonconstant\":false,\"lie_derivative_identically_zero\":true,\"reference_law_affine_recovery\":false}",
+      "system": "quartic",
+      "verification": {
+        "expression": "(x0 + (((1.0 - (-2.0)) - (2.0 - 2.0)) - x0))",
+        "lie_derivative_identically_zero": true,
+        "nonconstant": false,
+        "reference_law_affine_recovery": false
+      },
+      "wall_seconds": 0.004502801999478834
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "verify",
+        "quartic",
+        "((((-1.0) + 1.0) - x1) * x1)"
+      ],
+      "returncode": 0,
+      "seed": 307,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"expression\":\"((((-1.0) + 1.0) - x1) * x1)\",\"nonconstant\":true,\"lie_derivative_identically_zero\":false,\"reference_law_affine_recovery\":false}",
+      "system": "quartic",
+      "verification": {
+        "expression": "((((-1.0) + 1.0) - x1) * x1)",
+        "lie_derivative_identically_zero": false,
+        "nonconstant": true,
+        "reference_law_affine_recovery": false
+      },
+      "wall_seconds": 0.005811700000776909
+    },
+    {
+      "command": [
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/genetik-priorities-2026-11-25/build/conservation/genetik_conservation_discovery",
+        "damped",
+        "0",
+        "target"
+      ],
+      "control": {
+        "energy_change": -0.6878681723683,
+        "energy_end": 0.23872443765638823,
+        "energy_start": 0.9265926100246882,
+        "system": "damped"
+      },
+      "returncode": 0,
+      "seed": 0,
+      "status": "completed",
+      "stderr": "",
+      "stdout": "{\"system\":\"damped\",\"energy_start\":0.92659261002468818,\"energy_end\":0.23872443765638823,\"energy_change\":-0.6878681723683}",
+      "system": "damped",
+      "wall_seconds": 0.0040016700004343875
+    }
+  ]
+}

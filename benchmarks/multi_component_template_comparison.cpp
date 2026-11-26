@@ -99,9 +99,9 @@ int main() {
         bool templateStructure = false;
         if (templateResult.best)
             templateStructure =
-                domain->components(templateResult.best->expression())[0].sameRepresentation(
+                domain->componentsVector(templateResult.best->expression())[0].sameRepresentation(
                     referenceComponents[0]) &&
-                domain->components(templateResult.best->expression())[1].sameRepresentation(
+                domain->componentsVector(templateResult.best->expression())[1].sameRepresentation(
                     referenceComponents[1]);
         report(seed, "two_component_template", templateResult, *heldOut, templateStructure);
 

@@ -183,7 +183,34 @@ build/release/genetik_scalar_template_campaign --output out/runs/templates/my-sm
 
 [All five outcomes and separate fitting evidence](SCALAR_TEMPLATE_RESULTS.md) and
 [executed qualification](SCALAR_TEMPLATE_QUALIFICATION.md) are recorded separately.
-Repeated holes, multiple holes, shared parameters, typed templates, units, general
-domain constraints, template text syntax/serialization and formula-seeded search
-remain outside this phase. Canonical complete exports use the existing parser with
-sufficient limits; no algebraic rewrite or global-equivalence claim is implied.
+Typed templates, units, general domain constraints, template text
+syntax/serialization and formula-seeded search remain outside this phase.
+Canonical complete exports use the existing parser with sufficient limits; no
+algebraic rewrite or global-equivalence claim is implied.
+
+## Bounded multi-site and shared-function follow-up
+
+`<MultiComponentTemplateRegression.hpp>` retains the original two-site overloads
+and also accepts vectors of roots, component limits, per-site variable/operator
+allowlists and per-site grammars. Each site has its own restrictions. Component results are vector-like; for two-site callers they convert to the historical two-element array. Materialized
+expressions remain ordinary owned postfix trees, and the whole expanded scaffold
+is checked against the model limits. The fixed scaffold remains caller supplied.
+Component extraction provides separate attribution for each unknown subtree.
+
+`SharedLearnableFunctionTemplate` supports named calls with distinct input
+expressions and a shared fitted parameter set for the form `a*h(t)`. In this first
+bounded implementation, `a` is one selected direct constant factor and `h` may
+use only the bound argument and unary/binary expression operators. Calls are
+expanded for ordinary prediction and resource validation. `fit` supports ordinary
+MSE and analytically estimates the one shared coefficient from all training rows;
+it rejects other configured losses and unidentifiable inputs. A varied body is
+provided as a new validated template, so every call expands from the same changed
+body. The expanded `Expression` is a snapshot with numerically equal coefficient
+copies; subsequent independent edits to that snapshot do not preserve parameter
+identity. Use the named template API for shared fitting and body changes.
+
+The deterministic shared fit is `g(p)+g(q)` with `g(t)=a*t` and rows
+`(1,0)->2`, `(0,1)->6`: the single shared optimum is `a=4`, predictions are 4
+and 4, MSE is 4, and `(2,3)` predicts 20. Independent coefficients would have
+zero MSE. The API and three-site contracts are exercised by the installed
+[`multi_component_templates` quickstart](../examples/quickstarts/multi_component_templates.cpp).

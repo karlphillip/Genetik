@@ -81,6 +81,10 @@ void structuralContracts() {
     const auto extracted = scaffold.components(materialized);
     check(extracted[0].sameRepresentation(left) && extracted[1].sameRepresentation(right),
           "independent site identities survive replacement and extraction");
+    const std::array<Expression, 2> legacyExtracted = extracted;
+    check(legacyExtracted[0].sameRepresentation(left) &&
+              legacyExtracted[1].sameRepresentation(right),
+          "existing two-site array extraction callers remain source compatible");
     rejects(
         [&] {
             (void)MultiScalarExpressionTemplate(
@@ -244,12 +248,177 @@ void completeModelObjective() {
     if (result.stoppingReason == SearchStop::ExactTrainingFit)
         check(result.best->fitness() == 0.0, "exact stop reports zero complete-model loss");
 }
+
+void threeIndependentSites() {
+    const ExpressionLimits modelLimits{31, 10, 8.0, 40};
+    const auto source = parseExpression("x0+x1+x2", 3, {}, modelLimits);
+    const std::vector<std::size_t> roots{0, 1, 3};
+    const std::vector<ExpressionLimits> componentLimits{
+        {9, 5, 8.0, 10}, {7, 4, 8.0, 8}, {5, 3, 8.0, 2}};
+    const MultiScalarExpressionTemplate scaffold(source, roots, componentLimits, modelLimits);
+    std::vector<RegressionRow> rows;
+    for (double x : {-1.0, -0.5, 0.5, 1.0})
+        for (double y : {-1.0, 0.0, 0.75})
+            for (double z : {-0.75, 0.25, 1.0})
+                rows.push_back({{x, y, z}, std::sin(x) + 3.0 * y + z * z});
+    const auto domain = MultiComponentTemplateProblem::create(
+        scaffold, RegressionProblem::create(rows, modelLimits),
+        std::vector<std::vector<std::size_t>>{{0}, {1}, {2}},
+        std::vector<std::vector<ExpressionKind>>{{ExpressionKind::Sin, ExpressionKind::Multiply},
+                                                 {ExpressionKind::Multiply},
+                                                 {ExpressionKind::Multiply}});
+    const std::vector<ExpressionGrammar> grammar = [] {
+        ExpressionGrammar a;
+        a.operators = {ExpressionKind::Sin, ExpressionKind::Multiply};
+        a.initialMaxDepth = 2;
+        a.mutationMaxDepth = 2;
+        a.constants = {1.0};
+        ExpressionGrammar b;
+        b.operators = {ExpressionKind::Multiply};
+        b.initialMaxDepth = 2;
+        b.mutationMaxDepth = 2;
+        b.constants = {1.0};
+        return std::vector<ExpressionGrammar>{a, b, b};
+    }();
+    const auto recovered = domain->materialize(std::vector<Expression>{
+        parseExpression("sin(x0)", 3, {}, modelLimits), parseExpression("x1*3", 3, {}, modelLimits),
+        parseExpression("x2*x2", 3, {}, modelLimits)});
+    check(domain->problem()->measure(recovered).loss.score() == 0.0,
+          "three independently recovered unknown components reproduce the target");
+    const auto parts = domain->components(recovered);
+    check(parts[0].toString() == "sin(x0)" && parts[1].toString() == "(x1 * 3.0)" &&
+              parts[2].toString() == "(x2 * x2)",
+          "component recovery is reported independently from the supplied scaffold");
+    rejects(
+        [&] {
+            (void)domain->materialize(
+                std::vector<Expression>{parseExpression("sin(x0)", 3, {}, modelLimits),
+                                        parseExpression("x1*3", 3, {}, modelLimits),
+                                        parseExpression("x2*(x2*(x2*x2))", 3, {}, modelLimits)});
+        },
+        "third component enforces its own stricter depth and work limits");
+
+    auto context = std::make_shared<const MultiComponentTemplateContext>(domain);
+    MultiComponentTemplateVariation variation(context, grammar);
+    std::mt19937 rng(73);
+    auto first = variation.initialize(rng);
+    auto second = variation.initialize(rng);
+    auto mutated = variation.mutation(first, 1.0f, rng);
+    ExpressionCandidate childA = first, childB = second;
+    variation.crossover(first, second, childA, childB, 1.0f, rng);
+    for (const auto* candidate : {&first, &second, &mutated, &childA, &childB})
+        (void)domain->components(candidate->expression());
+    check(variation.statistics().initializations == 2 &&
+              variation.statistics().mutationProposals > 0 &&
+              variation.statistics().crossoverProposals > 0,
+          "public generation, mutation and crossover exercise all three sites");
+
+    SymbolicRegressionConfig searchConfig;
+    searchConfig.population = 6;
+    searchConfig.elites = 1;
+    searchConfig.maxGenerationAttempts = 2;
+    searchConfig.maxEvaluations = 12;
+    searchConfig.maxTrainingLossAttempts = 12 * rows.size();
+    RandomContext searchRandom(99173);
+    const auto searched =
+        multiComponentTemplateRegression(domain, grammar, searchConfig, searchRandom);
+    check(searched.best.has_value(), "public three-site symbolic search returns a valid model");
+    (void)domain->components(searched.best->expression());
+
+    const auto initial = domain->materialize(std::vector<Expression>{
+        parseExpression("sin(x0)", 3, {}, modelLimits), parseExpression("x1*1", 3, {}, modelLimits),
+        parseExpression("x2*x2", 3, {}, modelLimits)});
+    TrainingObjective objective(domain->problem());
+    ConstantFitConfig fit;
+    fit.lower = 0.0;
+    fit.upper = 4.0;
+    fit.initialStep = 1.0;
+    fit.minimumStep = 1.0e-6;
+    fit.maxSweeps = 8;
+    fit.lossThreshold = 0.0;
+    const auto indices = MultiComponentTemplateParameters(domain).parameters(initial);
+    check(indices.size() == 1, "three-site fitter selects the one learnable coefficient");
+    const auto fitted = fitSelectedConstants(initial, objective, indices, fit);
+    const auto fittedParts = domain->components(fitted.expression);
+    check(fitted.loss.score() == 0.0 && fittedParts[1].toString() == "(x1 * 3.0)",
+          "public coordinate fitting recovers the second component coefficient");
+    std::cout << "three_site_recovery=" << parts[0].toString() << ';' << parts[1].toString() << ';'
+              << parts[2].toString()
+              << " mse=" << domain->problem()->measure(recovered).loss.score()
+              << " fitted=" << fittedParts[1].toString()
+              << " candidate_initializations=" << variation.statistics().initializations
+              << " mutation_proposals=" << variation.statistics().mutationProposals
+              << " crossover_proposals=" << variation.statistics().crossoverProposals
+              << " search_candidates=" << searched.candidateEvaluations
+              << " search_rows=" << searched.trainingWork.rowAttempts
+              << " fit_loss_attempts=" << objective.work().lossAttempts
+              << " fit_row_attempts=" << objective.work().rowAttempts << '\n';
+}
+
+void sharedNamedFunction() {
+    const ExpressionLimits expandedLimits{31, 10, 20.0, 40};
+    const auto body = parseExpression("2*x0", 2, {}, expandedLimits);
+    const auto p = Expression::variable(0, 2, expandedLimits);
+    const auto q = Expression::variable(1, 2, expandedLimits);
+    const SharedLearnableFunctionTemplate shared("g", body, 0, 0, {p, q}, expandedLimits);
+    const auto data =
+        RegressionProblem::create({{{1.0, 0.0}, 2.0}, {{0.0, 1.0}, 6.0}}, expandedLimits);
+    const auto fitted = shared.fit(*data, 0.0, 10.0);
+    check(fitted.parameterCount == 1 && shared.parameterCount() == 1 && fitted.coefficient == 4.0 &&
+              fitted.mse == 4.0,
+          "shared calls fit one coefficient with the unique least-squares optimum a=4");
+    const auto absoluteData = RegressionProblem::create(
+        {{{1.0, 0.0}, 2.0}, {{0.0, 1.0}, 6.0}}, expandedLimits, RegressionLoss::MeanAbsoluteError);
+    rejects([&] { (void)shared.fit(*absoluteData, 0.0, 10.0); },
+            "shared coefficient fitter explicitly rejects non-MSE losses");
+    check(fitted.expanded.evaluate(std::array<double, 2>{1.0, 0.0}).value() == 4.0 &&
+              fitted.expanded.evaluate(std::array<double, 2>{0.0, 1.0}).value() == 4.0 &&
+              fitted.expanded.evaluate(std::array<double, 2>{2.0, 3.0}).value() == 20.0,
+          "both distinct call inputs share the same fitted parameter and predict 4, 4, 20");
+    std::cout << "shared_function_fit name=" << shared.name()
+              << " coefficients=" << fitted.coefficient
+              << " parameter_count=" << fitted.parameterCount
+              << " predictions=4,4,20 mse=" << fitted.mse << " analytic_row_evaluations=6\n";
+
+    const auto variedBody = parseExpression("3*(x0*x0)", 2, {}, expandedLimits);
+    const auto varied = shared.varyBody(variedBody, 0);
+    const auto variedModel = varied.expanded(3.0);
+    check(
+        variedModel.evaluate(std::array<double, 2>{2.0, 3.0}).value() == 39.0 &&
+            variedModel.evaluate(std::array<double, 2>{2.0, 0.0}).value() == 12.0 &&
+            variedModel.evaluate(std::array<double, 2>{0.0, 3.0}).value() == 27.0,
+        "body variation is visible independently at each call while preserving shared coefficient");
+    rejects([&] { (void)SharedLearnableFunctionTemplate("g", body, 2, 0, {p, q}, expandedLimits); },
+            "shared function rejects an out-of-schema argument binding");
+    rejects(
+        [&] {
+            const auto wrongArityInput = Expression::variable(0, 1, expandedLimits);
+            (void)SharedLearnableFunctionTemplate("g", body, 0, 0, {p, wrongArityInput},
+                                                  expandedLimits);
+        },
+        "shared function rejects mismatched call input schemas");
+    rejects(
+        [&] {
+            const auto twoArgumentBody = parseExpression("2*(x0+x1)", 2, {}, expandedLimits);
+            (void)SharedLearnableFunctionTemplate("g", twoArgumentBody, 0, 0, {p, q},
+                                                  expandedLimits);
+        },
+        "shared function rejects an unbound second formal argument");
+    rejects(
+        [&] {
+            const auto tooSmall = ExpressionLimits{6, 10, 20.0, 40};
+            (void)SharedLearnableFunctionTemplate("g", body, 0, 0, {p, q}, tooSmall);
+        },
+        "shared function enforces limits on its fully expanded expression");
+}
 } // namespace
 
 int main() {
     try {
         structuralContracts();
         completeModelObjective();
+        threeIndependentSites();
+        sharedNamedFunction();
         std::cout << "multi-component template contracts passed\n";
         return EXIT_SUCCESS;
     } catch (const std::exception& error) {

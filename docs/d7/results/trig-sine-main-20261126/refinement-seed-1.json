@@ -1,0 +1,44 @@
+{
+  "seed": 1,
+  "expression_sha256": "6086d68400a122a9608291c8053590a52d7f4e714d369447b682ebc1f4a20c48",
+  "training_only": true,
+  "config": {
+    "maxLossAttempts": 64,
+    "maxSweeps": 32,
+    "maxProposals": 2048,
+    "lower": -8,
+    "upper": 8,
+    "initialStep": 1,
+    "minimumStep": 1e-06
+  },
+  "supervisor": {
+    "command": [
+      "taskset",
+      "-c",
+      "0",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/d7-trig-sine-current-20261126/out/build/d7-benchmark/run_genetik_refinement",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/d7-trig-sine-current-20261126/docs/d7/data/trig_sine-train-clean.csv",
+      "(sin((((x0 - exp((-3.9998290103113394))) * (((-0.35641673078372982) / (-1.8728758853113394)) * 0.0021241146886605833)) + ((x0 * 1.4995890767495386) + ((0.00017098968866058328 * (-0.50041092325046144)) + sin(exp((-1.1881319430333228))))))) * 2.0001709896886606)"
+    ],
+    "cwd": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/d7-trig-sine-current-20261126",
+    "cpu_affinity": [
+      0
+    ],
+    "worker_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "wall_cap_seconds": 120.0,
+    "memory_cap_gib": 6.0,
+    "outcome": "completed",
+    "exit_code": 0,
+    "wall_seconds": 0.08078606599883642,
+    "cpu_seconds": 0.0,
+    "peak_rss_gib": 0.0,
+    "peak_process_threads": 1,
+    "stdout": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/d7-trig-sine-current-20261126/out/logs/d7-current/refinement/seed-1/stdout.log",
+    "stderr": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/d7-trig-sine-current-20261126/out/logs/d7-current/refinement/seed-1/stderr.log"
+  },
+  "stdout": "initial_training_mse=1.34298e-08\nfinal_training_mse=1.34298e-08\nexpression=(sin((((x0 - exp((-3.9998290103113394))) * (((-0.35641673078372982) / (-1.8728758853113394)) * 0.0021241146886605833)) + ((x0 * 1.4995890767495386) + ((0.00017098968866058328 * (-0.50041092325046144)) + sin(exp((-1.1881319430333228))))))) * 2.0001709896886606)\nimproved=false\nstop=evaluation_limit\nloss_attempts=64\nproposals=64\nsweeps=4\n"
+}

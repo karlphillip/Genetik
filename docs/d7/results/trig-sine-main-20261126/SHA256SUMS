@@ -1,0 +1,13 @@
+20c010d5dbfd85434627e7f7e69557daeaf766d043a5b0b1451c53fd1ed54503  docs/d7/results/trig-sine-main-20261126/REPORT.md
+2ef57f1985ef9982a40759a9be01204b315b40979523c40cf367fdeb86c94f71  docs/d7/results/trig-sine-main-20261126/assessments-raw.jsonl
+7977b7a8ab722ababed3caf71d9ee2b9b2d4aaa4c9da660399e9ecb32912884f  docs/d7/results/trig-sine-main-20261126/assessments.jsonl
+56e3cc4c768b3629599a00e89edabed3d228dbc1fe097932a035099898d53b75  docs/d7/results/trig-sine-main-20261126/frozen-candidates.jsonl
+e5963be8fd0a94d234a6494bff0b0fa342ac2cba24fe3ac35ee9ad7402dfffab  docs/d7/results/trig-sine-main-20261126/missing-candidates.jsonl
+af819321bb4992568dcf53aaac24b92f399f8c74645620cf9b43881c33d9ec6e  docs/d7/results/trig-sine-main-20261126/raw-evidence.sha256
+69eca1cb4bddc261d8af26533d62a62037e42cf4749a0be5fa0825e0f2c49493  docs/d7/results/trig-sine-main-20261126/refinement-assessments.jsonl
+96430b308467cab332f25ce3d8f77faee72b898acfdd54a4e23bdd4e027dd512  docs/d7/results/trig-sine-main-20261126/refinement-seed-0.json
+9b9febe7dae27b8adc1f10d70cc9a77b605777f0f71988de3e28ab08af6e9942  docs/d7/results/trig-sine-main-20261126/refinement-seed-1.json
+3295166057e24c1442421a9ca2816795b38fccf7fb115fb9feaaa6b7a28ec3a6  docs/d7/results/trig-sine-main-20261126/run-records.jsonl
+15549f0b854e1a755b76d5b87f65db402b9ce2c4f5d0661dafa1ee1bc939187c  docs/d7/results/trig-sine-main-20261126/scorecard.json
+2c3ba6abd98ed55af8ac86fe0938e61b3879b898b51d18e9c1a4a0d34d710cf1  docs/d7/results/trig-sine-main-20261126/synthetic-capture-rehearsal.json
+d7749c41e9bf2b528b7e1b160b188f077fca670267a0dd85bff9b64bf4b4ad7b  docs/d7/results/trig-sine-main-20261126/synthetic-capture-runs.jsonl

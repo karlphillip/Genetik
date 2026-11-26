@@ -1,0 +1,72 @@
+{
+  "heldout_formula": "y=x0+0.25",
+  "heldout_is_distinct": true,
+  "preserved_setup_failure": {
+    "attempt": 0,
+    "evidence_run_directory": "out/logs/d7-current/preflight/Genetik/engineering_smoke/clean/seed-42/attempt-00",
+    "framework": "Genetik",
+    "reason": "The first direct run_one rehearsal had not materialized the protocol 64-row synthetic CSV; the adapter exited 2 with cannot open training CSV. No search process ran. The corrected rehearsal created the frozen synthetic CSV and captured the candidate on attempt 1.",
+    "status": "adapter_error_before_search"
+  },
+  "rows": [
+    {
+      "assessment_points": 9,
+      "assessment_sha256": "a804b57fed27a5667babad79c6a0581a8ab270f88e71e1e1ceb9572d6013aa5c",
+      "candidate_captured": true,
+      "expression": "((((-8.2810437618263677e-08) / (x0 / (log((x0 / x0)) - x0))) + x0) + 0.24999991718956238)",
+      "framework": "Genetik",
+      "metrics": {
+        "depth": 8,
+        "invalid_predictions": 1,
+        "max_abs_error": null,
+        "max_relative_error": null,
+        "nodes": 14,
+        "normalized_rmse": null,
+        "relative_error_samples": 0,
+        "rmse": null
+      },
+      "process_status": "completed",
+      "seed": 42
+    },
+    {
+      "assessment_points": 9,
+      "assessment_sha256": "a804b57fed27a5667babad79c6a0581a8ab270f88e71e1e1ceb9572d6013aa5c",
+      "candidate_captured": true,
+      "expression": "x0 + 0.25",
+      "framework": "PySR",
+      "metrics": {
+        "depth": 2,
+        "invalid_predictions": 0,
+        "max_abs_error": 0.0,
+        "max_relative_error": 0.0,
+        "nodes": 3,
+        "normalized_rmse": 0.0,
+        "relative_error_samples": 8,
+        "rmse": 0.0
+      },
+      "process_status": "wall_timeout",
+      "seed": 42
+    },
+    {
+      "assessment_points": 9,
+      "assessment_sha256": "a804b57fed27a5667babad79c6a0581a8ab270f88e71e1e1ceb9572d6013aa5c",
+      "candidate_captured": true,
+      "expression": "(exp(((sin(0.70710676908493042) / (-0.07901734113693237)) * ((1.19177389144897461 * x0) * 0.70405071973800659))) * exp(((sin(0.66970098018646240) / sin(sin(exp(((1.19177389144897461 * x0) * 0.70405071973800659))))) / (-0.01221430860459805))))",
+      "framework": "PyOperon",
+      "metrics": {
+        "depth": 10,
+        "invalid_predictions": 0,
+        "max_abs_error": 1.25,
+        "max_relative_error": 1.0,
+        "nodes": 26,
+        "normalized_rmse": 1.0,
+        "relative_error_samples": 8,
+        "rmse": 0.6922186552431729
+      },
+      "process_status": "completed",
+      "seed": 42
+    }
+  ],
+  "train_rows": 64,
+  "train_sha256": "333efef3e9a46f2ffc411d7d2f477cbbe4065ef449b8cc3d06dac43d8be6039f"
+}

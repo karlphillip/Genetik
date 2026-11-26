@@ -13,6 +13,24 @@ protected:
     double mutatedGene(unsigned int,std::mt19937& rng) const override{return std::uniform_real_distribution<double>(-1,1)(rng);}
 };
 int main() {
+    {
+        std::vector<ConservationTrajectory> groups;
+        constexpr double pi = 3.14159265358979323846;
+        for (double radius : {1.0, 2.0, 3.0}) {
+            ConservationTrajectory group;
+            for (int i = 0; i < 16; ++i) {
+                const double t = 2.0 * pi * i / 16.0;
+                group.states.push_back({radius * std::cos(t), -radius * std::sin(t)});
+            }
+            groups.push_back(std::move(group));
+        }
+        const ConservationDiscoveryProblem problem(groups);
+        const auto discovered = discoverPolynomialConservation(problem);
+        if (!discovered.found || discovered.degree != 2 ||
+            !discovered.trainingAssessment.withinFraction ||
+            *discovered.trainingAssessment.withinFraction > 1e-6)
+            return 2;
+    }
     {auto e=parseDiscreteExpression("sum(k0,1,x0,k0)",1);auto value=e.evaluate(std::array<std::int64_t,1>{5});if(!value.valid()||value.value->integer()!=15)return 1;}
     { auto e=parseDiscreteExpression("if(x0 == 0, 0, 10 % x0)",1);
       if(!e.evaluate(std::array<std::int64_t,1>{0}).valid() || parseDiscreteExpression(e.toString(),1).toString()!=e.toString())return 1;

@@ -107,3 +107,75 @@ independent fixtures establish that `E` and `3-2E` pass affine recovery, `E^2`
 is exactly conserved but not affine in `E`, and `y^2` is not conserved.
 Unsupported syntax or algebra exhaustion is represented as inconclusive by the
 verifier contract; none occurred for these six short polynomials.
+
+## Deterministic polynomial method (base `44524894a295cbdd4656d1b26de273ffe543d3c1`)
+
+The base had the grouped scorer and stochastic symbolic expression search, but
+no monomial nullspace discovery API. Its six saved v2 selections (above) are the
+before result. The candidate adds `PolynomialConservationDiscovery.hpp`, whose
+public function receives only grouped `(y,v)` observations and limits. It does
+not receive a system name, time, initial-condition labels, equations of motion,
+or reference energies.
+
+The method enumerates all nonconstant monomials in `y,v` by total degree 1–4.
+Each feature is divided by its largest observed absolute value and centered
+within each training trajectory; columns are then L2-normalized. A symmetric
+Gram matrix is diagonalized by deterministic Jacobi rotations. Fixed rules are:
+relative smallest-eigenvalue rank tolerance `1e-8`; Jacobi off-diagonal stop
+tolerance `1e-14`; at most 10,000 rotations per degree and 10,000,000 cumulative
+monomial-observation values; coefficient ratios reconstructed by nearest
+rational with denominator at most 1024; reconstructed within-fraction at most
+`1e-6`; and between-fraction at least `0.01`. Selection checks degrees in increasing order
+and accepts the first supported degree. The returned expression uses ordinary
+bounded `Expression` nodes, and the existing grouped scorer validates the
+reconstruction. Work reports feature values and Jacobi rotations separately.
+There is one minimum-eigenvector candidate at the first accepted degree; the
+fixed monomial order is the deterministic tie rule, followed by node count.
+
+The selector was run on the same six training initial conditions and trajectory
+generator as v2. It wrote `results/polynomial-v1.selected.json` before the
+comparison process loaded the v2 selections or assessed any held-out trajectory.
+Assessment used fresh whole initial conditions `(0,2)`, `(-0.5,0)`, and
+`(1.5,-0.5)`, all absent from training. The same three held-out groups were used
+for the selected polynomial and every saved v2 candidate. The comparison artifact
+is `results/polynomial-v1.comparison.json`; it is additive and does not modify
+any frozen v1/v2 study record.
+
+| System | Base: best saved PR #72 candidate on these held-outs | Candidate equation (`x0=y`, `x1=v`) | Degree | Candidate drift | Candidate separation | Candidate work | Exact conservation / affine recovery |
+|---|---|---|---:|---:|---:|---|---|
+| Harmonic | seed 211; drift `0.199949`; neither | `y² + v²` | 2 | `3.97446499e-19` | `0.385275875` | 2,730 feature values; 6 rotations; 0.000320 CPU s | yes / yes |
+| Quartic | seed 101; drift `0.138737`; neither | `y⁴ + v²` | 4 | `8.60747595e-14` | `0.419919106` | 7,644 feature values; 166 rotations; 0.001577 CPU s | yes / yes |
+
+The independent exact verifier reports the exact reference affine scales as one
+for both returned laws. For the six saved PR #72 selections on the same fresh
+held-out groups, drift fractions were harmonic
+`0.694628, 0.199949, 0.709774` and quartic `0.138737, 0.575192, 0.443942`;
+none was an exact invariant or an exact affine recovery. Their original search
+work remains 640 candidate evaluations and 349,440 training rows per run. Exact
+verifications for these records are carried forward from
+`results/exact-verification-v3.json`; the new comparison independently reruns
+the exact verifier on the expression strings.
+
+The retained damped harmonic negative control uses `v'=-y-0.15v`: reference
+energy changed from `0.9265926100` to `0.2387244377` (change `-0.6878681724`).
+The candidate laws do not establish a conserved reference energy for damped
+dynamics. Trajectory generation remains RK4 with `dt=0.025`; the retained
+generator refinement errors against half-step RK4 are `6.10349946e-8` harmonic
+and `1.42174587e-4` quartic on the original generator conditions. On the three
+fresh held-out starts, the same refinement comparison gives `6.10349946e-8`
+harmonic and `1.63058940e-5` quartic. These estimates compare two numerical
+solutions and are not global error bounds.
+
+Qualification for this change: the focused Release and ASan/UBSan conservation
+contracts passed. A clean install from the final Release tree and a separate
+one-translation-unit CMake consumer using only `find_package(Genetik)` and
+`Genetik::Genetik` built and ran the new public API successfully (exit 0). The
+full package workflow's `installed_consumer` target also built and ran (exit 0)
+against its clean prefix, including the API regression.
+The repository's broader `tests/package_integration.py` run reached 300 seconds
+in its `ordinary consumer build` step at 89% quickstart compilation; the newly
+added installed consumer target had already built and run successfully. Resuming
+the killed full build encountered a partial-object link failure in the unrelated
+`automatic_separable_quickstart`, so the all-quickstarts package stage remains
+incomplete. The failure log is retained in the worktree build output and is not
+part of the frozen scientific results.

@@ -1,5 +1,16 @@
 # Baseline and first hardening milestone
 
+## Grouped polynomial conservation discovery
+
+At base `44524894a295cbdd4656d1b26de273ffe543d3c1`, Genetik exposed a grouped
+trajectory scorer but no deterministic monomial nullspace selector. The
+candidate adds an opt-in degree-1-through-4 polynomial method using grouped
+observations and ordinary bounded expressions. It returns harmonic `y²+v²`
+and quartic `y⁴+v²`; both pass an independent exact Lie-derivative check and
+coefficient-wise affine reference-law verifier. The complete protocol, held-out
+comparison against the six frozen PR #72 records, work counts, and qualification
+limits are in [the conservation study report](../research/conservation_discovery/README.md).
+
 ## Order-three integer recurrence support
 
 Order-three support extends `IntegerRecurrence`, the recurrence regression

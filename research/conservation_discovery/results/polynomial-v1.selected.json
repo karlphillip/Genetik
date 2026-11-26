@@ -1,0 +1,32 @@
+{
+  "base_sha": "44524894a295cbdd4656d1b26de273ffe543d3c1",
+  "selection": [
+    {
+      "system": "harmonic",
+      "found": true,
+      "expression": "((0.0 + ((1.0 * x0) * x0)) + ((1.0 * x1) * x1))",
+      "degree": 2,
+      "monomials": 5,
+      "feature_values": 2730,
+      "jacobi_rotations": 6,
+      "eigenvalue_ratio": 0,
+      "training_within_fraction": 1.142246444996265e-18,
+      "training_between_fraction": 1,
+      "cpu_seconds": 0.00032
+    },
+    {
+      "system": "quartic",
+      "found": true,
+      "expression": "((0.0 + ((1.0 * x1) * x1)) + ((((1.0 * x0) * x0) * x0) * x0))",
+      "degree": 4,
+      "monomials": 14,
+      "feature_values": 7644,
+      "jacobi_rotations": 166,
+      "eigenvalue_ratio": 1.0748979394230362e-15,
+      "training_within_fraction": 1.6012149688877983e-14,
+      "training_between_fraction": 0.9999999999999839,
+      "cpu_seconds": 0.001577
+    }
+  ],
+  "binary_sha256": "f16bf5e8d3d6e7a67997a34ef34706e6d125d98a72e0dcbc0f6352b72407810e"
+}

@@ -67,6 +67,9 @@ def main():
         self_test()
         print("exact conservation verifier fixtures passed")
         return
+    if len(sys.argv) == 4 and sys.argv[1] == "--expression":
+        print(json.dumps(verify(sys.argv[3], sys.argv[2]), sort_keys=True))
+        return
     root = Path(__file__).resolve().parents[1]
     source = root / "research/conservation_discovery/results/target-runs-v2.json"
     data = json.loads(source.read_text())

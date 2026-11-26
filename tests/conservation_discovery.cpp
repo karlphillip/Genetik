@@ -1,7 +1,9 @@
 #include <ConservationDiscovery.hpp>
+#include <PolynomialConservationDiscovery.hpp>
 #include <SymbolicRegression.hpp>
 
 #include <cmath>
+#include <array>
 #include <iostream>
 #include <stdexcept>
 
@@ -64,6 +66,54 @@ int main() {
         check(
             problem.assess(cancellation).score.state() == FitnessState::Invalid,
             "roundoff-only between-trajectory variation cannot make a constant appear informative");
+        PolynomialConservationConfig polynomialConfig;
+        const auto discovered = discoverPolynomialConservation(problem, polynomialConfig);
+        check(discovered.found && discovered.degree == 2 && discovered.monomials == 5 &&
+                  discovered.trainingAssessment.withinFraction &&
+                  *discovered.trainingAssessment.withinFraction <= 1e-6,
+              "public polynomial discovery selects the lowest valid degree from observations");
+        check(discovered.expression.variableCount() == 2 && discovered.expression.nodeCount() <= 63,
+              "polynomial discovery returns a bounded ordinary expression");
+        check(discovered.expression.evaluate(std::array{2.0, 3.0}).value() == 13.0,
+              "harmonic selection predicts the independent expected invariant value");
+        auto unsupportedConfig = polynomialConfig;
+        unsupportedConfig.maximumDegree = 5;
+        bool rejectedDegree = false;
+        try {
+            (void)discoverPolynomialConservation(problem, unsupportedConfig);
+        } catch (const std::invalid_argument&) {
+            rejectedDegree = true;
+        }
+        check(rejectedDegree, "polynomial discovery enforces its documented degree cap");
+        auto exhaustedConfig = polynomialConfig;
+        exhaustedConfig.maximumFeatureValues = 2;
+        bool rejectedWork = false;
+        try {
+            (void)discoverPolynomialConservation(problem, exhaustedConfig);
+        } catch (const std::length_error&) {
+            rejectedWork = true;
+        }
+        check(rejectedWork, "polynomial discovery enforces its configured feature-work limit");
+        std::vector<ConservationTrajectory> quarticGroups;
+        for (const double level : {1.0, 2.0, 4.0}) {
+            ConservationTrajectory group;
+            const double extent = std::pow(level, 0.25);
+            for (int i = 0; i <= 32; ++i) {
+                const double q = -1.0 + 2.0 * static_cast<double>(i) / 32.0;
+                const double yValue = extent * q;
+                const double vMagnitude = std::sqrt(std::max(0.0, level - std::pow(yValue, 4)));
+                group.states.push_back({yValue, vMagnitude});
+                group.states.push_back({-yValue, -vMagnitude});
+            }
+            quarticGroups.push_back(std::move(group));
+        }
+        const ConservationDiscoveryProblem quarticProblem(quarticGroups);
+        const auto quartic = discoverPolynomialConservation(quarticProblem, polynomialConfig);
+        check(quartic.found && quartic.degree == 4 && quartic.trainingAssessment.withinFraction &&
+                  *quartic.trainingAssessment.withinFraction <= 1e-6,
+              "the same polynomial method selects a degree-four invariant when lower degrees fail");
+        check(quartic.expression.evaluate(std::array{2.0, 3.0}).value() == 25.0,
+              "quartic selection predicts the independent expected invariant value");
         std::uint64_t rows = 0;
         RegressionSupplementalWork work;
         const auto measured = problem.measureWithWork(energy, &rows, work);

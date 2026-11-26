@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -290,7 +291,7 @@ void threeIndependentSites() {
         parseExpression("x2*x2", 3, {}, modelLimits)});
     check(domain->problem()->measure(recovered).loss.score() == 0.0,
           "three independently recovered unknown components reproduce the target");
-    const auto parts = domain->components(recovered);
+    const auto parts = domain->componentsVector(recovered);
     check(parts[0].toString() == "sin(x0)" && parts[1].toString() == "(x1 * 3.0)" &&
               parts[2].toString() == "(x2 * x2)",
           "component recovery is reported independently from the supplied scaffold");
@@ -305,6 +306,12 @@ void threeIndependentSites() {
 
     auto context = std::make_shared<const MultiComponentTemplateContext>(domain);
     MultiComponentTemplateVariation variation(context, grammar);
+    rejects(
+        [&] {
+            (void)MultiComponentTemplateVariation(context,
+                                                  std::vector<ExpressionGrammar>{grammar[0]});
+        },
+        "variation rejects grammar count mismatch before indexing");
     std::mt19937 rng(73);
     auto first = variation.initialize(rng);
     auto second = variation.initialize(rng);
@@ -312,23 +319,49 @@ void threeIndependentSites() {
     ExpressionCandidate childA = first, childB = second;
     variation.crossover(first, second, childA, childB, 1.0f, rng);
     for (const auto* candidate : {&first, &second, &mutated, &childA, &childB})
-        (void)domain->components(candidate->expression());
+        (void)domain->componentsVector(candidate->expression());
     check(variation.statistics().initializations == 2 &&
               variation.statistics().mutationProposals > 0 &&
               variation.statistics().crossoverProposals > 0,
           "public generation, mutation and crossover exercise all three sites");
 
+    std::vector<RegressionRow> heldRows;
+    for (double x : {-0.75, 0.25, 1.25})
+        for (double y : {-0.4, 0.4, 1.1})
+            for (double z : {-0.5, 0.5, 1.2})
+                heldRows.push_back({{x, y, z}, std::sin(x) + 3.0 * y + z * z});
+    const auto heldProblem = RegressionProblem::create(heldRows, modelLimits);
     SymbolicRegressionConfig searchConfig;
-    searchConfig.population = 6;
+    searchConfig.population = 8;
     searchConfig.elites = 1;
-    searchConfig.maxGenerationAttempts = 2;
-    searchConfig.maxEvaluations = 12;
-    searchConfig.maxTrainingLossAttempts = 12 * rows.size();
-    RandomContext searchRandom(99173);
+    searchConfig.maxGenerationAttempts = 4;
+    searchConfig.maxEvaluations = 32;
+    searchConfig.maxTrainingLossAttempts = 32 * rows.size() * 20;
+    searchConfig.grammar = grammar.front();
+    ConstantFitConfig searchFit;
+    searchFit.lower = 0.0;
+    searchFit.upper = 4.0;
+    searchFit.initialStep = 0.5;
+    searchFit.minimumStep = 1.0e-6;
+    searchFit.maxSweeps = 12;
+    searchConfig.fitting = searchFit;
+    constexpr std::uint64_t searchSeed = 99173;
+    RandomContext searchRandom(searchSeed);
     const auto searched =
         multiComponentTemplateRegression(domain, grammar, searchConfig, searchRandom);
     check(searched.best.has_value(), "public three-site symbolic search returns a valid model");
-    (void)domain->components(searched.best->expression());
+    const auto selectedParts = domain->componentsVector(searched.best->expression());
+    const auto trainingMse = domain->problem()->measure(searched.best->expression()).loss.score();
+    const auto heldMse = heldProblem->measure(searched.best->expression()).loss.score();
+    std::cout << "three_site_search seed=" << searchSeed << " population=8 max_evaluations=32"
+              << " generation_attempts=4 max_training_loss_attempts=" << 32 * rows.size() * 20
+              << " grammar=site0:{sin,multiply},site1:{multiply},site2:{multiply}"
+              << " selected=" << selectedParts[0].toString() << ';' << selectedParts[1].toString()
+              << ';' << selectedParts[2].toString() << " training_mse=" << trainingMse
+              << " heldout_mse=" << heldMse << " candidate_calls=" << searched.candidateEvaluations
+              << " row_attempts=" << searched.trainingWork.rowAttempts
+              << " fit_attempts=" << searched.trainingWork.fittingLossAttempts
+              << " generations=" << searched.publishedGenerations << '\n';
 
     const auto initial = domain->materialize(std::vector<Expression>{
         parseExpression("sin(x0)", 3, {}, modelLimits), parseExpression("x1*1", 3, {}, modelLimits),
@@ -344,7 +377,7 @@ void threeIndependentSites() {
     const auto indices = MultiComponentTemplateParameters(domain).parameters(initial);
     check(indices.size() == 1, "three-site fitter selects the one learnable coefficient");
     const auto fitted = fitSelectedConstants(initial, objective, indices, fit);
-    const auto fittedParts = domain->components(fitted.expression);
+    const auto fittedParts = domain->componentsVector(fitted.expression);
     check(fitted.loss.score() == 0.0 && fittedParts[1].toString() == "(x1 * 3.0)",
           "public coordinate fitting recovers the second component coefficient");
     std::cout << "three_site_recovery=" << parts[0].toString() << ';' << parts[1].toString() << ';'
@@ -385,14 +418,64 @@ void sharedNamedFunction() {
               << " parameter_count=" << fitted.parameterCount
               << " predictions=4,4,20 mse=" << fitted.mse << " analytic_row_evaluations=6\n";
 
-    const auto variedBody = parseExpression("3*(x0*x0)", 2, {}, expandedLimits);
-    const auto varied = shared.varyBody(variedBody, 0);
-    const auto variedModel = varied.expanded(3.0);
-    check(
-        variedModel.evaluate(std::array<double, 2>{2.0, 3.0}).value() == 39.0 &&
-            variedModel.evaluate(std::array<double, 2>{2.0, 0.0}).value() == 12.0 &&
-            variedModel.evaluate(std::array<double, 2>{0.0, 3.0}).value() == 27.0,
-        "body variation is visible independently at each call while preserving shared coefficient");
+    ExpressionGrammar bodyGrammar;
+    bodyGrammar.operators = {ExpressionKind::Multiply};
+    bodyGrammar.constants.clear();
+    bodyGrammar.initialMaxDepth = 3;
+    bodyGrammar.mutationMaxDepth = 3;
+    bodyGrammar.growBinaryProbability = 1.0;
+    std::mt19937 bodyRandom(20261126);
+    const auto generated = SharedLearnableFunctionTemplate::generateBody(
+        "g", 0, {p, q}, expandedLimits, bodyGrammar, bodyRandom);
+    const auto changed = generated.mutateBody(bodyGrammar, bodyRandom);
+    const auto generatedFitData =
+        RegressionProblem::create({{{2.0, 0.0}, 4.0}, {{0.0, 3.0}, 9.0}}, expandedLimits);
+    const auto generatedFit = generated.fit(*generatedFitData, 0.0, 10.0);
+    const auto originalModel = generated.expanded(2.0);
+    const auto changedModel = changed.expanded(2.0);
+    const auto originalAtP = originalModel.evaluate(std::array<double, 2>{2.0, 0.0}).value();
+    const auto originalAtQ = originalModel.evaluate(std::array<double, 2>{0.0, 3.0}).value();
+    const auto atP = changedModel.evaluate(std::array<double, 2>{2.0, 0.0}).value();
+    const auto atQ = changedModel.evaluate(std::array<double, 2>{0.0, 3.0}).value();
+    check(changed.body().nodeCount() > 0 && atP != originalAtP && atQ != originalAtQ &&
+              changed.parameterCount() == 1 && generatedFit.parameterCount == 1,
+          "one genetic body mutation reaches both distinct shared call sites");
+
+    // Fixed-seed body selection: candidates are generated and mutated by the
+    // public bounded grammar API; the target body is not supplied to selection.
+    std::vector<RegressionRow> bodyRows;
+    for (double pv : {-1.5, -0.5, 0.5, 1.5})
+        for (double qv : {-1.0, 0.25, 1.25, 2.0})
+            bodyRows.push_back({{pv, qv}, 3.0 * (pv * pv + qv * qv)});
+    const auto bodyProblem = RegressionProblem::create(bodyRows, expandedLimits);
+    std::mt19937 selectionRandom(20261127);
+    double bestBodyMse = std::numeric_limits<double>::infinity();
+    double bestBodyCoefficient = 0.0;
+    std::string bestBody;
+    std::size_t generatedBodies = 0, mutatedBodies = 0;
+    for (std::size_t i = 0; i < 64; ++i) {
+        auto candidate = SharedLearnableFunctionTemplate::generateBody(
+            "g", 0, {p, q}, expandedLimits, bodyGrammar, selectionRandom);
+        if (i % 2 == 1) {
+            candidate = candidate.mutateBody(bodyGrammar, selectionRandom);
+            ++mutatedBodies;
+        } else {
+            ++generatedBodies;
+        }
+        const auto fit = candidate.fit(*bodyProblem, 0.0, 4.0);
+        if (fit.mse < bestBodyMse) {
+            bestBodyMse = fit.mse;
+            bestBodyCoefficient = fit.coefficient;
+            bestBody = candidate.body().toString();
+        }
+    }
+    std::cout << "shared_body_selection seed=20261127 grammar={multiply}, candidates=64 generated="
+              << generatedBodies << " mutated=" << mutatedBodies << " selected=" << bestBody
+              << " coefficient=" << bestBodyCoefficient << " training_mse=" << bestBodyMse << '\n';
+    std::cout << "shared_body_generation seed=20261126 generated=" << generated.body().toString()
+              << " mutated=" << changed.body().toString()
+              << " generated_fit_a=" << generatedFit.coefficient << " before_calls=" << originalAtP
+              << ',' << originalAtQ << " after_calls=" << atP << ',' << atQ << '\n';
     rejects([&] { (void)SharedLearnableFunctionTemplate("g", body, 2, 0, {p, q}, expandedLimits); },
             "shared function rejects an out-of-schema argument binding");
     rejects(
@@ -409,6 +492,17 @@ void sharedNamedFunction() {
                                                   expandedLimits);
         },
         "shared function rejects an unbound second formal argument");
+    for (const double scale : {1.0, std::ldexp(1.0, 600), std::ldexp(1.0, -600)}) {
+        const auto scaled = RegressionProblem::create(
+            {{{scale, 0.0}, scale}, {{0.0, scale}, scale}}, expandedLimits);
+        const auto scaleFit = shared.fit(*scaled, 0.0, 2.0);
+        check(scaleFit.parameterCount == 1 && scaleFit.coefficient == 1.0 && scaleFit.mse == 0.0,
+              "scaled shared least squares preserves a=1 and zero MSE");
+    }
+    const auto zeroFeature =
+        RegressionProblem::create({{{0.0, 0.0}, 0.0}, {{0.0, 0.0}, 0.0}}, expandedLimits);
+    rejects([&] { (void)shared.fit(*zeroFeature, 0.0, 2.0); },
+            "all-zero feature control is genuinely non-identifiable");
     rejects(
         [&] {
             const auto tooSmall = ExpressionLimits{6, 10, 20.0, 40};

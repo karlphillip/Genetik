@@ -193,8 +193,10 @@ algebraic rewrite or global-equivalence claim is implied.
 `<MultiComponentTemplateRegression.hpp>` retains the original two-site overloads
 and also accepts vectors of roots, component limits, per-site variable/operator
 allowlists and per-site grammars through `MultiComponentTemplateProblem::createMany`.
-Each site has its own restrictions. Component and selected-range results are
-vector-like; for two-site callers they convert to the historical two-element arrays. Materialized
+Each site has its own restrictions. The historical `components(model)` API
+returns `std::array<Expression, 2>` for two-site callers, including structured
+binding. Arbitrary site counts use `componentsVector(model)` and selected-range
+results remain vector-sized. Materialized
 expressions remain ordinary owned postfix trees, and the whole expanded scaffold
 is checked against the model limits. The fixed scaffold remains caller supplied.
 Component extraction provides separate attribution for each unknown subtree.
@@ -205,9 +207,9 @@ bounded implementation, `a` is one selected direct constant factor and `h` may
 use only the bound argument and unary/binary expression operators. Calls are
 expanded for ordinary prediction and resource validation. `fit` supports ordinary
 MSE and analytically estimates the one shared coefficient from all training rows;
-it rejects other configured losses and unidentifiable inputs. A varied body is
-provided as a new validated template, so every call expands from the same changed
-body. The expanded `Expression` is a snapshot with numerically equal coefficient
+it rejects other configured losses and unidentifiable inputs. Bodies can be generated and mutated from a bounded `ExpressionGrammar` through
+the public `generateBody` and `mutateBody` entry points; every call expands from
+the same generated or changed body. The expanded `Expression` is a snapshot with numerically equal coefficient
 copies; subsequent independent edits to that snapshot do not preserve parameter
 identity. Use the named template API for shared fitting and body changes.
 

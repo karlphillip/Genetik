@@ -200,12 +200,18 @@ public:
         return result;
     }
 
-    MultiComponentExpressions components(const Expression& model) const {
+    MultiComponentExpressions componentsVector(const Expression& model) const {
         const auto ranges = componentRanges(model);
         MultiComponentExpressions result;
         for (std::size_t site = 0; site < ranges.size(); ++site)
             result.push_back(slice(model, ranges[site], componentLimits_[site]));
         return result;
+    }
+    std::array<Expression, 2> components(const Expression& model) const {
+        if (roots_.size() != 2)
+            throw std::invalid_argument("two-site extraction requires exactly two components");
+        const auto result = componentsVector(model);
+        return {result[0], result[1]};
     }
     std::size_t siteCount() const noexcept {
         return roots_.size();
@@ -426,11 +432,17 @@ public:
     Expression materialize(const std::array<Expression, N>& components) const {
         return materialize(std::vector<Expression>(components.begin(), components.end()));
     }
-    MultiComponentExpressions components(const Expression& model) const {
-        auto result = scaffold_.components(model);
+    std::vector<Expression> componentsVector(const Expression& model) const {
+        auto result = scaffold_.componentsVector(model);
         for (std::size_t site = 0; site < result.size(); ++site)
             validateComponent(site, result[site]);
         return result;
+    }
+    std::array<Expression, 2> components(const Expression& model) const {
+        if (scaffold_.siteCount() != 2)
+            throw std::invalid_argument("two-site extraction requires exactly two components");
+        const auto result = componentsVector(model);
+        return {result[0], result[1]};
     }
 
 private:
@@ -524,19 +536,32 @@ public:
             return {0.0, loss, intercept, 1};
         }
         const auto probed = expanded(probe);
-        double numerator = 0.0, denominator = 0.0;
+        double featureScale = 0.0, targetScale = 0.0;
+        std::vector<std::pair<double, double>> design;
         for (const auto& row : problem.trainingRows()) {
             const auto base = intercept.evaluate(row.inputs);
             const auto value = probed.evaluate(row.inputs);
             if (!base.valid() || !value.valid())
                 throw std::domain_error("shared function fit encountered invalid prediction");
             const double feature = (value.value() - base.value()) / probe;
-            numerator += feature * (row.target - base.value());
-            denominator += feature * feature;
+            const double target = row.target - base.value();
+            if (!std::isfinite(feature) || !std::isfinite(target))
+                throw std::domain_error("shared function design values are non-finite");
+            design.emplace_back(feature, target);
+            featureScale = std::max(featureScale, std::abs(feature));
+            targetScale = std::max(targetScale, std::abs(target));
         }
-        if (!(denominator > 0.0) || !std::isfinite(denominator) || !std::isfinite(numerator))
+        if (!(featureScale > 0.0))
             throw std::domain_error("shared function coefficient is not identifiable");
-        const double coefficient = std::clamp(numerator / denominator, lower, upper);
+        double numerator = 0.0, denominator = 0.0;
+        for (const auto& [feature, target] : design) {
+            const double normalizedFeature = feature / featureScale;
+            numerator += normalizedFeature * (targetScale == 0.0 ? 0.0 : target / targetScale);
+            denominator += normalizedFeature * normalizedFeature;
+        }
+        const double unconstrained =
+            targetScale == 0.0 ? 0.0 : (targetScale / featureScale) * (numerator / denominator);
+        const double coefficient = std::clamp(unconstrained, lower, upper);
         auto model = expanded(coefficient);
         const auto loss = problem.measure(model).loss.score();
         return {coefficient, loss, std::move(model), 1};
@@ -547,6 +572,51 @@ public:
         return SharedLearnableFunctionTemplate(name_, std::move(changedBody), argumentVariable_,
                                                changedCoefficientNode, callInputs_,
                                                expandedLimits_);
+    }
+    static SharedLearnableFunctionTemplate
+    generateBody(std::string name, std::size_t argumentVariable, std::vector<Expression> callInputs,
+                 ExpressionLimits limits, const ExpressionGrammar& grammar, std::mt19937& random) {
+        if (callInputs.empty())
+            throw std::invalid_argument("shared function requires call inputs");
+        const auto dimensions = callInputs.front().variableCount();
+        std::vector<std::size_t> allowed{argumentVariable};
+        genetik_detail::validateExpressionGrammar(1, limits, grammar);
+        if (argumentVariable >= dimensions)
+            throw std::invalid_argument("shared function argument binding outside input schema");
+        auto factor = genetik_detail::generateExpression(random, grammar.initialMaxDepth,
+                                                         dimensions, limits, grammar, &allowed);
+        const auto coefficient = Expression::constant(1.0, dimensions, limits);
+        auto body = Expression::binary(ExpressionKind::Multiply, factor, coefficient, limits);
+        return SharedLearnableFunctionTemplate(std::move(name), std::move(body), argumentVariable,
+                                               factor.nodeCount(), std::move(callInputs), limits);
+    }
+
+    SharedLearnableFunctionTemplate mutateBody(const ExpressionGrammar& grammar,
+                                               std::mt19937& random) const {
+        const auto coefficientRange = expressionSubtree(body_, coefficientNode_);
+        const auto rightRange = expressionSubtree(body_, body_.nodeCount() - 2);
+        const auto leftRange = expressionSubtree(body_, rightRange.first - 1);
+        const auto factorRange = leftRange == coefficientRange ? rightRange : leftRange;
+        const auto factor = Expression(std::span(body_.nodes().data() + factorRange.first,
+                                                 factorRange.second - factorRange.first),
+                                       body_.variableCount(), expandedLimits_);
+        genetik_detail::validateExpressionGrammar(1, expandedLimits_, grammar);
+        std::vector<std::size_t> allowed{argumentVariable_};
+        const auto root =
+            std::uniform_int_distribution<std::size_t>(0, factor.nodeCount() - 1)(random);
+        auto replacement = genetik_detail::generateExpression(random, grammar.mutationMaxDepth,
+                                                              body_.variableCount(),
+                                                              expandedLimits_, grammar, &allowed);
+        const auto changed = replaceExpressionSubtree(factor, root, replacement, expandedLimits_);
+        if (!changed || !genetik_detail::extendedGrammarAccepts(*changed, grammar))
+            throw std::length_error("bounded shared body mutation was rejected");
+        const auto coefficient =
+            Expression::constant(body_.nodes()[coefficientNode_].constantValue(),
+                                 body_.variableCount(), expandedLimits_);
+        auto body =
+            Expression::binary(ExpressionKind::Multiply, *changed, coefficient, expandedLimits_);
+        return SharedLearnableFunctionTemplate(name_, std::move(body), argumentVariable_,
+                                               changed->nodeCount(), callInputs_, expandedLimits_);
     }
 
 private:
@@ -641,7 +711,7 @@ public:
         return preparation_;
     }
     void validate(const Expression& expression) const override {
-        (void)domain_->components(expression);
+        (void)domain_->componentsVector(expression);
     }
     bool parallelEvaluationSafe() const noexcept override {
         return true;
@@ -667,7 +737,7 @@ public:
         return true;
     }
     std::vector<std::size_t> parameters(const Expression& model) const override {
-        const auto components = domain_->components(model);
+        const auto components = domain_->componentsVector(model);
         std::vector<std::size_t> result;
         // Constant fitting operates on full-model postfix indices. Locate the two
         // validated component representations in the frozen materialization.
@@ -693,6 +763,8 @@ public:
         : context_(std::move(context)), grammars_(std::move(grammars)) {
         if (!context_)
             throw std::invalid_argument("multi-component template context required");
+        if (grammars_.size() != context_->domain()->expressionTemplate().siteCount())
+            throw std::invalid_argument("template grammar count differs from site count");
         for (std::size_t site = 0; site < context_->domain()->expressionTemplate().siteCount();
              ++site) {
             const auto& domain = *context_->domain();
@@ -746,7 +818,7 @@ public:
         if (std::uniform_real_distribution<float>(0.0f, 1.0f)(random) >= rate)
             return child;
         const auto site = index(grammars_.size(), random);
-        const auto components = context_->domain()->components(parent.expression());
+        const auto components = context_->domain()->componentsVector(parent.expression());
         const auto& grammar = grammars_[site];
         for (std::size_t attempt = 0; attempt < grammar.proposalLimit; ++attempt) {
             count(statistics_.mutationProposals);
@@ -783,8 +855,8 @@ public:
         auto second = mother;
         if (std::uniform_real_distribution<float>(0.0f, 1.0f)(random) < rate) {
             const auto site = index(grammars_.size(), random);
-            const auto firstComponents = context_->domain()->components(father.expression());
-            const auto secondComponents = context_->domain()->components(mother.expression());
+            const auto firstComponents = context_->domain()->componentsVector(father.expression());
+            const auto secondComponents = context_->domain()->componentsVector(mother.expression());
             bool accepted = false;
             for (std::size_t attempt = 0; attempt < grammars_[site].proposalLimit; ++attempt) {
                 count(statistics_.crossoverProposals);

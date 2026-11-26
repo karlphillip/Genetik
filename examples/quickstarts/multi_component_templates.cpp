@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <random>
 #include <stdexcept>
 #include <vector>
 
@@ -52,7 +53,8 @@ int main() {
         if (!result.best)
             throw std::runtime_error("search returned no evaluated model");
 
-        const auto components = domain->components(result.best->expression());
+        auto [left, right] = domain->components(result.best->expression());
+        const std::array<Expression, 2> components{left, right};
         std::size_t exactHeldOut = 0;
         const std::vector<std::array<double, 2>> assessment{
             {{-0.75, 0.75}}, {{0.25, -0.75}}, {{1.25, 0.5}}};
@@ -83,17 +85,31 @@ int main() {
         if (sharedFit.parameterCount != 1 || sharedFit.coefficient != 4.0 || sharedFit.mse != 4.0 ||
             sharedFit.expanded.evaluate(std::array<double, 2>{2.0, 3.0}).value() != 20.0)
             throw std::runtime_error("shared learnable function consumer contract failed");
-        const auto changedShared =
-            shared.varyBody(parseExpression("3*(x0*x0)", 2, {}, expandedLimits), 0);
-        if (changedShared.expanded(3.0).evaluate(std::array<double, 2>{2.0, 3.0}).value() != 39.0)
+        ExpressionGrammar sharedGrammar;
+        sharedGrammar.operators = {ExpressionKind::Multiply};
+        sharedGrammar.constants.clear();
+        sharedGrammar.initialMaxDepth = 3;
+        sharedGrammar.mutationMaxDepth = 3;
+        sharedGrammar.growBinaryProbability = 1.0;
+        std::mt19937 sharedRandom(20261126);
+        const auto generatedShared = SharedLearnableFunctionTemplate::generateBody(
+            "g", 0, {p, q}, expandedLimits, sharedGrammar, sharedRandom);
+        const auto changedShared = generatedShared.mutateBody(sharedGrammar, sharedRandom);
+        const auto beforeShared = generatedShared.expanded(2.0);
+        const auto afterShared = changedShared.expanded(2.0);
+        if (beforeShared.evaluate(std::array<double, 2>{2.0, 0.0}).value() ==
+                afterShared.evaluate(std::array<double, 2>{2.0, 0.0}).value() ||
+            beforeShared.evaluate(std::array<double, 2>{0.0, 3.0}).value() ==
+                afterShared.evaluate(std::array<double, 2>{0.0, 3.0}).value())
             throw std::runtime_error("shared function body variation contract failed");
         std::cout << "shared_function=g(p)+g(q) coefficient=" << sharedFit.coefficient
                   << " parameter_count=" << sharedFit.parameterCount << " mse=" << sharedFit.mse
                   << " prediction(2,3)="
                   << sharedFit.expanded.evaluate(std::array<double, 2>{2.0, 3.0}).value()
+                  << " generated_body=" << generatedShared.body().toString()
+                  << " varied_body=" << changedShared.body().toString()
                   << " varied_prediction(2,3)="
-                  << changedShared.expanded(3.0).evaluate(std::array<double, 2>{2.0, 3.0}).value()
-                  << '\n';
+                  << afterShared.evaluate(std::array<double, 2>{2.0, 3.0}).value() << '\n';
         const ExpressionLimits threeLimits{31, 10, 8.0, 40};
         const auto threeSource = parseExpression("x0+x1+x2", 3, {}, threeLimits);
         const MultiScalarExpressionTemplate threeScaffold(
@@ -104,7 +120,7 @@ int main() {
             std::vector<Expression>{parseExpression("sin(x0)", 3, {}, threeLimits),
                                     parseExpression("x1*3", 3, {}, threeLimits),
                                     parseExpression("x2*x2", 3, {}, threeLimits)});
-        const auto threeParts = threeScaffold.components(threeModel);
+        const auto threeParts = threeScaffold.componentsVector(threeModel);
         const auto threeProblem =
             RegressionProblem::create({{{0.5, 2.0, 3.0}, std::sin(0.5) + 15.0}}, threeLimits);
         const auto threeDomain = MultiComponentTemplateProblem::createMany(

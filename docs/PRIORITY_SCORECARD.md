@@ -74,5 +74,14 @@ template/automatic-separable tests after the correction. The pre-correction
 hosted failures were compile ambiguity in GCC/Clang minimum, sanitizer, and
 clang-tidy jobs. The separate x86 Python job failed fetching SRBench's external
 `results/black-box_results.feather` LFS object (HTTP 503); wheel checks passed
-before that fetch step. Final-head hosted results are recorded after the
-corrective commit is pushed.
+before that fetch step. On final head `d40a27aa19e4e092a1575a56bf22f2a359120430`,
+the clean package workflow passed using `tests/package_integration.py` with
+only the per-command timeout raised from 300 to 1,200 seconds. It passed
+ordinary and relocated multi-translation-unit consumers, installed quickstarts
+(including the `createMany` API), metadata/flags/version/component checks,
+C++23, and source-inclusion embedding. Evidence is retained at
+`out/tmp/template-installed-final-d40a27a/genetik-delivery-fixture/`. The
+standard isolated CTest run failed at 301.92 seconds in the ordinary consumer
+build as intended by its 300-second cap; process capture showed
+`other.cpp` compiling at the timeout, with no compiler diagnostic. Current-head
+hosted CI status is recorded in the delivery summary.

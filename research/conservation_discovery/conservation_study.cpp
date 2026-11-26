@@ -263,7 +263,10 @@ void polynomialSelect(int system) {
     std::cout << "{\"found\":" << (selected.found ? "true" : "false") << ",\"expression\":\""
               << (selected.found ? selected.expression.toString() : "")
               << "\",\"degree\":" << selected.degree << ",\"monomials\":" << selected.monomials
-              << ",\"feature_values\":" << selected.monomials * problem.sampleCount()
+              << ",\"cumulative_feature_values\":" << selected.cumulativeFeatureValues
+              << ",\"final_matrix_feature_values\":" << selected.monomials * problem.sampleCount()
+              << ",\"exact_representation_available\":"
+              << (selected.exactRepresentationAvailable ? "true" : "false")
               << ",\"jacobi_rotations\":" << selected.jacobiRotations
               << ",\"eigenvalue_ratio\":" << selected.eigenvalueRatio
               << ",\"training_within_fraction\":"
@@ -286,6 +289,7 @@ void polynomialAssess(int system, const std::string& text) {
               << ",\"heldout_within_fraction\":"
               << (metrics.withinFraction ? *metrics.withinFraction : -1.0)
               << ",\"heldout_separation\":" << (metrics.separation ? *metrics.separation : -1.0)
+              << ",\"heldout_separation_units\":\"candidate_output_units\""
               << ",\"generator_rk4_refinement_error\":"
               << generatorError(system, std::vector<State>{{0, 2}, {-.5, 0}, {1.5, -.5}})
               << ",\"nonconstant\":" << (exactNonconstant(expression) ? "true" : "false")

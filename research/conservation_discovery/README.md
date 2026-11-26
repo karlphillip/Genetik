@@ -179,3 +179,43 @@ the killed full build encountered a partial-object link failure in the unrelated
 `automatic_separable_quickstart`, so the all-quickstarts package stage remains
 incomplete. The failure log is retained in the worktree build output and is not
 part of the frozen scientific results.
+
+## Measurement corrections on PR #73
+
+The original `polynomial-v1.*` artifacts above are preserved verbatim. Review
+found that v1's `feature_values` reported only the final degree matrix, not the
+sum of all cumulative matrices evaluated through the selected degree. The public
+result now exposes `cumulativeFeatureValues`, the selector uses that same
+counter for its work budget and study output, and the corrected rerun is recorded
+in `results/polynomial-v2.selected.json`. Its separate
+`final_matrix_feature_values` field identifies the selected degree's matrix
+size. Expected values are 3,822 cumulative / 2,730 final-matrix values for
+harmonic and 16,380 cumulative / 7,644 final-matrix values for quartic.
+
+The scorer's held-out separation is the standard deviation of trajectory means
+in the original candidate-output units. The v2 comparison records this as
+`heldout_separation_units: "candidate_output_units"`; drift remains the
+dimensionless within/total sum-of-squares fraction.
+
+The corrected API also checks zero-within-variation monomials directly. A
+degree-one grouped fixture with fixed `y` values `-2, 1, 2` and varying `v`
+selects `y` (up to nonzero scale); a globally constant coordinate remains
+rejected. A separate exact-ratio fixture with `v=C-3y` selects an integer
+multiple of `3y+v`. Rational coefficient ratios are cleared to primitive
+integers only when denominator growth, coefficient magnitude, expression
+complexity, and arithmetic limits permit; otherwise the result marks exact
+representation unavailable and does not publish an approximate reconstruction.
+The independent SymPy verifier now checks the exported shear law under
+`y'=1, v'=-3` exactly. The deterministic test exported
+`((0.0 + (3.0 * x0)) + (1.0 * x1))`; the verifier reports nonconstant,
+exactly conserved, Lie derivative `0`. This check is recorded in
+`results/polynomial-v2.linear-shear-verification.json`.
+
+The corrected selection and comparison are additive artifacts. All six saved
+PR #72 expressions are re-assessed on the same held-out trajectories and
+re-verified without rerunning their searches.
+
+| System | Selected equation (unchanged) | Cumulative work | Final matrix | Held-out drift | Separation (candidate-output units) | Exact / affine |
+|---|---|---:|---:|---:|---:|---|
+| Harmonic | `y^2+v^2` | 3,822 values; 6 rotations | 2,730 values | `3.97446499e-19` | `0.385275875` | yes / yes |
+| Quartic | `y^4+v^2` | 16,380 values; 166 rotations | 7,644 values | `8.60747595e-14` | `0.419919106` | yes / yes |

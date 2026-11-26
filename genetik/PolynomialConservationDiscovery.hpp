@@ -28,6 +28,10 @@ struct PolynomialConservationResult {
     Expression expression = Expression::constant(0.0, 2);
     unsigned degree = 0;
     std::size_t monomials = 0;
+    // Sum of the sizes of every degree matrix constructed, including repeated
+    // lower-degree columns as the cumulative basis grows.
+    std::uint64_t cumulativeFeatureValues = 0;
+    bool exactRepresentationAvailable = true;
     std::uint64_t jacobiRotations = 0;
     double eigenvalueRatio = std::numeric_limits<double>::infinity();
     ConservationObjectiveMetrics trainingAssessment;
@@ -128,16 +132,52 @@ inline std::pair<std::int64_t, std::int64_t> rational(double x, std::int64_t max
     return {negative ? -bestN / g : bestN / g, bestD / g};
 }
 
+inline bool
+clearDenominators(const std::vector<std::pair<std::int64_t, std::int64_t>>& rationalCoefficients,
+                  double maximumMagnitude, std::vector<std::int64_t>& integerCoefficients) {
+    std::int64_t commonDenominator = 1;
+    for (const auto& [numerator, denominator] : rationalCoefficients) {
+        (void)numerator;
+        if (denominator <= 0)
+            return false;
+        const auto divisor = std::gcd(commonDenominator, denominator);
+        const auto factor = denominator / divisor;
+        if (commonDenominator > std::numeric_limits<std::int64_t>::max() / factor)
+            return false;
+        commonDenominator *= factor;
+    }
+    integerCoefficients.clear();
+    integerCoefficients.reserve(rationalCoefficients.size());
+    std::int64_t commonDivisor = 0;
+    for (const auto& [numerator, denominator] : rationalCoefficients) {
+        const auto factor = commonDenominator / denominator;
+        if (numerator != 0 &&
+            (numerator > 0 ? numerator > std::numeric_limits<std::int64_t>::max() / factor
+                           : numerator < std::numeric_limits<std::int64_t>::min() / factor))
+            return false;
+        const auto value = numerator * factor;
+        integerCoefficients.push_back(value);
+        commonDivisor = std::gcd(commonDivisor, value);
+    }
+    if (commonDivisor == 0)
+        return false;
+    for (auto& value : integerCoefficients)
+        value /= commonDivisor;
+    for (const auto value : integerCoefficients)
+        if (std::abs(static_cast<double>(value)) > maximumMagnitude ||
+            value < -9007199254740991LL || value > 9007199254740991LL)
+            return false;
+    return true;
+}
+
 inline Expression makeExpression(const std::vector<Monomial>& ms,
-                                 const std::vector<std::pair<std::int64_t, std::int64_t>>& cs,
-                                 ExpressionLimits limits) {
+                                 const std::vector<std::int64_t>& cs, ExpressionLimits limits) {
     Expression sum = Expression::constant(0.0, 2, limits);
     const auto y = Expression::variable(0, 2, limits), v = Expression::variable(1, 2, limits);
     for (std::size_t i = 0; i < ms.size(); ++i) {
-        if (cs[i].first == 0)
+        if (cs[i] == 0)
             continue;
-        Expression term = Expression::constant(
-            static_cast<double>(cs[i].first) / static_cast<double>(cs[i].second), 2, limits);
+        Expression term = Expression::constant(static_cast<double>(cs[i]), 2, limits);
         for (unsigned j = 0; j < ms[i].y; ++j)
             term = Expression::binary(ExpressionKind::Multiply, term, y, limits);
         for (unsigned j = 0; j < ms[i].v; ++j)
@@ -145,6 +185,24 @@ inline Expression makeExpression(const std::vector<Monomial>& ms,
         sum = Expression::binary(ExpressionKind::Add, sum, term, limits);
     }
     return sum;
+}
+
+inline Expression makeMonomialExpression(Monomial monomial, ExpressionLimits limits) {
+    Expression term =
+        monomial.y ? Expression::variable(0, 2, limits) : Expression::variable(1, 2, limits);
+    unsigned remainingY = monomial.y ? monomial.y - 1 : 0;
+    unsigned remainingV = monomial.y ? monomial.v : monomial.v - 1;
+    const auto y = Expression::variable(0, 2, limits);
+    const auto v = Expression::variable(1, 2, limits);
+    while (remainingY > 0) {
+        --remainingY;
+        term = Expression::binary(ExpressionKind::Multiply, term, y, limits);
+    }
+    while (remainingV > 0) {
+        --remainingV;
+        term = Expression::binary(ExpressionKind::Multiply, term, v, limits);
+    }
+    return term;
 }
 } // namespace polynomial_conservation_detail
 
@@ -171,6 +229,7 @@ discoverPolynomialConservation(const ConservationDiscoveryProblem& problem,
             columns * problem.sampleCount() > config.maximumFeatureValues - featureValues)
             throw std::length_error("polynomial conservation feature work limit");
         featureValues += static_cast<std::uint64_t>(columns * problem.sampleCount());
+        result.cumulativeFeatureValues = featureValues;
         std::vector<std::vector<double>> normalized(columns);
         std::vector<double> scales(columns, 0.0), norms(columns, 0.0);
         for (std::size_t j = 0; j < columns; ++j) {
@@ -218,49 +277,88 @@ discoverPolynomialConservation(const ConservationDiscoveryProblem& problem,
             largest > 0.0 ? smallest / largest : std::numeric_limits<double>::infinity();
         result.degree = degree;
         result.monomials = columns;
-        if (!(largest > 0.0) || result.eigenvalueRatio > config.rankTolerance)
-            continue;
+
+        // A feature that is constant inside each group has a zero centered
+        // column, so it cannot appear in a covariance null vector. Test each
+        // monomial directly; grouped scoring still rejects globally constant
+        // or otherwise uninformative coordinates.
         std::optional<Expression> bestExpression;
         ConservationObjectiveMetrics bestAssessment;
-        for (std::size_t eigenIndex = 0; eigenIndex < eig.values.size(); ++eigenIndex) {
-            const double ratio = std::max(0.0, eig.values[eigenIndex]) / largest;
-            if (ratio > config.rankTolerance)
+        for (const auto& monomial : ms) {
+            std::optional<Expression> expression;
+            try {
+                expression.emplace(makeMonomialExpression(monomial, problem.limits()));
+            } catch (const std::exception&) {
+                result.exactRepresentationAvailable = false;
                 continue;
-            std::vector<double> raw(columns, 0.0);
-            for (std::size_t j = 0; j < columns; ++j)
-                if (norms[j] > 0.0)
-                    raw[j] = eig.vectors[j][eigenIndex] / (scales[j] * norms[j]);
-            double scale = 0.0;
-            for (double c : raw)
-                scale = std::max(scale, std::abs(c));
-            if (!(scale > 0.0) || !std::isfinite(scale))
-                continue;
-            for (double& c : raw)
-                c /= scale;
-            std::vector<std::pair<std::int64_t, std::int64_t>> coefficients;
-            coefficients.reserve(columns);
-            for (double c : raw)
-                coefficients.push_back(rational(c, config.maximumCoefficientDenominator));
-            auto expression = makeExpression(ms, coefficients, problem.limits());
-            auto assessed = problem.assess(expression);
+            }
+            auto assessed = problem.assess(*expression);
             if (assessed.score.state() != FitnessState::Valid || !assessed.withinFraction ||
                 !assessed.betweenFraction ||
                 *assessed.withinFraction > config.maximumWithinFraction ||
                 *assessed.betweenFraction < config.minimumBetweenFraction)
                 continue;
-            const bool better = !bestExpression ||
-                                expression.nodeCount() < bestExpression->nodeCount() ||
-                                (expression.nodeCount() == bestExpression->nodeCount() &&
-                                 (*assessed.withinFraction < *bestAssessment.withinFraction ||
-                                  (*assessed.withinFraction == *bestAssessment.withinFraction &&
-                                   expression.toString() < bestExpression->toString())));
-            if (better) {
-                bestExpression = std::move(expression);
+            if (!bestExpression || expression->nodeCount() < bestExpression->nodeCount() ||
+                (expression->nodeCount() == bestExpression->nodeCount() &&
+                 *assessed.withinFraction < *bestAssessment.withinFraction)) {
+                bestExpression = std::move(*expression);
                 bestAssessment = std::move(assessed);
             }
         }
+        const bool hasNullspace = largest > 0.0 && result.eigenvalueRatio <= config.rankTolerance;
+        if (hasNullspace)
+            for (std::size_t eigenIndex = 0; eigenIndex < eig.values.size(); ++eigenIndex) {
+                const double ratio = std::max(0.0, eig.values[eigenIndex]) / largest;
+                if (ratio > config.rankTolerance)
+                    continue;
+                std::vector<double> raw(columns, 0.0);
+                for (std::size_t j = 0; j < columns; ++j)
+                    if (norms[j] > 0.0)
+                        raw[j] = eig.vectors[j][eigenIndex] / (scales[j] * norms[j]);
+                double scale = 0.0;
+                for (double c : raw)
+                    scale = std::max(scale, std::abs(c));
+                if (!(scale > 0.0) || !std::isfinite(scale))
+                    continue;
+                for (double& c : raw)
+                    c /= scale;
+                std::vector<std::pair<std::int64_t, std::int64_t>> coefficients;
+                coefficients.reserve(columns);
+                for (double c : raw)
+                    coefficients.push_back(rational(c, config.maximumCoefficientDenominator));
+                std::vector<std::int64_t> integerCoefficients;
+                if (!clearDenominators(coefficients, problem.limits().maxAbsConstant,
+                                       integerCoefficients)) {
+                    result.exactRepresentationAvailable = false;
+                    continue;
+                }
+                std::optional<Expression> expression;
+                try {
+                    expression.emplace(makeExpression(ms, integerCoefficients, problem.limits()));
+                } catch (const std::exception&) {
+                    result.exactRepresentationAvailable = false;
+                    continue;
+                }
+                auto assessed = problem.assess(*expression);
+                if (assessed.score.state() != FitnessState::Valid || !assessed.withinFraction ||
+                    !assessed.betweenFraction ||
+                    *assessed.withinFraction > config.maximumWithinFraction ||
+                    *assessed.betweenFraction < config.minimumBetweenFraction)
+                    continue;
+                const bool better = !bestExpression ||
+                                    expression->nodeCount() < bestExpression->nodeCount() ||
+                                    (expression->nodeCount() == bestExpression->nodeCount() &&
+                                     (*assessed.withinFraction < *bestAssessment.withinFraction ||
+                                      (*assessed.withinFraction == *bestAssessment.withinFraction &&
+                                       expression->toString() < bestExpression->toString())));
+                if (better) {
+                    bestExpression = std::move(*expression);
+                    bestAssessment = std::move(assessed);
+                }
+            }
         if (bestExpression) {
             result.found = true;
+            result.exactRepresentationAvailable = true;
             result.expression = std::move(*bestExpression);
             result.degree = degree;
             result.monomials = columns;

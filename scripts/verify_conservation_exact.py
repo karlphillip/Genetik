@@ -19,26 +19,35 @@ def parse(text):
 
 def verify(expr_text, system):
     f = sp.Poly(sp.expand(parse(expr_text)), X0, X1)
-    energy = X0**2 + X1**2 if system == "harmonic" else X0**4 + X1**2
-    exact_energy = sp.Poly(energy, X0, X1)
+    if system == "harmonic":
+        energy, velocity, acceleration = X0**2 + X1**2, X1, -X0
+    elif system == "quartic":
+        energy, velocity, acceleration = X0**4 + X1**2, X1, -2 * X0**3
+    elif system == "linear-shear":
+        energy, velocity, acceleration = None, sp.Integer(1), sp.Integer(-3)
+    else:
+        raise ValueError(f"unsupported dynamics: {system}")
     if f.is_zero or f.total_degree() == 0:
         nonconstant = False
     else:
         nonconstant = True
     dy, dv = sp.diff(f.as_expr(), X0), sp.diff(f.as_expr(), X1)
-    acceleration = -X0 if system == "harmonic" else -2 * X0**3
-    lie = sp.Poly(sp.expand(dy * X1 + dv * acceleration), X0, X1)
+    lie = sp.Poly(sp.expand(dy * velocity + dv * acceleration), X0, X1)
     # Solve F=aE+b by exact coefficient comparison. The nonconstant energy
     # coefficients uniquely determine a; every other nonconstant coefficient
     # must then match, and the constant difference is unrestricted.
-    energy_terms = {m: c for m, c in exact_energy.terms() if m != (0, 0)}
+    energy_terms = ({m: c for m, c in sp.Poly(energy, X0, X1).terms() if m != (0, 0)}
+                    if energy is not None else {})
     candidate_terms = {m: c for m, c in f.terms() if m != (0, 0)}
-    pivot = next(iter(energy_terms))
-    a = candidate_terms.get(pivot, sp.S.Zero) / energy_terms[pivot]
-    union = set(energy_terms) | set(candidate_terms)
-    affine = bool(a != 0 and all(candidate_terms.get(m, 0) == a * energy_terms.get(m, 0)
-                                  for m in union))
-    numeric = sp.simplify(f.as_expr() - a * energy)
+    if energy_terms:
+        pivot = next(iter(energy_terms))
+        a = candidate_terms.get(pivot, sp.S.Zero) / energy_terms[pivot]
+        union = set(energy_terms) | set(candidate_terms)
+        affine = bool(a != 0 and all(candidate_terms.get(m, 0) == a * energy_terms.get(m, 0)
+                                      for m in union))
+        numeric = sp.simplify(f.as_expr() - a * energy)
+    else:
+        a, numeric, affine = None, None, False
     return {
         "verification_status": "resolved",
         "supported_polynomial": True,
@@ -60,6 +69,8 @@ def self_test():
     assert square["exact_conservation"] and not square["exact_affine_reference_recovery"]
     bad = verify(str(X0**2), "harmonic")
     assert not bad["exact_conservation"] and not bad["exact_affine_reference_recovery"]
+    shear = verify(str(3 * X0 + X1), "linear-shear")
+    assert shear["exact_conservation"] and not shear["exact_affine_reference_recovery"]
 
 
 def main():

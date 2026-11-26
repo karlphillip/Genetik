@@ -1,0 +1,14 @@
+{
+  "affine_offset": null,
+  "affine_scale": null,
+  "exact_affine_reference_recovery": false,
+  "exact_conservation": true,
+  "exact_lie_derivative": "0",
+  "nonconstant": true,
+  "supported_polynomial": true,
+  "verification_status": "resolved",
+  "selected_expression": "(x0 + x1)",
+  "system": "linear-unit-shear",
+  "expression_nodes": 3,
+  "max_nodes": 3
+}

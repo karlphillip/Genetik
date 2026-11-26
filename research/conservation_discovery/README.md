@@ -193,9 +193,12 @@ size. Expected values are 3,822 cumulative / 2,730 final-matrix values for
 harmonic and 16,380 cumulative / 7,644 final-matrix values for quartic.
 
 The scorer's held-out separation is the standard deviation of trajectory means
-in the original candidate-output units. The v2 comparison records this as
-`heldout_separation_units: "candidate_output_units"`; drift remains the
-dimensionless within/total sum-of-squares fraction.
+after dividing all candidate outputs by their maximum absolute value. It is
+dimensionless and invariant under nonzero output scaling. Earlier v2 records
+retain their original units as historical evidence; the additive v3 comparison
+corrects the report for both the polynomial selections and all six saved PR #72
+candidates. A public regression confirms that equal-sized `y=1,2` trajectories
+have separation `0.25` for both `y` and `8*y`.
 
 The corrected API also checks zero-within-variation monomials directly. A
 degree-one grouped fixture with fixed `y` values `-2, 1, 2` and varying `v`
@@ -207,15 +210,48 @@ complexity, and arithmetic limits permit; otherwise the result marks exact
 representation unavailable and does not publish an approximate reconstruction.
 The independent SymPy verifier now checks the exported shear law under
 `y'=1, v'=-3` exactly. The deterministic test exported
-`((0.0 + (3.0 * x0)) + (1.0 * x1))`; the verifier reports nonconstant,
-exactly conserved, Lie derivative `0`. This check is recorded in
+`((3.0 * x0) + x1)`; the verifier reports nonconstant, exactly conserved, Lie
+derivative `0`. The `C-y` fixture exports a three-node form of `y+v` under a
+three-node expression limit; the verifier confirms zero Lie derivative under
+`y'=1, v'=-1`. This check is recorded in
 `results/polynomial-v2.linear-shear-verification.json`.
 
 The corrected selection and comparison are additive artifacts. All six saved
 PR #72 expressions are re-assessed on the same held-out trajectories and
 re-verified without rerunning their searches.
 
+The additional correction is in `results/polynomial-v3.*`; it leaves all v1
+and v2 artifacts untouched. The v3 `heldout_separation_units` value is
+`dimensionless_normalized_by_max_abs_candidate_output`.
+
 | System | Selected equation (unchanged) | Cumulative work | Final matrix | Held-out drift | Separation (candidate-output units) | Exact / affine |
 |---|---|---:|---:|---:|---:|---|
 | Harmonic | `y^2+v^2` | 3,822 values; 6 rotations | 2,730 values | `3.97446499e-19` | `0.385275875` | yes / yes |
 | Quartic | `y^4+v^2` | 16,380 values; 166 rotations | 7,644 values | `8.60747595e-14` | `0.419919106` | yes / yes |
+
+## Additive v3 corrections (2026-11-26)
+
+The v2 comparison evidence remains unchanged. The study command now returns held-out
+separation in dimensionless units after dividing candidate outputs by the maximum
+absolute candidate output. `polynomial-v3.comparison.json` records this unit for both
+oscillator selections and all six saved PR #72 expressions. The six numeric values
+are unchanged because the public scorer already returned normalized separation; v2
+had mislabeled those values as candidate-output units. The regression confirms the
+same value `0.25` for `y` and `8*y` on equal-sized `y=1,2` groups.
+
+Polynomial export now omits the zero initializer and coefficient-one multipliers.
+The unchanged oscillator laws shrink from 13 to 7 nodes (harmonic) and 17 to 11
+(quartic). Cumulative work remains 3,822 / 16,380 feature values; final matrices
+remain 2,730 / 7,644. The `C-y` degree-one fixture exports `x0+x1` in three nodes
+under `maxNodes=3`; the independent exact verifier reports Lie derivative `0` under
+`y'=1, v'=-1`. A two-node budget rejects it. The exact result is recorded in
+`results/polynomial-v3.compact-linear-verification.json`.
+
+| Saved candidate | Held-out drift | Normalized separation |
+|---|---:|---:|
+| Harmonic PR #72 seed 101 | 0.6946278345 | 0.1516822294 |
+| Harmonic PR #72 seed 211 | 0.1999491149 | 0.2517026352 |
+| Harmonic PR #72 seed 307 | 0.7097735026 | 0.1464864412 |
+| Quartic PR #72 seed 101 | 0.1387369474 | 0.4722842001 |
+| Quartic PR #72 seed 211 | 0.5751915867 | 0.2277242113 |
+| Quartic PR #72 seed 307 | 0.4439416784 | 0.2832792626 |

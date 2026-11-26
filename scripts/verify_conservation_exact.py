@@ -25,6 +25,8 @@ def verify(expr_text, system):
         energy, velocity, acceleration = X0**4 + X1**2, X1, -2 * X0**3
     elif system == "linear-shear":
         energy, velocity, acceleration = None, sp.Integer(1), sp.Integer(-3)
+    elif system == "linear-unit-shear":
+        energy, velocity, acceleration = None, sp.Integer(1), sp.Integer(-1)
     else:
         raise ValueError(f"unsupported dynamics: {system}")
     if f.is_zero or f.total_degree() == 0:
@@ -71,6 +73,8 @@ def self_test():
     assert not bad["exact_conservation"] and not bad["exact_affine_reference_recovery"]
     shear = verify(str(3 * X0 + X1), "linear-shear")
     assert shear["exact_conservation"] and not shear["exact_affine_reference_recovery"]
+    compact = verify(str(X0 + X1), "linear-unit-shear")
+    assert compact["exact_conservation"] and compact["exact_lie_derivative"] == "0"
 
 
 def main():

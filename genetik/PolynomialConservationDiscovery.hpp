@@ -172,19 +172,36 @@ clearDenominators(const std::vector<std::pair<std::int64_t, std::int64_t>>& rati
 
 inline Expression makeExpression(const std::vector<Monomial>& ms,
                                  const std::vector<std::int64_t>& cs, ExpressionLimits limits) {
-    Expression sum = Expression::constant(0.0, 2, limits);
     const auto y = Expression::variable(0, 2, limits), v = Expression::variable(1, 2, limits);
+    std::optional<Expression> sum;
     for (std::size_t i = 0; i < ms.size(); ++i) {
         if (cs[i] == 0)
             continue;
-        Expression term = Expression::constant(static_cast<double>(cs[i]), 2, limits);
-        for (unsigned j = 0; j < ms[i].y; ++j)
-            term = Expression::binary(ExpressionKind::Multiply, term, y, limits);
-        for (unsigned j = 0; j < ms[i].v; ++j)
-            term = Expression::binary(ExpressionKind::Multiply, term, v, limits);
-        sum = Expression::binary(ExpressionKind::Add, sum, term, limits);
+        std::optional<Expression> term;
+        if (ms[i].y > 0)
+            term.emplace(y);
+        else
+            term.emplace(v);
+        unsigned remainingY = ms[i].y > 0 ? ms[i].y - 1 : 0;
+        unsigned remainingV = ms[i].y > 0 ? ms[i].v : ms[i].v - 1;
+        while (remainingY > 0) {
+            --remainingY;
+            term = Expression::binary(ExpressionKind::Multiply, *term, y, limits);
+        }
+        while (remainingV > 0) {
+            --remainingV;
+            term = Expression::binary(ExpressionKind::Multiply, *term, v, limits);
+        }
+        if (cs[i] != 1) {
+            const auto coefficient = Expression::constant(static_cast<double>(cs[i]), 2, limits);
+            term = Expression::binary(ExpressionKind::Multiply, coefficient, *term, limits);
+        }
+        sum = sum ? std::optional<Expression>(Expression::binary(ExpressionKind::Add, *sum, *term, limits))
+                  : std::move(term);
     }
-    return sum;
+    if (!sum)
+        throw std::invalid_argument("zero polynomial has no nonconstant expression");
+    return std::move(*sum);
 }
 
 inline Expression makeMonomialExpression(Monomial monomial, ExpressionLimits limits) {

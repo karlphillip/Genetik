@@ -168,7 +168,7 @@ Heldout heldoutMetrics(const Expression& e, const std::vector<ConservationTrajec
         between += values[i].size() * (means[i] - grand) * (means[i] - grand);
     }
     const double total = within + between;
-    return {total > 0 ? within / total : 0, std::sqrt(between / n) * scale, true};
+    return {total > 0 ? within / total : 0, std::sqrt(between / n), true};
 }
 void report(int system, unsigned seed, bool smoke) {
     auto training = split(system, false, smoke);
@@ -204,6 +204,7 @@ void report(int system, unsigned seed, bool smoke) {
               << ",\"generator_rk4_refinement_error\":" << generatorError(system, smoke)
               << ",\"heldout_within_fraction\":" << (metrics.finite ? metrics.within : -1)
               << ",\"heldout_separation\":" << (metrics.finite ? metrics.separation : -1)
+              << ",\"heldout_separation_units\":\"dimensionless_normalized_by_max_abs_candidate_output\""
               << ",\"heldout_metrics_valid\":" << (metrics.finite ? "true" : "false") << "}\n";
 }
 void verify(int system, const std::string& text) {
@@ -263,6 +264,8 @@ void polynomialSelect(int system) {
     std::cout << "{\"found\":" << (selected.found ? "true" : "false") << ",\"expression\":\""
               << (selected.found ? selected.expression.toString() : "")
               << "\",\"degree\":" << selected.degree << ",\"monomials\":" << selected.monomials
+              << ",\"expression_nodes\":"
+              << (selected.found ? selected.expression.nodeCount() : 0)
               << ",\"cumulative_feature_values\":" << selected.cumulativeFeatureValues
               << ",\"final_matrix_feature_values\":" << selected.monomials * problem.sampleCount()
               << ",\"exact_representation_available\":"
@@ -289,7 +292,7 @@ void polynomialAssess(int system, const std::string& text) {
               << ",\"heldout_within_fraction\":"
               << (metrics.withinFraction ? *metrics.withinFraction : -1.0)
               << ",\"heldout_separation\":" << (metrics.separation ? *metrics.separation : -1.0)
-              << ",\"heldout_separation_units\":\"candidate_output_units\""
+              << ",\"heldout_separation_units\":\"dimensionless_normalized_by_max_abs_candidate_output\""
               << ",\"generator_rk4_refinement_error\":"
               << generatorError(system, std::vector<State>{{0, 2}, {-.5, 0}, {1.5, -.5}})
               << ",\"nonconstant\":" << (exactNonconstant(expression) ? "true" : "false")

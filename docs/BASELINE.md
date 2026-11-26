@@ -1414,10 +1414,12 @@ and adds a zero-centered-feature direct-assessment path plus bounded primitive
 integer coefficient reconstruction. The existing equations were unchanged:
 harmonic `y^2+v^2`, quartic `y^4+v^2`. Public cumulative matrix work is now
 3,822 / 16,380 feature values; final matrix sizes are separately 2,730 / 7,644.
-Held-out separation is explicitly candidate-output standard deviation. A
+Held-out separation is dimensionless standard deviation after dividing candidate
+outputs by their maximum absolute value; scaling a candidate does not change it. A
 degree-one fixture recovers fixed-per-trajectory `y`; the shear fixture exports
-`3*y+v` and the exact verifier confirms its Lie derivative is zero under
-`y'=1, v'=-3`. New records are additive `polynomial-v2.*` artifacts.
+compact `3*y+v` and the exact verifier confirms its Lie derivative is zero under
+`y'=1, v'=-3`. The compact-export and normalized-separation corrections are
+recorded additively as `polynomial-v3.*` artifacts.
 
 ## Bounded Pareto objective vectors (2026-11)
 

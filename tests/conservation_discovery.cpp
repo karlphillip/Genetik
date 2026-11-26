@@ -55,6 +55,20 @@ int main() {
         check(degenerate.score.state() == FitnessState::Invalid,
               "constant expressions have no between-trajectory separation and are rejected");
 
+        std::vector<ConservationTrajectory> scaleGroups;
+        for (const double fixedY : {1.0, 2.0}) {
+            ConservationTrajectory group;
+            group.states = {{fixedY, -1.0}, {fixedY, 1.0}};
+            scaleGroups.push_back(std::move(group));
+        }
+        const ConservationDiscoveryProblem scaleProblem(scaleGroups);
+        const auto ySeparation = scaleProblem.assess(y).separation;
+        const auto scaledY = mul(Expression::constant(8.0, 2), y);
+        const auto scaledSeparation = scaleProblem.assess(scaledY).separation;
+        check(ySeparation && scaledSeparation && std::abs(*ySeparation - 0.25) < 1e-15 &&
+                  std::abs(*scaledSeparation - 0.25) < 1e-15,
+              "held-out separation is dimensionless and invariant under candidate scaling");
+
         const auto tiny = mul(Expression::constant(1e-14, 2), varying);
         check(problem.assess(tiny).score.state() == FitnessState::Invalid,
               "numerically degenerate shrinkage is rejected");
@@ -173,6 +187,27 @@ int main() {
         }
         std::cout << "linear shear selected expression: " << affineLaw.expression.toString()
                   << '\n';
+        std::vector<ConservationTrajectory> compactGroups;
+        for (const double offset : {-2.0, 1.0, 2.0}) {
+            ConservationTrajectory group;
+            for (const double time : {-2.0, -1.0, 1.0, 2.0})
+                group.states.push_back({time, offset - time});
+            compactGroups.push_back(std::move(group));
+        }
+        const ConservationDiscoveryProblem compactProblem(compactGroups,
+                                                           ExpressionLimits{3, 4, 1e6});
+        const auto compactLaw = discoverPolynomialConservation(compactProblem, linearConfig);
+        check(compactLaw.found && compactLaw.degree == 1 &&
+                  compactLaw.expression.nodeCount() == 3 &&
+                  compactLaw.expression.evaluate(std::array{2.0, -1.0}).value() == 1.0 &&
+                  compactLaw.expression.evaluate(std::array{-1.0, 3.0}).value() == 2.0,
+              "compact three-node degree-one export recovers y+v within maxNodes=3");
+        auto tooSmall = linearConfig;
+        const ConservationDiscoveryProblem insufficientProblem(compactGroups,
+                                                                 ExpressionLimits{2, 4, 1e6});
+        const auto insufficient = discoverPolynomialConservation(insufficientProblem, tooSmall);
+        check(!insufficient.found,
+              "a genuinely insufficient expression-node budget rejects the linear law");
         const ConservationDiscoveryProblem limitedAffineProblem(affineGroups,
                                                                 ExpressionLimits{63, 8, 0.5});
         const auto unavailableAffine =

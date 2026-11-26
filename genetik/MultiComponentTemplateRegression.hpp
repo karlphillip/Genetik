@@ -536,31 +536,86 @@ public:
         if (problem.objective().loss != RegressionLoss::MeanSquaredError)
             throw std::invalid_argument(
                 "shared function coefficient fitting supports ordinary MSE only");
-        // Evaluate each call separately with unit coefficient. Summing calls in
-        // binary64 first can overflow even when the bounded fitted model is
-        // finite (for example, two 2^1023 inputs with a=0.5). Accumulate the
-        // design and normal equations in the wider intermediate type.
-        const auto unitBody = body_.withConstant(coefficientNode_, 1.0);
-        long double numerator = 0.0L, denominator = 0.0L;
+        // Keep intermediate magnitudes as a binary64 mantissa and an integer
+        // exponent. This avoids relying on long double having a wider range,
+        // and it lets the factor be evaluated without installing a synthetic
+        // unit coefficient that could violate maxAbsConstant.
+        struct Scaled {
+            double mantissa = 0.0;
+            int exponent = 0;
+            static Scaled from(double value) {
+                if (value == 0.0)
+                    return {};
+                int exponent = 0;
+                return {std::frexp(value, &exponent), exponent};
+            }
+            void add(Scaled other) {
+                if (other.mantissa == 0.0)
+                    return;
+                if (mantissa == 0.0) {
+                    *this = other;
+                    return;
+                }
+                if (other.exponent > exponent) {
+                    mantissa = std::ldexp(mantissa, exponent - other.exponent) + other.mantissa;
+                    exponent = other.exponent;
+                } else {
+                    mantissa += std::ldexp(other.mantissa, other.exponent - exponent);
+                }
+                if (mantissa == 0.0) {
+                    exponent = 0;
+                    return;
+                }
+                int adjustment = 0;
+                mantissa = std::frexp(mantissa, &adjustment);
+                exponent += adjustment;
+            }
+            static Scaled product(Scaled a, Scaled b) {
+                if (a.mantissa == 0.0 || b.mantissa == 0.0)
+                    return {};
+                int adjustment = 0;
+                const double m = std::frexp(a.mantissa * b.mantissa, &adjustment);
+                return {m, a.exponent + b.exponent + adjustment};
+            }
+        };
+        const auto rightRange = expressionSubtree(body_, body_.nodeCount() - 2);
+        const auto leftRange = expressionSubtree(body_, rightRange.first - 1);
+        const auto selected = std::pair{coefficientNode_, coefficientNode_ + 1};
+        const auto factorRange = leftRange == selected ? rightRange : leftRange;
+        const Expression factor(std::span(body_.nodes().data() + factorRange.first,
+                                          factorRange.second - factorRange.first),
+                                body_.variableCount(), expandedLimits_);
+        Scaled numerator, denominator;
         for (const auto& row : problem.trainingRows()) {
-            long double feature = 0.0L;
+            Scaled feature;
             for (const auto& input : callInputs_) {
-                const auto call = expandCall(unitBody, input).evaluate(row.inputs);
+                const auto call = expandCall(factor, input).evaluate(row.inputs);
                 if (!call.valid())
                     throw std::domain_error("shared function fit encountered invalid call");
-                feature += static_cast<long double>(call.value());
+                feature.add(Scaled::from(call.value()));
             }
-            const long double target = static_cast<long double>(row.target);
-            if (!std::isfinite(feature) || !std::isfinite(target))
+            if (!std::isfinite(feature.mantissa) || !std::isfinite(row.target))
                 throw std::domain_error("shared function design values are non-finite");
-            numerator += feature * target;
-            denominator += feature * feature;
+            const auto target = Scaled::from(row.target);
+            numerator.add(Scaled::product(feature, target));
+            denominator.add(Scaled::product(feature, feature));
         }
-        if (!(denominator > 0.0L))
+        if (denominator.mantissa == 0.0)
             throw std::domain_error("shared function coefficient is not identifiable");
-        const long double unconstrained = numerator / denominator;
-        const double coefficient = static_cast<double>(std::clamp(
-            unconstrained, static_cast<long double>(lower), static_cast<long double>(upper)));
+        double unconstrained = 0.0;
+        if (numerator.mantissa != 0.0) {
+            int adjustment = 0;
+            const double ratio = std::frexp(numerator.mantissa / denominator.mantissa, &adjustment);
+            const int exponent = numerator.exponent - denominator.exponent + adjustment;
+            if (exponent > std::numeric_limits<double>::max_exponent)
+                unconstrained = std::copysign(std::numeric_limits<double>::infinity(), ratio);
+            else if (exponent < std::numeric_limits<double>::min_exponent -
+                                    std::numeric_limits<double>::digits)
+                unconstrained = std::copysign(0.0, ratio);
+            else
+                unconstrained = std::ldexp(ratio, exponent);
+        }
+        const double coefficient = std::clamp(unconstrained, lower, upper);
         auto model = expanded(coefficient);
         const auto loss = problem.measure(model).loss.score();
         return {coefficient, loss, std::move(model), 1};

@@ -530,6 +530,17 @@ void sharedNamedFunction() {
     const auto mixedScaleFit = shared.fit(*mixedScaleRows, 0.0, 2.0);
     check(mixedScaleFit.coefficient == 1.0,
           "tiny informative row is retained beside a much larger orthogonal target");
+    const ExpressionLimits tightLimits{31, 10, 0.5, 40};
+    const auto tightBody = parseExpression("0.25*x0", 2, {}, tightLimits);
+    const auto tightP = Expression::variable(0, 2, tightLimits);
+    const auto tightQ = Expression::variable(1, 2, tightLimits);
+    const SharedLearnableFunctionTemplate tightShared("g", tightBody, 0, 0, {tightP, tightQ},
+                                                      tightLimits);
+    const auto tightRows =
+        RegressionProblem::create({{{1.0, 0.0}, 0.25}, {{0.0, 2.0}, 0.5}}, tightLimits);
+    const auto tightFit = tightShared.fit(*tightRows, 0.0, 0.5);
+    check(tightFit.coefficient == 0.25 && tightFit.mse == 0.0,
+          "fit preserves constant limits without constructing an out-of-range unit literal");
     const auto zeroFeature =
         RegressionProblem::create({{{0.0, 0.0}, 0.0}, {{0.0, 0.0}, 0.0}}, expandedLimits);
     rejects([&] { (void)shared.fit(*zeroFeature, 0.0, 2.0); },

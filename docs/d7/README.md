@@ -16,6 +16,7 @@ record, historical D5/D6 discovery diagnostics and release evidence.
 - [Integrated D5/D6 numerical qualification](../D7_NUMERICAL_QUALIFICATION.md).
 - [Competitor benchmark report](BENCHMARK_REPORT.md) and per-seed outcomes in
   [`results/`](results/).
+- [Current-main clean trig_sine comparison](results/trig-sine-main-20261126/REPORT.md), with frozen candidate outcomes and a separate coefficient-refinement diagnostic.
 - [Local engineering qualification summary](QUALIFICATION_SUMMARY.md),
   [hosted qualification proposal](HOSTED_QUALIFICATION_PROPOSAL.md), and
   [release candidate notes](../releases/0.5.0/NOTES.md).

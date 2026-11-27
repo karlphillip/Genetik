@@ -1,0 +1,44 @@
+{
+  "seed": 0,
+  "expression_sha256": "658bac8c0aa5a61eeca4f8fd3cef024e9b8750256a749939b30de73f70759927",
+  "training_only": true,
+  "config": {
+    "maxLossAttempts": 64,
+    "maxSweeps": 32,
+    "maxProposals": 2048,
+    "lower": -8,
+    "upper": 8,
+    "initialStep": 1,
+    "minimumStep": 1e-06
+  },
+  "supervisor": {
+    "command": [
+      "taskset",
+      "-c",
+      "0",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/d7-trig-sine-current-20261126/out/build/d7-benchmark/run_genetik_refinement",
+      "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/d7-trig-sine-current-20261126/docs/d7/data/trig_sine-train-clean.csv",
+      "(sin(((x0 * sin(3.6651327288931768)) - (x0 - (-0.3000158843895111)))) * (((-4.7557570443610686) - 1.6247422933939539) * 0.31346876013164504))"
+    ],
+    "cwd": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/d7-trig-sine-current-20261126",
+    "cpu_affinity": [
+      0
+    ],
+    "worker_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "wall_cap_seconds": 120.0,
+    "memory_cap_gib": 6.0,
+    "outcome": "completed",
+    "exit_code": 0,
+    "wall_seconds": 0.08324542899208609,
+    "cpu_seconds": 0.0,
+    "peak_rss_gib": 0.0,
+    "peak_process_threads": 1,
+    "stdout": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/d7-trig-sine-current-20261126/out/logs/d7-current/refinement/seed-0/stdout.log",
+    "stderr": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/d7-trig-sine-current-20261126/out/logs/d7-current/refinement/seed-0/stderr.log"
+  },
+  "stdout": "initial_training_mse=1.89987e-08\nfinal_training_mse=1.89987e-08\nexpression=(sin(((x0 * sin(3.6651327288931768)) - (x0 - (-0.3000158843895111)))) * (((-4.7557570443610686) - 1.6247422933939539) * 0.31346876013164504))\nimproved=false\nstop=evaluation_limit\nloss_attempts=64\nproposals=64\nsweeps=7\n"
+}

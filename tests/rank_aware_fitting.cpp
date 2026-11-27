@@ -218,7 +218,9 @@ static void directFixtures() {
           "exhausted shared allowance rejects measure before doing work");
     const auto reused = fitConstants(start, globallyTightObjective, lm(true, 512));
     check(reused.stop == ConstantFitStop::EvaluationLimit && reused.lossAttempts == 0 &&
-              reused.totalBudgetUnits == 0 && globallyTightObjective.remaining() == 0,
+              reused.totalBudgetUnits == 0 &&
+              globallyTightObjective.work() == beforeDeniedMeasure &&
+              globallyTightObjective.remaining() == 0,
           "exhausted shared allowance rejects another fit without work");
     std::cout << "fixture=global_tight_budget baseline_train=" << baselineGloballyTight.loss.score()
               << " rank_train=" << globallyTight.loss.score()

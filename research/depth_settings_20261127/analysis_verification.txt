@@ -1,0 +1,6 @@
+original: recovery=2/8 paired_gains=0 paired_losses=0
+deeper_initialization: recovery=6/8 paired_gains=5 paired_losses=1
+deeper_mutation: recovery=8/8 paired_gains=6 paired_losses=0
+library_defaults: recovery=7/8 paired_gains=6 paired_losses=1
+sympy=1.12; classified literal-sensitive trees=716
+PASS runs=32 candidate_records=1600 unique_within_run_trees=1007 capable=160 incapable=847 unresolved=0

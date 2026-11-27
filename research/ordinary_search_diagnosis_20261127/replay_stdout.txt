@@ -1,0 +1,13 @@
+fixture=default_arithmetic_exhaustion cap=20 stop=evaluation_limit start=13 returned=13 operations=21
+fixture=supplied_redundant start_train=13 baseline_train=13 rank_train=5.81081e-30 baseline_held=28.5 rank_held=1.47254e-29 selected=0,5 fitted=1.5,0.5,3 selection_work=21 loss_calls=9 lm_objective_evaluations=8 total_work=30 baseline_stop=singular_system rank_stop=loss_tolerance
+fixture=supplied_full_rank baseline_start=13 baseline_train=5.81081e-30 rank_train=5.81081e-30 baseline_held=1.47254e-29 rank_held=1.47254e-29 baseline_lm_objective_evaluations=8 baseline_loss_calls=8 selected=0,3 selection_work=14 loss_calls=9 lm_objective_evaluations=8 total_work=23 baseline_stop=loss_tolerance rank_stop=loss_tolerance
+fixture=supplied_tight_budget baseline_train=13 rank_train=13 baseline_total_work=1 selection_work=0 total_work=1 baseline_stop=singular_system rank_stop=evaluation_limit
+fixture=global_tight_budget baseline_train=13 rank_train=13 baseline_total_work=1 selection_work=9 fit_loss_calls=1 total_work=10 remaining=0 baseline_stop=singular_system rank_stop=evaluation_limit
+fixture=rank_arithmetic_exhaustion cap=520 stop=evaluation_limit native_stop=evaluation_limit start=13 returned=13 improved=0 operations=28 selector_operations=492
+fixture=rank_arithmetic_exhaustion cap=650 stop=evaluation_limit native_stop=evaluation_limit start=13 returned=1.2974e-05 improved=1 operations=158 selector_operations=492
+fixture=operation_cap cap=100 spent=100 stop=evaluation_limit
+fixture=actual_coefficient_product selected=0 train=2.52435e-29 held=2.68213e-29
+fixture=weighted_affine selected=0 coefficient=4 train=9.66355e-30
+fixture=intercept_first selected=0,3 a=2 c=3 train=3.63176e-25 held=1.36194e-25
+fixture=ordinary_generated_search_base seed=20261127 candidates=50 training=2 heldout=7.5 objective_calls=294 equation=(x0 + 2.9999999999292117)
+fixture=ordinary_generated_search_corrected seed=20261127 candidates=50 training=2 heldout=7.5 selected_direction_count=42 selected_derivative_evaluations=255 selected_rows=210 loss_calls=419 fit_loss_calls=419 objective_calls=419 lm_objective_evaluations=369 work_total=674 stop=generation_limit equation=(x0 + 2.9999999999292117)

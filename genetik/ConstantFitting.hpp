@@ -713,7 +713,8 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
             ++result.rankSelectionWork.rows;
             continue;
         }
-        const double rowScale = rowScales[row];
+        double rowScale = rowScales[row];
+        bool rowScaleReady = fitObjective.loss != RegressionLoss::Huber;
         for (std::size_t p = 0; p < parameters.size(); ++p) {
             if (objective.remaining() == 0) {
                 result.rankSelectionStop = "global_work_limit";
@@ -742,8 +743,26 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
                         : "jacobian_unavailable";
                 return finish(ConstantFitStop::EvaluationLimit);
             }
+            if (!rowScaleReady) {
+                const double residual = derivative.value - rows[row].target;
+                const double magnitude = std::abs(residual);
+                const double delta = fitObjective.huberDelta;
+                if (magnitude > delta) {
+                    if (!chargeArithmetic(7)) {
+                        result.rankSelectionStop = "arithmetic_work_limit";
+                        return finish(ConstantFitStop::EvaluationLimit);
+                    }
+                    const double deltaRatio = delta / magnitude;
+                    const double tailScale =
+                        (std::sqrt(delta) / std::sqrt(magnitude)) / std::sqrt(2.0 - deltaRatio);
+                    rowScale = tailScale;
+                }
+                rowScaleReady = true;
+            }
             columns[p][row] = derivative.derivatives.front();
-            if (fitObjective.loss == RegressionLoss::WeightedMeanSquaredError) {
+            if ((fitObjective.loss == RegressionLoss::WeightedMeanSquaredError ||
+                 fitObjective.loss == RegressionLoss::Huber) &&
+                rowScale != 1.0) {
                 if (!chargeArithmetic(1)) {
                     result.rankSelectionStop = "arithmetic_work_limit";
                     return finish(ConstantFitStop::EvaluationLimit);

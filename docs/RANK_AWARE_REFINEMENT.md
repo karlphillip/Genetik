@@ -43,8 +43,9 @@ separately. No D7 target or historical fit is read or modified.
 ## Follow-up correction
 
 On the rank-aware follow-up head, selector derivatives are now evaluated at the
-actual starting coefficients, use the fitted objective's weighted residual
-Jacobian (including a zero Jacobian for zero-weight rows), and pass selected
+actual starting coefficients, use the fitted objective's residual-Jacobian
+scaling for weighted MSE and Huber (including a zero Jacobian for zero-weight
+rows), and pass selected
 constant indices to LM in increasing postfix order. The work allowance is
 admitted before each public objective call; the mathematical-operation cap is
 admitted across baseline prediction, selector derivatives, orthogonalization,

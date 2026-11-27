@@ -1,0 +1,112 @@
+{
+  "assessor": "docs/d7/assess_results.py; run after fit-results-frozen.tsv was written and hashed",
+  "base_sha": "92d91e619158e9991102544b4700053cb65872b8",
+  "bounded_execution_workflow": {
+    "impact": "This does not meet the repository bounded-program protocol gate; the assignment results are transparent but not fully workflow-qualified.",
+    "status": "not frozen through scripts/research_execution.py before target execution"
+  },
+  "compiler": "g++ 13.3.0 (Ubuntu 13.3.0-6ubuntu2~24.04.1), -std=c++20 -O3 -DNDEBUG -fno-fast-math -ffp-contract=off -pthread",
+  "data": {
+    "heldout": {
+      "expected_sha256": "7c1c2bdd458a45c9109ab2c8fe3b7710b6c2e32adbc0c2f953992440c8a87259",
+      "path": "docs/d7/data/trig_sine-test.csv",
+      "sha256": "7c1c2bdd458a45c9109ab2c8fe3b7710b6c2e32adbc0c2f953992440c8a87259"
+    },
+    "training": {
+      "expected_sha256": "f1a555b6c5bd32fd872dbcfc1b434359b1633f27cac0572f52432a4b5d67366e",
+      "path": "docs/d7/data/trig_sine-train-clean.csv",
+      "sha256": "f1a555b6c5bd32fd872dbcfc1b434359b1633f27cac0572f52432a4b5d67366e"
+    }
+  },
+  "executed_runner_binary_sha256": "94f55a4258377f50aa5b52ef40b6df2825e447dd703289528fe577a4f7c4a45f",
+  "executed_runner_source": {
+    "path": "executed-runner-source.cpp",
+    "rebuild_binary_sha256": "94f55a4258377f50aa5b52ef40b6df2825e447dd703289528fe577a4f7c4a45f",
+    "rebuild_match": "exact; rebuilt with the recorded compiler flags and original source path",
+    "sha256": "3fca38219bf1d4858b88a09e660928d8772e0c29219a465240f8f0231add491f"
+  },
+  "execution_authorization_deviation": {
+    "actual_target_fit_api_calls": 12,
+    "authorized_target_fit_api_calls": 8,
+    "cause": "The initial runner attempted the four seed-0 fits and then failed while building the seed-1 initial Jacobian. The corrected runner subsequently completed the intended eight-fit comparison.",
+    "consequence": "Final eight-fit results are presented, but the end-to-end comparison is not strictly within the authorized cumulative fit count and the rank rule was corrected after the incomplete attempt. Results are evidence for review, not a fully protocol-qualified eight-call execution.",
+    "excess_calls": 4,
+    "partial_attempt_failure": "seed 1 initial mapped-parameter Jacobian invalid before a fit call; source behavior and partial records retained",
+    "partial_fit_objective_calls": [
+      64,
+      64,
+      1,
+      1
+    ]
+  },
+  "execution_chronology": [
+    "four preliminary target fit API calls on seed 0",
+    "selector correction and rule freeze",
+    "eight final target fit API calls, four per expression",
+    "freeze the eight final returned expressions",
+    "held-out assessment of only those eight frozen outputs"
+  ],
+  "classification": "exploratory fixed-topology diagnostic; not admitted through the frozen bounded-program workflow",
+  "frozen_fit_output_sha256": "c2c1f71c166622bf0a31b94bf7369bdcf4ad2eb12dbd14d6b262c20bcf4ce86f",
+  "native_stop_interpretation": "raw TSV literal \"unknown\" occurs for LM all-occurrence fits; exact enum value is SingularSystem, normalized additively as singular_system in comparison.jsonl and report.",
+  "parameter_subset_rule": {
+    "frozen_before": false,
+    "frozen_timing_note": "The corrected selector rule was finalized after the four preliminary target fit API calls; it was fixed before the eight final fit API calls.",
+    "jacobian": "central finite differences of each original constant occurrence against all 160 training inputs; h=sqrt(binary64 epsilon)*max(1,abs(c))",
+    "rank_revealing": "pivoted modified Gram-Schmidt; largest residual 2-norm pivot; exact ties choose smaller postfix node index; recompute one orthogonalization pass per pivot",
+    "rank_tolerance": "1e-8 times the largest original Jacobian column 2-norm",
+    "seed_0_selected_postfix_nodes": [
+      1,
+      5,
+      12
+    ],
+    "seed_1_selected_postfix_nodes": [
+      11,
+      13,
+      23
+    ]
+  },
+  "partial_target_attempt": {
+    "assessment": "not scored; retained as an incomplete target-side pilot",
+    "completed_fit_api_calls": 4,
+    "objective_calls": 130,
+    "path": "partial-target-attempt.tsv",
+    "qualification": "overran the requested eight-fit authorization by four fit API calls; no further target fit was run",
+    "seed_0_rank_subset": "empty due to the then-current parameter-Jacobian adapter replacing constants without binding their starting literal values; fitter returned no_constants after its baseline call",
+    "seed_1_failure": "initial training Jacobian unavailable (primal invalidity) before any seed-1 fit",
+    "sha256": "d1f1e93755e4c40642dc0b2713350a6f388c3e1100c373131c83b56a4d6b79c7",
+    "status": "failed_during_seed_1_initial_jacobian_after_four_seed_0_fit_calls"
+  },
+  "pr74_candidate_commit": "7011cb1c241da27f510b2f2867b10454531899da",
+  "runner_source_sha256_post_outcome_schema_update": "ee7c1992cc94da0e7c6849c35be1e2faf801312ce25d7137b0d74600f5daab8d",
+  "source_expressions": [
+    {
+      "expression": "(sin(((x0 * sin(3.6651327288931768)) - (x0 - (-0.3000158843895111)))) * (((-4.7557570443610686) - 1.6247422933939539) * 0.31346876013164504))",
+      "expression_sha256": "658bac8c0aa5a61eeca4f8fd3cef024e9b8750256a749939b30de73f70759927",
+      "seed": 0
+    },
+    {
+      "expression": "(sin((((x0 - exp((-3.9998290103113394))) * (((-0.35641673078372982) / (-1.8728758853113394)) * 0.0021241146886605833)) + ((x0 * 1.4995890767495386) + ((0.00017098968866058328 * (-0.50041092325046144)) + sin(exp((-1.1881319430333228))))))) * 2.0001709896886606)",
+      "expression_sha256": "6086d68400a122a9608291c8053590a52d7f4e714d369447b682ebc1f4a20c48",
+      "seed": 1
+    }
+  ],
+  "source_tree": "Genetik main after PR #74 merge",
+  "study": "D7 clean trig_sine fixed-topology coefficient-refinement follow-up",
+  "synthetic_rehearsal": {
+    "fits": 8,
+    "note": "first rehearsal caught an iterator lifetime bug; corrected before the first target-side run",
+    "path": "synthetic-rehearsal/",
+    "status": "completed in Release and ASan/UBSan; all non-timing fields match"
+  },
+  "task_limits": {
+    "cpu_affinity": [
+      0
+    ],
+    "fit_count": 8,
+    "fits_per_expression": 4,
+    "max_objective_calls_per_fit": 64,
+    "outer_wall_seconds": 60,
+    "process_memory_limit_bytes": 2147483648
+  }
+}

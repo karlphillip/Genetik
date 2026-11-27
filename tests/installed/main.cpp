@@ -16,6 +16,32 @@ protected:
 };
 int main() {
     {
+        const auto x = Expression::variable(0);
+        const auto pair = Expression::binary(ExpressionKind::Add, Expression::constant(.5, 1),
+                                             Expression::constant(.5, 1));
+        const auto scaled = Expression::binary(ExpressionKind::Multiply, pair, x);
+        const auto model =
+            Expression::binary(ExpressionKind::Add, scaled, Expression::constant(0, 1));
+        std::vector<RegressionRow> rows;
+        for (double value : {-2., -1., 0., 1., 2.})
+            rows.push_back({{value}, 2 * value + 3});
+        auto problem = RegressionProblem::create(std::move(rows), {32, 8, 8});
+        TrainingObjective objective(problem, 1000);
+        ConstantFitConfig fit;
+        fit.method = ConstantFitMethod::LevenbergMarquardt;
+        fit.rankAware = true;
+        fit.lower = -8;
+        fit.upper = 8;
+        fit.maxLossAttempts = 256;
+        fit.levenbergMarquardt.maxObjectiveEvaluations = 64;
+        fit.levenbergMarquardt.maxJacobianEvaluations = 64;
+        fit.levenbergMarquardt.lossTolerance = 1e-20;
+        const auto result = fitConstants(model, objective, fit);
+        if (result.selectedDirections.size() != 2 || result.loss.score() > 1e-18 ||
+            result.rankSelectionWork.derivativeEvaluations == 0)
+            return 3;
+    }
+    {
         std::vector<ConservationTrajectory> groups;
         constexpr double pi = 3.14159265358979323846;
         for (double radius : {1.0, 2.0, 3.0}) {

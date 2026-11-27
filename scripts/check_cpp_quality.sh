@@ -48,6 +48,7 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     genetik/Regression.hpp \
     genetik/InformationCriteria.hpp \
     genetik/ConstantFitting.hpp \
+    genetik/ScalarMathematicsRun.hpp \
     genetik/SymbolicRegression.hpp \
     genetik/SymbolicAlgebra.hpp \
     genetik/TypedExpression.hpp \
@@ -85,6 +86,7 @@ format_diff="$(git diff --no-color --unified=0 origin/main -- \
     tests/discrete_expression_components.cpp \
     tests/research_process_fixture.cpp \
     tests/discrete_conditional_grammar_synthesis.cpp \
+    tests/rank_aware_fitting.cpp \
     genetik/DiscreteConditionalGrammarSynthesis.hpp \
     benchmarks/prime_successor/native_expression_evaluator.cpp |
     "$format_diff_tool" -p1 -binary "$format_tool")"
@@ -120,6 +122,7 @@ fi
     tests/discrete_expression_components.cpp \
     tests/research_process_fixture.cpp \
     tests/discrete_conditional_grammar_synthesis.cpp \
+    tests/rank_aware_fitting.cpp \
     benchmarks/prime_successor/native_expression_evaluator.cpp \
     benchmarks/automatic_separable_comparison.cpp \
     benchmarks/automatic_separable_noise_followup.cpp \

@@ -166,7 +166,8 @@ public:
         if(kind!=TrainingLossKind::Ordinary && kind!=TrainingLossKind::FittingBaseline && kind!=TrainingLossKind::FittingProbe)
             throw std::invalid_argument("unknown training loss kind");
         if(admission_)admission_->start(execution_);
-        else if (work_.lossAttempts >= maximum_) throw TrainingLossBudgetExceeded();
+        else if (remaining() == 0)
+            throw TrainingLossBudgetExceeded();
         countTrainingWork(work_.lossAttempts);
         if(kind==TrainingLossKind::Ordinary)countTrainingWork(work_.ordinaryLossAttempts);
         else {
@@ -185,8 +186,12 @@ public:
     const std::shared_ptr<const RegressionProblem>& problem() const noexcept { return problem_; }
     std::uint64_t maximum() const noexcept { return maximum_; }
     std::uint64_t remaining() const {
-        return admission_ ? admission_->remaining()
-                          : maximum_ - work_.lossAttempts - rankSelectionEvaluations_;
+        if (admission_)
+            return admission_->remaining();
+        if (work_.lossAttempts >= maximum_)
+            return 0;
+        const auto left = maximum_ - work_.lossAttempts;
+        return rankSelectionEvaluations_ >= left ? 0 : left - rankSelectionEvaluations_;
     }
     const std::shared_ptr<RefinementDiagnostics>& diagnostics() const noexcept {return diagnostics_;}
     const TrainingWork& work() const noexcept { return work_; }
@@ -394,7 +399,8 @@ Result fitCoordinates(ExpressionValue expression,Objective& objective,const Cons
 
 inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
     const Expression& input, TrainingObjective& objective, std::span<const std::size_t> selected,
-    const ConstantFitConfig& config, bool recordInvocation = true) {
+    const ConstantFitConfig& config, bool recordInvocation = true,
+    bool preadmitObjectiveOperations = false) {
     validateConstantFitConfig(config,*objective.problem());
     (void)objective.problem()->checkedExpression(input);
     const auto& rows=objective.problem()->trainingRows();
@@ -440,15 +446,36 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
         Expression candidate = input;
         for (std::size_t i = 0; i < selected.size(); ++i)
             candidate = candidate.withConstant(selected[i], theta[i]);
+        if (preadmitObjectiveOperations && (candidate.arithmeticCost() != 0 &&
+                                            rows.size() > allowance / candidate.arithmeticCost())) {
+            LMResidualEvaluation denied;
+            denied.operationLimitReached = true;
+            return denied;
+        }
         const auto before = objective.supplementalWork();
         auto score = objective.measure(candidate, calls ? TrainingLossKind::FittingProbe
                                                         : TrainingLossKind::FittingBaseline);
         const auto after = objective.supplementalWork();
+        const auto measuredOperations =
+            after.mathematicalOperations - before.mathematicalOperations;
         if (calls == std::numeric_limits<std::uint64_t>::max())
             throw std::overflow_error("LM objective call count overflow");
         ++calls;
-        if (score.loss.state() != FitnessState::Valid)
-            return LMResidualEvaluation{};
+        if (measuredOperations > allowance) {
+            LMResidualEvaluation denied;
+            denied.operationLimitReached = true;
+            denied.mathematicalOperations = measuredOperations;
+            denied.rowsProcessed = score.samplesAttempted;
+            denied.forwardEvaluations = score.samplesAttempted;
+            return denied;
+        }
+        if (score.loss.state() != FitnessState::Valid) {
+            LMResidualEvaluation invalid;
+            invalid.mathematicalOperations = measuredOperations;
+            invalid.rowsProcessed = score.samplesAttempted;
+            invalid.forwardEvaluations = score.samplesAttempted;
+            return invalid;
+        }
         // Huber's transformed residuals provide a stable local least-squares
         // model, while candidate ordering and loss stopping use exactly the
         // same public mean-Huber score as regression scoring. Cache every
@@ -459,7 +486,8 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
             starting = score.loss;
             acceptedScore = score.loss;
         }
-        auto eval = raw(theta, jac, allowance);
+        auto eval = raw(theta, jac,
+                        preadmitObjectiveOperations ? allowance - measuredOperations : allowance);
         if (fitObjective.loss == RegressionLoss::Huber)
             eval.objectiveLoss = score.loss.score();
         if (rows.size() > std::numeric_limits<std::size_t>::max() - eval.forwardEvaluations ||
@@ -467,11 +495,9 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
             throw std::overflow_error("LM row accounting overflow");
         eval.forwardEvaluations += rows.size();
         eval.rowsProcessed += rows.size();
-        eval.mathematicalOperations += after.mathematicalOperations - before.mathematicalOperations;
+        eval.mathematicalOperations += measuredOperations;
         objective.addSupplementalWork(
-            {eval.mathematicalOperations -
-                 (after.mathematicalOperations - before.mathematicalOperations),
-             eval.rowsProcessed - rows.size()});
+            {eval.mathematicalOperations - measuredOperations, eval.rowsProcessed - rows.size()});
         return eval;
     };
     auto lm=config.levenbergMarquardt;lm.maxObjectiveEvaluations=std::min<std::uint64_t>(lm.maxObjectiveEvaluations,std::min(config.maxLossAttempts,objective.remaining()));
@@ -526,7 +552,6 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
     ConstantFitResult result{input, {}, {},         false, ConstantFitStop::EvaluationLimit,
                              0,     0,  0,          {},    std::nullopt,
                              {},    {}, "disabled", 0,     0};
-    objective.recordFittingInvocation();
     const auto startWork = objective.work().lossAttempts;
     const auto startSelectionWork = objective.rankSelectionEvaluations();
     const auto beforeBaselineOperations = objective.supplementalWork().mathematicalOperations;
@@ -551,6 +576,24 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
         recordSelectorSupplemental();
         return result;
     };
+    // Do not start a new refinement once the shared allowance is exhausted.
+    // This also makes repeated calls on one objective a cheap, deterministic stop.
+    if (objective.remaining() == 0) {
+        result.rankSelectionStop = "global_work_limit";
+        return finish(ConstantFitStop::EvaluationLimit);
+    }
+    objective.recordFittingInvocation();
+    const auto& rows = objective.problem()->trainingRows();
+    if (rows.empty() || rows.size() != objective.problem()->sampleCount())
+        throw std::invalid_argument("rank-aware LM requires native scalar training rows");
+    // The baseline evaluator's expression-operation charge is exactly the
+    // expression arithmetic cost per row. Admit it before measuring any row.
+    const auto baselineCost = input.arithmeticCost();
+    const auto opLimit = config.levenbergMarquardt.maxMathematicalOperations;
+    if (baselineCost && rows.size() > opLimit / baselineCost) {
+        result.rankSelectionStop = "arithmetic_work_limit";
+        return finish(ConstantFitStop::EvaluationLimit);
+    }
     const auto baseline = objective.measure(input, TrainingLossKind::FittingBaseline);
     result.preSelectionBaselineOperations =
         objective.supplementalWork().mathematicalOperations - beforeBaselineOperations;
@@ -561,13 +604,9 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
     }
     if (parameters.empty())
         return finish(ConstantFitStop::NoConstants);
-    const auto& rows = objective.problem()->trainingRows();
-    if (rows.empty() || rows.size() != objective.problem()->sampleCount())
-        throw std::invalid_argument("rank-aware LM requires native scalar training rows");
     if (parameters.size() > config.levenbergMarquardt.maxParameters)
         throw std::length_error("LM parameter limit");
-    if (result.preSelectionBaselineOperations >=
-        config.levenbergMarquardt.maxMathematicalOperations) {
+    if (result.preSelectionBaselineOperations > opLimit) {
         result.rankSelectionStop = "arithmetic_work_limit";
         return finish(ConstantFitStop::EvaluationLimit);
     }
@@ -605,24 +644,88 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
     for (std::size_t p = 0; p < parameters.size(); ++p)
         bindingIndices[p] = input.variableCount() + p;
     std::vector<std::vector<double>> columns(parameters.size(), std::vector<double>(rows.size()));
+    std::vector<double> parameterValues;
+    parameterValues.reserve(parameters.size());
+    for (const auto index : parameters)
+        parameterValues.push_back(nodes[index].constantValue());
+    const auto& fitObjective = objective.problem()->objective();
+    double totalWeight = 0.0;
+    auto spentOperations = [&] {
+        std::uint64_t spent = result.preSelectionBaselineOperations;
+        for (const auto amount : {result.rankSelectionWork.derivativeOperations,
+                                  result.rankSelectionWork.primalOperations,
+                                  result.rankSelectionWork.linearAlgebraOperations}) {
+            if (amount > UINT64_MAX - spent)
+                return UINT64_MAX;
+            spent += amount;
+        }
+        return spent;
+    };
+    auto chargeArithmetic = [&](std::uint64_t amount = 1) {
+        if (amount > opLimit - std::min<std::uint64_t>(opLimit, spentOperations()))
+            return false;
+        if (amount > UINT64_MAX - result.rankSelectionWork.linearAlgebraOperations)
+            throw std::overflow_error("rank selection operation counter overflow");
+        result.rankSelectionWork.linearAlgebraOperations += amount;
+        return true;
+    };
+    if (fitObjective.loss == RegressionLoss::WeightedMeanSquaredError) {
+        if (fitObjective.observationWeights.size() > 1 &&
+            !chargeArithmetic(fitObjective.observationWeights.size() - 1)) {
+            result.rankSelectionStop = "arithmetic_work_limit";
+            return finish(ConstantFitStop::EvaluationLimit);
+        }
+        for (const double weight : fitObjective.observationWeights)
+            totalWeight += weight;
+    }
+    double weightScale = 1.0;
+    if (fitObjective.loss == RegressionLoss::WeightedMeanSquaredError) {
+        if (!chargeArithmetic(1)) {
+            result.rankSelectionStop = "arithmetic_work_limit";
+            return finish(ConstantFitStop::EvaluationLimit);
+        }
+        weightScale = std::sqrt(totalWeight);
+    }
+    std::vector<double> rowScales(rows.size(), 1.0);
+    if (fitObjective.loss == RegressionLoss::WeightedMeanSquaredError) {
+        for (std::size_t row = 0; row < rows.size(); ++row) {
+            const double weight = fitObjective.observationWeights[row];
+            if (weight == 0.0)
+                continue;
+            if (!chargeArithmetic(2)) {
+                result.rankSelectionStop = "arithmetic_work_limit";
+                return finish(ConstantFitStop::EvaluationLimit);
+            }
+            rowScales[row] = std::sqrt(weight) / weightScale;
+        }
+    }
     for (std::size_t row = 0; row < rows.size(); ++row) {
         auto bindings = rows[row].inputs;
         bindings.resize(parameterExpression.variableCount(), 0);
+        for (std::size_t p = 0; p < parameters.size(); ++p)
+            bindings[bindingIndices[p]] = parameterValues[p];
+        const double rowWeight = fitObjective.loss == RegressionLoss::WeightedMeanSquaredError
+                                     ? fitObjective.observationWeights[row]
+                                     : 1.0;
+        if (rowWeight == 0.0) {
+            // The baseline already checked prediction and residual validity for
+            // every row. A zero-weight residual has a zero Jacobian row.
+            ++result.rankSelectionWork.rows;
+            continue;
+        }
+        const double rowScale = rowScales[row];
         for (std::size_t p = 0; p < parameters.size(); ++p) {
             if (objective.remaining() == 0) {
                 result.rankSelectionStop = "global_work_limit";
                 return finish(ConstantFitStop::EvaluationLimit);
             }
-            const auto spent = result.rankSelectionWork.derivativeOperations +
-                               result.rankSelectionWork.primalOperations +
-                               result.preSelectionBaselineOperations;
+            const auto spent = spentOperations();
             if (spent >= config.levenbergMarquardt.maxMathematicalOperations) {
                 result.rankSelectionStop = "arithmetic_work_limit";
                 return finish(ConstantFitStop::EvaluationLimit);
             }
             DerivativeLimits derivativeLimits;
-            derivativeLimits.maxOperations = config.levenbergMarquardt.maxMathematicalOperations -
-                                             static_cast<std::size_t>(spent);
+            derivativeLimits.maxOperations = opLimit - static_cast<std::size_t>(spent);
             derivativeLimits.maxWorkspaceBytes = derivativeWorkspace;
             objective.chargeRankSelectionEvaluation();
             const std::array<std::size_t, 1> one{bindingIndices[p]};
@@ -640,10 +743,16 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
                 return finish(ConstantFitStop::EvaluationLimit);
             }
             columns[p][row] = derivative.derivatives.front();
+            if (fitObjective.loss == RegressionLoss::WeightedMeanSquaredError) {
+                if (!chargeArithmetic(1)) {
+                    result.rankSelectionStop = "arithmetic_work_limit";
+                    return finish(ConstantFitStop::EvaluationLimit);
+                }
+                columns[p][row] *= rowScale;
+            }
         }
         ++result.rankSelectionWork.rows;
     }
-    std::uint64_t arithmetic = 0;
     double jacobianScale = 0;
     for (const auto& column : columns)
         for (double value : column)
@@ -651,23 +760,31 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
     if (jacobianScale > 0)
         for (auto& column : columns)
             for (auto& value : column) {
+                if (!chargeArithmetic(1)) {
+                    result.rankSelectionStop = "arithmetic_work_limit";
+                    return finish(ConstantFitStop::EvaluationLimit);
+                }
                 value /= jacobianScale;
-                countTrainingWork(arithmetic);
             }
     auto norm = [&](const std::vector<double>& x) {
         long double sum = 0;
         for (double v : x) {
+            if (!chargeArithmetic(2))
+                return std::numeric_limits<long double>::infinity();
             sum += static_cast<long double>(v) * v;
-            countTrainingWork(arithmetic);
-            countTrainingWork(arithmetic);
         }
-        countTrainingWork(arithmetic);
+        if (!chargeArithmetic(1))
+            return std::numeric_limits<long double>::infinity();
         return std::sqrt(sum);
     };
     std::vector<long double> originalNorms(parameters.size());
     long double scale = 0;
     for (std::size_t p = 0; p < parameters.size(); ++p) {
         originalNorms[p] = norm(columns[p]);
+        if (!std::isfinite(originalNorms[p])) {
+            result.rankSelectionStop = "arithmetic_work_limit";
+            return finish(ConstantFitStop::EvaluationLimit);
+        }
         scale = std::max(scale, originalNorms[p]);
     }
     std::vector<std::size_t> remaining(parameters.size());
@@ -684,17 +801,25 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
                 for (const auto& q : basis) {
                     long double dot = 0;
                     for (std::size_t r = 0; r < residual.size(); ++r) {
+                        if (!chargeArithmetic(2)) {
+                            result.rankSelectionStop = "arithmetic_work_limit";
+                            return finish(ConstantFitStop::EvaluationLimit);
+                        }
                         dot += static_cast<long double>(residual[r]) * q[r];
-                        countTrainingWork(arithmetic);
-                        countTrainingWork(arithmetic);
                     }
                     for (std::size_t r = 0; r < residual.size(); ++r) {
+                        if (!chargeArithmetic(2)) {
+                            result.rankSelectionStop = "arithmetic_work_limit";
+                            return finish(ConstantFitStop::EvaluationLimit);
+                        }
                         residual[r] -= static_cast<double>(dot) * q[r];
-                        countTrainingWork(arithmetic);
-                        countTrainingWork(arithmetic);
                     }
                 }
             const auto n = norm(residual);
+            if (!std::isfinite(n)) {
+                result.rankSelectionStop = "arithmetic_work_limit";
+                return finish(ConstantFitStop::EvaluationLimit);
+            }
             if (n > bestNorm || (n == bestNorm && parameters[p] < parameters[best])) {
                 best = p;
                 bestNorm = n;
@@ -704,31 +829,34 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
         if (bestNorm <= static_cast<long double>(config.rankTolerance) * scale)
             break;
         for (auto& value : bestResidual) {
+            if (!chargeArithmetic(1)) {
+                result.rankSelectionStop = "arithmetic_work_limit";
+                return finish(ConstantFitStop::EvaluationLimit);
+            }
             value = static_cast<double>(static_cast<long double>(value) / bestNorm);
-            countTrainingWork(arithmetic);
         }
         basis.push_back(std::move(bestResidual));
         independent.push_back(parameters[best]);
         remaining.erase(std::find(remaining.begin(), remaining.end(), best));
     }
-    result.rankSelectionWork.linearAlgebraOperations = arithmetic;
     const auto derivativeAndPrimal =
         result.rankSelectionWork.derivativeOperations + result.rankSelectionWork.primalOperations;
     const auto priorMath = result.preSelectionBaselineOperations;
-    if (priorMath >= config.levenbergMarquardt.maxMathematicalOperations) {
+    if (priorMath >= opLimit) {
         result.rankSelectionStop = "arithmetic_work_limit";
         return finish(ConstantFitStop::EvaluationLimit);
     }
-    const auto remainingMathematicalOperations =
-        config.levenbergMarquardt.maxMathematicalOperations - priorMath;
-    if (arithmetic >= remainingMathematicalOperations ||
-        derivativeAndPrimal >= remainingMathematicalOperations - arithmetic) {
+    const auto remainingMathematicalOperations = opLimit - priorMath;
+    if (result.rankSelectionWork.linearAlgebraOperations >= remainingMathematicalOperations ||
+        derivativeAndPrimal >=
+            remainingMathematicalOperations - result.rankSelectionWork.linearAlgebraOperations) {
         result.rankSelectionStop = "arithmetic_work_limit";
         return finish(ConstantFitStop::EvaluationLimit);
     }
     result.rankSelectionWork.selectedDirections = independent.size();
-    result.rankSelectionWork.linearAlgebraOperations = arithmetic;
     result.selectedDirections = independent;
+    std::sort(result.selectedDirections.begin(), result.selectedDirections.end());
+    independent = result.selectedDirections;
     result.rankSelectionStop = "selected";
     if (independent.empty()) {
         result.rankSelectionStop = "no_independent_directions";
@@ -742,15 +870,16 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
     ConstantFitConfig fit = config;
     fit.rankAware = false;
     fit.maxLossAttempts -= spent + 1; // includes the saved baseline and selector work
-    fit.levenbergMarquardt.maxMathematicalOperations -=
-        static_cast<std::size_t>(priorMath + arithmetic + derivativeAndPrimal);
+    fit.levenbergMarquardt.maxMathematicalOperations -= static_cast<std::size_t>(
+        priorMath + result.rankSelectionWork.linearAlgebraOperations + derivativeAndPrimal);
     fit.levenbergMarquardt.maxObjectiveEvaluations =
         std::min(fit.levenbergMarquardt.maxObjectiveEvaluations, fit.maxLossAttempts);
     ConstantFitResult fitted{input, {}, {},         false, ConstantFitStop::EvaluationLimit,
                              0,     0,  0,          {},    std::nullopt,
                              {},    {}, "disabled", 0,     0};
     try {
-        fitted = fitSelectedConstantsLevenbergMarquardt(input, objective, independent, fit, false);
+        fitted =
+            fitSelectedConstantsLevenbergMarquardt(input, objective, independent, fit, false, true);
     } catch (const TrainingLossBudgetExceeded&) {
         result.rankSelectionStop = "global_work_limit";
         return finish(ConstantFitStop::EvaluationLimit);
@@ -765,9 +894,12 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
         result.rankSelectionWork.selectedDirections = result.selectedDirections.size();
         return finish(fitted.stop);
     }
+    result.rankSelectionWork.derivativeEvaluations =
+        objective.rankSelectionEvaluations() - startSelectionWork;
     fitted.rankSelectionWork = result.rankSelectionWork;
     fitted.selectedDirections = std::move(independent);
     fitted.rankSelectionStop = result.rankSelectionStop;
+    fitted.preSelectionBaselineOperations = result.preSelectionBaselineOperations;
     ++fitted.lossAttempts; // initial incumbent evaluation performed before selection
     fitted.totalBudgetUnits = fitted.lossAttempts + result.rankSelectionWork.derivativeEvaluations;
     return fitted;

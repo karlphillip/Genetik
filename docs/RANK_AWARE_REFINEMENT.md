@@ -70,6 +70,37 @@ subsequent public `measure()` and fit admit no work. A 100-operation control
 stops at exactly 100 counted operations. Successful-operation counters include
 the preselection baseline and remain within the configured cap.
 
+## Arithmetic-exhaustion and parallel-fork correction
+
+The default LM path is also checked with the seven-row redundant affine fixture
+and a 20-operation allowance. Its first public objective measurement is valid
+(training MSE 13) and performs 21 expression operations; row evaluation is
+atomic, so the work counter records that completed measurement while LM stops
+with `EvaluationLimit`. Both the starting and returned public scores remain 13.
+The same fixture compiled against base `a13aa56a17561819af1ff86822dcd7bbd2e18369`
+also returned valid starting and final MSE 13 with `EvaluationLimit`; its native
+LM counter recorded 41 operations. The corrected candidate records 21 because
+it reports only the completed baseline evaluation before stopping, without
+charging the unavailable residual/Jacobian work as completed.
+
+Serial rank-aware work is now included when an objective is first forked into
+parallel admission. A ten-unit run that spent one baseline call and nine
+selector evaluations leaves zero units for both parent and child. A partially
+spent objective instead shares exactly its remaining allowance.
+
+The redundant affine rank-aware fixture also exercises arithmetic caps of 520
+and 650 total operations. Selection uses 492 operations in both runs. At 520,
+the residual/Jacobian evaluator reports its exhausted arithmetic budget through
+native LM and the public fit; no improvement is accepted and MSE 13 is retained.
+At 650, LM accepts an improvement to MSE `1.2974e-05`, then reports
+`EvaluationLimit` while rebuilding its Jacobian. Both operation counters
+reconcile exactly to their declared caps. The invalid zero-weight-row prediction
+control remains rejected as an invalid start. The fixed-seed generated-search
+comparison is unchanged: both base and candidate return
+`(x0 + 2.9999999999292117)` with training MSE 2 and held-out MSE 7.5; the base
+uses 294 objective calls and the candidate uses 419 objective calls plus 255
+selector evaluations.
+
 Checkpointed `ScalarMathematicsRun` rejects this opt-in because its existing
 checkpoint work codec has no selector counter; default checkpoint payloads and
 restoration remain unchanged. Ordinary `symbolicRegression`, `fitConstants`,

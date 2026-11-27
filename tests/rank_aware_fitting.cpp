@@ -89,6 +89,25 @@ static void directFixtures() {
     auto train = RegressionProblem::create(rows(trainX), {64, 12, 32});
     auto test = RegressionProblem::create(heldout(), {64, 12, 32});
     const auto start = redundant();
+
+    // The default LM path still publishes a valid first score when the
+    // evaluator exhausts its arithmetic allowance on that measured point.
+    auto defaultTightOps = lm(false);
+    defaultTightOps.levenbergMarquardt.maxMathematicalOperations = 20;
+    TrainingObjective defaultTightObjective(train, 1000);
+    const auto defaultTight = fitConstants(start, defaultTightObjective, defaultTightOps);
+    check(defaultTight.stop == ConstantFitStop::EvaluationLimit &&
+              defaultTight.loss.state() == FitnessState::Valid &&
+              defaultTight.startingLoss.score() == 13 && defaultTight.loss.score() == 13 &&
+              defaultTight.optimizerWork.mathematicalOperations == 21 &&
+              defaultTightObjective.work().lossAttempts == 1,
+          "default LM retains valid baseline score on arithmetic exhaustion");
+    std::cout << "fixture=default_arithmetic_exhaustion cap=20 stop="
+              << constantFitStopName(defaultTight.stop)
+              << " start=" << defaultTight.startingLoss.score()
+              << " returned=" << defaultTight.loss.score()
+              << " operations=" << defaultTight.optimizerWork.mathematicalOperations << '\n';
+
     TrainingObjective baselineObjective(train, 1000), rankObjective(train, 1000);
     const auto baseline = fitConstants(start, baselineObjective, lm(false));
     const auto rank = fitConstants(start, rankObjective, lm(true));
@@ -206,6 +225,26 @@ static void directFixtures() {
           "rank selector spends the shared global allowance");
     check(globallyTight.totalBudgetUnits == 10 && globallyTight.lossAttempts == 1,
           "global cap reports selector units separately from objective calls");
+
+    ExecutionContext exhaustedExecution({2});
+    auto exhaustedChild = globallyTightObjective.forkParallel(exhaustedExecution);
+    check(globallyTightObjective.remaining() == 0 && exhaustedChild->remaining() == 0,
+          "parallel fork carries serial selector units into shared admission");
+    bool parentForkMeasureDenied = false, childForkMeasureDenied = false;
+    try {
+        (void)globallyTightObjective.measure(start);
+    } catch (const TrainingLossBudgetExceeded&) {
+        parentForkMeasureDenied = true;
+    }
+    try {
+        (void)exhaustedChild->measure(start);
+    } catch (const TrainingLossBudgetExceeded&) {
+        childForkMeasureDenied = true;
+    }
+    check(parentForkMeasureDenied && childForkMeasureDenied &&
+              globallyTightObjective.remaining() == 0 && exhaustedChild->remaining() == 0,
+          "neither side of exhausted fork can measure");
+
     bool deniedMeasure = false;
     const auto beforeDeniedMeasure = globallyTightObjective.work();
     try {
@@ -231,6 +270,48 @@ static void directFixtures() {
               << " remaining=" << globallyTightObjective.remaining()
               << " baseline_stop=" << lmStop(*baselineGloballyTight.optimizerStop)
               << " rank_stop=" << constantFitStopName(globallyTight.stop) << '\n';
+
+    // A partially spent serial objective retains only its genuine residual
+    // allowance after it is converted to shared parent/worker admission.
+    TrainingObjective partiallySpent(train, 40);
+    const auto partialMeasured = partiallySpent.measure(start);
+    (void)partialMeasured;
+    ExecutionContext partiallySpentExecution({2});
+    auto partiallySpentChild = partiallySpent.forkParallel(partiallySpentExecution);
+    check(partiallySpent.remaining() == 39 && partiallySpentChild->remaining() == 39,
+          "fork preserves legitimate unspent objective units");
+    (void)partiallySpentChild->measure(start);
+    check(partiallySpent.remaining() == 38 && partiallySpentChild->remaining() == 38,
+          "parent and child consume the same remaining allowance");
+
+    // The redundant affine topology has deterministic arithmetic stop points:
+    // the smaller cap stops before any improving trial; the larger cap accepts
+    // the first improvement, then stops while rebuilding its Jacobian.
+    for (const auto& [operationCap, expectImprovement] :
+         {std::pair<std::size_t, bool>{520, false}, {650, true}}) {
+        auto operationConfig = lm(true, 512);
+        operationConfig.levenbergMarquardt.maxMathematicalOperations = operationCap;
+        TrainingObjective operationObjective(train, 1000);
+        const auto fitted = fitConstants(start, operationObjective, operationConfig);
+        const auto selectorOperations = fitted.preSelectionBaselineOperations +
+                                        fitted.rankSelectionWork.derivativeOperations +
+                                        fitted.rankSelectionWork.primalOperations +
+                                        fitted.rankSelectionWork.linearAlgebraOperations;
+        check(fitted.stop == ConstantFitStop::EvaluationLimit &&
+                  fitted.optimizerStop == LMStop::EvaluationLimit &&
+                  fitted.loss.state() == FitnessState::Valid &&
+                  fitted.improved == expectImprovement &&
+                  (expectImprovement ? fitted.loss.score() < 13 : fitted.loss.score() == 13) &&
+                  fitted.optimizerWork.mathematicalOperations + selectorOperations == operationCap,
+              "arithmetic exhaustion propagates through rank-aware LM with incumbent and work");
+        std::cout << "fixture=rank_arithmetic_exhaustion cap=" << operationCap
+                  << " stop=" << constantFitStopName(fitted.stop)
+                  << " native_stop=" << lmStop(*fitted.optimizerStop)
+                  << " start=" << fitted.startingLoss.score() << " returned=" << fitted.loss.score()
+                  << " improved=" << fitted.improved
+                  << " operations=" << fitted.optimizerWork.mathematicalOperations
+                  << " selector_operations=" << selectorOperations << '\n';
+    }
 
     auto limitedOps = lm(true, 512);
     limitedOps.levenbergMarquardt.maxMathematicalOperations = 100;

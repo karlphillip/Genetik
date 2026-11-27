@@ -127,7 +127,12 @@ public:
             local->work_ != TrainingWork{} || local->rankSelectionEvaluations_ ||
             local->diagnostics_)
             throw std::invalid_argument("invalid parallel objective factory result");
-        if(!admission_)admission_=std::make_shared<TrainingLossAdmission>(maximum_,work_.lossAttempts);
+        if (!admission_) {
+            if (rankSelectionEvaluations_ > maximum_ - work_.lossAttempts)
+                throw std::logic_error("training objective work exceeds its shared allowance");
+            admission_ = std::make_shared<TrainingLossAdmission>(
+                maximum_, work_.lossAttempts + rankSelectionEvaluations_);
+        }
         local->admission_=admission_;local->execution_=&execution;
         return local;
     }
@@ -461,6 +466,14 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
         if (calls == std::numeric_limits<std::uint64_t>::max())
             throw std::overflow_error("LM objective call count overflow");
         ++calls;
+        // A checked objective evaluation remains a valid incumbent even when
+        // its arithmetic counter shows that it crossed the remaining LM cap.
+        // The solver will stop on the accompanying operation-limit signal.
+        if (score.loss.state() == FitnessState::Valid) {
+            latestScore = score.loss;
+            if (calls == 1)
+                starting = acceptedScore = score.loss;
+        }
         if (measuredOperations > allowance) {
             LMResidualEvaluation denied;
             denied.operationLimitReached = true;
@@ -481,11 +494,6 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
         // same public mean-Huber score as regression scoring. Cache every
         // objective's score because the solver accepts candidates through
         // this callback for all supported losses.
-        latestScore = score.loss;
-        if (calls == 1) {
-            starting = score.loss;
-            acceptedScore = score.loss;
-        }
         auto eval = raw(theta, jac,
                         preadmitObjectiveOperations ? allowance - measuredOperations : allowance);
         if (fitObjective.loss == RegressionLoss::Huber)

@@ -17,6 +17,7 @@ record, historical D5/D6 discovery diagnostics and release evidence.
 - [Competitor benchmark report](BENCHMARK_REPORT.md) and per-seed outcomes in
   [`results/`](results/).
 - [Current-main clean trig_sine comparison](results/trig-sine-main-20261126/REPORT.md), with frozen candidate outcomes and a separate coefficient-refinement diagnostic.
+- [Fixed-topology trig_sine refinement follow-up](results/trig-sine-fixed-topology-refinement-20261127/REPORT.md), an additive eight-fit diagnostic with frozen PR #74 trees.
 - [Local engineering qualification summary](QUALIFICATION_SUMMARY.md),
   [hosted qualification proposal](HOSTED_QUALIFICATION_PROPOSAL.md), and
   [release candidate notes](../releases/0.5.0/NOTES.md).

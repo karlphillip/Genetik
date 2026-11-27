@@ -262,3 +262,51 @@ LM the same Huber minimizer and the public scorer's normalized objective. Every
 observation is still evaluated, including zero-weight rows, so weighted fitting
 preserves the prediction-validity contract. MAE remains unsupported by LM;
 coordinate fitting retains its existing objective support.
+
+## Rank-aware LM refinement
+
+For a non-checkpointed scalar symbolic run, set `fitting.rankAware = true` with
+`fitting.method = ConstantFitMethod::LevenbergMarquardt`. The same option is
+available to `fitConstants` and `fitSelectedConstants`; the latter limits rank
+analysis to its caller-selected constant occurrences. Coordinate fitting rejects
+this option. The default remains the existing independent-parameter LM path.
+
+```cpp
+ConstantFitConfig fitting;
+fitting.method = ConstantFitMethod::LevenbergMarquardt;
+fitting.rankAware = true;
+SymbolicRegressionConfig search;
+search.fitting = fitting;
+```
+
+Rank selection evaluates the checked analytic parameter Jacobian on every
+training row. It uses deterministic column-pivoted modified Gram-Schmidt. At
+each step the column with the largest remaining Euclidean norm is selected;
+exact ties go to the lower postfix constant-node index. A column is independent
+only when its residual norm is strictly greater than `rankTolerance` times the
+largest original column norm. The default relative tolerance is `1e-10`. This
+selection is local to one fixed topology and training dataset; it does not
+change the returned expression structure or identify a unique value for
+unidentifiable coefficients.
+
+Each selected-constant derivative evaluation consumes one unit from the fit's
+`maxLossAttempts` and the search-wide `maxTrainingLossAttempts`, alongside the
+baseline and LM objective calls. The returned `RankSelectionWork` reports
+selector derivative evaluations, rows, chosen directions, checked primal and
+derivative operations, and rank-factorization arithmetic separately from
+`optimizerWork`, which is the existing LM counter. The same mathematical
+operation cap is split between selector arithmetic and LM. A local selector
+stop returns the valid baseline incumbent; LM retains its best accepted point
+on its own evaluation stop. `ConstantFitResult::lossAttempts` remains the count
+of actual objective calls; `totalBudgetUnits` adds selector derivative
+evaluations in rank-aware mode. Search reports selector units separately in
+`rankSelectionWork`, while `trainingWork.lossAttempts` remains actual objective
+calls. The pre-selection incumbent evaluation's arithmetic is exposed as
+`preSelectionBaselineOperations` and also spends from the same LM mathematical
+operation allowance.
+
+Rank-aware refinement is currently unavailable in checkpointed
+`ScalarMathematicsRun`: its established checkpoint work codec stores objective
+and LM counters but has no rank-selector counter. This opt-in restriction leaves
+existing checkpoint payloads and default search behavior unchanged. The normal
+`symbolicRegression` entry point and direct fit APIs are supported.

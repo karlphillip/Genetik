@@ -523,3 +523,12 @@ Complex-coefficient fitting shipped in PR #65. Opt-in user-defined scalar
 operators now support unary, binary, and ternary primitives, including analytic
 first partials in coefficient fitting. Do not infer additional complex support
 from the real-valued LM and derivative paths.
+
+## Rank-aware scalar fitting extension
+
+Ordinary scalar symbolic regression can now opt into deterministic numerical
+rank selection before LM coefficient refinement. The feature is qualified on
+redundant and full-rank synthetic topologies and is exercised during ordinary
+grammar search. Checkpointed scalar runs remain on the default policy until the
+checkpoint codec can represent selector work without invalidating prior
+payloads. See `RANK_AWARE_REFINEMENT.md` for the measured outcomes and limits.

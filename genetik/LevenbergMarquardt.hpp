@@ -541,8 +541,10 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
             // contract. Validate its primal prediction, then give it no influence
             // on the least-squares system (and avoid requiring a derivative).
             if(!observationWeights.empty()&&weight==0){
-                if (expression.arithmeticCost() > workLimit - out.mathematicalOperations)
+                if (expression.arithmeticCost() > workLimit - out.mathematicalOperations) {
+                    out.operationLimitReached = true;
                     return out;
+                }
                 auto v = expression.evaluate(bindings);
                 ++out.forwardEvaluations;
                 out.mathematicalOperations += v.arithmeticOperations();
@@ -569,6 +571,11 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
                                               d.work.derivativeMathCalls;
                 out.workspaceBytes =
                     std::max(out.workspaceBytes, outputWorkspace + d.work.workspaceBytes);
+                if (d.status == ParameterJacobianStatus::ResourceLimit) {
+                    out.operationLimitReached = d.resource == DerivativeResource::Operations;
+                    out.workspaceLimitReached = d.resource == DerivativeResource::Workspace;
+                    return out;
+                }
                 if (d.status != ParameterJacobianStatus::Success)
                     return out;
                 residual = d.value - row.target;
@@ -580,8 +587,10 @@ inline LMResidualFunction expressionLeastSquares(Expression expression,
                 for (double derivative : d.derivatives)
                     out.jacobian.push_back(derivative * chainScale * objectiveScale);
             } else {
-                if (expression.arithmeticCost() > workLimit - out.mathematicalOperations)
+                if (expression.arithmeticCost() > workLimit - out.mathematicalOperations) {
+                    out.operationLimitReached = true;
                     return out;
+                }
                 auto v = expression.evaluate(bindings);
                 ++out.forwardEvaluations;
                 out.mathematicalOperations += v.arithmeticOperations();

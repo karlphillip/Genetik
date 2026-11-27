@@ -1421,6 +1421,20 @@ compact `3*y+v` and the exact verifier confirms its Lie derivative is zero under
 `y'=1, v'=-3`. The compact-export and normalized-separation corrections are
 recorded additively as `polynomial-v3.*` artifacts.
 
+## Rank-aware coefficient refinement (2026-11)
+
+At base `a13aa56a17561819af1ff86822dcd7bbd2e18369`, ordinary LM already
+supported selected constant occurrences and checked parameter derivatives, but
+classified redundant Jacobian columns as `SingularSystem`. The opt-in
+`rankAware` policy now deterministically selects independent columns before
+calling that same LM fitter. Default fitting, RNG draws, and checkpoint payloads
+remain unchanged. Selector derivative work is charged against the local and
+search-wide work limits and is reported separately from objective calls and LM
+work. The ordinary `symbolicRegression` entry point and direct scalar fit APIs
+support it. Checkpointed `ScalarMathematicsRun` rejects this mode because its
+existing work codec has no selector counter. Synthetic outcomes and selected
+directions are recorded in `RANK_AWARE_REFINEMENT.md`.
+
 ## Bounded Pareto objective vectors (2026-11)
 
 Pareto selection now accepts a callback returning up to four finite objectives

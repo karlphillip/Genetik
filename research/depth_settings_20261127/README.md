@@ -39,7 +39,7 @@ The first capable candidate's measured fit and survivor outcome are taken from t
 
 ## Result interpretation
 
-Deeper mutation alone won all eight held-out cases and had no paired losses in this small fixed-seed sample. It also produced a capable evaluated tree in every run, versus only 2/8 at the original depths. Deeper initialization alone improved recovery to 6/8 but incurred more LM arithmetic and had one paired loss. Combining both depth increases raised the capable-tree count further but recovered 7/8 and had one paired loss, with the highest objective-call and arithmetic work. This evidence favors deeper mutation for this fixture and budget; it does not establish a general setting recommendation. The one loss and small eight-seed sample leave the broad question open.
+Deeper mutation alone recovered all eight held-out cases and had no paired losses in this small fixed-seed sample. It also produced a capable evaluated tree in every run, versus only 2/8 at the original depths. Deeper initialization alone improved recovery to 6/8 but incurred more LM arithmetic and had one paired loss. Combining both depth increases raised the capable-tree count further but recovered 7/8 and had one paired loss, with the highest objective-call and arithmetic work. This evidence favors deeper mutation for this fixture and budget; it does not establish a general setting recommendation. The one loss and small eight-seed sample leave the broad question open.
 
 ## Reproduction and verification
 

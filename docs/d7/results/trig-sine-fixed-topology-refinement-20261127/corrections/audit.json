@@ -1,0 +1,30 @@
+{
+  "actual_target_fit_api_calls": 12,
+  "authorized_target_fit_api_calls": 8,
+  "bounded_program_admission": "absent; exploratory fixed-topology diagnostic",
+  "chronology": [
+    "four preliminary target fit calls",
+    "selector correction",
+    "eight final target fit calls",
+    "freeze eight final expressions",
+    "held-out scoring of only those eight outputs"
+  ],
+  "corrected_derived_record_sha256": {
+    "REPORT.md": "630eed39ff775a6d123b925e8446e850e3c2214cfd52763d347afc4d3ad462bb",
+    "comparison.jsonl": "fcf0f6dadf4f1f252d62b939002b2b7488e22c731e0f04aaea3b4e6dfccb50c2",
+    "run-manifest.json": "bb587b79c9972c1bc7dbe6aa251c1ddfee5907aad4ebea48c0ca5b306ad0d927"
+  },
+  "correction_type": "additive derived-record correction; no target execution or held-out scoring performed",
+  "lm_forward_evaluations_per_subset_fit": 3520,
+  "original_checksum_manifest_sha256": "4225932626fdb7af520b3e1bb16d112a01a42941db3c3bdb59857caadb197de6",
+  "preserved_original_checksums": {
+    "REPORT.md": "b70e016a09e3fd5fb55cc1d867fc3210571c24b03d4711cb492f2722d06e8ee2",
+    "comparison.jsonl": "82adbf8cd8c3205009c09ee52e522444b910ae481fd88efb18069e9e0d86f754",
+    "run-manifest.json": "d1452e7099991f057e9c3206d4ca763445454a39bbdb49b9ff79dc7f3e86550e"
+  },
+  "selector_prediction_counts": {
+    "seed_0": 1600,
+    "seed_1": 2880
+  },
+  "selector_prediction_rule": "2 predictions per original constant occurrence per each of 160 training rows"
+}

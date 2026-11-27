@@ -39,10 +39,19 @@
       1
     ]
   },
+  "execution_chronology": [
+    "four preliminary target fit API calls on seed 0",
+    "selector correction and rule freeze",
+    "eight final target fit API calls, four per expression",
+    "freeze the eight final returned expressions",
+    "held-out assessment of only those eight frozen outputs"
+  ],
+  "classification": "exploratory fixed-topology diagnostic; not admitted through the frozen bounded-program workflow",
   "frozen_fit_output_sha256": "c2c1f71c166622bf0a31b94bf7369bdcf4ad2eb12dbd14d6b262c20bcf4ce86f",
   "native_stop_interpretation": "raw TSV literal \"unknown\" occurs for LM all-occurrence fits; exact enum value is SingularSystem, normalized additively as singular_system in comparison.jsonl and report.",
   "parameter_subset_rule": {
-    "frozen_before": "all target fitting",
+    "frozen_before": false,
+    "frozen_timing_note": "The corrected selector rule was finalized after the four preliminary target fit API calls; it was fixed before the eight final fit API calls.",
     "jacobian": "central finite differences of each original constant occurrence against all 160 training inputs; h=sqrt(binary64 epsilon)*max(1,abs(c))",
     "rank_revealing": "pivoted modified Gram-Schmidt; largest residual 2-norm pivot; exact ties choose smaller postfix node index; recompute one orthogonalization pass per pivot",
     "rank_tolerance": "1e-8 times the largest original Jacobian column 2-norm",

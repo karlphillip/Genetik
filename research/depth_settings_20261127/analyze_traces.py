@@ -127,6 +127,8 @@ def main():
             d = key_value_line(raw_result)
             if int(d["seed"]) != seed or int(d["initial_depth"]) != initial or int(d["mutation_depth"]) != mutation:
                 raise ValueError(f"protocol mismatch in {stem}: {d}")
+            if "search_cpu_seconds" in d:
+                d["search_elapsed_seconds"] = d.pop("search_cpu_seconds")
             summary_rows.append({"setting": setting, **d})
 
             records = []
@@ -145,19 +147,25 @@ def main():
             for r in records:
                 distinct.setdefault(r["before"], r)
             classified = {text: classify(text) for text in distinct}
-            survived = set()
+            snapshots = {}
             trace_lines = (RAW / f"{stem}.trace").read_text().splitlines()
             for line in trace_lines:
                 if line.startswith("TRACE_SURVIVE generation="):
                     parts = line.split(" ", 3)
                     if len(parts) == 4:
-                        survived.add((int(parts[1].split("=", 1)[1]), parts[3]))
+                        generation = int(parts[1].split("=", 1)[1])
+                        snapshots.setdefault(generation, set()).add(parts[3])
             for text, first_record in distinct.items():
-                publication_generation = first_record["generation"] + 1 if first_record["generation"] == 0 else first_record["generation"]
+                evaluation_generation = first_record["generation"]
+                snapshot_generation = 1 if evaluation_generation == 0 else evaluation_generation
+                snapshot_recorded = snapshot_generation in snapshots
                 status, witness, reason = classified[text]
                 capability_rows_detail = {
-                    "setting": setting, "seed": seed, "first_evaluation_generation": first_record["generation"],
-                    "first_evaluation_stage": "initialization" if first_record["generation"] == 0 else "offspring",
+                    "setting": setting, "seed": seed,
+                    "candidate_evaluation_generation": evaluation_generation,
+                    "candidate_evaluation_stage": "initialization" if first_record["generation"] == 0 else "offspring",
+                    "population_snapshot_generation_inspected": snapshot_generation,
+                    "population_snapshot_recorded": int(snapshot_recorded),
                     "prefit_expression_identity_includes_literal_values": text,
                     "capability": status,
                     "coefficient_assignment_witness": repr({str(k): str(v) for k, v in witness.items()}),
@@ -165,8 +173,8 @@ def main():
                     "fit_output": first_record["after"], "training_mse": first_record["train_mse"],
                     "fit_stop": first_record["fit_stop"],
                     "fit_objective_calls": first_record["fit_objective_calls"],
-                    "present_in_immediate_survivor_population": int((publication_generation, first_record["after"]) in survived),
-                    "survivor_publication_generation": publication_generation,
+                    "fitted_expression_present_in_population_snapshot": int(
+                        snapshot_recorded and first_record["after"] in snapshots[snapshot_generation]),
                 }
                 all_candidate_classifications.append(capability_rows_detail)
             capable = [r for r in records if classified[r["before"]][0] == "capable"]
@@ -186,12 +194,17 @@ def main():
                 "offspring_capable_trees": len(offspring_capable),
                 "unresolved_distinct_trees": len(unresolved),
                 "first_capable_stage": "initialization" if first and first["generation"] == 0 else ("offspring" if first else "none evaluated"),
-                "first_capable_generation": first["generation"] if first else "",
+                "first_capable_candidate_evaluation_generation": first["generation"] if first else "",
                 "first_capable_expression": first["before"] if first else "",
                 "first_capable_assignment": repr({str(k): str(v) for k, v in classify(first["before"])[1].items()}) if first else "",
                 "first_capable_fit_output": first["after"] if first else "",
                 "first_capable_training_mse": first["train_mse"] if first else "",
                 "first_capable_fit_stop": first["fit_stop"] if first else "",
+                "first_capable_population_snapshot_generation_inspected":
+                    (1 if first["generation"] == 0 else first["generation"]) if first else "",
+                "first_capable_fitted_expression_present_in_snapshot":
+                    int((1 if first["generation"] == 0 else first["generation"]) in snapshots and
+                        first["after"] in snapshots[(1 if first["generation"] == 0 else first["generation"])]) if first else "",
             })
             run_rows.append({
                 "setting": setting, "seed": seed, "initial_depth": initial,
@@ -204,7 +217,7 @@ def main():
                 "objective_calls": d["objective_calls"], "lm_math_ops": d["lm_math_ops"],
                 "lm_linear_ops": d["lm_linear_ops"], "lm_objective_evals": d["lm_objective_evals"],
                 "lm_jacobian_evals": d["lm_jacobian_evals"],
-                "search_elapsed_seconds": d.get("search_elapsed_seconds", d.get("search_cpu_seconds", "")),
+                "search_elapsed_seconds": d.get("search_elapsed_seconds", ""),
                 "stop": d["stop"],
             })
 

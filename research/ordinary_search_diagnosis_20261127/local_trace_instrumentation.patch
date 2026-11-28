@@ -1,0 +1,190 @@
+diff --git a/genetik/ConstantFitting.hpp b/genetik/ConstantFitting.hpp
+index d5e79c1..da53e41 100644
+--- a/genetik/ConstantFitting.hpp
++++ b/genetik/ConstantFitting.hpp
+@@ -7,6 +7,10 @@
+ #include <array>
+ #include <map>
+ #include <numeric>
++#ifdef GENETIK_ORDINARY_SEARCH_TRACE
++#include <iostream>
++#include <cstdlib>
++#endif
+ #include "detail/ScopedTiming.hpp"
+
+ inline void countTrainingWork(std::uint64_t& counter) {
+@@ -1091,6 +1095,14 @@ public:
+                 recordDiagnostic(false,objective_->work().fittingImproved!=before.fittingImproved);throw;
+             }
+         }();
++#ifdef GENETIK_ORDINARY_SEARCH_TRACE
++        if (std::getenv("GENETIK_TRACE_SEARCH"))
++        std::cerr << "TRACE_PREP generation=" << context.generation << " origin=" << static_cast<int>(context.origin)
++                  << " before=" << expression.toString() << " after=" << result.expression.toString()
++                  << " loss=" << result.loss.score() << " stop=" << constantFitStopName(result.stop)
++                  << " calls=" << (objective_->work().lossAttempts-before.lossAttempts)
++                  << " selector=" << result.rankSelectionWork.derivativeEvaluations << '\n';
++#endif
+         bool rankOverflow = false;
+         mergeRankWork(rankSelectionWork_, result.rankSelectionWork, rankOverflow);
+         if (rankOverflow)
+diff --git a/genetik/ExpressionVariation.hpp b/genetik/ExpressionVariation.hpp
+index 3270ff8..2ad86c5 100644
+--- a/genetik/ExpressionVariation.hpp
++++ b/genetik/ExpressionVariation.hpp
+@@ -2,6 +2,10 @@
+ #include "Regression.hpp"
+ #include <random>
+ #include <cstdint>
++#ifdef GENETIK_ORDINARY_SEARCH_TRACE
++#include <iostream>
++#include <cstdlib>
++#endif
+
+ struct ExpressionGrammar {
+     std::vector<ExpressionKind> operators{ExpressionKind::Add, ExpressionKind::Subtract, ExpressionKind::Multiply};
+@@ -267,7 +271,11 @@ public:
+     }
+     ExpressionCandidate initialize(std::mt19937& rng) {
+         count(statistics_.initializations);
+-        return ExpressionCandidate(randomExpression(rng, grammar_.initialMaxDepth), problem_, preparation_);
++        auto e=randomExpression(rng, grammar_.initialMaxDepth);
++#ifdef GENETIK_ORDINARY_SEARCH_TRACE
++        if (std::getenv("GENETIK_TRACE_SEARCH")) std::cerr << "TRACE_EVENT init " << e.toString() << '\n';
++#endif
++        return ExpressionCandidate(e, problem_, preparation_);
+     }
+     ExpressionCandidate initializeFrom(const Expression& expression) {
+         count(statistics_.initializations);
+@@ -312,7 +320,13 @@ public:
+     ExpressionCandidate mutation(const ExpressionCandidate& parent, float rate, std::mt19937& rng) {
+         requireProblem(parent);
+         ExpressionCandidate child = parent;
+-        if (std::uniform_real_distribution<float>(0, 1)(rng) >= rate) return child;
++        if (std::uniform_real_distribution<float>(0, 1)(rng) >= rate) {
++#ifdef GENETIK_ORDINARY_SEARCH_TRACE
++            if (std::getenv("GENETIK_TRACE_SEARCH"))
++            std::cerr << "TRACE_EVENT mutation_unchanged " << parent.text() << '\n';
++#endif
++            return child;
++        }
+         for (std::size_t i = 0; i < grammar_.proposalLimit; ++i) {
+             count(statistics_.mutationProposals);
+             const auto root = index(parent.expression().nodeCount(), rng);
+@@ -330,9 +344,17 @@ public:
+             if (!next||!genetik_detail::extendedGrammarAccepts(*next,grammar_)) { count(statistics_.structuralRejections); continue; }
+             child.replaceExpression(*next);
+             count(statistics_.mutationChanges, child.text() != parent.text());
++ #ifdef GENETIK_ORDINARY_SEARCH_TRACE
++            if (std::getenv("GENETIK_TRACE_SEARCH"))
++            std::cerr << "TRACE_EVENT mutation " << parent.text() << " => " << child.text() << '\n';
++#endif
+             return child;
+         }
+         count(statistics_.mutationFallbacks);
++ #ifdef GENETIK_ORDINARY_SEARCH_TRACE
++        if (std::getenv("GENETIK_TRACE_SEARCH"))
++        std::cerr << "TRACE_EVENT mutation_fallback " << parent.text() << '\n';
++#endif
+         return child;
+     }
+     void crossover(const ExpressionCandidate& father, const ExpressionCandidate& mother,
+@@ -355,6 +377,10 @@ public:
+             if (!accepted) count(statistics_.crossoverFallbacks);
+         }
+         a = std::move(left); b = std::move(right);
++ #ifdef GENETIK_ORDINARY_SEARCH_TRACE
++        if (std::getenv("GENETIK_TRACE_SEARCH"))
++        std::cerr << "TRACE_EVENT crossover " << father.text() << " | " << mother.text() << " => " << a.text() << " | " << b.text() << '\n';
++#endif
+     }
+ private:
+     static void count(std::uint64_t& value, std::uint64_t amount = 1) {
+diff --git a/genetik/SymbolicRegression.hpp b/genetik/SymbolicRegression.hpp
+index 85986b0..25a711e 100644
+--- a/genetik/SymbolicRegression.hpp
++++ b/genetik/SymbolicRegression.hpp
+@@ -7,6 +7,10 @@
+
+ #include <type_traits>
+ #include <functional>
++#ifdef GENETIK_ORDINARY_SEARCH_TRACE
++#include <iostream>
++#include <cstdlib>
++#endif
+
+ struct InitialExpressionBatch {
+     std::vector<Expression> expressions;
+@@ -256,6 +260,15 @@ inline SymbolicRegressionResult runSymbolicSearch(
+                                         : SearchStop::Cancelled;
+             break;
+         }
++#ifdef GENETIK_ORDINARY_SEARCH_TRACE
++        if (std::getenv("GENETIK_TRACE_SEARCH")) if (const auto published=population.creatures()) {
++            std::cerr << "TRACE_POP generation=" << *population.generation() << " best="
++                      << (population.bestSeen()?population.bestSeen()->text():"<none>") << '\n';
++            for (const auto& item:*published)
++                std::cerr << "TRACE_SURVIVE generation=" << *population.generation() << " "
++                          << item.fitness() << " " << item.text() << '\n';
++        }
++#endif
+         committedLosses=objective->work().lossAttempts;committedRows=objective->work().rowAttempts;
+         committedRequests=random.evaluationAttempts();
+         const auto current = population.bestSeen();
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index 2b2965f..c225ad9 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -15,6 +15,7 @@ add_test(NAME genetik_fitting_contracts COMMAND genetik_fitting_tests)
+ set_tests_properties(genetik_fitting_contracts PROPERTIES TIMEOUT 60)
+ add_executable(genetik_rank_aware_fitting_tests rank_aware_fitting.cpp)
+ target_link_libraries(genetik_rank_aware_fitting_tests PRIVATE genetik_lib)
++target_compile_definitions(genetik_rank_aware_fitting_tests PRIVATE GENETIK_ORDINARY_SEARCH_TRACE=1)
+ add_test(NAME genetik_rank_aware_fitting_contracts COMMAND genetik_rank_aware_fitting_tests)
+ set_tests_properties(genetik_rank_aware_fitting_contracts PROPERTIES TIMEOUT 60)
+ add_executable(genetik_symbolic_tests symbolic_regression.cpp)
+diff --git a/tests/rank_aware_fitting.cpp b/tests/rank_aware_fitting.cpp
+index ce26f31..35488be 100644
+--- a/tests/rank_aware_fitting.cpp
++++ b/tests/rank_aware_fitting.cpp
+@@ -2,6 +2,7 @@
+ #include <array>
+ #include <cmath>
+ #include <iostream>
++#include <cstdlib>
+
+ static void check(bool ok, const char* message) {
+     if (!ok)
+@@ -417,14 +418,18 @@ static void ordinarySearch() {
+     config.trainingLossThreshold = 0;
+     RandomContext random(20261127);
+     const auto found = symbolicRegression(problem, config, random);
+-    RandomContext repeatRandom(20261127);
+-    const auto repeated = symbolicRegression(problem, config, repeatRandom);
++    std::optional<SymbolicRegressionResult> repeated;
++    if (!std::getenv("GENETIK_TRACE_SEARCH")) {
++        RandomContext repeatRandom(20261127);
++        repeated = symbolicRegression(problem, config, repeatRandom);
++    }
+     check(found.best && found.best->fitnessState() == FitnessState::Valid,
+           "ordinary symbolic search returns a valid model");
+-    check(repeated.best && repeated.best->text() == found.best->text() &&
+-              repeated.trainingWork == found.trainingWork &&
+-              repeated.rankSelectionWork == found.rankSelectionWork,
+-          "fixed-seed generated search is deterministic");
++    if (repeated)
++        check(repeated->best && repeated->best->text() == found.best->text() &&
++                  repeated->trainingWork == found.trainingWork &&
++                  repeated->rankSelectionWork == found.rankSelectionWork,
++              "fixed-seed generated search is deterministic");
+     check(found.rawInitialExpressions.size() == config.population &&
+               found.candidateEvaluations >= config.population,
+           "candidates came from the declared grammar search");
+@@ -470,5 +475,7 @@ static void ordinarySearch() {
+ int main() {
+     directFixtures();
+     actualStartAndWeightedJacobians();
++    setenv("GENETIK_TRACE_SEARCH", "1", 1);
+     ordinarySearch();
++    unsetenv("GENETIK_TRACE_SEARCH");
+ }

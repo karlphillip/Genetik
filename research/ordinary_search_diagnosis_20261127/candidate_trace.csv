@@ -1,0 +1,101 @@
+arm,eval_order,generation,slot,origin,before,after,training_mse,fit_stop,objective_calls,selector_evaluations,published,best_seen_after_generation
+rank_aware_lm,1,0,0,initialization,(-0.58922430132325965),2.9999999999032254,8,minimum_step,15,5,yes,unknown
+rank_aware_lm,2,0,1,initialization,0.88098580803447746,2.9999999999428661,8,minimum_step,14,5,yes,unknown
+rank_aware_lm,3,0,2,initialization,0.2061538072653466,2.9999999999999978,8,minimum_step,10,5,yes,unknown
+rank_aware_lm,4,0,3,initialization,((-1.468400026267334) * 0.44448534006004525),((-1.468400026267334) * (-2.0430400070381256)),8,minimum_step,10,10,yes,unknown
+rank_aware_lm,5,0,4,initialization,x0,x0,11,no_constants,1,0,yes,unknown
+rank_aware_lm,6,0,5,initialization,(0.37582719339001835 * 0.31571593079719751),(0.37582719339001835 * 7.9823920481416675),8,minimum_step,13,10,yes,unknown
+rank_aware_lm,7,0,6,initialization,1.5967870638412385,2.9999999999999991,8,minimum_step,10,5,yes,unknown
+rank_aware_lm,8,0,7,initialization,0.67193993855496714,2.9999999999998308,8,minimum_step,12,5,yes,unknown
+rank_aware_lm,9,0,8,initialization,(-0.012070691306673709),2.9999999999999978,8,minimum_step,10,5,yes,unknown
+rank_aware_lm,10,0,9,initialization,(0.47944035766709225 * x0),(1.9999999999590019 * x0),9,minimum_step,14,5,yes,unknown
+rank_aware_lm,11,1,0,elite reevaluation,2.9999999999032254,2.9999999999032254,8,minimum_step,7,5,yes,yes
+rank_aware_lm,12,1,1,mutation,0.90757436307075645,2.9999999999880056,8,minimum_step,14,5,yes,no
+rank_aware_lm,13,1,2,crossover,2.9999999999998308,2.9999999999998308,8,minimum_step,2,5,yes,no
+rank_aware_lm,14,1,3,unchanged offspring,2.9999999999999978,2.9999999999999978,8,minimum_step,2,5,yes,no
+rank_aware_lm,15,1,4,mutation,(0.30226763078398022 + 1.7222596099121756),(1.2777403900615232 + 1.7222596099121756),8,minimum_step,14,10,yes,no
+rank_aware_lm,16,1,5,mutation,((-1.6785899562637063) * 0.12912755045207458),((-1.6785899562637063) * (-1.7872143156852645)),8,minimum_step,10,10,yes,no
+rank_aware_lm,17,1,6,unchanged offspring,2.9999999999999978,2.9999999999999978,8,minimum_step,2,5,yes,no
+rank_aware_lm,18,1,7,crossover,7.9823920481416675,3.0000000001343383,8,minimum_step,15,5,yes,no
+rank_aware_lm,19,1,8,crossover,(0.37582719339001835 * ((-1.468400026267334) * (-2.0430400070381256))),(0.99999999998317135 * ((-1.468400026267334) * (-2.0430400070381256))),8,minimum_step,14,15,yes,no
+rank_aware_lm,20,1,9,mutation,(-0.066551356549413354),2.9999999999999978,8,minimum_step,10,5,yes,no
+rank_aware_lm,21,2,0,elite reevaluation,2.9999999999032254,2.9999999999032254,8,minimum_step,7,5,yes,no
+rank_aware_lm,22,2,1,mutation,(x0 + 1.7222596099121756),(x0 + 2.9999999999655489),2,minimum_step,14,5,yes,yes
+rank_aware_lm,23,2,2,mutation,x0,x0,11,no_constants,1,0,yes,no
+rank_aware_lm,24,2,3,crossover,2.9999999999999978,2.9999999999999978,8,minimum_step,2,5,yes,no
+rank_aware_lm,25,2,4,mutation,1.0892545368500448,2.9999999999484817,8,minimum_step,14,5,yes,no
+rank_aware_lm,26,2,5,crossover,2.9999999999032254,2.9999999999032254,8,minimum_step,7,5,yes,no
+rank_aware_lm,27,2,6,mutation,x0,x0,11,no_constants,1,0,yes,no
+rank_aware_lm,28,2,7,mutation,x0,x0,11,no_constants,1,0,yes,no
+rank_aware_lm,29,2,8,crossover,2.9999999999032254,2.9999999999032254,8,minimum_step,7,5,yes,no
+rank_aware_lm,30,2,9,mutation,x0,x0,11,no_constants,1,0,yes,no
+rank_aware_lm,31,3,0,elite reevaluation,(x0 + 2.9999999999655489),(x0 + 2.9999999999655489),2,minimum_step,7,5,yes,no
+rank_aware_lm,32,3,1,mutation,1.3330191873114394,2.9999999999550542,8,minimum_step,14,5,yes,no
+rank_aware_lm,33,3,2,unchanged offspring,2.9999999999032254,2.9999999999032254,8,minimum_step,7,5,yes,no
+rank_aware_lm,34,3,3,crossover,x0,x0,11,no_constants,1,0,yes,no
+rank_aware_lm,35,3,4,crossover,(x0 + 2.9999999999655489),(x0 + 2.9999999999655489),2,minimum_step,7,5,yes,no
+rank_aware_lm,36,3,5,mutation,(x0 * (-1.543407423433695)),(x0 * 1.9999999999044606),9,minimum_step,15,5,yes,no
+rank_aware_lm,37,3,6,mutation,(x0 + (-0.59781770411531565)),(x0 + 2.9999999999292117),2,minimum_step,17,5,yes,yes
+rank_aware_lm,38,3,7,mutation,(0.31592433834438616 + (-1.3959640160941902)),(4.3959640159841822 + (-1.3959640160941902)),8,minimum_step,14,10,yes,no
+rank_aware_lm,39,3,8,crossover,x0,x0,11,no_constants,1,0,yes,no
+rank_aware_lm,40,3,9,unchanged offspring,x0,x0,11,no_constants,1,0,yes,no
+rank_aware_lm,41,4,0,elite reevaluation,(x0 + 2.9999999999292117),(x0 + 2.9999999999292117),2,minimum_step,7,5,yes,yes
+rank_aware_lm,42,4,1,mutation,(x0 * (0.75265056796330132 * x0)),(x0 * (0.88235294117637864 * x0)),11.7059,minimum_step,13,5,yes,no
+rank_aware_lm,43,4,2,unchanged offspring,(x0 + 2.9999999999655489),(x0 + 2.9999999999655489),2,minimum_step,7,5,yes,no
+rank_aware_lm,44,4,3,mutation,1.3044699577229677,2.9999999999999876,8,minimum_step,11,5,yes,no
+rank_aware_lm,45,4,4,unchanged offspring,(x0 + 2.9999999999655489),(x0 + 2.9999999999655489),2,minimum_step,7,5,yes,no
+rank_aware_lm,46,4,5,crossover,2.9999999999032254,2.9999999999032254,8,minimum_step,7,5,yes,no
+rank_aware_lm,47,4,6,crossover,2.9999999999550542,2.9999999999550542,8,minimum_step,7,5,yes,no
+rank_aware_lm,48,4,7,crossover,2.9999999999292117,2.9999999999292117,8,minimum_step,7,5,yes,no
+rank_aware_lm,49,4,8,mutation,(((-1.3819238940748062) + 1.7095100890995196) + 2.9999999999550542),(((-1.7095100890457411) + 1.7095100890995196) + 2.9999999999550542),8,minimum_step,8,15,yes,no
+rank_aware_lm,50,4,9,crossover,(x0 + 2.9999999999655489),(x0 + 2.9999999999655489),2,minimum_step,7,5,yes,no
+ordinary_lm,1,0,0,initialization,(-0.58922430132325965),2.9999999999032254,8,minimum_step,14,0,yes,unknown
+ordinary_lm,2,0,1,initialization,0.88098580803447746,2.9999999999428661,8,minimum_step,13,0,yes,unknown
+ordinary_lm,3,0,2,initialization,0.2061538072653466,2.9999999999999978,8,minimum_step,9,0,yes,unknown
+ordinary_lm,4,0,3,initialization,((-1.468400026267334) * 0.44448534006004525),((-1.468400026267334) * 0.44448534006004525),21.3421,minimum_step,1,0,yes,unknown
+ordinary_lm,5,0,4,initialization,x0,x0,11,no_constants,1,0,yes,unknown
+ordinary_lm,6,0,5,initialization,(0.37582719339001835 * 0.31571593079719751),(0.37582719339001835 * 0.31571593079719751),16.3022,minimum_step,1,0,yes,unknown
+ordinary_lm,7,0,6,initialization,1.5967870638412385,2.9999999999999991,8,minimum_step,9,0,yes,unknown
+ordinary_lm,8,0,7,initialization,0.67193993855496714,2.9999999999998308,8,minimum_step,11,0,yes,unknown
+ordinary_lm,9,0,8,initialization,(-0.012070691306673709),2.9999999999999978,8,minimum_step,9,0,yes,unknown
+ordinary_lm,10,0,9,initialization,(0.47944035766709225 * x0),(1.9999999999590019 * x0),9,minimum_step,13,0,yes,unknown
+ordinary_lm,11,1,0,elite reevaluation,2.9999999999032254,2.9999999999032254,8,minimum_step,6,0,yes,yes
+ordinary_lm,12,1,1,mutation,(0.90757436307075645 * x0),(1.9999999999705453 * x0),9,minimum_step,13,0,yes,no
+ordinary_lm,13,1,2,crossover,2.9999999999998308,2.9999999999998308,8,minimum_step,1,0,yes,no
+ordinary_lm,14,1,3,unchanged offspring,2.9999999999999978,2.9999999999999978,8,minimum_step,1,0,yes,no
+ordinary_lm,15,1,4,mutation,(0.30226763078398022 + 1.7222596099121756),(0.30226763078398022 + 1.7222596099121756),8.95155,minimum_step,1,0,yes,no
+ordinary_lm,16,1,5,mutation,((-1.6785899562637063) * 0.12912755045207458),((-1.6785899562637063) * 0.12912755045207458),18.3475,minimum_step,1,0,yes,no
+ordinary_lm,17,1,6,unchanged offspring,2.9999999999999978,2.9999999999999978,8,minimum_step,1,0,yes,no
+ordinary_lm,18,1,7,crossover,2.9999999999999991,2.9999999999999991,8,minimum_step,1,0,yes,no
+ordinary_lm,19,1,8,crossover,2.9999999999428661,2.9999999999999427,8,minimum_step,3,0,yes,no
+ordinary_lm,20,1,9,mutation,(-0.066551356549413354),2.9999999999999978,8,minimum_step,9,0,yes,no
+ordinary_lm,21,2,0,elite reevaluation,2.9999999999032254,2.9999999999032254,8,minimum_step,6,0,yes,no
+ordinary_lm,22,2,1,mutation,(x0 + 1.7222596099121756),(x0 + 2.9999999999655489),2,minimum_step,13,0,yes,yes
+ordinary_lm,23,2,2,mutation,x0,x0,11,no_constants,1,0,yes,no
+ordinary_lm,24,2,3,crossover,2.9999999999999978,2.9999999999999978,8,minimum_step,1,0,yes,no
+ordinary_lm,25,2,4,mutation,1.0892545368500448,2.9999999999484817,8,minimum_step,13,0,yes,no
+ordinary_lm,26,2,5,crossover,2.9999999999032254,2.9999999999032254,8,minimum_step,6,0,yes,no
+ordinary_lm,27,2,6,mutation,x0,x0,11,no_constants,1,0,yes,no
+ordinary_lm,28,2,7,mutation,x0,x0,11,no_constants,1,0,yes,no
+ordinary_lm,29,2,8,crossover,2.9999999999032254,2.9999999999032254,8,minimum_step,6,0,yes,no
+ordinary_lm,30,2,9,mutation,x0,x0,11,no_constants,1,0,yes,no
+ordinary_lm,31,3,0,elite reevaluation,(x0 + 2.9999999999655489),(x0 + 2.9999999999655489),2,minimum_step,6,0,yes,no
+ordinary_lm,32,3,1,mutation,1.3330191873114394,2.9999999999550542,8,minimum_step,13,0,yes,no
+ordinary_lm,33,3,2,unchanged offspring,2.9999999999032254,2.9999999999032254,8,minimum_step,6,0,yes,no
+ordinary_lm,34,3,3,crossover,x0,x0,11,no_constants,1,0,yes,no
+ordinary_lm,35,3,4,crossover,(x0 + 2.9999999999655489),(x0 + 2.9999999999655489),2,minimum_step,6,0,yes,no
+ordinary_lm,36,3,5,mutation,(x0 * (-1.543407423433695)),(x0 * 1.9999999999044606),9,minimum_step,14,0,yes,no
+ordinary_lm,37,3,6,mutation,(x0 + (-0.59781770411531565)),(x0 + 2.9999999999292117),2,minimum_step,16,0,yes,yes
+ordinary_lm,38,3,7,mutation,(0.31592433834438616 + (-1.3959640160941902)),(0.31592433834438616 + (-1.3959640160941902)),24.6467,minimum_step,1,0,yes,no
+ordinary_lm,39,3,8,crossover,x0,x0,11,no_constants,1,0,yes,no
+ordinary_lm,40,3,9,unchanged offspring,x0,x0,11,no_constants,1,0,yes,no
+ordinary_lm,41,4,0,elite reevaluation,(x0 + 2.9999999999292117),(x0 + 2.9999999999292117),2,minimum_step,6,0,yes,yes
+ordinary_lm,42,4,1,mutation,(0.75265056796330132 * x0),(1.9999999999999991 * x0),9,minimum_step,9,0,yes,no
+ordinary_lm,43,4,2,unchanged offspring,(x0 + 2.9999999999655489),(x0 + 2.9999999999655489),2,minimum_step,6,0,yes,no
+ordinary_lm,44,4,3,mutation,1.3044699577229677,2.9999999999999876,8,minimum_step,10,0,yes,no
+ordinary_lm,45,4,4,unchanged offspring,(x0 + 2.9999999999655489),(x0 + 2.9999999999655489),2,minimum_step,6,0,yes,no
+ordinary_lm,46,4,5,crossover,2.9999999999032254,2.9999999999032254,8,minimum_step,6,0,yes,no
+ordinary_lm,47,4,6,crossover,2.9999999999550542,2.9999999999550542,8,minimum_step,6,0,yes,no
+ordinary_lm,48,4,7,crossover,2.9999999999292117,2.9999999999292117,8,minimum_step,6,0,yes,no
+ordinary_lm,49,4,8,mutation,(((-1.3819238940748062) + 1.7095100890995196) + 2.9999999999550542),(((-1.3819238940748062) + 1.7095100890995196) + 2.9999999999550542),8.10731,minimum_step,1,0,yes,no
+ordinary_lm,50,4,9,crossover,(x0 + 2.9999999999655489),(x0 + 2.9999999999655489),2,minimum_step,6,0,yes,no

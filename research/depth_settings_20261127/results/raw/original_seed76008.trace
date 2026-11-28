@@ -1,0 +1,160 @@
+TRACE_EVENT init x0
+TRACE_EVENT init x0
+TRACE_EVENT init (-0.85614758073579389)
+TRACE_EVENT init x0
+TRACE_EVENT init (x0 * x0)
+TRACE_EVENT init (0.050546195371895752 * 0.30813685855419681)
+TRACE_EVENT init x0
+TRACE_EVENT init (-1.9570965110139731)
+TRACE_EVENT init x0
+TRACE_EVENT init (1.2888589047770376 * x0)
+TRACE_PREP generation=0 origin=0 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=0 origin=0 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=0 origin=0 before=(-0.85614758073579389) after=2.9999999999999973 loss=8 stop=minimum_step calls=9 selector=0
+TRACE_PREP generation=0 origin=0 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=0 origin=0 before=(x0 * x0) after=(x0 * x0) loss=11.8 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=0 origin=0 before=(0.050546195371895752 * 0.30813685855419681) after=(0.050546195371895752 * 0.30813685855419681) loss=16.9068 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=0 origin=0 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=0 origin=0 before=(-1.9570965110139731) after=2.999999999999964 loss=8 stop=minimum_step calls=10 selector=0
+TRACE_PREP generation=0 origin=0 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=0 origin=0 before=(1.2888589047770376 * x0) after=(1.999999999980826 * x0) loss=9 stop=minimum_step calls=13 selector=0
+TRACE_EVENT crossover (1.999999999980826 * x0) | 2.999999999999964 => (1.999999999980826 * x0) | 2.999999999999964
+TRACE_EVENT mutation_unchanged (1.999999999980826 * x0)
+TRACE_EVENT mutation_unchanged 2.999999999999964
+TRACE_EVENT crossover x0 | x0 => x0 | x0
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT crossover x0 | x0 => x0 | x0
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT mutation x0 => (x0 * (-1.4353092147973721))
+TRACE_EVENT crossover x0 | 2.9999999999999973 => 2.9999999999999973 | x0
+TRACE_EVENT mutation_unchanged 2.9999999999999973
+TRACE_EVENT mutation x0 => (-1.9897333972901534)
+TRACE_EVENT crossover 2.9999999999999973 | x0 => x0 | 2.9999999999999973
+TRACE_EVENT mutation x0 => (x0 + 0.18576382593177332)
+TRACE_PREP generation=1 origin=3 before=2.999999999999964 after=2.999999999999964 loss=8 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=1 origin=2 before=(1.999999999980826 * x0) after=(1.999999999980826 * x0) loss=9 stop=minimum_step calls=5 selector=0
+TRACE_PREP generation=1 origin=2 before=2.999999999999964 after=2.999999999999964 loss=8 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=1 origin=2 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=1 origin=2 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=1 origin=2 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=1 origin=1 before=(x0 * (-1.4353092147973721)) after=(x0 * 1.9999999999073754) loss=9 stop=minimum_step calls=14 selector=0
+TRACE_PREP generation=1 origin=1 before=2.9999999999999973 after=2.9999999999999973 loss=8 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=1 origin=1 before=(-1.9897333972901534) after=2.9999999999964628 loss=8 stop=minimum_step calls=12 selector=0
+TRACE_PREP generation=1 origin=1 before=(x0 + 0.18576382593177332) after=(x0 + 2.9999999999999978) loss=2 stop=minimum_step calls=9 selector=0
+TRACE_POP generation=1 best=(x0 + 2.9999999999999978)
+TRACE_SURVIVE generation=1 11 x0
+TRACE_SURVIVE generation=1 11 x0
+TRACE_SURVIVE generation=1 11 x0
+TRACE_SURVIVE generation=1 9 (x0 * 1.9999999999073754)
+TRACE_SURVIVE generation=1 9 (1.999999999980826 * x0)
+TRACE_SURVIVE generation=1 8 2.9999999999999973
+TRACE_SURVIVE generation=1 8 2.999999999999964
+TRACE_SURVIVE generation=1 8 2.999999999999964
+TRACE_SURVIVE generation=1 8 2.9999999999964628
+TRACE_SURVIVE generation=1 2 (x0 + 2.9999999999999978)
+TRACE_EVENT crossover x0 | 2.9999999999964628 => 2.9999999999964628 | x0
+TRACE_EVENT mutation 2.9999999999964628 => (1.2802270376561644 * (-1.2431283990171513))
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT crossover (x0 + 2.9999999999999978) | 2.9999999999999973 => 2.9999999999999973 | (x0 + 2.9999999999999978)
+TRACE_EVENT mutation_unchanged 2.9999999999999973
+TRACE_EVENT mutation_unchanged (x0 + 2.9999999999999978)
+TRACE_EVENT crossover 2.999999999999964 | 2.9999999999999973 => 2.9999999999999973 | 2.999999999999964
+TRACE_EVENT mutation 2.9999999999999973 => (x0 * x0)
+TRACE_EVENT mutation_unchanged 2.999999999999964
+TRACE_EVENT crossover 2.9999999999999973 | (1.999999999980826 * x0) => x0 | (1.999999999980826 * 2.9999999999999973)
+TRACE_EVENT mutation x0 => x0
+TRACE_EVENT mutation_unchanged (1.999999999980826 * 2.9999999999999973)
+TRACE_EVENT crossover (x0 + 2.9999999999999978) | (x0 + 2.9999999999999978) => (2.9999999999999978 + 2.9999999999999978) | (x0 + x0)
+TRACE_EVENT mutation (2.9999999999999978 + 2.9999999999999978) => x0
+TRACE_PREP generation=2 origin=3 before=(x0 + 2.9999999999999978) after=(x0 + 2.9999999999999978) loss=2 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=2 origin=1 before=(1.2802270376561644 * (-1.2431283990171513)) after=(1.2802270376561644 * (-1.2431283990171513)) loss=29.0817 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=2 origin=1 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=2 origin=1 before=2.9999999999999973 after=2.9999999999999973 loss=8 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=2 origin=1 before=(x0 + 2.9999999999999978) after=(x0 + 2.9999999999999978) loss=2 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=2 origin=1 before=(x0 * x0) after=(x0 * x0) loss=11.8 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=2 origin=1 before=2.999999999999964 after=2.999999999999964 loss=8 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=2 origin=1 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=2 origin=1 before=(1.999999999980826 * 2.9999999999999973) after=(1.999999999980826 * 2.9999999999999973) loss=17 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=2 origin=1 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_POP generation=2 best=(x0 + 2.9999999999999978)
+TRACE_SURVIVE generation=2 29.0817 (1.2802270376561644 * (-1.2431283990171513))
+TRACE_SURVIVE generation=2 17 (1.999999999980826 * 2.9999999999999973)
+TRACE_SURVIVE generation=2 11.8 (x0 * x0)
+TRACE_SURVIVE generation=2 11 x0
+TRACE_SURVIVE generation=2 11 x0
+TRACE_SURVIVE generation=2 11 x0
+TRACE_SURVIVE generation=2 8 2.9999999999999973
+TRACE_SURVIVE generation=2 8 2.999999999999964
+TRACE_SURVIVE generation=2 2 (x0 + 2.9999999999999978)
+TRACE_SURVIVE generation=2 2 (x0 + 2.9999999999999978)
+TRACE_EVENT crossover (x0 + 2.9999999999999978) | x0 => x0 | (x0 + 2.9999999999999978)
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT mutation_unchanged (x0 + 2.9999999999999978)
+TRACE_EVENT crossover (x0 + 2.9999999999999978) | 2.9999999999999973 => (2.9999999999999973 + 2.9999999999999978) | x0
+TRACE_EVENT mutation_unchanged (2.9999999999999973 + 2.9999999999999978)
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT crossover (x0 * x0) | (x0 + 2.9999999999999978) => (2.9999999999999978 * x0) | (x0 + x0)
+TRACE_EVENT mutation_unchanged (2.9999999999999978 * x0)
+TRACE_EVENT mutation (x0 + x0) => ((-0.35091769943097528) + x0)
+TRACE_EVENT crossover x0 | x0 => x0 | x0
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT crossover (x0 + 2.9999999999999978) | (x0 * x0) => (x0 + x0) | (2.9999999999999978 * x0)
+TRACE_EVENT mutation_unchanged (x0 + x0)
+TRACE_PREP generation=3 origin=3 before=(x0 + 2.9999999999999978) after=(x0 + 2.9999999999999978) loss=2 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=3 origin=1 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=3 origin=1 before=(x0 + 2.9999999999999978) after=(x0 + 2.9999999999999978) loss=2 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=3 origin=1 before=(2.9999999999999973 + 2.9999999999999978) after=(2.9999999999999973 + 2.9999999999999978) loss=17 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=3 origin=1 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=3 origin=1 before=(2.9999999999999978 * x0) after=(2.0000000000269624 * x0) loss=9 stop=minimum_step calls=13 selector=0
+TRACE_PREP generation=3 origin=1 before=((-0.35091769943097528) + x0) after=(2.9999999999999978 + x0) loss=2 stop=minimum_step calls=9 selector=0
+TRACE_PREP generation=3 origin=2 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=3 origin=2 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=3 origin=1 before=(x0 + x0) after=(x0 + x0) loss=9 stop=no_constants calls=1 selector=0
+TRACE_POP generation=3 best=(2.9999999999999978 + x0)
+TRACE_SURVIVE generation=3 17 (2.9999999999999973 + 2.9999999999999978)
+TRACE_SURVIVE generation=3 11 x0
+TRACE_SURVIVE generation=3 11 x0
+TRACE_SURVIVE generation=3 11 x0
+TRACE_SURVIVE generation=3 11 x0
+TRACE_SURVIVE generation=3 9 (x0 + x0)
+TRACE_SURVIVE generation=3 9 (2.0000000000269624 * x0)
+TRACE_SURVIVE generation=3 2 (x0 + 2.9999999999999978)
+TRACE_SURVIVE generation=3 2 (x0 + 2.9999999999999978)
+TRACE_SURVIVE generation=3 2 (2.9999999999999978 + x0)
+TRACE_EVENT crossover x0 | (2.0000000000269624 * x0) => (2.0000000000269624 * x0) | x0
+TRACE_EVENT mutation_unchanged (2.0000000000269624 * x0)
+TRACE_EVENT mutation x0 => 0.043404483068377075
+TRACE_EVENT crossover x0 | (2.9999999999999978 + x0) => x0 | (2.9999999999999978 + x0)
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT mutation_unchanged (2.9999999999999978 + x0)
+TRACE_EVENT crossover x0 | x0 => x0 | x0
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT crossover (x0 + 2.9999999999999978) | x0 => x0 | (x0 + 2.9999999999999978)
+TRACE_EVENT mutation_unchanged x0
+TRACE_EVENT mutation_unchanged (x0 + 2.9999999999999978)
+TRACE_EVENT crossover x0 | x0 => x0 | x0
+TRACE_EVENT mutation_unchanged x0
+TRACE_PREP generation=4 origin=3 before=(2.9999999999999978 + x0) after=(2.9999999999999978 + x0) loss=2 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=4 origin=1 before=(2.0000000000269624 * x0) after=(2.0000000000269624 * x0) loss=9 stop=minimum_step calls=6 selector=0
+TRACE_PREP generation=4 origin=1 before=0.043404483068377075 after=2.9999999999999978 loss=8 stop=minimum_step calls=9 selector=0
+TRACE_PREP generation=4 origin=2 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=4 origin=2 before=(2.9999999999999978 + x0) after=(2.9999999999999978 + x0) loss=2 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=4 origin=2 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=4 origin=2 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=4 origin=1 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_PREP generation=4 origin=1 before=(x0 + 2.9999999999999978) after=(x0 + 2.9999999999999978) loss=2 stop=minimum_step calls=1 selector=0
+TRACE_PREP generation=4 origin=2 before=x0 after=x0 loss=11 stop=no_constants calls=1 selector=0
+TRACE_POP generation=4 best=(2.9999999999999978 + x0)
+TRACE_SURVIVE generation=4 11 x0
+TRACE_SURVIVE generation=4 11 x0
+TRACE_SURVIVE generation=4 11 x0
+TRACE_SURVIVE generation=4 11 x0
+TRACE_SURVIVE generation=4 11 x0
+TRACE_SURVIVE generation=4 9 (2.0000000000269624 * x0)
+TRACE_SURVIVE generation=4 8 2.9999999999999978
+TRACE_SURVIVE generation=4 2 (x0 + 2.9999999999999978)
+TRACE_SURVIVE generation=4 2 (2.9999999999999978 + x0)
+TRACE_SURVIVE generation=4 2 (2.9999999999999978 + x0)

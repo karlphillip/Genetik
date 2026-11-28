@@ -1,0 +1,1 @@
+seed,76002,initial_depth,2,mutation_depth,2,candidate_evaluations,50,train_mse,1.9999999999999996,heldout_mse,7.500000000000135,numerical_recovery,0,objective_calls,173,fitting_loss_calls,173,lm_math_ops,680,lm_linear_ops,1497,lm_objective_evals,147,lm_jacobian_evals,48,rank_selector_evals,0,search_cpu_seconds,0.003045103,stop,generation_limit,equation,"(x0 + 2.9999999999999658)"

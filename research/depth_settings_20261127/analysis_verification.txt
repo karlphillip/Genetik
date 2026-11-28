@@ -1,0 +1,5 @@
+original: recovery=2/8 paired_gains=0 paired_losses=0
+deeper_initialization: recovery=6/8 paired_gains=5 paired_losses=1
+deeper_mutation: recovery=8/8 paired_gains=6 paired_losses=0
+library_defaults: recovery=7/8 paired_gains=6 paired_losses=1
+sympy=1.12; classified literal-sensitive trees=716

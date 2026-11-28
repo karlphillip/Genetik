@@ -1,0 +1,28 @@
+{
+  "study": "ordinary-symbolic-search-depth-settings",
+  "base_sha": "5425e68726337c038d88112f9b91d817d9f7eed6",
+  "base_contains_pr_76_head": "15cc90deb32a8c97cd60877d78ca3754ec5b88cb",
+  "protocol_sha256": "43c2cc09db67fb7c25cc5ff5b5172da79d35a93c00eaec9a6bc48433ddb5401d",
+  "target": "2*x+3",
+  "fitting": "ordinary single-start LM, rankAware=false, bounds [-8,8]",
+  "seed_sets": [76001, 76002, 76003, 76004, 76005, 76006, 76007, 76008],
+  "settings": {
+    "original": {"initialMaxDepth": 2, "mutationMaxDepth": 2},
+    "deeper_initialization": {"initialMaxDepth": 4, "mutationMaxDepth": 2},
+    "deeper_mutation": {"initialMaxDepth": 2, "mutationMaxDepth": 3},
+    "library_defaults": {"initialMaxDepth": 4, "mutationMaxDepth": 3}
+  },
+  "search_count": 32,
+  "candidate_limit_per_search": 50,
+  "observed_candidate_evaluations": 1600,
+  "numerical_recovery_threshold_heldout_mse": 1e-12,
+  "heldout_rows_seen_by_search": false,
+  "historical_seed_20261127_rerun": false,
+  "timing": {
+    "recorded_metric": "steady_clock search elapsed seconds",
+    "trace_included_in_interval": true,
+    "isolated_process_cpu_seconds_collected": false
+  },
+  "production_changes": false,
+  "d7_artifacts_modified": false
+}

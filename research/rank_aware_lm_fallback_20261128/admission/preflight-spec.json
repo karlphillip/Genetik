@@ -1,0 +1,408 @@
+{
+  "commands": {
+    "aggregator": {
+      "argv": [
+        "/usr/bin/python3.12",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/rank-aware-lm-fallback-20261128/research/rank_aware_lm_fallback_20261128/admission/pipeline_stage.py",
+        "aggregator",
+        "{manifest}",
+        "{workdir}"
+      ],
+      "executable": "/usr/bin/python3.12",
+      "identity_files": [
+        {
+          "path": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/rank-aware-lm-fallback-20261128/research/rank_aware_lm_fallback_20261128/admission/pipeline_stage.py",
+          "sha256": "261a2d72a9ce436361f61f38f8c10dbe4a15ce36e2fe7a02587d53d0d75042ee"
+        }
+      ],
+      "runtime_identity": "CPython 3.12.3; synthetic pipeline adapter v1",
+      "sha256": "a7d56a8a764faf7bbf5c164055a48fd072be52287bdeb523a9e07b2042f4e7e1",
+      "version": "3.12.3"
+    },
+    "runner": {
+      "argv": [
+        "/usr/bin/python3.12",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/rank-aware-lm-fallback-20261128/research/rank_aware_lm_fallback_20261128/admission/pipeline_stage.py",
+        "runner",
+        "{manifest}",
+        "{workdir}"
+      ],
+      "executable": "/usr/bin/python3.12",
+      "identity_files": [
+        {
+          "path": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/rank-aware-lm-fallback-20261128/research/rank_aware_lm_fallback_20261128/admission/pipeline_stage.py",
+          "sha256": "261a2d72a9ce436361f61f38f8c10dbe4a15ce36e2fe7a02587d53d0d75042ee"
+        }
+      ],
+      "runtime_identity": "CPython 3.12.3; synthetic pipeline adapter v1",
+      "sha256": "a7d56a8a764faf7bbf5c164055a48fd072be52287bdeb523a9e07b2042f4e7e1",
+      "version": "3.12.3"
+    },
+    "scorer": {
+      "argv": [
+        "/usr/bin/python3.12",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/rank-aware-lm-fallback-20261128/research/rank_aware_lm_fallback_20261128/admission/pipeline_stage.py",
+        "scorer",
+        "{manifest}",
+        "{workdir}"
+      ],
+      "executable": "/usr/bin/python3.12",
+      "identity_files": [
+        {
+          "path": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/rank-aware-lm-fallback-20261128/research/rank_aware_lm_fallback_20261128/admission/pipeline_stage.py",
+          "sha256": "261a2d72a9ce436361f61f38f8c10dbe4a15ce36e2fe7a02587d53d0d75042ee"
+        }
+      ],
+      "runtime_identity": "CPython 3.12.3; synthetic pipeline adapter v1",
+      "sha256": "a7d56a8a764faf7bbf5c164055a48fd072be52287bdeb523a9e07b2042f4e7e1",
+      "version": "3.12.3"
+    },
+    "verifier": {
+      "argv": [
+        "/usr/bin/python3.12",
+        "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/rank-aware-lm-fallback-20261128/research/rank_aware_lm_fallback_20261128/admission/pipeline_stage.py",
+        "verifier",
+        "{manifest}",
+        "{workdir}"
+      ],
+      "executable": "/usr/bin/python3.12",
+      "identity_files": [
+        {
+          "path": "/home/karlphillip/workspaces/primeResearcher/Genetik/out/worktrees/rank-aware-lm-fallback-20261128/research/rank_aware_lm_fallback_20261128/admission/pipeline_stage.py",
+          "sha256": "261a2d72a9ce436361f61f38f8c10dbe4a15ce36e2fe7a02587d53d0d75042ee"
+        }
+      ],
+      "runtime_identity": "CPython 3.12.3; synthetic pipeline adapter v1",
+      "sha256": "a7d56a8a764faf7bbf5c164055a48fd072be52287bdeb523a9e07b2042f4e7e1",
+      "version": "3.12.3"
+    }
+  },
+  "controls": [
+    {
+      "assessment": {
+        "id": "synthetic-affine-assess",
+        "synthetic_rows": [
+          {
+            "expected": 0,
+            "x": 2
+          }
+        ]
+      },
+      "id": "affine",
+      "protocol_assessment_artifact": "affine-heldout-v1",
+      "protocol_assessment_sha256": "4c0a0dc629f223d0d106e9118e79a5e0c70dc4dad3a1dc688ab5bae8aa2c05e0",
+      "protocol_training_artifact": "affine-training-v1",
+      "protocol_training_sha256": "e99e3d1157bcc6dd803acdb66d13079368932f222103d4ab990afdb386103613",
+      "training": {
+        "id": "synthetic-affine-train",
+        "synthetic_rows": [
+          {
+            "expected": 0,
+            "x": 0
+          },
+          {
+            "expected": 0,
+            "x": 1
+          }
+        ]
+      }
+    },
+    {
+      "assessment": {
+        "id": "synthetic-quadratic-assess",
+        "synthetic_rows": [
+          {
+            "expected": 0,
+            "x": 2
+          }
+        ]
+      },
+      "id": "quadratic",
+      "protocol_assessment_artifact": "quadratic-heldout-v1",
+      "protocol_assessment_sha256": "839feeb3fe63b65e165c7f4b68734fbf7dfb8d460a8764e56e0662c6d0e0228b",
+      "protocol_training_artifact": "quadratic-training-v1",
+      "protocol_training_sha256": "2accb6bc0cda431b7f5687b7eb88e8c34e1ef2fd659857b0cce84aa91aab8e19",
+      "training": {
+        "id": "synthetic-quadratic-train",
+        "synthetic_rows": [
+          {
+            "expected": 0,
+            "x": 0
+          },
+          {
+            "expected": 0,
+            "x": 1
+          }
+        ]
+      }
+    }
+  ],
+  "expected_run_count": 32,
+  "limits": {
+    "address_space_bytes": 2147483648,
+    "cpu_seconds": 120,
+    "output_bytes": 8388608,
+    "wall_seconds": 120
+  },
+  "preflight_id": "rank-fallback-synthetic-preflight-20261128",
+  "protocol_binding_sha256": "8533ee0d096f4bd467b2ca2cb5ee33a64184eeb4dc0862bf89cfac7b5239f4e6",
+  "runs": [
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm",
+      "run_id": "affine-ordinary_lm-91001",
+      "seed": 91001,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm",
+      "run_id": "affine-ordinary_lm-91002",
+      "seed": 91002,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm",
+      "run_id": "affine-ordinary_lm-91003",
+      "seed": 91003,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm",
+      "run_id": "affine-ordinary_lm-91004",
+      "seed": 91004,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm",
+      "run_id": "affine-ordinary_lm-91005",
+      "seed": 91005,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm",
+      "run_id": "affine-ordinary_lm-91006",
+      "seed": 91006,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm",
+      "run_id": "affine-ordinary_lm-91007",
+      "seed": 91007,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm",
+      "run_id": "affine-ordinary_lm-91008",
+      "seed": 91008,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "affine-ordinary_lm_rank_fallback-91001",
+      "seed": 91001,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "affine-ordinary_lm_rank_fallback-91002",
+      "seed": 91002,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "affine-ordinary_lm_rank_fallback-91003",
+      "seed": 91003,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "affine-ordinary_lm_rank_fallback-91004",
+      "seed": 91004,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "affine-ordinary_lm_rank_fallback-91005",
+      "seed": 91005,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "affine-ordinary_lm_rank_fallback-91006",
+      "seed": 91006,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "affine-ordinary_lm_rank_fallback-91007",
+      "seed": 91007,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "affine-heldout-v1",
+      "control_id": "affine",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "affine-ordinary_lm_rank_fallback-91008",
+      "seed": 91008,
+      "training_artifact": "affine-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm",
+      "run_id": "quadratic-ordinary_lm-91001",
+      "seed": 91001,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm",
+      "run_id": "quadratic-ordinary_lm-91002",
+      "seed": 91002,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm",
+      "run_id": "quadratic-ordinary_lm-91003",
+      "seed": 91003,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm",
+      "run_id": "quadratic-ordinary_lm-91004",
+      "seed": 91004,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm",
+      "run_id": "quadratic-ordinary_lm-91005",
+      "seed": 91005,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm",
+      "run_id": "quadratic-ordinary_lm-91006",
+      "seed": 91006,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm",
+      "run_id": "quadratic-ordinary_lm-91007",
+      "seed": 91007,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm",
+      "run_id": "quadratic-ordinary_lm-91008",
+      "seed": 91008,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "quadratic-ordinary_lm_rank_fallback-91001",
+      "seed": 91001,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "quadratic-ordinary_lm_rank_fallback-91002",
+      "seed": 91002,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "quadratic-ordinary_lm_rank_fallback-91003",
+      "seed": 91003,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "quadratic-ordinary_lm_rank_fallback-91004",
+      "seed": 91004,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "quadratic-ordinary_lm_rank_fallback-91005",
+      "seed": 91005,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "quadratic-ordinary_lm_rank_fallback-91006",
+      "seed": 91006,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "quadratic-ordinary_lm_rank_fallback-91007",
+      "seed": 91007,
+      "training_artifact": "quadratic-training-v1"
+    },
+    {
+      "assessment_artifact": "quadratic-heldout-v1",
+      "control_id": "quadratic",
+      "method": "ordinary_lm_rank_fallback",
+      "run_id": "quadratic-ordinary_lm_rank_fallback-91008",
+      "seed": 91008,
+      "training_artifact": "quadratic-training-v1"
+    }
+  ],
+  "schema": 1
+}

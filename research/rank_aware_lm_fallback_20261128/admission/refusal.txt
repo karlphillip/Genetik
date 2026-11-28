@@ -1,0 +1,16 @@
+2026-11-28T15:56:19Z
+Command:
+python3 scripts/scientific_pipeline_preflight.py --protocol research/rank_aware_lm_fallback_20261128/admission/protocol.json --spec research/rank_aware_lm_fallback_20261128/admission/preflight-spec.json --receipt research/rank_aware_lm_fallback_20261128/admission/preflight-receipt.json
+
+Exit: 2
+Refusal:
+scientific-pipeline-preflight: refused: preflight spec is not bound to this exact campaign protocol
+
+No pipeline stage ran and no target search ran. The task matrix and thresholds remain
+predeclared in protocol.json. This failed attempt is retained unchanged; no corrected
+specification or retry was generated.
+
+Offline diagnosis: the preflight expects `protocol_binding()`'s canonical form, which
+adds an empty `frozen_artifacts` list when the field is absent. The prepared binding
+was hashed from the protocol without that canonical field. Since admission refused,
+no revised spec or second preflight was made and the target matrix stayed untested.

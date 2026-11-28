@@ -308,7 +308,7 @@ class ScalarMathematicsRun {
             !std::isfinite(c.mutationRate) || c.crossoverRate < 0 || c.crossoverRate > 1 ||
             c.mutationRate < 0 || c.mutationRate > 1)
             throw std::invalid_argument("fresh bounded scalar mathematics run/configuration required");
-        if (c.fitting && c.fitting->rankAware)
+        if (c.fitting && (c.fitting->rankAware || c.fitting->rankAwareFallback))
             throw std::invalid_argument(
                 "rank-aware refinement is not enabled for checkpointed scalar runs");
         objective_ = std::make_shared<TrainingObjective>(problem.problem(), c.maxTrainingLossAttempts);

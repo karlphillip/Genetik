@@ -310,3 +310,32 @@ Rank-aware refinement is currently unavailable in checkpointed
 and LM counters but has no rank-selector counter. This opt-in restriction leaves
 existing checkpoint payloads and default search behavior unchanged. The normal
 `symbolicRegression` entry point and direct fit APIs are supported.
+
+## Optional fallback after a singular ordinary LM fit
+
+Set `fitting.rankAwareFallback = true` with LM to keep ordinary LM as the first
+attempt and retry exactly once with rank-aware selection only when ordinary LM
+stops at `LMStop::SingularSystem`, returns a valid unchanged expression and
+incumbent, and enough work remains for a baseline, selector derivatives, and at
+least one LM objective evaluation. A fit that stops for a different reason,
+improves during ordinary LM, or has insufficient allowance does not invoke the
+fallback. The existing `rankAware = true` option remains the always-rank-aware
+path; both options default to false.
+
+The retry uses the same postfix-pivot selector, rank tolerance and LM solver as
+the always-rank-aware API. Its baseline, selector evaluations and LM calls draw
+from the remaining `ConstantFitConfig::maxLossAttempts` and shared
+`TrainingObjective` allowance. The mathematical-operation cap is reduced by
+the ordinary LM arithmetic already spent before the retry starts. If the retry
+is invalid, worse, or exhausted, the best valid ordinary-LM result remains in
+place. `ConstantFitResult::ordinaryOptimizerStop` records the primary stop;
+`rankAwareFallbackOutcome`, `rankAwareFallbackOptimizerStop`, and
+`rankAwareFallbackAttempted` describe the retry. Phase loss calls, LM work, and
+selector work are reported separately. Search results aggregate ordinary
+singular stops, fallback attempts and improved fits in
+`rankAwareFallbackWork`.
+
+Like always-rank-aware refinement, fallback requires serial candidate
+preparation and is rejected by checkpointed `ScalarMathematicsRun`; the current
+checkpoint codec does not store selector accounting. The option is independent
+of ordinary search defaults and consumes no random draws.

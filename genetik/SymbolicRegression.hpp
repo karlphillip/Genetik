@@ -84,6 +84,7 @@ struct SymbolicRegressionResult {
     LMWork optimizerWork;
     RankSelectionWork rankSelectionWork{};
     PreparationStatistics preparationWork;
+    RankAwareFallbackStatistics rankAwareFallbackWork;
     std::uint64_t initializerWorkUnits = 0;
     std::string initializerStatus = "disabled", initializerDetail;
     TrainingWork initialWork;
@@ -192,6 +193,7 @@ inline SymbolicRegressionResult runSymbolicSearch(
         if (problem->objective().loss == RegressionLoss::MeanSquaredError)
             result.rawInitialBestMSE = preparation->rawInitialBest;
         result.preparationWork=preparation->statistics();
+        result.rankAwareFallbackWork = preparation->rankAwareFallbackStatistics();
         result.rankSelectionWork = preparation->rankSelectionWork();
         result.unpublishedLossAttempts=result.trainingWork.lossAttempts;
         result.unpublishedRowAttempts=result.trainingWork.rowAttempts;
@@ -278,6 +280,7 @@ inline SymbolicRegressionResult runSymbolicSearch(
     result.supplementalWork=objective->supplementalWork();
     result.optimizerWork=preparation->optimizerWork();
     result.preparationWork=preparation->statistics();
+    result.rankAwareFallbackWork = preparation->rankAwareFallbackStatistics();
     result.rankSelectionWork = preparation->rankSelectionWork();
     result.unpublishedLossAttempts=result.trainingWork.lossAttempts-committedLosses;
     result.unpublishedRowAttempts=result.trainingWork.rowAttempts-committedRows;
@@ -359,7 +362,8 @@ symbolicRegression(std::shared_ptr<const RegressionProblem> problem,
         throw std::invalid_argument("symbolic search requires a fresh objective with matching problem and loss allowance");
     if(random.execution().requested()>1 && (!objective->parallelEvaluationSafe() || config.diagnostics))
         throw std::invalid_argument("parallel search requires independent objective factories and no detailed refinement diagnostics");
-    if (random.execution().requested() > 1 && config.fitting && config.fitting->rankAware)
+    if (random.execution().requested() > 1 && config.fitting &&
+        (config.fitting->rankAware || config.fitting->rankAwareFallback))
         throw std::invalid_argument(
             "rank-aware refinement currently requires serial candidate preparation");
     if(random.execution().requested()>1)(void)objective->forkParallel(random.execution()); // validate factory before initialization

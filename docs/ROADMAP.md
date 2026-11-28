@@ -532,3 +532,10 @@ redundant and full-rank synthetic topologies and is exercised during ordinary
 grammar search. Checkpointed scalar runs remain on the default policy until the
 checkpoint codec can represent selector work without invalidating prior
 payloads. See `RANK_AWARE_REFINEMENT.md` for the measured outcomes and limits.
+
+An opt-in ordinary-LM fallback is implemented and has deterministic direct,
+search-path, sanitizer, and installed-consumer coverage. It retries only an
+unchanged singular fit and shares fitting/search allowances. Its prospective
+paired autonomous-search benefit remains unknown: synthetic pipeline admission
+refused before target execution. Keep the production default off until that
+comparison is admitted and measured. See `RANK_AWARE_LM_FALLBACK.md`.

@@ -42,6 +42,13 @@ struct PreparationStatistics {
     std::array<std::uint64_t,7> terminations{}; // ConstantFitStop enum order
     bool operator==(const PreparationStatistics&) const = default;
 };
+struct RankAwareFallbackStatistics {
+    std::uint64_t ordinarySingularStops = 0, attempts = 0, improvedFits = 0;
+    std::uint64_t ordinaryLossAttempts = 0, fallbackLossAttempts = 0;
+    RankSelectionWork selectorWork{};
+    LMWork ordinaryOptimizerWork{}, fallbackOptimizerWork{};
+    bool operator==(const RankAwareFallbackStatistics&) const = default;
+};
 inline void mergeLMWork(LMWork& a,const LMWork& b){
     auto add=[](std::size_t& x,std::size_t y){if(y>std::numeric_limits<std::size_t>::max()-x)throw std::overflow_error("optimizer work counter overflow");x+=y;};
     add(a.objectiveEvaluations,b.objectiveEvaluations);add(a.jacobianEvaluations,b.jacobianEvaluations);add(a.forwardEvaluations,b.forwardEvaluations);add(a.derivativeEvaluations,b.derivativeEvaluations);add(a.rowsProcessed,b.rowsProcessed);add(a.parameterUpdates,b.parameterUpdates);add(a.linearSolves,b.linearSolves);add(a.acceptedSteps,b.acceptedSteps);add(a.rejectedSteps,b.rejectedSteps);add(a.mathematicalOperations,b.mathematicalOperations);add(a.linearAlgebraOperations,b.linearAlgebraOperations);a.peakWorkspaceBytes=std::max(a.peakWorkspaceBytes,b.peakWorkspaceBytes);a.seconds+=b.seconds;if(!std::isfinite(a.seconds))throw std::overflow_error("optimizer runtime accumulator overflow");
@@ -270,6 +277,9 @@ struct ConstantFitConfig {
     ConstantFitMethod method=ConstantFitMethod::Coordinate;
     LMConfig levenbergMarquardt{};
     bool rankAware = false;
+    // Try one rank-aware LM retry after an unchanged singular ordinary-LM fit.
+    // This is opt-in and is ignored when rankAware (always rank-aware) is set.
+    bool rankAwareFallback = false;
     double rankTolerance = 1e-10;
 };
 inline void validateConstantFitConfigForLimit(const ConstantFitConfig& c, double maximumConstant) {
@@ -282,6 +292,7 @@ inline void validateConstantFitConfigForLimit(const ConstantFitConfig& c, double
         (c.method != ConstantFitMethod::Coordinate &&
          c.method != ConstantFitMethod::LevenbergMarquardt) ||
         (c.rankAware && c.method != ConstantFitMethod::LevenbergMarquardt) ||
+        (c.rankAwareFallback && c.method != ConstantFitMethod::LevenbergMarquardt) ||
         !std::isfinite(c.rankTolerance) || c.rankTolerance <= 0 || c.rankTolerance >= 1)
         throw std::invalid_argument("invalid constant fit configuration");
 }
@@ -323,6 +334,17 @@ struct ConstantFitResult {
     std::uint64_t totalBudgetUnits =
         0; // loss calls plus rank-selector derivative evaluations when enabled
     std::uint64_t preSelectionBaselineOperations = 0;
+    // Optional ordinary-LM fallback accounting. The ordinary phase remains the
+    // reported primary stop; fallback fields describe the single retry phase.
+    bool rankAwareFallbackAttempted = false;
+    bool rankAwareFallbackImproved = false;
+    ConstantFitStop rankAwareFallbackStop = ConstantFitStop::EvaluationLimit;
+    std::string rankAwareFallbackOutcome = "not_configured";
+    std::optional<LMStop> ordinaryOptimizerStop;
+    std::optional<LMStop> rankAwareFallbackOptimizerStop;
+    std::uint64_t ordinaryPhaseLossAttempts = 0, fallbackPhaseLossAttempts = 0;
+    LMWork ordinaryPhaseOptimizerWork{}, fallbackPhaseOptimizerWork{};
+    RankSelectionWork fallbackPhaseSelectionWork{};
 };
 // Shared deterministic reference algorithm. Representation adapters enumerate parameters,
 // read one coefficient and construct one checked replacement. No RNG or publication here.
@@ -347,7 +369,18 @@ Result fitCoordinates(ExpressionValue expression,Objective& objective,const Cons
                           {},
                           "disabled",
                           0,
-                          0};
+                          0,
+                          false,
+                          false,
+                          ConstantFitStop::EvaluationLimit,
+                          "not_configured",
+                          std::nullopt,
+                          std::nullopt,
+                          0,
+                          0,
+                          {},
+                          {},
+                          {}};
         else
             return Result{std::move(expression), {}, {}};
     }();
@@ -415,9 +448,32 @@ inline ConstantFitResult fitSelectedConstantsLevenbergMarquardt(
         throw std::length_error("LM parameter limit");
     const auto original=input.nodes();std::vector<double> initial;initial.reserve(selected.size());
     for(std::size_t i=0;i<selected.size();++i){const auto n=selected[i];if(n>=original.size()||original[n].kind()!=ExpressionKind::Constant||(i&&n<=selected[i-1]))throw std::invalid_argument("LM constant indices must be increasing, distinct constants");const double v=original[n].constantValue();if(v<config.lower||v>config.upper)throw std::invalid_argument("LM starting constant outside fitting bounds");initial.push_back(v);}
-    ConstantFitResult result{input, {}, {},         false, ConstantFitStop::SweepLimit,
-                             0,     0,  0,          {},    std::nullopt,
-                             {},    {}, "disabled", 0,     0};
+    ConstantFitResult result{input,
+                             {},
+                             {},
+                             false,
+                             ConstantFitStop::SweepLimit,
+                             0,
+                             0,
+                             0,
+                             {},
+                             std::nullopt,
+                             {},
+                             {},
+                             "disabled",
+                             0,
+                             0,
+                             false,
+                             false,
+                             ConstantFitStop::EvaluationLimit,
+                             "not_configured",
+                             std::nullopt,
+                             std::nullopt,
+                             0,
+                             0,
+                             {},
+                             {},
+                             {}};
     if (recordInvocation)
         objective.recordFittingInvocation();
     if (selected.empty()) {
@@ -557,9 +613,32 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
             throw std::invalid_argument("selected constant outside fitting bounds");
         parameters.push_back(i);
     }
-    ConstantFitResult result{input, {}, {},         false, ConstantFitStop::EvaluationLimit,
-                             0,     0,  0,          {},    std::nullopt,
-                             {},    {}, "disabled", 0,     0};
+    ConstantFitResult result{input,
+                             {},
+                             {},
+                             false,
+                             ConstantFitStop::EvaluationLimit,
+                             0,
+                             0,
+                             0,
+                             {},
+                             std::nullopt,
+                             {},
+                             {},
+                             "disabled",
+                             0,
+                             0,
+                             false,
+                             false,
+                             ConstantFitStop::EvaluationLimit,
+                             "not_configured",
+                             std::nullopt,
+                             std::nullopt,
+                             0,
+                             0,
+                             {},
+                             {},
+                             {}};
     const auto startWork = objective.work().lossAttempts;
     const auto startSelectionWork = objective.rankSelectionEvaluations();
     const auto beforeBaselineOperations = objective.supplementalWork().mathematicalOperations;
@@ -901,9 +980,32 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
         priorMath + result.rankSelectionWork.linearAlgebraOperations + derivativeAndPrimal);
     fit.levenbergMarquardt.maxObjectiveEvaluations =
         std::min(fit.levenbergMarquardt.maxObjectiveEvaluations, fit.maxLossAttempts);
-    ConstantFitResult fitted{input, {}, {},         false, ConstantFitStop::EvaluationLimit,
-                             0,     0,  0,          {},    std::nullopt,
-                             {},    {}, "disabled", 0,     0};
+    ConstantFitResult fitted{input,
+                             {},
+                             {},
+                             false,
+                             ConstantFitStop::EvaluationLimit,
+                             0,
+                             0,
+                             0,
+                             {},
+                             std::nullopt,
+                             {},
+                             {},
+                             "disabled",
+                             0,
+                             0,
+                             false,
+                             false,
+                             ConstantFitStop::EvaluationLimit,
+                             "not_configured",
+                             std::nullopt,
+                             std::nullopt,
+                             0,
+                             0,
+                             {},
+                             {},
+                             {}};
     try {
         fitted =
             fitSelectedConstantsLevenbergMarquardt(input, objective, independent, fit, false, true);
@@ -932,6 +1034,94 @@ inline ConstantFitResult fitRankAwareSelectedConstants(const Expression& input,
     return fitted;
 }
 
+namespace genetik_detail {
+inline ConstantFitResult fitWithRankAwareFallback(const Expression& input,
+                                                  TrainingObjective& objective,
+                                                  std::span<const std::size_t> parameters,
+                                                  const ConstantFitConfig& config) {
+    ConstantFitConfig ordinaryConfig = config;
+    ordinaryConfig.rankAwareFallback = false;
+    auto ordinary =
+        fitSelectedConstantsLevenbergMarquardt(input, objective, parameters, ordinaryConfig);
+    ordinary.ordinaryOptimizerStop = ordinary.optimizerStop;
+    ordinary.ordinaryPhaseLossAttempts = ordinary.lossAttempts;
+    ordinary.ordinaryPhaseOptimizerWork = ordinary.optimizerWork;
+
+    if (!config.rankAwareFallback || config.rankAware ||
+        ordinary.optimizerStop != LMStop::SingularSystem || ordinary.improved ||
+        ordinary.loss.state() != FitnessState::Valid ||
+        !ordinary.expression.sameRepresentation(input)) {
+        if (config.rankAwareFallback && !config.rankAware)
+            ordinary.rankAwareFallbackOutcome =
+                ordinary.optimizerStop != LMStop::SingularSystem ? "ordinary_not_singular"
+                : ordinary.improved                              ? "ordinary_improved"
+                : ordinary.loss.state() != FitnessState::Valid   ? "invalid_incumbent"
+                                                                 : "ordinary_expression_changed";
+        return ordinary;
+    }
+
+    // Selection needs one baseline, one derivative per selected coefficient
+    // and training row, and at least one LM objective evaluation. Avoid
+    // starting the retry unless all of that work is available locally and in
+    // the search-wide objective admission.
+    const auto rows = objective.problem()->trainingRows().size();
+    if (rows == 0 || parameters.size() > (std::numeric_limits<std::uint64_t>::max() - 2) / rows)
+        return ordinary;
+    const auto minimumRetryUnits = static_cast<std::uint64_t>(parameters.size()) * rows + 2;
+    const auto localRemaining = config.maxLossAttempts > ordinary.lossAttempts
+                                    ? config.maxLossAttempts - ordinary.lossAttempts
+                                    : 0;
+    if (localRemaining < minimumRetryUnits || objective.remaining() < minimumRetryUnits) {
+        ordinary.rankAwareFallbackOutcome = "insufficient_budget";
+        return ordinary;
+    }
+
+    ConstantFitConfig retryConfig = config;
+    retryConfig.rankAware = true;
+    retryConfig.maxLossAttempts = localRemaining;
+    const auto ordinaryOperations = ordinary.optimizerWork.mathematicalOperations;
+    if (ordinaryOperations >= retryConfig.levenbergMarquardt.maxMathematicalOperations) {
+        ordinary.rankAwareFallbackOutcome = "insufficient_arithmetic_budget";
+        return ordinary;
+    }
+    retryConfig.levenbergMarquardt.maxMathematicalOperations -= ordinaryOperations;
+    retryConfig.levenbergMarquardt.maxObjectiveEvaluations = std::min<std::uint64_t>(
+        retryConfig.levenbergMarquardt.maxObjectiveEvaluations, localRemaining);
+
+    auto fallback = fitRankAwareSelectedConstants(input, objective, parameters, retryConfig);
+    ordinary.rankAwareFallbackAttempted = true;
+    ordinary.rankAwareFallbackOutcome = fallback.loss.state() != FitnessState::Valid
+                                            ? "invalid_or_exhausted"
+                                            : "completed_without_improvement";
+    ordinary.rankAwareFallbackStop = fallback.stop;
+    ordinary.rankAwareFallbackOptimizerStop = fallback.optimizerStop;
+    ordinary.fallbackPhaseLossAttempts = fallback.lossAttempts;
+    ordinary.fallbackPhaseOptimizerWork = fallback.optimizerWork;
+    ordinary.fallbackPhaseSelectionWork = fallback.rankSelectionWork;
+    ordinary.rankAwareFallbackImproved = fallback.loss.state() == FitnessState::Valid &&
+                                         ordinary.loss.state() == FitnessState::Valid &&
+                                         fallback.loss.score() < ordinary.loss.score();
+
+    ordinary.lossAttempts += fallback.lossAttempts;
+    ordinary.totalBudgetUnits += fallback.totalBudgetUnits;
+    ordinary.rankSelectionWork = fallback.rankSelectionWork;
+    ordinary.selectedDirections = fallback.selectedDirections;
+    ordinary.rankSelectionStop = fallback.rankSelectionStop;
+    ordinary.preSelectionBaselineOperations = fallback.preSelectionBaselineOperations;
+    mergeLMWork(ordinary.optimizerWork, fallback.optimizerWork);
+
+    if (ordinary.rankAwareFallbackImproved) {
+        ordinary.rankAwareFallbackOutcome = "improved";
+        ordinary.expression = std::move(fallback.expression);
+        ordinary.loss = fallback.loss;
+        ordinary.stop = fallback.stop;
+        ordinary.improved = ordinary.startingLoss.state() == FitnessState::Valid &&
+                            ordinary.loss.score() < ordinary.startingLoss.score();
+    }
+    return ordinary;
+}
+} // namespace genetik_detail
+
 // Always obtains a fresh baseline: no caller-provided numerical cache can certify a different tree.
 // Each occurrence is independent, traversed in postfix order; each coordinate probes +step then
 // -step relative to its value at coordinate entry. Equal/invalid trials keep the incumbent.
@@ -950,6 +1140,9 @@ inline ConstantFitResult fitConstants(const Expression& input, TrainingObjective
     if (config.method == ConstantFitMethod::LevenbergMarquardt) {
         if (config.rankAware)
             return fitRankAwareSelectedConstants(expression, objective, parameters, config);
+        if (config.rankAwareFallback)
+            return genetik_detail::fitWithRankAwareFallback(expression, objective, parameters,
+                                                            config);
         return fitSelectedConstantsLevenbergMarquardt(expression, objective, parameters, config);
     }
     return genetik_detail::fitCoordinates<ConstantFitResult>(std::move(expression),objective,config,parameters,objective.work_,
@@ -977,6 +1170,9 @@ inline ConstantFitResult fitSelectedConstants(const Expression& input,TrainingOb
     if (config.method == ConstantFitMethod::LevenbergMarquardt) {
         if (config.rankAware)
             return fitRankAwareSelectedConstants(expression, objective, parameters, config);
+        if (config.rankAwareFallback)
+            return genetik_detail::fitWithRankAwareFallback(expression, objective, parameters,
+                                                            config);
         return fitSelectedConstantsLevenbergMarquardt(expression, objective, parameters, config);
     }
     return genetik_detail::fitCoordinates<ConstantFitResult>(std::move(expression),objective,config,parameters,objective.work_,
@@ -1004,8 +1200,15 @@ public:
             d->bound=true;
         }
     }
-    bool parallelEvaluationSafe() const noexcept override {return objective_->parallelEvaluationSafe() && !objective_->diagnostics() && (!selection_ || selection_->parallelEvaluationSafe());}
+    bool parallelEvaluationSafe() const noexcept override {
+        return (!config_ || (!config_->rankAware && !config_->rankAwareFallback)) &&
+               objective_->parallelEvaluationSafe() && !objective_->diagnostics() &&
+               (!selection_ || selection_->parallelEvaluationSafe());
+    }
     std::shared_ptr<RegressionPreparation> forkParallel(ExecutionContext& execution) override {
+        if (config_ && (config_->rankAware || config_->rankAwareFallback))
+            throw std::invalid_argument(
+                "rank-aware refinement currently requires serial candidate preparation");
         auto child=std::make_shared<ConstantRefinement>(objective_->forkParallel(execution),config_,interval_,selection_);
         child->initializing=initializing;
         return child;
@@ -1096,6 +1299,30 @@ public:
         if (rankOverflow)
             throw std::overflow_error("rank-selection work overflow");
         if(config_->method==ConstantFitMethod::LevenbergMarquardt){mergeLMWork(optimizerWork_,result.optimizerWork);if(diagnostic)diagnostic->recordOptimizerWork(result.optimizerWork);}
+        if (config_->rankAwareFallback) {
+            auto add = [](std::uint64_t& to, std::uint64_t amount) {
+                if (amount > UINT64_MAX - to)
+                    throw std::overflow_error("rank-aware fallback accounting overflow");
+                to += amount;
+            };
+            if (result.ordinaryOptimizerStop == LMStop::SingularSystem)
+                add(fallbackStatistics_.ordinarySingularStops, 1);
+            if (result.rankAwareFallbackAttempted) {
+                add(fallbackStatistics_.attempts, 1);
+                if (result.rankAwareFallbackImproved)
+                    add(fallbackStatistics_.improvedFits, 1);
+            }
+            add(fallbackStatistics_.ordinaryLossAttempts, result.ordinaryPhaseLossAttempts);
+            add(fallbackStatistics_.fallbackLossAttempts, result.fallbackPhaseLossAttempts);
+            mergeLMWork(fallbackStatistics_.ordinaryOptimizerWork,
+                        result.ordinaryPhaseOptimizerWork);
+            mergeLMWork(fallbackStatistics_.fallbackOptimizerWork,
+                        result.fallbackPhaseOptimizerWork);
+            mergeRankWork(fallbackStatistics_.selectorWork, result.fallbackPhaseSelectionWork,
+                          rankOverflow);
+            if (rankOverflow)
+                throw std::overflow_error("rank-aware fallback selector accounting overflow");
+        }
         recordWork();recordDiagnostic(true,result.improved);
         ++statistics_.terminations[static_cast<std::size_t>(result.stop)];
         if(result.improved)++statistics_.completedImproved;
@@ -1107,6 +1334,9 @@ public:
         return {std::move(result.expression),result.loss};
     }
     const PreparationStatistics& statistics() const noexcept {return statistics_;}
+    const RankAwareFallbackStatistics& rankAwareFallbackStatistics() const noexcept {
+        return fallbackStatistics_;
+    }
     const LMWork& optimizerWork()const noexcept{return optimizerWork_;}
     const RankSelectionWork& rankSelectionWork() const noexcept {
         return rankSelectionWork_;
@@ -1138,6 +1368,7 @@ private:
     const std::optional<ConstantFitConfig> config_;
     const std::uint64_t interval_;
     PreparationStatistics statistics_;
+    RankAwareFallbackStatistics fallbackStatistics_;
     LMWork optimizerWork_{};
     RankSelectionWork rankSelectionWork_{};
 };

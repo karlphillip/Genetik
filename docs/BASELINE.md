@@ -1435,6 +1435,18 @@ support it. Checkpointed `ScalarMathematicsRun` rejects this mode because its
 existing work codec has no selector counter. Synthetic outcomes and selected
 directions are recorded in `RANK_AWARE_REFINEMENT.md`.
 
+An additive `rankAwareFallback` policy now runs ordinary LM first and retries
+once through that selector only after a valid unchanged `SingularSystem` stop
+with sufficient remaining local and search-wide allowance. Tests cover
+redundant and full-rank direct fits, other stops, insufficient/exhausted retry
+work, ordinary symbolic search, and installed consumption. The default and
+always-rank-aware policy are unchanged; checkpoint and parallel restrictions
+match the existing rank-aware mode. The requested prospective paired search
+comparison remains untested because its synthetic pipeline admission refused;
+the full protocol and refusal are retained in
+`research/rank_aware_lm_fallback_20261128/` and summarized in
+`RANK_AWARE_LM_FALLBACK.md`.
+
 ## Bounded Pareto objective vectors (2026-11)
 
 Pareto selection now accepts a callback returning up to four finite objectives

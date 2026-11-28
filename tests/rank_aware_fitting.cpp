@@ -1,4 +1,4 @@
-#include <SymbolicRegression.hpp>
+#include <ScalarMathematicsRun.hpp>
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -467,8 +467,198 @@ static void ordinarySearch() {
               << " stop=" << searchStopName(found.stoppingReason)
               << " equation=" << found.best->text() << '\n';
 }
+static void rankAwareFallback() {
+    const std::array trainX{-3., -2., -1., 0., 1., 2., 3.};
+    auto train = RegressionProblem::create(rows(trainX), {64, 12, 32});
+    auto test = RegressionProblem::create(heldout(), {64, 12, 32});
+
+    auto fallbackConfig = lm(false);
+    fallbackConfig.rankAwareFallback = true;
+    auto refinementObjective = std::make_shared<TrainingObjective>(train, 1000);
+    ConstantRefinement refinement(refinementObjective, fallbackConfig);
+    check(!refinement.parallelEvaluationSafe(),
+          "fallback preparation declares the existing rank-selector serial restriction");
+    bool refinementForkRejected = false;
+    try {
+        ExecutionContext execution({2});
+        (void)refinement.forkParallel(execution);
+    } catch (const std::invalid_argument&) {
+        refinementForkRejected = true;
+    }
+    check(refinementForkRejected,
+          "fallback refinement cannot bypass the serial-only restriction via a manual fork");
+    TrainingObjective redundantObjective(train, 1000);
+    const auto rescued = fitConstants(redundant(), redundantObjective, fallbackConfig);
+    check(rescued.ordinaryOptimizerStop == LMStop::SingularSystem &&
+              rescued.rankAwareFallbackAttempted && rescued.rankAwareFallbackImproved &&
+              rescued.rankAwareFallbackOutcome == "improved",
+          "unchanged singular ordinary fit receives one successful rank-aware fallback");
+    check(rescued.loss.state() == FitnessState::Valid && rescued.loss.score() < 1e-18 &&
+              score(*train, rescued.expression) < 1e-18 && score(*test, rescued.expression) < 1e-18,
+          "fallback result and independently recomputed scores recover the redundant model");
+    check(rescued.selectedDirections == std::vector<std::size_t>{0, 5} &&
+              rescued.rankAwareFallbackOptimizerStop == LMStop::LossTolerance,
+          "fallback reports selected postfix directions and native retry stop");
+    check(rescued.ordinaryPhaseLossAttempts == 1 && rescued.fallbackPhaseLossAttempts > 0 &&
+              rescued.fallbackPhaseSelectionWork.derivativeEvaluations > 0 &&
+              rescued.totalBudgetUnits ==
+                  rescued.ordinaryPhaseLossAttempts + rescued.fallbackPhaseLossAttempts +
+                      rescued.fallbackPhaseSelectionWork.derivativeEvaluations &&
+              redundantObjective.work().lossAttempts == rescued.lossAttempts,
+          "fallback work is charged to shared per-fit objective allowance");
+    check(rescued.optimizerWork.objectiveEvaluations ==
+              rescued.ordinaryPhaseOptimizerWork.objectiveEvaluations +
+                  rescued.fallbackPhaseOptimizerWork.objectiveEvaluations,
+          "returned optimizer work reconciles both phases");
+
+    TrainingObjective fullObjective(train, 1000);
+    const auto full = fitConstants(fullRank(), fullObjective, fallbackConfig);
+    check(full.ordinaryOptimizerStop != LMStop::SingularSystem &&
+              !full.rankAwareFallbackAttempted &&
+              full.rankAwareFallbackOutcome == "ordinary_not_singular" &&
+              full.loss.state() == FitnessState::Valid && score(*test, full.expression) < 1e-18,
+          "full-rank ordinary fit succeeds without invoking fallback");
+
+    auto arithmeticLimited = fallbackConfig;
+    arithmeticLimited.levenbergMarquardt.maxMathematicalOperations = 20;
+    TrainingObjective otherStopObjective(train, 1000);
+    const auto otherStop = fitConstants(redundant(), otherStopObjective, arithmeticLimited);
+    check(otherStop.ordinaryOptimizerStop == LMStop::EvaluationLimit &&
+              !otherStop.rankAwareFallbackAttempted &&
+              otherStop.rankAwareFallbackOutcome == "ordinary_not_singular" &&
+              otherStop.loss.state() == FitnessState::Valid &&
+              otherStop.loss.score() == score(*train, otherStop.expression),
+          "fallback is not attempted after an ordinary non-singular stop");
+
+    auto insufficient = fallbackConfig;
+    insufficient.maxLossAttempts =
+        23; // ordinary baseline plus too little for 21 selector rows and LM
+    TrainingObjective insufficientObjective(train, 1000);
+    const auto retained = fitConstants(redundant(), insufficientObjective, insufficient);
+    check(retained.ordinaryOptimizerStop == LMStop::SingularSystem &&
+              !retained.rankAwareFallbackAttempted &&
+              retained.rankAwareFallbackOutcome == "insufficient_budget" &&
+              retained.loss.state() == FitnessState::Valid && retained.loss.score() == 13 &&
+              retained.expression.sameRepresentation(redundant()) &&
+              retained.totalBudgetUnits == retained.ordinaryPhaseLossAttempts,
+          "insufficient retry budget preserves the ordinary valid incumbent");
+
+    auto arithmeticExhaustedConfig = fallbackConfig;
+    arithmeticExhaustedConfig.levenbergMarquardt.maxMathematicalOperations = 520;
+    TrainingObjective arithmeticExhaustedObjective(train, 1000);
+    const auto arithmeticExhausted =
+        fitConstants(redundant(), arithmeticExhaustedObjective, arithmeticExhaustedConfig);
+    check(arithmeticExhausted.ordinaryOptimizerStop == LMStop::SingularSystem &&
+              arithmeticExhausted.rankAwareFallbackAttempted &&
+              arithmeticExhausted.loss.state() == FitnessState::Valid &&
+              arithmeticExhausted.loss.score() == 13 &&
+              arithmeticExhausted.expression.sameRepresentation(redundant()) &&
+              arithmeticExhausted.totalBudgetUnits ==
+                  arithmeticExhausted.ordinaryPhaseLossAttempts +
+                      arithmeticExhausted.fallbackPhaseLossAttempts +
+                      arithmeticExhausted.fallbackPhaseSelectionWork.derivativeEvaluations &&
+              arithmeticExhausted.preSelectionBaselineOperations +
+                      arithmeticExhausted.fallbackPhaseSelectionWork.derivativeOperations +
+                      arithmeticExhausted.fallbackPhaseSelectionWork.primalOperations +
+                      arithmeticExhausted.fallbackPhaseSelectionWork.linearAlgebraOperations +
+                      arithmeticExhausted.optimizerWork.mathematicalOperations <=
+                  arithmeticExhaustedConfig.levenbergMarquardt.maxMathematicalOperations,
+          "arithmetic-exhausted retry retains the valid ordinary incumbent and reconciles work");
+
+    // Exercise the exact same policy through ordinary symbolic search. The
+    // first population slot is a deterministic supplied regression fixture;
+    // the remaining candidates still use the normal grammar and GA path.
+    SymbolicRegressionConfig search;
+    search.population = 4;
+    search.elites = 1;
+    search.maxGenerationAttempts = 1;
+    search.maxEvaluations = 8;
+    search.maxTrainingLossAttempts = 10000;
+    search.grammar.operators = {K::Add, K::Multiply};
+    search.grammar.continuousProbability = 1;
+    search.grammar.continuousLower = -2;
+    search.grammar.continuousUpper = 2;
+    search.grammar.initialMaxDepth = 2;
+    search.grammar.mutationMaxDepth = 2;
+    search.grammar.proposalLimit = 16;
+    search.fitting = fallbackConfig;
+    search.fitting->lower = -8;
+    search.fitting->upper = 8;
+    search.initialExpressionSlots = 1;
+    search.maximumInitializerWorkUnits = 1;
+    RandomContext random(81723);
+    auto searchResult = symbolicRegression(
+        train, search, random, {}, [](const RegressionProblem&, std::size_t, std::uint64_t) {
+            return InitialExpressionBatch{{redundant()}, 1, "synthetic_fallback_fixture", {}};
+        });
+    check(searchResult.best && searchResult.best->fitness() < 1e-18 &&
+              score(*train, searchResult.best->expression()) < 1e-18,
+          "ordinary search returns a model whose training loss independently recomputes");
+    check(searchResult.rankAwareFallbackWork.ordinarySingularStops > 0 &&
+              searchResult.rankAwareFallbackWork.attempts > 0 &&
+              searchResult.rankAwareFallbackWork.improvedFits > 0 &&
+              searchResult.trainingWork.lossAttempts +
+                      searchResult.rankSelectionWork.derivativeEvaluations <=
+                  search.maxTrainingLossAttempts &&
+              searchResult.rankAwareFallbackWork.ordinaryLossAttempts +
+                      searchResult.rankAwareFallbackWork.fallbackLossAttempts <=
+                  searchResult.trainingWork.lossAttempts,
+          "ordinary search exercises fallback under its shared search-wide allowance");
+    bool parallelRejected = false;
+    try {
+        ExecutionContext execution({2});
+        RandomContext parallelRandom(81723, execution);
+        auto parallelConfig = search;
+        (void)symbolicRegression(train, parallelConfig, parallelRandom);
+    } catch (const std::invalid_argument&) {
+        parallelRejected = true;
+    }
+    check(parallelRejected,
+          "rank-aware fallback preserves the serial-only candidate-preparation restriction");
+    bool checkpointedRunRejected = false;
+    try {
+        const auto scalarProblem = ScalarMathematicsProblem::scientific(rows(trainX), {64, 12, 32});
+        RandomContext checkpointRandom(81723);
+        (void)ScalarMathematicsRun(scalarProblem, search, checkpointRandom);
+    } catch (const std::invalid_argument&) {
+        checkpointedRunRejected = true;
+    }
+    check(checkpointedRunRejected,
+          "rank-aware fallback preserves checkpointed scalar-run incompatibility");
+    std::cout << "fixture=rank_aware_fallback_direct ordinary_stop="
+              << lmStop(*rescued.ordinaryOptimizerStop)
+              << " attempted=" << rescued.rankAwareFallbackAttempted
+              << " outcome=" << rescued.rankAwareFallbackOutcome
+              << " train=" << rescued.loss.score() << " held=" << score(*test, rescued.expression)
+              << " ordinary_calls=" << rescued.ordinaryPhaseLossAttempts
+              << " fallback_calls=" << rescued.fallbackPhaseLossAttempts << " selector_evaluations="
+              << rescued.fallbackPhaseSelectionWork.derivativeEvaluations
+              << " ordinary_lm_math=" << rescued.ordinaryPhaseOptimizerWork.mathematicalOperations
+              << " fallback_lm_math=" << rescued.fallbackPhaseOptimizerWork.mathematicalOperations
+              << " fallback_stop="
+              << (rescued.rankAwareFallbackOptimizerStop
+                      ? lmStop(*rescued.rankAwareFallbackOptimizerStop)
+                      : "none")
+              << '\n';
+    std::cout << "fixture=rank_aware_fallback_search candidates="
+              << searchResult.candidateEvaluations
+              << " singular=" << searchResult.rankAwareFallbackWork.ordinarySingularStops
+              << " attempts=" << searchResult.rankAwareFallbackWork.attempts
+              << " improved=" << searchResult.rankAwareFallbackWork.improvedFits
+              << " ordinary_calls=" << searchResult.rankAwareFallbackWork.ordinaryLossAttempts
+              << " fallback_calls=" << searchResult.rankAwareFallbackWork.fallbackLossAttempts
+              << " ordinary_lm_math="
+              << searchResult.rankAwareFallbackWork.ordinaryOptimizerWork.mathematicalOperations
+              << " fallback_lm_math="
+              << searchResult.rankAwareFallbackWork.fallbackOptimizerWork.mathematicalOperations
+              << " train=" << searchResult.best->fitness()
+              << " total_calls=" << searchResult.trainingWork.lossAttempts
+              << " selector_evaluations=" << searchResult.rankSelectionWork.derivativeEvaluations
+              << '\n';
+}
 int main() {
     directFixtures();
     actualStartAndWeightedJacobians();
     ordinarySearch();
+    rankAwareFallback();
 }
